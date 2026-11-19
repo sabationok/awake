@@ -26,6 +26,11 @@ final class AwakeModel: ObservableObject {
     @Published var displayOff = DisplayOffOption.saved {
         didSet { DisplayOffOption.saved = displayOff }
     }
+    /// Блокувати екран, коли кришку закрили під час сесії: сон вимкнено, тож система цього не зробить.
+    @Published var lockOnLidClose = UserDefaults.standard.object(forKey: "lockOnLidClose") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(lockOnLidClose, forKey: "lockOnLidClose") }
+    }
+    private var lidClosed = ClamshellService.isClosed()
     @Published var telegram = TelegramSettingsStore.load()
     /// Те, що лежить у файлі. Розбіжність із `telegram` означає незбережені зміни.
     @Published var savedTelegram = TelegramSettingsStore.load()
@@ -90,6 +95,16 @@ final class AwakeModel: ObservableObject {
         tickCount += 1
         if tickCount % 15 == 0 { refresh() }
         if isRunning { dimmer.update(limit: displayOff.seconds) }
+        if tickCount % 2 == 0 { watchLid() }
+    }
+
+    /// Перехід кришки у «закрито» під час сесії блокує екран, бо Mac не засне і сам не заблокується.
+    private func watchLid() {
+        let closed = ClamshellService.isClosed()
+        defer { lidClosed = closed }
+        guard closed, !lidClosed, isRunning, lockOnLidClose else { return }
+        let locked = LockService.lockAndSleepDisplay()
+        append(locked ? "Кришку закрито: екран заблоковано" : "Кришку закрито: екран погашено, блокування недоступне")
     }
 
     // MARK: дії сесії
