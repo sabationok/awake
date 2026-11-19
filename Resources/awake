@@ -1,0 +1,176 @@
+#!/bin/bash
+# awake — блокує сон Mac (зокрема з закритою кришкою) на заданий час,
+# стежить за батареєю і термічним станом, шле сповіщення в Telegram.
+#
+#   awake            1 година
+#   awake 30m | 8h | 1d
+#   awake off        аварійно повернути сон
+#   awake status     чи заблокований сон зараз
+#   awake test       тестове повідомлення в Telegram
+#
+# Працює від звичайного користувача. Через sudo викликає лише
+#   /usr/bin/pmset -a disablesleep 0|1
+#   /usr/bin/powermetrics -n 1 -i 500 --samplers thermal
+# Правило sudoers з install.sh дозволяє саме їх без пароля.
+
+CHECK_EVERY=${AWAKE_CHECK_EVERY:-300}   # секунд між перевірками температури
+BATT_EVERY=${AWAKE_BATT_EVERY:-30}      # секунд між перевірками батареї і живлення
+BATT_WARN=${AWAKE_BATT_WARN:-25}    # %, попередження (на батареї)
+BATT_STOP=${AWAKE_BATT_STOP:-10}    # %, зупинка (на батареї)
+CONFIG="${AWAKE_CONFIG:-$HOME/.config/awake/telegram.env}"
+# PID активної сесії. За ним аппка відрізняє живу сесію від сну, що лишився вимкненим після збою.
+PIDFILE="${AWAKE_PIDFILE:-$HOME/.config/awake/session.pid}"
+
+[ -f "$CONFIG" ] && . "$CONFIG"
+HOST=$(scutil --get ComputerName 2>/dev/null || hostname)
+
+has_rule() { sudo -n -l /usr/bin/pmset -a disablesleep 0 >/dev/null 2>&1; }
+set_sleep_disabled() { sudo -n /usr/bin/pmset -a disablesleep "$1" 2>/dev/null || sudo /usr/bin/pmset -a disablesleep "$1"; }
+is_blocked() { pmset -g | grep -q 'SleepDisabled[[:space:]]*1'; }
+
+html_escape() { sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g'; }
+
+# json key=value ...  →  багаторядковий JSON. Числа без лапок, решта як рядки.
+json() {
+  local kv k v sep="" out=$'{\n'
+  for kv in "$@"; do
+    k=${kv%%=*}; v=${kv#*=}
+    case "$v" in
+      ''|*[!0-9]*) v="\"$(printf '%s' "$v" | sed 's/\\/\\\\/g; s/"/\\"/g')\"" ;;
+    esac
+    out+="$sep  \"$k\": $v"; sep=$',\n'
+  done
+  printf '%s\n}' "$out"
+}
+
+# event_allowed <подія>: чи шлемо її в Telegram. Читає TG_EVENTS з файлу щоразу, тож зміна діє одразу.
+# Немає ключа TG_EVENTS — шлемо все. test і off шлемо завжди.
+event_allowed() {
+  case "$1" in ""|test|off) return 0 ;; esac
+  grep -q '^TG_EVENTS=' "$CONFIG" 2>/dev/null || return 0
+  local list
+  list=$(sed -n "s/^TG_EVENTS=//p" "$CONFIG" | tr -d "'\"")
+  case ",$list," in *",$1,"*) return 0 ;; *) return 1 ;; esac
+}
+
+# say "<emoji> Заголовок" [key=value ...]
+# У термінал — один рядок; у Telegram — заголовок і JSON у <pre>-блоці.
+say() {
+  local title=$1; shift
+  echo "[$(date +%H:%M)] $title${*:+ ($*)}"
+  [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ] || return 0
+  local ev="" kv
+  for kv in "$@"; do case "$kv" in event=*) ev=${kv#event=} ;; esac; done
+  event_allowed "$ev" || return 0
+  local text
+  text="💻 <b>$(printf '%s' "$HOST" | html_escape)</b>"$'\n'"$(printf '%s' "$title" | html_escape)"
+  [ $# -gt 0 ] && text+=$'\n'"<pre>$(json "$@" | html_escape)</pre>"
+  # токен іде через stdin, щоб не світитися в списку процесів
+  printf 'url = "https://api.telegram.org/bot%s/sendMessage"\n' "$TG_BOT_TOKEN" |
+    curl -s -m 10 -K - -o /dev/null \
+      --data-urlencode "chat_id=$TG_CHAT_ID" \
+      --data-urlencode "parse_mode=HTML" \
+      --data-urlencode "text=$text" || echo "  (не вдалося надіслати в Telegram)"
+}
+
+battery() {   # друкує "<відсоток> <AC|BAT>"
+  local out pct src
+  out=$(pmset -g batt)
+  pct=$(echo "$out" | grep -Eo '[0-9]+%' | head -1 | tr -d %)
+  echo "$out" | grep -q "AC Power" && src=AC || src=BAT
+  echo "${pct:-?} $src"
+}
+
+thermal() {   # Nominal | Moderate | Heavy | Trapping | Sleeping; порожньо, якщо читання вимкнено в налаштуваннях
+  [ "${AWAKE_THERMAL:-1}" = 0 ] && return 0
+  sudo -n /usr/bin/powermetrics -n 1 -i 500 --samplers thermal 2>/dev/null |
+    awk -F': ' '/pressure level/ {print $2; exit}'
+}
+
+case "$1" in
+  status) is_blocked && echo "Сон ЗАБЛОКОВАНО" || echo "Сон працює нормально"; exit 0 ;;
+  off)    set_sleep_disabled 0; rm -f "$PIDFILE"; say "🛌 Сон повернуто" event=off reason="${2:-вручну}"; exit 0 ;;
+  test)   read -r p s <<< "$(battery)"; say "🧪 Тест" event=test battery="$p" power="$s" thermal="$(thermal || true)"; exit 0 ;;
+esac
+
+# --- тривалість ---------------------------------------------------------------
+arg="${1:-1h}"
+num="${arg%[mhd]}"
+case "$num" in ''|*[!0-9]*) echo "Формат: awake [N | Nm | Nh | Nd]"; exit 1 ;; esac
+case "$arg" in
+  *m) SECS=$((num * 60)) ;;
+  *d) SECS=$((num * 86400)) ;;
+  *)  SECS=$((num * 3600)) ;;
+esac
+
+# --- права ----------------------------------------------------------------------
+KEEPALIVE=""
+if ! has_rule; then
+  if [ -t 0 ]; then
+    echo "Правила sudoers немає (див. install.sh). Питаю пароль і тримаю sudo активним до кінця."
+    sudo -v || exit 1
+    ( while sleep 60; do sudo -n -v 2>/dev/null || exit; done ) & KEEPALIVE=$!
+  else
+    echo "ПОМИЛКА: немає правила sudoers. Запусти scripts/install.sh."; exit 2
+  fi
+fi
+
+END=$(( $(date +%s) + SECS ))
+END_STR=$(date -r "$END" '+%d.%m %H:%M')
+
+REASON="таймер завершився"
+cleanup() {
+  set_sleep_disabled 0
+  rm -f "$PIDFILE"
+  [ -n "$KEEPALIVE" ] && kill "$KEEPALIVE" 2>/dev/null
+  read -r p s <<< "$(battery)"
+  say "😴 Сон повернуто" event=stop reason="$REASON" battery="$p" power="$s"
+}
+trap cleanup EXIT
+trap 'REASON="зупинено вручну"; exit' INT TERM HUP
+
+set_sleep_disabled 1 || exit 1
+mkdir -p "$(dirname "$PIDFILE")" && echo $$ > "$PIDFILE"
+read -r p s <<< "$(battery)"
+say "☕️ Сон заблоковано" event=start until="$END_STR" duration="$arg" battery="$p" power="$s" thermal="$(thermal)"
+
+last_batt="" last_therm="Nominal" last_src="$s"
+next_thermal=$(( $(date +%s) + CHECK_EVERY ))   # стартову температуру вже прочитали
+while [ "$(date +%s)" -lt "$END" ]; do
+  read -r p s <<< "$(battery)"
+
+  if [ "$s" != "$last_src" ]; then
+    [ "$s" = BAT ] && say "🔌 Живлення відключено" event=power power=BAT battery="$p" \
+                   || say "🔌 Живлення підключено" event=power power=AC battery="$p"
+    last_src="$s"
+  fi
+
+  if [ "$s" = BAT ] && [ "$p" != "?" ]; then
+    if [ "$p" -le "$BATT_STOP" ]; then
+      REASON="батарея $p%, зупиняю щоб Mac міг заснути"; exit 0
+    elif [ "$p" -le "$BATT_WARN" ] && [ "$last_batt" != warn ]; then
+      say "🪫 Низький заряд" event=battery_low battery="$p" stop_at="$BATT_STOP"; last_batt=warn
+    fi
+  else
+    last_batt=""
+  fi
+
+  # powermetrics важчий за pmset, тому температура рідше, ніж батарея
+  if [ "$(date +%s)" -ge "$next_thermal" ]; then
+    next_thermal=$(( $(date +%s) + CHECK_EVERY ))
+    t=$(thermal)
+    if [ -n "$t" ] && [ "$t" != "$last_therm" ]; then
+      case "$t" in
+        Trapping|Sleeping) REASON="критичний перегрів ($t)"; exit 0 ;;
+        Heavy)    say "🔥 Сильний перегрів" event=thermal thermal=Heavy hint="відкрий кришку або дай охолонути" ;;
+        Moderate) say "🌡 Помірне нагрівання" event=thermal thermal=Moderate ;;
+        Nominal)  say "✅ Температура в нормі" event=thermal thermal=Nominal ;;
+      esac
+      last_therm="$t"
+    fi
+  fi
+
+  left=$(( END - $(date +%s) ))
+  [ "$left" -le 0 ] && break
+  sleep $(( left < BATT_EVERY ? left : BATT_EVERY )) & wait $!
+done
