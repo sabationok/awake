@@ -44,9 +44,9 @@ json() {
 }
 
 # event_allowed <подія>: чи шлемо її в Telegram. Читає TG_EVENTS з файлу щоразу, тож зміна діє одразу.
-# Немає ключа TG_EVENTS — шлемо все. test і off шлемо завжди.
+# Немає ключа TG_EVENTS — шлемо все. test і off шлемо завжди. restart іде під перемикачем start.
 event_allowed() {
-  case "$1" in ""|test|off) return 0 ;; esac
+  case "$1" in ""|test|off) return 0 ;; restart) set -- start ;; esac
   grep -q '^TG_EVENTS=' "$CONFIG" 2>/dev/null || return 0
   local list
   list=$(sed -n "s/^TG_EVENTS=//p" "$CONFIG" | tr -d "'\"")
@@ -119,20 +119,32 @@ END=$(( $(date +%s) + SECS ))
 END_STR=$(date -r "$END" '+%d.%m %H:%M')
 
 REASON="таймер завершився"
+QUIET=""   # 1 — завершення без повідомлення в Telegram (перезапуск: нова сесія сама напише)
 cleanup() {
   set_sleep_disabled 0
   rm -f "$PIDFILE"
   [ -n "$KEEPALIVE" ] && kill "$KEEPALIVE" 2>/dev/null
   read -r p s <<< "$(battery)"
-  say "😴 Сон повернуто" event=stop reason="$REASON" battery="$p" power="$s"
+  if [ -n "$QUIET" ]; then
+    echo "[$(date +%H:%M)] 😴 Сон повернуто (event=stop reason=$REASON battery=$p power=$s)"
+  else
+    say "😴 Сон повернуто" event=stop reason="$REASON" battery="$p" power="$s"
+  fi
 }
 trap cleanup EXIT
 trap 'REASON="зупинено вручну"; exit' INT TERM HUP
+trap 'REASON="перезапуск"; QUIET=1; exit' USR1
 
 set_sleep_disabled 1 || exit 1
 mkdir -p "$(dirname "$PIDFILE")" && echo $$ > "$PIDFILE"
 read -r p s <<< "$(battery)"
-say "☕️ Сон заблоковано" event=start until="$END_STR" duration="$arg" battery="$p" power="$s" thermal="$(thermal)"
+# AWAKE_PREV_SECONDS — скільки тривала попередня сесія, коли це перезапуск із новим часом.
+if [ -n "${AWAKE_PREV_SECONDS:-}" ]; then
+  prev="$(( AWAKE_PREV_SECONDS / 3600 )) год $(( AWAKE_PREV_SECONDS % 3600 / 60 )) хв"
+  say "🔁 Сесію перезапущено" event=restart until="$END_STR" duration="$arg" previous="$prev" battery="$p" power="$s" thermal="$(thermal)"
+else
+  say "☕️ Сон заблоковано" event=start until="$END_STR" duration="$arg" battery="$p" power="$s" thermal="$(thermal)"
+fi
 
 last_batt="" last_therm="Nominal" last_src="$s"
 next_thermal=$(( $(date +%s) + CHECK_EVERY ))   # стартову температуру вже прочитали

@@ -12,6 +12,7 @@ final class AwakeModel: ObservableObject {
         didSet { SessionPreset.saved = preset }
     }
     @Published private(set) var isRunning = false
+    @Published private(set) var startDate: Date?
     @Published private(set) var endDate: Date?
     @Published private(set) var now = Date()
 
@@ -47,7 +48,7 @@ final class AwakeModel: ObservableObject {
 
     private let runner = SessionRunner()
     /// Тривалість, з якою треба запустити нову сесію, щойно поточна завершиться (рестарт).
-    private var pendingRestart: SessionPreset?
+    private var pendingRestart: (preset: SessionPreset, previousSeconds: Int)?
     private var dimmer = IdleDisplayDimmer()
     private var ticker: Timer?
     private var tickCount = 0
@@ -94,6 +95,10 @@ final class AwakeModel: ObservableObject {
     // MARK: дії сесії
 
     func start(_ preset: SessionPreset? = nil) {
+        start(preset, previousSeconds: nil)
+    }
+
+    private func start(_ preset: SessionPreset?, previousSeconds: Int?) {
         guard PermissionGate.isUsable(.sleepControl, by: .awake, appGranted: permissionGranted) else {
             append("Керування сном вимкнено для модуля Awake або не видано дозвіл")
             return
@@ -104,10 +109,12 @@ final class AwakeModel: ObservableObject {
         do {
             try runner.start(
                 duration: chosen.id,
+                previousSeconds: previousSeconds,
                 onLine: { [weak self] in self?.append($0) },
                 onExit: { [weak self] in self?.sessionEnded() }
             )
             isRunning = true
+            startDate = Date()
             endDate = Date().addingTimeInterval(TimeInterval(chosen.seconds))
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.refresh() }
         } catch {
@@ -125,9 +132,9 @@ final class AwakeModel: ObservableObject {
     func restart(_ preset: SessionPreset? = nil) {
         let chosen = preset ?? self.preset
         guard isRunning else { start(chosen); return }
-        pendingRestart = chosen
-        append("Перезапуск сесії на \(chosen.title)")
-        runner.stop()
+        let elapsed = Int(Date().timeIntervalSince(startDate ?? Date()))
+        pendingRestart = (chosen, elapsed)
+        runner.stopForRestart()
     }
 
     func stopAndWait() {
@@ -154,11 +161,12 @@ final class AwakeModel: ObservableObject {
 
     private func sessionEnded() {
         isRunning = false
+        startDate = nil
         endDate = nil
         refresh()
         if let next = pendingRestart {
             pendingRestart = nil
-            start(next)
+            start(next.preset, previousSeconds: next.previousSeconds)
         }
     }
 

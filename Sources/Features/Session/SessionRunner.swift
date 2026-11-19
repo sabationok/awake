@@ -9,13 +9,17 @@ final class SessionRunner {
 
     var isRunning: Bool { process?.isRunning ?? false }
 
+    /// `previousSeconds` — тривалість щойно перезапущеної сесії: скрипт тоді шле подію restart замість start.
     func start(duration: String,
+               previousSeconds: Int? = nil,
                onLine: @escaping (String) -> Void,
                onExit: @escaping () -> Void) throws {
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: "/bin/bash")
         proc.arguments = [AwakeScript.url.path, duration]
-        proc.environment = AwakeScript.environment
+        var env = AwakeScript.environment
+        if let previousSeconds { env["AWAKE_PREV_SECONDS"] = String(previousSeconds) }
+        proc.environment = env
 
         let pipe = Pipe()
         proc.standardOutput = pipe
@@ -39,6 +43,12 @@ final class SessionRunner {
 
     func stop() {
         process?.terminate()
+    }
+
+    /// Завершити для перезапуску: скрипт повертає сон мовчки, без «Сон повернуто» в Telegram.
+    func stopForRestart() {
+        guard let proc = process, proc.isRunning else { return }
+        kill(proc.processIdentifier, SIGUSR1)
     }
 
     /// Блокуючий варіант для виходу з аппки.

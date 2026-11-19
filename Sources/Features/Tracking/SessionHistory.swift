@@ -1,6 +1,6 @@
 import Foundation
 
-/// Одна сесія з журналу: від `event=start` до `event=stop`.
+/// Одна сесія з журналу: від `event=start` (або `restart`) до `event=stop` чи наступного `restart`.
 struct SessionRecord: Identifiable, Equatable {
     let start: Date
     var end: Date?
@@ -20,8 +20,15 @@ enum SessionHistory {
         var open: SessionRecord?
         for entry in entries {
             switch field("event", in: entry.text) {
-            case "start":
-                if let unfinished = open { result.append(unfinished) }
+            case "start", "restart":
+                if var previous = open {
+                    // Перезапуск: попередня сесія закінчилась у цю ж мить.
+                    if field("event", in: entry.text) == "restart" {
+                        previous.end = entry.date
+                        previous.reason = "перезапуск"
+                    }
+                    result.append(previous)
+                }
                 open = SessionRecord(
                     start: entry.date,
                     end: nil,
