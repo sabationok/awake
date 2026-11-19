@@ -12,9 +12,9 @@
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>NSHighResolutionCapable</key><true/>
-  <!-- Sparkle: приватний ключ лежить у Keychain цього Mac (generate_keys), appcast публікує scripts/release.sh. -->
+  <!-- Sparkle: приватний ключ у ~/.config/awake/sparkle_ed25519.key (seed ed25519, base64), appcast публікує scripts/release.sh. -->
   <key>SUFeedURL</key><string>https://raw.githubusercontent.com/sabationok/awake/main/appcast.xml</string>
-  <key>SUPublicEDKey</key><string>Mwzsnw/uK+N4xbUhRd8c9SAMv/oiLDDQg/xygqI/eFI=</string>
+  <key>SUPublicEDKey</key><string>XnA2gKQpXfj9S+yzdV1u9HD4Le53/MKeFMZmZ9UzNvw=</string>
   <key>SUEnableAutomaticChecks</key><true/>
   <key>SUAutomaticallyUpdate</key><true/>
 </dict>

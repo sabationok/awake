@@ -1,5 +1,6 @@
 #!/bin/bash
 # Реліз Awake через GitHub Releases + Sparkle.
+# Приватний ключ EdDSA: ~/.config/awake/sparkle_ed25519.key (base64 seed), без Keychain.
 #   scripts/release.sh 1.1
 # Що робить: ставить версію в Info.plist, збирає, пакує zip, підписує EdDSA-ключем
 # з Keychain, оновлює appcast.xml, створює GitHub-реліз із zip і пушить appcast.
@@ -9,6 +10,8 @@ VERSION="${1:?Формат: scripts/release.sh <версія, напр. 1.1>}"
 REPO="sabationok/awake"
 PLIST=Info.plist
 SPARKLE=Vendor/Sparkle/bin
+KEY="$HOME/.config/awake/sparkle_ed25519.key"
+[ -f "$KEY" ] || { echo "Немає ключа $KEY"; exit 1; }
 
 # CFBundleVersion має зростати з кожним релізом: беремо попередній +1.
 BUILD=$(( $(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$PLIST") + 1 ))
@@ -24,6 +27,7 @@ ditto -c -k --keepParent build/Awake.app "$ZIP"
 
 # generate_appcast підписує всі архіви в releases/ і пише appcast.xml у корінь.
 "$SPARKLE/generate_appcast" \
+  --ed-key-file "$KEY" \
   --download-url-prefix "https://github.com/$REPO/releases/download/v$VERSION/" \
   -o appcast.xml releases/
 
