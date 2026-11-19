@@ -1,15 +1,18 @@
 import { CanActivate, ExecutionContext, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 import { API_ERROR_CODES, AppException } from '../common/app-exception';
+import { PairingService } from '../devices/services/pairing.service';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
+import { PUBLIC_ROUTE } from './decorators/public-route.decorator';
 
 const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 
 /**
- * Кожен запит до API: правильний токен агента, а запит не з цього Mac
- * приймаємо лише поки Mac у довіреній мережі Wi-Fi.
+ * Запит не з цього Mac приймаємо лише поки Mac у довіреній мережі Wi-Fi.
+ * Далі потрібен головний токен агента (Mac-аппка, розробка) або токен сполученого пристрою.
  */
 @Injectable()
 export class AgentTokenGuard implements CanActivate {
@@ -18,21 +21,28 @@ export class AgentTokenGuard implements CanActivate {
   constructor(
     @Inject(AGENT_CONFIG) config: AgentConfig,
     private readonly _bridge: MacBridgeService,
+    private readonly _pairing: PairingService,
+    private readonly _reflector: Reflector,
   ) {
     this._token = Buffer.from(config.token);
   }
 
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<Request>();
-    const header = req.headers.authorization ?? '';
-    const given = Buffer.from(header.startsWith('Bearer ') ? header.slice(7) : '');
-    if (given.length !== this._token.length || !timingSafeEqual(given, this._token)) {
-      throw new AppException(API_ERROR_CODES.unauthorized, 'Invalid agent token', HttpStatus.UNAUTHORIZED);
-    }
     const remote = req.socket.remoteAddress ?? '';
     if (!LOOPBACK.has(remote) && !this._bridge.state?.trusted) {
       throw new AppException(API_ERROR_CODES.untrustedNetwork, 'Mac is not on a trusted network', HttpStatus.FORBIDDEN);
     }
-    return true;
+    if (this._reflector.getAllAndOverride<boolean>(PUBLIC_ROUTE, [context.getHandler(), context.getClass()])) return true;
+
+    const header = req.headers.authorization ?? '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+    if (this._isAgentToken(token) || (token && this._pairing.isDeviceToken(token))) return true;
+    throw new AppException(API_ERROR_CODES.unauthorized, 'Invalid token', HttpStatus.UNAUTHORIZED);
+  }
+
+  private _isAgentToken(token: string): boolean {
+    const given = Buffer.from(token);
+    return given.length === this._token.length && timingSafeEqual(given, this._token);
   }
 }

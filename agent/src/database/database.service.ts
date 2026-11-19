@@ -31,6 +31,13 @@ export class DatabaseService implements OnModuleDestroy {
         text TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS logs_at ON logs(at);
+      CREATE TABLE IF NOT EXISTS devices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        token_hash TEXT NOT NULL UNIQUE,
+        user_agent TEXT,
+        created_at TEXT NOT NULL,
+        last_seen_at TEXT
+      );
     `);
   }
 

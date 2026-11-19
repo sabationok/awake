@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PRESENCE_KEY, PRESENCE_TTL_SECONDS } from '@awake/contracts';
 import type { MacState, Presence } from '@awake/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';
+import { PairingService } from '../../devices/services/pairing.service';
 import { findLanAddress } from '../helpers/find-lan-address';
 import { UpstashClient } from './upstash.client';
 
@@ -22,13 +23,17 @@ export class PresenceService {
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     private readonly _upstash: UpstashClient,
+    private readonly _pairing: PairingService,
   ) {}
 
+  /**
+   * Адреса агента з одноразовим кодом сполучення у фрагменті. Головний токен з Mac не виходить:
+   * сторінка міняє код на власний токен пристрою, а код швидко протухає.
+   */
   localUrl(state: MacState): string | null {
     if (!state.trusted) return null;
     const address = findLanAddress();
-    // Токен у фрагменті: браузер не шле його на сервер, а сторінка агента забирає звідти.
-    return address ? `http://${address}:${this._config.port}/#t=${this._config.token}` : null;
+    return address ? `http://${address}:${this._config.port}/#p=${this._pairing.currentCode()}` : null;
   }
 
   async publish(state: MacState) {
