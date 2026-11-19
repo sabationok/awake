@@ -1,0 +1,40 @@
+import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
+import { mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
+import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
+
+/** Одне з'єднання SQLite на весь агент. Схема створюється при старті. */
+@Injectable()
+export class DatabaseService implements OnModuleDestroy {
+  readonly db: DatabaseSync;
+
+  constructor(@Inject(AGENT_CONFIG) config: AgentConfig) {
+    mkdirSync(dirname(config.dbPath), { recursive: true });
+    this.db = new DatabaseSync(config.dbPath);
+    this.db.exec(`
+      PRAGMA journal_mode = WAL;
+      CREATE TABLE IF NOT EXISTS sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        started_at TEXT NOT NULL,
+        ended_at TEXT,
+        duration TEXT,
+        source TEXT NOT NULL,
+        end_reason TEXT,
+        battery_start INTEGER,
+        battery_end INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS sessions_started_at ON sessions(started_at);
+      CREATE TABLE IF NOT EXISTS logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        at TEXT NOT NULL,
+        text TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS logs_at ON logs(at);
+    `);
+  }
+
+  onModuleDestroy() {
+    this.db.close();
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@awake/agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local Awake agent: runs as a subprocess of the Mac app, keeps history in SQLite, serves the local dashboard, publishes presence to Upstash.",
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.json && node scripts/bundle.mjs",
+    "start": "node dist/agent.cjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@nestjs/common": "11.2.11",
+    "@nestjs/core": "11.2.11",
+    "@nestjs/platform-express": "11.2.11",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@awake/contracts": "workspace:*",
+    "@types/express": "5.0.3",
+    "@types/node": "22.15.3",
+    "esbuild": "0.25.10",
+    "typescript": "5.9.3"
+  }
+}
