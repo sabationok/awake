@@ -17,8 +17,9 @@ BUILD=$(( $(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$PLIST") + 1 ))
 
 ./scripts/build.sh
 mkdir -p releases
+# У releases/ лишається лише поточний архів: префікс URL прив'язаний до тегу цього релізу.
+find releases -name '*.zip' -delete
 ZIP="releases/Awake-$VERSION.zip"
-rm -f "$ZIP"
 ditto -c -k --keepParent build/Awake.app "$ZIP"
 
 # generate_appcast підписує всі архіви в releases/ і пише appcast.xml у корінь.
