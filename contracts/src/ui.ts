@@ -169,7 +169,15 @@ export interface UiModuleInfo {
   id: string;
   title: string;
   icon: UiIcon;
+  /** Системні дозволи Mac, які модуль просить. Mac дає їх лише тоді, коли дозвіл видано системі і користувач лишив його модулю. */
+  permissions: MacPermission[];
 }
+
+/**
+ * Системний дозвіл Mac-аппки (зараз усі живуть у правилі sudoers). Систему дозволяє користувач на Mac,
+ * модуль лише декларує, що з них йому треба.
+ */
+export type MacPermission = 'sleepControl' | 'thermalRead';
 
 /** Усе дерево застосунку. */
 export interface UiTree {

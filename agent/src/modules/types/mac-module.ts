@@ -1,4 +1,4 @@
-import type { CommandRequest, MacState, SettingDefinition, SettingValue, UiNode, UiPage } from '@awake/contracts';
+import type { CommandRequest, MacPermission, MacState, SettingDefinition, SettingValue, UiNode, UiPage } from '@awake/contracts';
 
 /**
  * Що модуль отримує від хоста. Модуль не лізе в SQLite, stdin чи Upstash напряму:
@@ -20,6 +20,8 @@ export interface MacModule {
   id: string;
   title: string;
   icon: { symbol: string; tone: import('@awake/contracts').UiTone };
+  /** Системні дозволи Mac, які модуль просить. Mac показує їх окремо по модулях і дає лише дозволені. */
+  permissions: MacPermission[];
   /** Налаштування, які хост покаже в «Налаштуваннях» і збереже як `<id>.<key>`. */
   settings: SettingDefinition[];
   /** Вкладки модуля в бічному меню. Будуються з поточного стану щоразу. */

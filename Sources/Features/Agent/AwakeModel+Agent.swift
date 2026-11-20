@@ -22,7 +22,10 @@ extension AwakeModel {
             }
         }
         agent.onCommand = { [weak self] in self?.handleAgentCommand($0) }
-        agent.onTree = { [weak self] in self?.uiTree = $0 }
+        agent.onTree = { [weak self] tree in
+            PermissionGate.remember(tree.modules)
+            self?.uiTree = tree
+        }
         agent.onSettings = { [weak self] in self?.applyAgentSettings($0) }
         wifi.onAuthorizationChange = { [weak self] in self?.refreshWifi() }
         refreshWifi()

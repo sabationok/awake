@@ -210,6 +210,8 @@ struct UiModuleInfo: Decodable, Hashable, Identifiable {
     var id: String
     var title: String
     var icon: UiIcon
+    /// Системні дозволи, які модуль просить (`MacPermission`). Невідомі Mac-аппці імена він ігнорує.
+    var permissions: [String]?
 }
 
 struct UiTree: Decodable, Hashable {

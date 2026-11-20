@@ -10,6 +10,8 @@ export class TelegramMacModule implements MacModule {
   readonly id = 'telegram';
   readonly title = 'Telegram';
   readonly icon = { symbol: 'paperplane.fill', tone: 'accent' } as const;
+  // Подія «Нагрівання» бере тиск системи з powermetrics.
+  readonly permissions: MacModule['permissions'] = ['thermalRead'];
   readonly settings = TELEGRAM_SETTINGS;
 
   pages(ctx: ModuleContext): UiPage[] {

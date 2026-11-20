@@ -69,7 +69,12 @@ export class ModulesService {
       .map((page) => ({ ...page, children: filterNodesByScope(page.children, scope) }));
 
     return {
-      modules: this.list().map((module) => ({ id: module.id, title: module.title, icon: module.icon })),
+      modules: this.list().map((module) => ({
+        id: module.id,
+        title: module.title,
+        icon: module.icon,
+        permissions: module.permissions,
+      })),
       app: {
         title: 'MacCC',
         host: mac?.host ?? 'Mac',

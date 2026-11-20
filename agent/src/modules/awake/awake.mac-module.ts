@@ -19,6 +19,7 @@ export class AwakeMacModule implements MacModule {
   readonly id = 'awake';
   readonly title = 'Awake';
   readonly icon = { symbol: 'cup.and.saucer.fill', tone: 'orange' } as const;
+  readonly permissions: MacModule['permissions'] = ['sleepControl', 'thermalRead'];
   readonly settings = AWAKE_SETTINGS;
 
   readonly actions: MacModule['actions'] = {

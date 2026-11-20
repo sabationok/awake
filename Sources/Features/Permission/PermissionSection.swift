@@ -1,6 +1,8 @@
 import SwiftUI
 
-/// Дозволи за рівнями: спершу аппка в цілому, далі кожен модуль зі своїми перемикачами.
+/// Дозволи на двох рівнях. «Система»: що macOS дозволила самій аппці (правило sudoers), це видає лише користувач.
+/// «Модулі»: що з цього кожен модуль агента просить і чи користувач лишив йому це. Список модулів і їхні
+/// декларації приходять із сервера (агента), Mac-аппка їх не вигадує.
 struct PermissionSection: View {
     @EnvironmentObject private var model: AwakeModel
 
@@ -20,46 +22,96 @@ struct PermissionSection: View {
                         .buttonStyle(.borderedProminent)
                 }
             }
+            ForEach(AppPermission.allCases) { permission in
+                SystemPermissionRow(permission: permission, granted: model.permissionGranted)
+            }
         } header: {
-            Text("Застосунок")
+            Text("Система")
         } footer: {
-            Text("Одне правило sudoers з трьома командами без пароля. macOS попросить пароль один раз.")
+            Text("Одне правило sudoers з трьома командами без пароля. macOS попросить пароль один раз. Модулі не можуть отримати більше, ніж видано тут.")
         }
 
-        ForEach(AppModule.allCases) { module in
-            Section {
-                ForEach(module.permissions) { permission in
-                    ModulePermissionRow(module: module, permission: permission)
-                }
-            } header: {
-                Text(module.title)
+        if let modules = model.uiTree?.modules {
+            ForEach(modules) { module in
+                ModuleSection(module: module, systemGranted: model.permissionGranted)
             }
+        } else {
+            Section {
+                Text("Агент не підключений. Список модулів і дозволи, які вони просять, приходять із сервера.")
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Модулі")
+            }
+        }
+    }
+}
+
+/// Що система дозволила аппці: один дозвіл і команди, які він покриває.
+private struct SystemPermissionRow: View {
+    let permission: AppPermission
+    let granted: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            SettingsRow(title: permission.title, symbol: permission.symbol, color: granted ? .green : .gray,
+                        text: granted ? "Видано" : "Не видано")
+            Text(permission.commands.joined(separator: "\n"))
+                .font(.caption.monospaced())
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+        }
+    }
+}
+
+/// Модуль від сервера і дозволи, які він декларує.
+private struct ModuleSection: View {
+    let module: UiModuleInfo
+    let systemGranted: Bool
+
+    var body: some View {
+        let requested = module.permissions ?? []
+        let known = requested.compactMap(AppPermission.init(rawValue:))
+        let unknown = requested.filter { AppPermission(rawValue: $0) == nil }
+        Section {
+            if requested.isEmpty {
+                Text("Не просить системних дозволів").foregroundStyle(.secondary)
+            }
+            ForEach(known) { permission in
+                ModulePermissionRow(module: module.id, permission: permission, systemGranted: systemGranted)
+            }
+            ForEach(unknown, id: \.self) { name in
+                SettingsRow(title: name, symbol: "questionmark.circle", color: .gray,
+                            text: "Не підтримується цією версією")
+            }
+        } header: {
+            Label(module.title, systemImage: module.icon.symbol)
         }
     }
 }
 
 /// Перемикач «Дозволено модулю» і для чого потрібен дозвіл.
 private struct ModulePermissionRow: View {
-    let module: AppModule
+    let module: String
     let permission: AppPermission
+    let systemGranted: Bool
     @State private var allowed: Bool
 
-    init(module: AppModule, permission: AppPermission) {
+    init(module: String, permission: AppPermission, systemGranted: Bool) {
         self.module = module
         self.permission = permission
+        self.systemGranted = systemGranted
         _allowed = State(initialValue: PermissionGate.moduleAllowed(permission, module: module))
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            SettingsRow(title: permission.title,
-                        symbol: permission == .sleepControl ? "moon.zzz.fill" : "thermometer.medium",
-                        color: allowed ? .blue : .gray) {
+            SettingsRow(title: permission.title, symbol: permission.symbol,
+                        color: allowed && systemGranted ? .blue : .gray) {
                 Toggle("Дозволено модулю", isOn: $allowed)
                     .toggleStyle(.switch)
                     .labelsHidden()
             }
-            Text(permission.purpose)
+            Text(systemGranted ? permission.purpose : "\(permission.purpose) Не діє, поки систему не дозволено вище.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

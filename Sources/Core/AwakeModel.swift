@@ -131,7 +131,7 @@ final class AwakeModel: ObservableObject {
     }
 
     private func start(_ preset: SessionPreset?, previousSeconds: Int?) {
-        guard PermissionGate.isUsable(.sleepControl, by: .awake, appGranted: permissionGranted) else {
+        guard PermissionGate.isUsable(.sleepControl, by: "awake", appGranted: permissionGranted) else {
             append("Керування сном вимкнено для модуля Awake або не видано дозвіл")
             return
         }
