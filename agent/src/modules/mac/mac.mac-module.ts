@@ -4,7 +4,10 @@ import type { MacModule, ModuleContext } from '../types/mac-module';
 import { MAC_SETTINGS } from './constants/mac-settings';
 import { buildStatusPage } from './pages/status-page';
 
-/** Модуль «Стан Mac»: живлення, заряд, температура і попередження про них. Від сесії Awake не залежить. */
+/**
+ * Системний модуль «Стан Mac»: стежить за живленням, зарядом, температурою і попереджає про них.
+ * Його сторінка в системній групі меню. Awake не володіє станом, лише читає його (ctx.mac) для своєї сесії.
+ */
 @Injectable()
 export class MacStateMacModule implements MacModule {
   readonly id = 'mac';

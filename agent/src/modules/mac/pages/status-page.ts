@@ -10,9 +10,9 @@ export function buildStatusPage(ctx: ModuleContext): UiPage {
   return {
     id: 'status',
     module: 'mac',
-    title: 'Стан',
+    title: 'Стан Mac',
     icon: { symbol: 'waveform.path.ecg', tone: 'green' },
-    group: 'modules',
+    group: 'system',
     children: [
       {
         id: 'rows',
