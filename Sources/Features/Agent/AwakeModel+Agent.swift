@@ -8,23 +8,30 @@ extension AwakeModel {
         Dictionary(uniqueKeysWithValues: TelegramEvent.allCases.map { ("telegram.events.\($0.rawValue)", $0) })
 
     func setUpAgent() {
+        // Спершу кеш з диска: вікно одразу має всі сторінки, а агент оновить їх, коли підніметься.
+        if agentEnabled {
+            if case .tree(let tree) = AgentCache.load(.tree) { uiTree = tree }
+            if case .devices(let devices) = AgentCache.load(.devices) { self.devices = devices }
+        }
         agent.onStatus = { [weak self] status in
             self?.agentStatus = status
-            // Агента немає: показувати останнє дерево було б неправдою.
-            switch status {
-            case .stopped, .failed:
+            // Падіння і перезапуск агента лишають кеш на місці, щоб нічого не стрибало.
+            // Лише вимкнений користувачем агент прибирає сторінки: показувати їх тоді було б неправдою.
+            if case .stopped = status, self?.agentEnabled == false {
                 self?.uiTree = nil
                 self?.devices = nil
-            case .starting, .running: break
             }
         }
         agent.onCommand = { [weak self] in self?.handleAgentCommand($0) }
         agent.onTree = { [weak self] tree in
             PermissionGate.remember(tree.modules)
-            self?.uiTree = tree
+            // Те саме дерево не перемальовує вікно.
+            if self?.uiTree != tree { self?.uiTree = tree }
         }
         agent.onSettings = { [weak self] in self?.applyAgentSettings($0) }
-        agent.onDevices = { [weak self] in self?.devices = $0 }
+        agent.onDevices = { [weak self] devices in
+            if self?.devices != devices { self?.devices = devices }
+        }
         wifi.onAuthorizationChange = { [weak self] in self?.refreshWifi() }
         refreshWifi()
         applyAgent()

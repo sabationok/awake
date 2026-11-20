@@ -6,10 +6,12 @@ struct MainView: View {
     @EnvironmentObject private var updates: UpdateStatus
     /// Вибір користувача. nil: типова сторінка, тобто перша сторінка дерева або «Підключення».
     @State private var picked: MainPage?
+    /// Остання вибрана сторінка між запусками.
+    @AppStorage("mainView.page") private var savedPage = ""
 
     var body: some View {
         AdaptiveSidebar(
-            selection: Binding(get: { selection }, set: { picked = $0 }),
+            selection: Binding(get: { selection }, set: { picked = $0; savedPage = $0.storageKey }),
             sections: sections,
             title: { title(of: $0) },
             symbol: { symbol(of: $0) },
@@ -21,7 +23,13 @@ struct MainView: View {
         .pairingPrompt()
     }
 
-    private var selection: MainPage { picked ?? sections.first?.items.first ?? .connection }
+    /// Вибір у цьому запуску, далі збережений з минулого (якщо така сторінка ще є), далі перша.
+    private var selection: MainPage {
+        let all = sections.flatMap(\.items)
+        if let picked, all.contains(picked) { return picked }
+        if let saved = MainPage(storageKey: savedPage), all.contains(saved) { return saved }
+        return all.first ?? .connection
+    }
 
     /// Бічне меню: головний пункт модуля — його назва (Awake), він відкриває першу сторінку модуля з керуванням;
     /// решта сторінок вкладені під ним. Далі системні сторінки дерева і нативні «Підключення», «Пристрої» та «Дозвіл».

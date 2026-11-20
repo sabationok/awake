@@ -116,10 +116,12 @@ final class AgentService {
             case .command(let command):
                 onCommand?(command)
             case .tree(let tree):
+                AgentCache.save(.tree, line: line)
                 onTree?(tree)
             case .settings(let settings):
                 onSettings?(settings)
             case .devices(let devices):
+                AgentCache.save(.devices, line: line)
                 onDevices?(devices)
             case .other:
                 break

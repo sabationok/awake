@@ -37,8 +37,12 @@ private struct PairingSection: View {
         Section {
             if let url = pairing.url, let expiresAt = pairing.expiresAt {
                 HStack(alignment: .top, spacing: 16) {
+                    // Код з кешу міг протухнути: QR лишається на місці (без стрибка), але тьмяний, поки агент дасть новий.
+                    let stale = expiresAt <= Date()
                     QrCodeImage(text: url)
                         .frame(width: 148, height: 148)
+                        .opacity(stale ? 0.15 : 1)
+                        .overlay { if stale { ProgressView() } }
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Наведи камеру телефона або відкрий посилання на ноуті. Пристрій має бути в тій самій Wi-Fi, а тут з'явиться питання «Це ви?».")
                             .fixedSize(horizontal: false, vertical: true)
