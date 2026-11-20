@@ -26,14 +26,14 @@ export function buildTelegramPage(ctx: ModuleContext): UiPage {
             id: 'events-tabs',
             type: 'tabs',
             tabs: [
-              { id: 'awake', label: 'Awake', children: [ctx.settingNode('events.start'), ctx.settingNode('events.stop')] },
+              { id: 'awake', label: 'Awake', children: [ctx.settingNode('events.awake.start'), ctx.settingNode('events.awake.stop')] },
               {
-                id: 'mac',
+                id: 'system',
                 label: 'Стан Mac',
                 children: [
-                  ctx.settingNode('events.power'),
-                  ctx.settingNode('events.batteryLow'),
-                  ctx.settingNode('events.thermal'),
+                  ctx.settingNode('events.system.power'),
+                  ctx.settingNode('events.system.batteryLow'),
+                  ctx.settingNode('events.system.thermal'),
                 ],
               },
             ],

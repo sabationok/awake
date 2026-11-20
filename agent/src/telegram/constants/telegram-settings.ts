@@ -1,5 +1,6 @@
 import type { SettingDefinition } from '@awake/contracts';
 
+/** Події в Telegram: ключ `events.<domain>.<type>`, domain — модуль, якому подія належить. */
 export const TELEGRAM_SETTINGS: SettingDefinition[] = [
   {
     type: 'switch',
@@ -11,7 +12,7 @@ export const TELEGRAM_SETTINGS: SettingDefinition[] = [
   },
   {
     type: 'switch',
-    key: 'events.start',
+    key: 'events.awake.start',
     label: 'Початок сесії',
     icon: { symbol: 'cup.and.saucer.fill', tone: 'accent' },
     page: 'telegram',
@@ -19,7 +20,7 @@ export const TELEGRAM_SETTINGS: SettingDefinition[] = [
   },
   {
     type: 'switch',
-    key: 'events.stop',
+    key: 'events.awake.stop',
     label: 'Кінець сесії',
     icon: { symbol: 'moon.fill', tone: 'accent' },
     page: 'telegram',
@@ -27,7 +28,7 @@ export const TELEGRAM_SETTINGS: SettingDefinition[] = [
   },
   {
     type: 'switch',
-    key: 'events.power',
+    key: 'events.system.power',
     label: 'Живлення увімкнено або вимкнено',
     icon: { symbol: 'powerplug.fill', tone: 'accent' },
     page: 'telegram',
@@ -35,7 +36,7 @@ export const TELEGRAM_SETTINGS: SettingDefinition[] = [
   },
   {
     type: 'switch',
-    key: 'events.batteryLow',
+    key: 'events.system.batteryLow',
     label: 'Низький заряд',
     icon: { symbol: 'battery.25', tone: 'accent' },
     page: 'telegram',
@@ -43,7 +44,7 @@ export const TELEGRAM_SETTINGS: SettingDefinition[] = [
   },
   {
     type: 'switch',
-    key: 'events.thermal',
+    key: 'events.system.thermal',
     label: 'Нагрівання',
     icon: { symbol: 'thermometer.medium', tone: 'accent' },
     page: 'telegram',

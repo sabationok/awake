@@ -37,7 +37,7 @@ enum TelegramSettingsStore {
             case "TG_CHAT_ID": settings.chatId = value
             case "TG_EVENTS":
                 let names = Set(value.split(separator: ",").map(String.init))
-                settings.events = Set(TelegramEvent.allCases.filter { names.contains($0.rawValue) })
+                settings.events = Set(names.compactMap(TelegramEvent.find))
             default: break
             }
         }

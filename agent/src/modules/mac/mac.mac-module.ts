@@ -11,7 +11,7 @@ import { buildStatusPage } from './pages/status-page';
  */
 @Injectable()
 export class MacStateMacModule implements MacModule {
-  readonly id = 'mac';
+  readonly id = 'system';
   readonly title = 'Стан Mac';
   readonly icon = { symbol: 'waveform.path.ecg', tone: 'green' } as const;
   readonly permissions: MacModule['permissions'] = ['thermalRead'];
@@ -28,6 +28,6 @@ export class MacStateMacModule implements MacModule {
   }
 
   onSettingChanged(key: string, value: SettingValue, ctx: ModuleContext) {
-    ctx.sendToMac({ action: 'setting', key: `mac.${key}`, value }, 'web');
+    ctx.sendToMac({ action: 'setting', key: `system.${key}`, value }, 'web');
   }
 }

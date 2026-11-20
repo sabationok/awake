@@ -3,14 +3,9 @@ import Foundation
 
 /// Агент і пульт: запуск підпроцесу, стан кожні 5 секунд, журнал і події сесій, команди з пульта.
 extension AwakeModel {
-    /// Telegram-події за ключами налаштувань `telegram.events.<name>`. Назви збігаються з контрактом агента.
-    private static let telegramEventKeys: [String: TelegramEvent] = [
-        "telegram.events.start": .start,
-        "telegram.events.stop": .stop,
-        "telegram.events.power": .power,
-        "telegram.events.batteryLow": .batteryLow,
-        "telegram.events.thermal": .thermal,
-    ]
+    /// Telegram-події за ключами налаштувань `telegram.events.<domain>.<type>`.
+    private static let telegramEventKeys: [String: TelegramEvent] =
+        Dictionary(uniqueKeysWithValues: TelegramEvent.allCases.map { ("telegram.events.\($0.rawValue)", $0) })
 
     func setUpAgent() {
         agent.onStatus = { [weak self] status in
@@ -147,7 +142,7 @@ extension AwakeModel {
         case "awake.batteryStop":
             guard let percent = Self.percent(value) else { return false }
             SafetyLimits.batteryStop = percent
-        case "mac.batteryWarn", "awake.batteryWarn":
+        case "system.batteryWarn", "mac.batteryWarn", "awake.batteryWarn":
             guard let percent = Self.percent(value) else { return false }
             SafetyLimits.batteryWarn = percent
         case "awake.restoreSleep":

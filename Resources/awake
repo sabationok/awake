@@ -43,14 +43,30 @@ json() {
   printf '%s\n}' "$out"
 }
 
+# tg_event <подія>: назва для Telegram, <domain>.<type>. Журнал лишає короткі event=start…, їх читає історія сесій.
+tg_event() {
+  case "$1" in
+    start|restart) echo awake.start ;;
+    stop)          echo awake.stop ;;
+    off)           echo awake.off ;;
+    power)         echo system.power ;;
+    battery_low)   echo system.batteryLow ;;
+    thermal)       echo system.thermal ;;
+    test)          echo system.test ;;
+    *)             echo "$1" ;;
+  esac
+}
+
 # event_allowed <подія>: чи шлемо її в Telegram. Читає TG_EVENTS з файлу щоразу, тож зміна діє одразу.
-# Немає ключа TG_EVENTS — шлемо все. test і off шлемо завжди. restart іде під перемикачем start.
+# Немає ключа TG_EVENTS — шлемо все. test і off шлемо завжди. restart іде під перемикачем awake.start.
+# Старі назви в TG_EVENTS (start, battery_low…) теж діють, поки аппка не перепише файл.
 event_allowed() {
   case "$1" in ""|test|off) return 0 ;; restart) set -- start ;; esac
   grep -q '^TG_EVENTS=' "$CONFIG" 2>/dev/null || return 0
-  local list
+  local list id
   list=$(sed -n "s/^TG_EVENTS=//p" "$CONFIG" | tr -d "'\"")
-  case ",$list," in *",$1,"*) return 0 ;; *) return 1 ;; esac
+  id=$(tg_event "$1")
+  case ",$list," in *",$id,"*|*",$1,"*) return 0 ;; *) return 1 ;; esac
 }
 
 # say "<emoji> Заголовок" [key=value ...]
@@ -64,7 +80,9 @@ say() {
   event_allowed "$ev" || return 0
   local text
   text="💻 <b>$(printf '%s' "$HOST" | html_escape)</b>"$'\n'"$(printf '%s' "$title" | html_escape)"
-  [ $# -gt 0 ] && text+=$'\n'"<pre>$(json "$@" | html_escape)</pre>"
+  local args=()
+  for kv in "$@"; do case "$kv" in event=*) args+=("event=$(tg_event "$ev")") ;; *) args+=("$kv") ;; esac; done
+  [ $# -gt 0 ] && text+=$'\n'"<pre>$(json "${args[@]}" | html_escape)</pre>"
   # токен іде через stdin, щоб не світитися в списку процесів
   printf 'url = "https://api.telegram.org/bot%s/sendMessage"\n' "$TG_BOT_TOKEN" |
     curl -s -m 10 -K - -o /dev/null \

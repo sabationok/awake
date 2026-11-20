@@ -1,10 +1,21 @@
 import Foundation
 
-/// Події, які скрипт може надіслати в Telegram. Raw value збігається з `event=` у скрипті.
+/// Події, які скрипт може надіслати в Telegram. Raw value — `<domain>.<type>`, як у TG_EVENTS і в агенті;
+/// скрипт сам мапить на них свої `event=start`, `battery_low`…
 enum TelegramEvent: String, CaseIterable, Identifiable {
-    case start, stop, power
-    case batteryLow = "battery_low"
-    case thermal
+    case start = "awake.start"
+    case stop = "awake.stop"
+    case power = "system.power"
+    case batteryLow = "system.batteryLow"
+    case thermal = "system.thermal"
+
+    /// Старі назви в telegram.env до `<domain>.<type>`.
+    static func find(_ name: String) -> TelegramEvent? {
+        let legacy: [String: TelegramEvent] = [
+            "start": .start, "stop": .stop, "power": .power, "battery_low": .batteryLow, "thermal": .thermal,
+        ]
+        return TelegramEvent(rawValue: name) ?? legacy[name]
+    }
 
     var id: String { rawValue }
 

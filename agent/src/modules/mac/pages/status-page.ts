@@ -9,7 +9,7 @@ export function buildStatusPage(ctx: ModuleContext): UiPage {
   const mac = ctx.mac;
   return {
     id: 'status',
-    module: 'mac',
+    module: 'system',
     title: 'Стан Mac',
     icon: { symbol: 'waveform.path.ecg', tone: 'green' },
     group: 'system',
