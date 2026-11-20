@@ -1,7 +1,9 @@
 import type { MacState } from '@awake/contracts';
-import type { ModuleBot, StatusFields } from '../../types/mac-module';
+import type { BotMenu, ModuleBot, StatusFields } from '../../types/mac-module';
 
-const PERCENT_PATTERN = /^\d{1,3}%?$/;
+const VOLUME_LEVELS = ['0', '25', '50', '75', '100'];
+/** Без 0%: чорний екран з телефона вже не повернути поглядом. */
+const BRIGHTNESS_LEVELS = ['10', '25', '50', '75', '100'];
 
 /** Поля «Екран і звук» у спільному /status. */
 export function mediaStatus(mac: MacState | null): StatusFields | null {
@@ -9,41 +11,47 @@ export function mediaStatus(mac: MacState | null): StatusFields | null {
   return { volume: mac.volume, muted: mac.muted, brightness: mac.brightness };
 }
 
-/** /media: гучність і яскравість кнопками; /media_volume 40, /media_brightness 70, /media_mute. */
+/**
+ * «Екран і звук» без своєї команди: відкривається з /awake або /start. Екрани: головний,
+ * `volume` і `brightness` з рівнями на кнопках.
+ */
 export const MEDIA_BOT: ModuleBot = {
-  command: 'media',
-  description: 'Екран і звук',
-  menu: (ctx) => {
+  description: '🔊 Екран і звук',
+  menu: (ctx, screen) => {
     const mac = ctx.mac;
-    if (!mac) return { text: '💤 Mac офлайн', buttons: [] };
-    const volume = mac.volume == null ? '—' : `${mac.volume}%${mac.muted ? ' (без звуку)' : ''}`;
-    const brightness = mac.brightness == null ? '—' : `${mac.brightness}%`;
-    return {
-      text: `<b>🔊 Екран і звук</b>\nГучність: ${volume}\nЯскравість: ${brightness}`,
-      buttons: [
-        [0, 25, 50, 75].map((value) => ({ label: `🔊 ${value}%`, action: 'volume', params: { value: String(value) } })),
-        [
-          { label: mac.muted ? '🔈 Увімкнути звук' : '🔇 Без звуку', action: 'mute', params: { value: String(!mac.muted) } },
-        ],
-        [25, 50, 75, 100].map((value) => ({ label: `☀️ ${value}%`, action: 'brightness', params: { value: String(value) } })),
-      ],
-    };
+    if (!mac) return { text: '💤 Mac офлайн', buttons: [], back: { module: 'awake', screen: '' } };
+    if (screen === 'volume') return levelScreen('🔊 Гучність', percent(mac.volume), 'volume', VOLUME_LEVELS);
+    if (screen === 'brightness') return levelScreen('☀️ Яскравість', percent(mac.brightness), 'brightness', BRIGHTNESS_LEVELS);
+    return mainScreen(mac);
   },
-  commands: [
-    {
-      name: 'volume',
-      description: 'Гучність 0–100 (/media_volume 40)',
-      action: 'volume',
-      reply: '🔊 Готово',
-      arg: { param: 'value', pattern: PERCENT_PATTERN, required: true, invalid: 'Вкажи відсоток: /media_volume 40' },
-    },
-    { name: 'mute', description: 'Вимкнути або увімкнути звук', action: 'mute', reply: '🔇 Готово' },
-    {
-      name: 'brightness',
-      description: 'Яскравість 0–100 (/media_brightness 70)',
-      action: 'brightness',
-      reply: '☀️ Готово',
-      arg: { param: 'value', pattern: PERCENT_PATTERN, required: true, invalid: 'Вкажи відсоток: /media_brightness 70' },
-    },
-  ],
 };
+
+function mainScreen(mac: MacState): BotMenu {
+  const volume = `${percent(mac.volume)}${mac.muted ? ' (без звуку)' : ''}`;
+  return {
+    text: `<b>🔊 Екран і звук</b>\nГучність: ${volume}\nЯскравість: ${percent(mac.brightness)}`,
+    buttons: [
+      [
+        { label: '🔊 Гучність', go: { screen: 'volume' } },
+        { label: '☀️ Яскравість', go: { screen: 'brightness' } },
+      ],
+      [{ label: mac.muted ? '🔈 Увімкнути звук' : '🔇 Без звуку', action: 'mute', params: { value: String(!mac.muted) } }],
+    ],
+    back: { module: 'awake', screen: '' },
+  };
+}
+
+/** Рівень ставиться і лишає на цьому ж екрані, щоб підкрутити ще. */
+function levelScreen(title: string, current: string, action: string, levels: string[]): BotMenu {
+  return {
+    text: `<b>${title}</b>\nЗараз: ${current}`,
+    buttons: [levels.slice(0, 3), levels.slice(3)].map((row) =>
+      row.map((value) => ({ label: `${value}%`, action, params: { value } })),
+    ),
+    back: { screen: '' },
+  };
+}
+
+function percent(value: number | null | undefined): string {
+  return value == null ? '—' : `${value}%`;
+}

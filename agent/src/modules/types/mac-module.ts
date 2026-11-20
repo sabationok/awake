@@ -20,17 +20,28 @@ export interface ModuleContext {
 /** Поля модуля в спільному стані /status. null — поле є, але значення невідоме. */
 export type StatusFields = Record<string, string | number | boolean | null>;
 
-/** Кнопка під повідомленням бота: дія модуля з параметрами. */
-export interface BotButton {
-  label: string;
-  action: string;
-  params?: Record<string, string>;
+/** Куди веде кнопка: екран свого модуля (`sleep`, `volume`; '' — головний) або іншого модуля. */
+export interface BotNav {
+  module?: string;
+  screen: string;
 }
 
-/** Повідомлення головної команди модуля: HTML-текст і ряди кнопок. */
+/**
+ * Кнопка під повідомленням бота: дія модуля з параметрами, перехід на інший екран, або дія з переходом
+ * (тоді після дії бот малює екран `go`, інакше — той самий).
+ */
+export interface BotButton {
+  label: string;
+  action?: string;
+  params?: Record<string, string>;
+  go?: BotNav;
+}
+
+/** Екран меню модуля: HTML-текст, ряди кнопок і, крім головного, куди веде «← Назад». */
 export interface BotMenu {
   text: string;
   buttons: BotButton[][];
+  back?: BotNav;
 }
 
 /** Команда другого рівня: `/awake_start 2h` → дія `start` модуля. */
@@ -42,16 +53,23 @@ export interface BotCommand {
   /** Відповідь одразу після дії. */
   reply: string;
   /** Аргумент після команди, напр. тривалість. Порожній аргумент — дія без параметра. */
-  /** `required` — без аргументу команда не виконується і бот відповідає `invalid`. */
-  arg?: { param: string; pattern: RegExp; invalid: string; required?: boolean };
+  arg?: { param: string; pattern: RegExp; invalid: string };
 }
 
-/** Що модуль додає в Telegram-бот: свою головну команду (`/awake`) і команди другого рівня (`/awake_start`). */
+/**
+ * Що модуль додає в Telegram-бот. Нові можливості йдуть екранами меню (інлайн-навігація вглиб:
+ * `/awake` → «Таймер сну» → «30 хв»), а не новими командами.
+ */
 export interface ModuleBot {
-  /** Головна команда без слеша. Команди другого рівня — `<command>_<name>`. */
-  command: string;
+  /**
+   * Головна команда без слеша. Без неї модуль відкривається лише кнопками (з /start або з меню іншого модуля).
+   * Команди другого рівня — `<command>_<name>`.
+   */
+  command?: string;
+  /** Назва модуля в /start і в меню команд. */
   description: string;
-  menu(ctx: ModuleContext): BotMenu;
+  /** Екран меню за шляхом: '' — головний. Невідомий шлях — головний. */
+  menu(ctx: ModuleContext, screen: string): BotMenu;
   commands?: BotCommand[];
 }
 

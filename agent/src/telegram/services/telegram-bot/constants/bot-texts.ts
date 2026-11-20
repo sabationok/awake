@@ -3,7 +3,7 @@ export const BOT_TEXTS = {
   help: 'Команди модулів:',
   commandFailed: 'Не вдалося виконати команду',
   answerDone: 'Готово',
-  answerRefresh: 'Оновлено',
   refreshButton: '↻ Оновити',
+  backButton: '← Назад',
   unknown: 'Невідома кнопка',
 };

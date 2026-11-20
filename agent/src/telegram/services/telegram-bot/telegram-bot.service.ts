@@ -13,14 +13,16 @@ import { STOP_RETRY_LIMIT, STOP_RETRY_MS } from './constants/polling';
 import { buildBotCommands } from './helpers/build-bot-commands';
 import { buildHelpText } from './helpers/build-help-text';
 import { buildMenuKeyboard } from './helpers/build-menu-keyboard';
+import { buildStartKeyboard } from './helpers/build-start-keyboard';
 import { decodeCallback } from './helpers/callback-data';
 import { isOwnerChat } from './helpers/is-owner-chat';
 
 type BotModule = MacModule & { bot: ModuleBot };
 
 /**
- * Telegram-бот MaControl: long polling, команди складаються з модулів. Кожен модуль із `bot` дає вхідну команду
- * (`/awake`: меню з кнопками) і команди другого рівня (`/awake_start 2h`); усе йде через ModulesService.
+ * Telegram-бот MaControl: long polling, команди складаються з модулів. Модуль із `bot` дає вхідну команду
+ * (`/awake`) з інлайн-меню, по якому ходять вглиб екранами (`nav:awake:sleep`), і давні команди другого рівня
+ * (`/awake_start 2h`). Усі дії йдуть через ModulesService.
  */
 @Injectable()
 export class TelegramBotService {
@@ -98,20 +100,25 @@ export class TelegramBotService {
       await next();
     });
 
-    const help = (ctx: Context) => this._safe(ctx, env, () => ctx.reply(buildHelpText(this._modules.list())));
+    const help = (ctx: Context) =>
+      this._safe(ctx, env, () =>
+        ctx.reply(buildHelpText(this._modules.list()), { reply_markup: buildStartKeyboard(this._modules.list()) }),
+      );
     bot.start(help);
     bot.help(help);
 
     for (const module of this._botModules()) {
-      bot.command(module.bot.command, (ctx) => this._safe(ctx, env, () => this._replyMenu(ctx, module)));
+      const base = module.bot.command;
+      if (!base) continue;
+      bot.command(base, (ctx) => this._safe(ctx, env, () => this._replyMenu(ctx, module)));
       for (const command of module.bot.commands ?? []) {
-        bot.command(`${module.bot.command}_${command.name}`, (ctx) =>
+        bot.command(`${base}_${command.name}`, (ctx) =>
           this._safe(ctx, env, () => this._runCommand(ctx, module, command, ctx.payload)),
         );
       }
     }
 
-    bot.action(/^(act|menu):/, (ctx) =>
+    bot.action(/^(nav|do|act|menu):/, (ctx) =>
       this._safe(ctx, env, async () => {
         const callback = decodeCallback(ctx.match.input);
         const module = callback && this._botModules().find((m) => m.id === callback.module);
@@ -119,27 +126,28 @@ export class TelegramBotService {
           await ctx.answerCbQuery(BOT_TEXTS.unknown);
           return;
         }
-        if (callback.kind === 'menu') {
-          await ctx.answerCbQuery(BOT_TEXTS.answerRefresh);
-          await this._editMenu(ctx, env, module);
+        if (callback.kind === 'nav') {
+          await ctx.answerCbQuery();
+          await this._editMenu(ctx, env, module, callback.screen);
           return;
         }
         await ctx.answerCbQuery(BOT_TEXTS.answerDone);
         await this._dispatch(module.id, callback.action, callback.params);
+        // Mac застосовує дію і шле новий стан: чекаємо його, щоб екран показав результат.
         await delay(MENU_REFRESH_MS);
-        await this._editMenu(ctx, env, module);
+        await this._editMenu(ctx, env, module, callback.screen);
       }),
     );
   }
 
   private _replyMenu(ctx: Context, module: BotModule) {
-    const menu = module.bot.menu(this._modules.context(module.id));
-    return ctx.reply(menu.text, { parse_mode: 'HTML', reply_markup: buildMenuKeyboard(module.id, menu) });
+    const menu = module.bot.menu(this._modules.context(module.id), '');
+    return ctx.reply(menu.text, { parse_mode: 'HTML', reply_markup: buildMenuKeyboard(module.id, '', menu) });
   }
 
   private async _runCommand(ctx: Context, module: BotModule, command: BotCommand, payload: string) {
     const value = payload.trim();
-    if (command.arg && (value ? !command.arg.pattern.test(value) : command.arg.required)) {
+    if (command.arg && value && !command.arg.pattern.test(value)) {
       await ctx.reply(command.arg.invalid);
       return;
     }
@@ -147,10 +155,10 @@ export class TelegramBotService {
     await ctx.reply(command.reply);
   }
 
-  private async _editMenu(ctx: Context, env: TelegramEnv, module: BotModule) {
-    const menu = module.bot.menu(this._modules.context(module.id));
+  private async _editMenu(ctx: Context, env: TelegramEnv, module: BotModule, screen: string) {
+    const menu = module.bot.menu(this._modules.context(module.id), screen);
     try {
-      await ctx.editMessageText(menu.text, { parse_mode: 'HTML', reply_markup: buildMenuKeyboard(module.id, menu) });
+      await ctx.editMessageText(menu.text, { parse_mode: 'HTML', reply_markup: buildMenuKeyboard(module.id, screen, menu) });
     } catch (error) {
       // Стан не змінився: Telegram відмовляє в редагуванні на той самий текст, це не помилка.
       if (error instanceof TelegramError && error.description.includes('message is not modified')) return;

@@ -1,26 +1,41 @@
 /**
- * callback_data кнопок: `act:<module>:<action>[:k=v,…]` виконує дію, `menu:<module>` перемальовує меню.
- * Telegram обмежує її 64 байтами, тож параметри мають бути короткими (тривалість, id).
+ * callback_data кнопок, до 64 байтів:
+ * - `nav:<module>:<screen>` малює екран меню (і «Оновити», і «Назад», і перехід вглиб);
+ * - `do:<module>:<screen>:<action>[:k=v,…]` виконує дію і малює екран `<screen>`.
+ * Старі повідомлення ще мають `menu:<module>` і `act:<module>:<action>[:k=v]`: вони ведуть на головний екран.
  */
 export type BotCallback =
-  | { kind: 'act'; module: string; action: string; params?: Record<string, string> }
-  | { kind: 'menu'; module: string };
+  | { kind: 'nav'; module: string; screen: string }
+  | { kind: 'do'; module: string; screen: string; action: string; params?: Record<string, string> };
 
-export function encodeAction(module: string, action: string, params?: Record<string, string>): string {
-  const query = params ? Object.entries(params).map(([k, v]) => `${k}=${v}`).join(',') : '';
-  return query ? `act:${module}:${action}:${query}` : `act:${module}:${action}`;
+export function encodeNav(module: string, screen: string): string {
+  return `nav:${module}:${screen}`;
 }
 
-export function encodeMenu(module: string): string {
-  return `menu:${module}`;
+export function encodeAction(module: string, screen: string, action: string, params?: Record<string, string>): string {
+  const query = params ? Object.entries(params).map(([k, v]) => `${k}=${v}`).join(',') : '';
+  return query ? `do:${module}:${screen}:${action}:${query}` : `do:${module}:${screen}:${action}`;
 }
 
 export function decodeCallback(data: string): BotCallback | null {
-  const [kind, module, action, query] = data.split(':');
-  if (kind === 'menu' && module) return { kind, module };
-  if (kind !== 'act' || !module || !action) return null;
-  const params = query
-    ? Object.fromEntries(query.split(',').map((pair) => pair.split('=') as [string, string]))
-    : undefined;
-  return { kind, module, action, params };
+  const parts = data.split(':');
+  const [kind, module] = parts;
+  if (!module) return null;
+  switch (kind) {
+    case 'nav':
+      return { kind, module, screen: parts[2] ?? '' };
+    case 'menu':
+      return { kind: 'nav', module, screen: '' };
+    case 'do':
+      return parts[3] ? { kind, module, screen: parts[2] ?? '', action: parts[3], params: parseQuery(parts[4]) } : null;
+    case 'act':
+      return parts[2] ? { kind: 'do', module, screen: '', action: parts[2], params: parseQuery(parts[3]) } : null;
+    default:
+      return null;
+  }
+}
+
+function parseQuery(query: string | undefined): Record<string, string> | undefined {
+  if (!query) return undefined;
+  return Object.fromEntries(query.split(',').map((pair) => pair.split('=') as [string, string]));
 }
