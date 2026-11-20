@@ -22,7 +22,7 @@ export const AWAKE_SETTINGS: SettingDefinition[] = [
     key: 'displayOff',
     label: 'Гасити екран під час сесії',
     icon: { symbol: 'display', tone: 'accent' },
-    page: 'display',
+    page: 'session-settings',
     default: '-1',
     options: [
       { value: '-1', label: 'Як у системі' },
@@ -38,7 +38,7 @@ export const AWAKE_SETTINGS: SettingDefinition[] = [
     label: 'Блокувати екран при закритті кришки',
     hint: 'Під час сесії Mac не засинає, тому сам не вимагатиме пароль',
     icon: { symbol: 'lock.laptopcomputer', tone: 'accent' },
-    page: 'safety',
+    page: 'session-settings',
     default: true,
   },
   {
@@ -46,7 +46,7 @@ export const AWAKE_SETTINGS: SettingDefinition[] = [
     key: 'batteryStop',
     label: 'Повернути сон при заряді',
     icon: { symbol: 'battery.0', tone: 'red' },
-    page: 'safety',
+    page: 'session-settings',
     default: '10',
     options: [
       { value: '5', label: '5%' },
@@ -60,7 +60,7 @@ export const AWAKE_SETTINGS: SettingDefinition[] = [
     key: 'batteryWarn',
     label: 'Попередження про заряд',
     icon: { symbol: 'battery.25', tone: 'yellow' },
-    page: 'safety',
+    page: 'status',
     default: '25',
     options: [
       { value: '15', label: '15%' },

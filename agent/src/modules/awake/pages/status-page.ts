@@ -1,10 +1,12 @@
 import type { MacState, UiPage, UiRow } from '@awake/contracts';
+import type { ModuleContext } from '../../types/mac-module';
 import { sleepRow } from '../helpers/sleep-row';
 import { formatBattery } from '../helpers/format-battery';
 import { powerLabel } from '../helpers/power-label';
 import { thermalPresentation } from '../helpers/thermal-presentation';
 
-export function buildStatusPage(mac: MacState | null): UiPage {
+export function buildStatusPage(ctx: ModuleContext): UiPage {
+  const mac = ctx.mac;
   return {
     id: 'status',
     module: 'awake',
@@ -17,6 +19,8 @@ export function buildStatusPage(mac: MacState | null): UiPage {
         type: 'section',
         children: mac === null ? [{ id: 'no-data', type: 'row', label: 'Немає даних' }] : macRows(mac),
       },
+      // Стосується Mac загалом, а не сесії: попередження приходить і без Awake.
+      { id: 'warnings', type: 'section', title: 'Попередження', children: [ctx.settingNode('batteryWarn')] },
     ],
   };
 }

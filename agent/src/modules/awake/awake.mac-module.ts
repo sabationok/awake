@@ -6,10 +6,9 @@ import type { MacModule, ModuleContext } from '../types/mac-module';
 import { AWAKE_SETTINGS } from './constants/awake-settings';
 import { DURATION_PATTERN } from './constants/duration-pattern';
 import { LOG_QUERY_LIMIT, TRACKING_QUERY_LIMIT } from './constants/session-limits';
-import { buildDisplayPage } from './pages/display-page';
 import { buildLogPage } from './pages/log-page';
-import { buildSafetyPage } from './pages/safety-page';
 import { buildSessionPage } from './pages/session-page';
+import { buildSessionSettingsPage } from './pages/session-settings-page';
 import { buildStatusPage } from './pages/status-page';
 import { buildTrackingPage } from './pages/tracking-page';
 
@@ -46,10 +45,9 @@ export class AwakeMacModule implements MacModule {
     const sessions = this._sessions.findMany({ limit: TRACKING_QUERY_LIMIT });
     return [
       buildSessionPage(ctx),
-      buildStatusPage(ctx.mac),
+      buildSessionSettingsPage(ctx),
+      buildStatusPage(ctx),
       buildTrackingPage(sessions, new Date()),
-      buildDisplayPage(ctx),
-      buildSafetyPage(ctx),
       buildLogPage(this._logs.findMany({ limit: LOG_QUERY_LIMIT }), new Date()),
     ];
   }

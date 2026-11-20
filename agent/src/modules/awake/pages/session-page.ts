@@ -14,7 +14,7 @@ export function buildSessionPage(ctx: ModuleContext): UiPage {
       id: 'session',
       type: 'section',
       footer: 'Сесія також зупиняється, коли ти виходиш з аппки.',
-      children: [awakeRow(mac), sessionStateRow(ctx, mac)],
+      children: [awakeRow(mac), sessionStateRow(ctx, mac), displayOffNowRow(mac)],
     },
   ];
   if (mac !== null) {
@@ -27,6 +27,25 @@ export function buildSessionPage(ctx: ModuleContext): UiPage {
     icon: { symbol: 'cup.and.saucer.fill', tone: 'orange' },
     group: 'modules',
     children,
+  };
+}
+
+/** Дія, а не налаштування: тому тут, а не в «Налаштуваннях сесії». */
+function displayOffNowRow(mac: MacState | null): UiRow {
+  return {
+    id: 'display-off-now',
+    type: 'row',
+    label: 'Погасити екран зараз',
+    control: {
+      type: 'button',
+      button: {
+        id: 'display-off',
+        label: 'Погасити',
+        variant: 'plain',
+        disabled: mac === null,
+        action: { module: 'awake', name: 'displayOff' },
+      },
+    },
   };
 }
 
