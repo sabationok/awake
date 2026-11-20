@@ -11,7 +11,7 @@ struct RemoteSection: View {
         Section {
             SettingsRow(title: "Агент", symbol: "server.rack", color: .indigo) {
                 HStack(spacing: 10) {
-                    Text(statusText).foregroundStyle(statusColor)
+                    Text(model.agentStatus.statusText).foregroundStyle(statusColor)
                     Toggle("", isOn: $model.agentEnabled).toggleStyle(.switch).labelsHidden()
                 }
             }
@@ -97,15 +97,6 @@ struct RemoteSection: View {
             saveError = nil
         } catch {
             saveError = error.localizedDescription
-        }
-    }
-
-    private var statusText: String {
-        switch model.agentStatus {
-        case .stopped: "Вимкнено"
-        case .starting: "Запуск…"
-        case .running: "Працює"
-        case .failed(let message): "Помилка: \(message)"
         }
     }
 
