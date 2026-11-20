@@ -47,13 +47,37 @@ export interface UiSection extends UiNodeBase {
   children: UiNode[];
 }
 
-/** Рядок «назва — значення». */
+/**
+ * Керувальний елемент праворуч у рядку. Перемикач або вибір пишуть налаштування (`setting`),
+ * а перемикач без налаштування викликає дії `on` / `off` (напр. старт і стоп сесії).
+ */
+export type UiControl =
+  | {
+      type: 'switch';
+      value: boolean;
+      disabled?: boolean;
+      setting?: { module: string; key: string };
+      on?: UiAction;
+      off?: UiAction;
+    }
+  | { type: 'select'; value: string; options: UiOption[]; disabled?: boolean; setting: { module: string; key: string } }
+  | { type: 'button'; button: UiButton };
+
+/** Рядок «назва — значення» або «назва — керувальний елемент», як у SwiftUI-аппці. */
 export interface UiRow extends UiNodeBase {
   type: 'row';
   label: string;
   value?: string;
   hint?: string;
   icon?: UiIcon;
+  /** Головний рядок модуля: більша іконка, назва жирним, hint як опис у кілька рядків. */
+  prominent?: boolean;
+  /** Крапка стану перед hint. */
+  dot?: { tone: UiTone; pulse?: boolean };
+  /** ISO-час: рендерер дописує до hint зворотний відлік H:MM:SS і оновлює його щосекунди. */
+  countdownTo?: string | null;
+  /** Елемент праворуч замість value. */
+  control?: UiControl;
 }
 
 /** Головний рядок стану: крапка, підпис, великий текст або зворотний відлік. */
@@ -140,8 +164,17 @@ export interface UiLocalAccess {
   ca: string;
 }
 
+/** Модуль у бічному меню: його сторінки йдуть під цим заголовком у порядку списку. */
+export interface UiModuleInfo {
+  id: string;
+  title: string;
+  icon: UiIcon;
+}
+
 /** Усе дерево застосунку. */
 export interface UiTree {
+  /** Порядок і назви модулів для бічного меню; сторінки групи system ідуть після них. */
+  modules: UiModuleInfo[];
   app: {
     title: string;
     host: string;
