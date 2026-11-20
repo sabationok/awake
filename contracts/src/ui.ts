@@ -129,7 +129,14 @@ export interface UiPage {
 
 /** Усе дерево застосунку. */
 export interface UiTree {
-  app: { title: string; host: string; online: boolean; updatedAt: string };
+  app: {
+    title: string;
+    host: string;
+    online: boolean;
+    updatedAt: string;
+    /** Адреса локального пульта з одноразовим кодом; лише в довіреній Wi-Fi і лише в дереві для Vercel. */
+    localUrl?: string | null;
+  };
   pages: UiPage[];
 }
 
