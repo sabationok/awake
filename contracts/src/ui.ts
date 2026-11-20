@@ -1,0 +1,144 @@
+// Server-driven UI MacCC. Модулі в Nest будують дерево з цих вузлів, а Next (і пізніше SwiftUI)
+// лише малюють його і повертають дії. Жодної логіки модулів у рендерерах.
+
+export type UiTone = 'accent' | 'green' | 'orange' | 'red' | 'gray' | 'indigo' | 'yellow';
+
+/** Іконка: назва SF Symbol. Next мапить її на свою іконку, невідому — на крапку. */
+export interface UiIcon {
+  symbol: string;
+  tone: UiTone;
+}
+
+/** Де показувати вузол або сторінку: all — і на Mac, і на Vercel/WebApp; local — лише на Mac і в локальному пульті. */
+export type UiScope = 'all' | 'local';
+
+/** Дія модуля, яку викликає кнопка. Рендерер шле її як є і нічого не знає про її зміст. */
+export interface UiAction {
+  module: string;
+  name: string;
+  params?: Record<string, string | number | boolean>;
+}
+
+export interface UiButton {
+  id: string;
+  label: string;
+  action: UiAction;
+  variant?: 'filled' | 'plain' | 'destructive';
+  disabled?: boolean;
+  /** Текст підтвердження перед дією. */
+  confirm?: string;
+}
+
+export interface UiOption {
+  value: string;
+  label: string;
+}
+
+interface UiNodeBase {
+  id: string;
+  scope?: UiScope;
+}
+
+/** Група рядків з заголовком і підписом, як у «Системних параметрах». */
+export interface UiSection extends UiNodeBase {
+  type: 'section';
+  title?: string;
+  footer?: string;
+  children: UiNode[];
+}
+
+/** Рядок «назва — значення». */
+export interface UiRow extends UiNodeBase {
+  type: 'row';
+  label: string;
+  value?: string;
+  hint?: string;
+  icon?: UiIcon;
+}
+
+/** Головний рядок стану: крапка, підпис, великий текст або зворотний відлік. */
+export interface UiStatus extends UiNodeBase {
+  type: 'status';
+  label: string;
+  hint?: string;
+  icon?: UiIcon;
+  tone: UiTone;
+  pulse?: boolean;
+  value?: string;
+  /** ISO-час: рендерер сам рахує зворотний відлік до нього щосекунди. */
+  countdownTo?: string | null;
+}
+
+/** Перемикач налаштування модуля. Зміна йде як UiSettingChange з цим key. */
+export interface UiSwitch extends UiNodeBase {
+  type: 'switch';
+  label: string;
+  hint?: string;
+  icon?: UiIcon;
+  module: string;
+  key: string;
+  value: boolean;
+  disabled?: boolean;
+}
+
+/** Випадний список налаштування модуля. */
+export interface UiSelect extends UiNodeBase {
+  type: 'select';
+  label: string;
+  hint?: string;
+  icon?: UiIcon;
+  module: string;
+  key: string;
+  value: string;
+  options: UiOption[];
+  disabled?: boolean;
+}
+
+/** Ряд кнопок однакової ширини. */
+export interface UiButtons extends UiNodeBase {
+  type: 'buttons';
+  buttons: UiButton[];
+}
+
+/** Список записів (історія, журнал). */
+export interface UiList extends UiNodeBase {
+  type: 'list';
+  items: { id: string; label: string; hint?: string; value?: string }[];
+  empty?: string;
+}
+
+export interface UiText extends UiNodeBase {
+  type: 'text';
+  text: string;
+  tone?: UiTone;
+}
+
+export type UiNode = UiSection | UiRow | UiStatus | UiSwitch | UiSelect | UiButtons | UiList | UiText;
+
+/** Вкладка бічного меню. */
+export interface UiPage {
+  id: string;
+  module: string;
+  title: string;
+  icon: UiIcon;
+  /** Група в бічному меню: модулі разом, системні сторінки окремо. */
+  group: 'modules' | 'system';
+  scope?: UiScope;
+  children: UiNode[];
+}
+
+/** Усе дерево застосунку. */
+export interface UiTree {
+  app: { title: string; host: string; online: boolean; updatedAt: string };
+  pages: UiPage[];
+}
+
+/** Зміна налаштування з рендерера. */
+export interface UiSettingChange {
+  module: string;
+  key: string;
+  value: string | number | boolean;
+}
+
+/** Те, що рендерер шле на сервер. */
+export type UiEvent = { type: 'action'; action: UiAction } | { type: 'setting'; change: UiSettingChange };

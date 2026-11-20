@@ -16,7 +16,8 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
   }
   (await cookies()).set(SESSION_COOKIE, await createSessionValue(), {
     httpOnly: true,
-    secure: true,
+    // У next dev по HTTP у локальній мережі secure-кука не збережеться.
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: SESSION_MAX_AGE_SECONDS,

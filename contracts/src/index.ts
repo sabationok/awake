@@ -1,11 +1,13 @@
 // Спільні типи агента, Mac-аппки і дашборду. Лише типи і константи без залежностей.
+export * from './ui';
+export * from './modules';
 
 export type PowerSource = 'AC' | 'BAT' | 'unknown';
 export type ThermalLevel = 'nominal' | 'fair' | 'serious' | 'critical';
 /** Звідки прийшла дія над сесією. */
 export type SessionSource = 'mac' | 'telegram' | 'web';
 export type SessionEventType = 'start' | 'restart' | 'stop';
-export type CommandAction = 'start' | 'stop' | 'lock' | 'displayOff';
+export type CommandAction = 'start' | 'stop' | 'lock' | 'displayOff' | 'setting';
 
 /** Знімок стану Mac, який Mac-аппка шле агенту. */
 export interface MacState {
@@ -56,6 +58,9 @@ export interface CommandRequest {
   action: CommandAction;
   /** Для start: 30m, 1h, 2h… Без нього Mac бере тривалість за замовчуванням. */
   duration?: string;
+  /** Для setting: ключ `<module>.<key>` і нове значення, яке Mac має застосувати в себе. */
+  key?: string;
+  value?: string | number | boolean;
 }
 
 /** Відповідь API агента. */
@@ -88,3 +93,10 @@ export type AgentToMacMessage =
 /** Ключ стану в Upstash. TTL короткий: застарілий ключ означає, що Mac офлайн. */
 export const PRESENCE_KEY = 'awake:presence';
 export const PRESENCE_TTL_SECONDS = 45;
+
+/** Дерево UI для дашборду на Vercel (лише вузли зі scope all). */
+export const UI_TREE_KEY = 'maccc:ui';
+/** Черга подій UI з Vercel/WebApp до Mac. Nest читає її, поки хтось дивиться дашборд. */
+export const UI_EVENTS_KEY = 'maccc:events';
+/** Ключ «дашборд відкритий»: Vercel оновлює його, Nest тоді частіше читає чергу. */
+export const UI_WATCH_KEY = 'maccc:watch';
