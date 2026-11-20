@@ -1,15 +1,9 @@
-/** Тексти відповідей бота. */
+/** Загальні тексти бота; тексти команд модулів живуть у самих модулях. */
 export const BOT_TEXTS = {
-  starting: '☕️ Запускаю…',
-  stopping: 'Повертаю сон…',
-  locking: 'Блокую екран…',
-  displayOff: 'Гашу екран…',
-  invalidDuration: 'Не зрозумів тривалість. Приклади: /start 30m, /start 2h, /start 1d',
+  help: 'Команди модулів:',
   commandFailed: 'Не вдалося виконати команду',
-  offline: '💤 Mac офлайн',
-  answerStart: 'Запускаю на',
-  answerStop: 'Зупиняю',
+  answerDone: 'Готово',
   answerRefresh: 'Оновлено',
-  statusButton: 'Стан',
-  stopButton: 'Стоп',
+  refreshButton: '↻ Оновити',
+  unknown: 'Невідома кнопка',
 };

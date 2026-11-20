@@ -3,6 +3,7 @@ import type { SettingValue, UiPage } from '@awake/contracts';
 import { LogsService } from '../../logs/logs.service';
 import { SessionsService } from '../../sessions/sessions.service';
 import type { MacModule, ModuleContext } from '../types/mac-module';
+import { AWAKE_BOT, awakeStatus } from './bot/awake-bot';
 import { AWAKE_SETTINGS } from './constants/awake-settings';
 import { DURATION_PATTERN } from './constants/duration-pattern';
 import { LOG_QUERY_LIMIT, TRACKING_QUERY_LIMIT } from './constants/session-limits';
@@ -19,6 +20,11 @@ export class AwakeMacModule implements MacModule {
   readonly icon = { symbol: 'cup.and.saucer.fill', tone: 'orange' } as const;
   readonly permissions: MacModule['permissions'] = ['sleepControl', 'thermalRead'];
   readonly settings = AWAKE_SETTINGS;
+  readonly bot = AWAKE_BOT;
+
+  status(ctx: ModuleContext) {
+    return awakeStatus(ctx.mac);
+  }
 
   readonly actions: MacModule['actions'] = {
     start: (params, ctx, source) => {

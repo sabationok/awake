@@ -1,32 +1,33 @@
+import { setTimeout as delay } from 'node:timers/promises';
 import { Injectable, Logger } from '@nestjs/common';
 import { Context, Telegraf, TelegramError } from 'telegraf';
-import type { InlineKeyboardMarkup } from 'telegraf/types';
 import { AppException } from '../../../common/app-exception';
-import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
 import { ModulesService } from '../../../modules/modules.service';
+import type { BotCommand, MacModule, ModuleBot } from '../../../modules/types/mac-module';
 import { describeError } from '../../helpers/describe-error';
 import { readTelegramEnv } from '../../helpers/read-telegram-env';
 import type { TelegramEnv } from '../../types/telegram-env.types';
-import { AWAKE_QUICK_DURATIONS, DURATION_PATTERN } from './constants/awake-durations';
-import { TELEGRAM_BOT_COMMANDS } from './constants/bot-commands';
 import { BOT_TEXTS } from './constants/bot-texts';
+import { MENU_REFRESH_MS } from './constants/menu-refresh-ms';
 import { STOP_RETRY_LIMIT, STOP_RETRY_MS } from './constants/polling';
-import { buildAwakeKeyboard } from './helpers/build-awake-keyboard';
-import { formatStatusText } from './helpers/format-status-text';
+import { buildBotCommands } from './helpers/build-bot-commands';
+import { buildHelpText } from './helpers/build-help-text';
+import { buildMenuKeyboard } from './helpers/build-menu-keyboard';
+import { decodeCallback } from './helpers/callback-data';
 import { isOwnerChat } from './helpers/is-owner-chat';
 
-type AwakeAction = 'start' | 'stop' | 'lock' | 'displayOff';
+type BotModule = MacModule & { bot: ModuleBot };
 
-/** Telegram-бот MacCC: long polling, команди йдуть тільки через ModulesService. */
+/**
+ * Telegram-бот MacCC: long polling, команди складаються з модулів. Кожен модуль із `bot` дає вхідну команду
+ * (`/awake`: меню з кнопками) і команди другого рівня (`/awake_start 2h`); усе йде через ModulesService.
+ */
 @Injectable()
 export class TelegramBotService {
   private readonly _logger = new Logger(TelegramBotService.name);
   private _bot: Telegraf | null = null;
 
-  constructor(
-    private readonly _modules: ModulesService,
-    private readonly _macBridge: MacBridgeService,
-  ) {}
+  constructor(private readonly _modules: ModulesService) {}
 
   start(): void {
     if (this._bot) return;
@@ -50,7 +51,7 @@ export class TelegramBotService {
 
   private async _launch(bot: Telegraf, env: TelegramEnv) {
     try {
-      await bot.telegram.setMyCommands(TELEGRAM_BOT_COMMANDS);
+      await bot.telegram.setMyCommands(buildBotCommands(this._modules.list()));
     } catch (error) {
       this._logger.warn(`setMyCommands не вдався: ${describeError(error, env.token)}`);
     }
@@ -85,6 +86,10 @@ export class TelegramBotService {
     timer.unref();
   }
 
+  private _botModules(): BotModule[] {
+    return this._modules.list().filter((module): module is BotModule => !!module.bot);
+  }
+
   private _register(bot: Telegraf, env: TelegramEnv) {
     bot.catch((error) => this._logger.error(`Помилка Telegram-бота: ${describeError(error, env.token)}`));
 
@@ -93,88 +98,68 @@ export class TelegramBotService {
       await next();
     });
 
-    bot.command('start', (ctx) => this._safe(ctx, env, () => this._start(ctx, ctx.payload)));
-    bot.command('stop', (ctx) =>
-      this._safe(ctx, env, async () => {
-        await this._dispatch('stop');
-        await ctx.reply(BOT_TEXTS.stopping);
-      }),
-    );
-    bot.command('lock', (ctx) =>
-      this._safe(ctx, env, async () => {
-        await this._dispatch('lock');
-        await ctx.reply(BOT_TEXTS.locking);
-      }),
-    );
-    bot.command('screen', (ctx) =>
-      this._safe(ctx, env, async () => {
-        await this._dispatch('displayOff');
-        await ctx.reply(BOT_TEXTS.displayOff);
-      }),
-    );
-    bot.command('status', (ctx) =>
-      this._safe(ctx, env, () => ctx.reply(formatStatusText(this._macBridge.state), { parse_mode: 'HTML' })),
-    );
-    bot.command('awake', (ctx) =>
-      this._safe(ctx, env, () =>
-        ctx.reply(formatStatusText(this._macBridge.state), {
-          parse_mode: 'HTML',
-          reply_markup: buildAwakeKeyboard(),
-        }),
-      ),
-    );
+    const help = (ctx: Context) => this._safe(ctx, env, () => ctx.reply(buildHelpText(this._modules.list())));
+    bot.start(help);
+    bot.help(help);
 
-    bot.action(/^start:(\S+)$/, (ctx) =>
+    for (const module of this._botModules()) {
+      bot.command(module.bot.command, (ctx) => this._safe(ctx, env, () => this._replyMenu(ctx, module)));
+      for (const command of module.bot.commands ?? []) {
+        bot.command(`${module.bot.command}_${command.name}`, (ctx) =>
+          this._safe(ctx, env, () => this._runCommand(ctx, module, command, ctx.payload)),
+        );
+      }
+    }
+
+    bot.action(/^(act|menu):/, (ctx) =>
       this._safe(ctx, env, async () => {
-        const duration = ctx.match[1];
-        if (!DURATION_PATTERN.test(duration)) {
-          await ctx.answerCbQuery(BOT_TEXTS.invalidDuration);
+        const callback = decodeCallback(ctx.match.input);
+        const module = callback && this._botModules().find((m) => m.id === callback.module);
+        if (!callback || !module) {
+          await ctx.answerCbQuery(BOT_TEXTS.unknown);
           return;
         }
-        const label = AWAKE_QUICK_DURATIONS.find((item) => item.duration === duration)?.label ?? duration;
-        await ctx.answerCbQuery(`${BOT_TEXTS.answerStart} ${label}`);
-        await this._dispatch('start', { duration });
-      }),
-    );
-    bot.action('stop', (ctx) =>
-      this._safe(ctx, env, async () => {
-        await ctx.answerCbQuery(BOT_TEXTS.answerStop);
-        await this._dispatch('stop');
-      }),
-    );
-    bot.action('status', (ctx) =>
-      this._safe(ctx, env, async () => {
-        await ctx.answerCbQuery(BOT_TEXTS.answerRefresh);
-        await this._editStatus(ctx, env, buildAwakeKeyboard());
+        if (callback.kind === 'menu') {
+          await ctx.answerCbQuery(BOT_TEXTS.answerRefresh);
+          await this._editMenu(ctx, env, module);
+          return;
+        }
+        await ctx.answerCbQuery(BOT_TEXTS.answerDone);
+        await this._dispatch(module.id, callback.action, callback.params);
+        await delay(MENU_REFRESH_MS);
+        await this._editMenu(ctx, env, module);
       }),
     );
   }
 
-  private async _start(ctx: Context, payload: string) {
-    const duration = payload.trim();
-    if (duration && !DURATION_PATTERN.test(duration)) {
-      await ctx.reply(BOT_TEXTS.invalidDuration);
+  private _replyMenu(ctx: Context, module: BotModule) {
+    const menu = module.bot.menu(this._modules.context(module.id));
+    return ctx.reply(menu.text, { parse_mode: 'HTML', reply_markup: buildMenuKeyboard(module.id, menu) });
+  }
+
+  private async _runCommand(ctx: Context, module: BotModule, command: BotCommand, payload: string) {
+    const value = payload.trim();
+    if (command.arg && value && !command.arg.pattern.test(value)) {
+      await ctx.reply(command.arg.invalid);
       return;
     }
-    await this._dispatch('start', duration ? { duration } : undefined);
-    await ctx.reply(BOT_TEXTS.starting);
+    await this._dispatch(module.id, command.action, command.arg && value ? { [command.arg.param]: value } : undefined);
+    await ctx.reply(command.reply);
   }
 
-  private async _editStatus(ctx: Context, env: TelegramEnv, keyboard: InlineKeyboardMarkup) {
+  private async _editMenu(ctx: Context, env: TelegramEnv, module: BotModule) {
+    const menu = module.bot.menu(this._modules.context(module.id));
     try {
-      await ctx.editMessageText(formatStatusText(this._macBridge.state), {
-        parse_mode: 'HTML',
-        reply_markup: keyboard,
-      });
+      await ctx.editMessageText(menu.text, { parse_mode: 'HTML', reply_markup: buildMenuKeyboard(module.id, menu) });
     } catch (error) {
-      // Статус не змінився: Telegram відмовляє в редагуванні на той самий текст, це не помилка.
+      // Стан не змінився: Telegram відмовляє в редагуванні на той самий текст, це не помилка.
       if (error instanceof TelegramError && error.description.includes('message is not modified')) return;
       throw new Error(describeError(error, env.token));
     }
   }
 
-  private _dispatch(name: AwakeAction, params?: Record<string, string>) {
-    return this._modules.dispatch({ type: 'action', action: { module: 'awake', name, params } }, 'telegram');
+  private _dispatch(module: string, name: string, params?: Record<string, string>) {
+    return this._modules.dispatch({ type: 'action', action: { module, name, params } }, 'telegram');
   }
 
   private async _safe(ctx: Context, env: TelegramEnv, run: () => Promise<unknown>) {

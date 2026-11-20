@@ -14,7 +14,7 @@ export function buildTelegramPage(ctx: ModuleContext): UiPage {
         type: 'section',
         title: 'Бот',
         footer:
-          'Команди /awake, /status, /start, /stop, /lock, /screen..',
+          'Кожен модуль додає свою команду: /awake (меню з кнопками), /awake_start 2h, /awake_stop, /awake_lock, /awake_screen. /status показує спільний стан Mac і модулів.',
         children: [ctx.settingNode('bot')],
       },
       {

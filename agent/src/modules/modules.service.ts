@@ -17,7 +17,7 @@ import { buildSettingNode } from './helpers/build-setting-node';
 import { filterNodesByScope } from './helpers/filter-nodes-by-scope';
 import { isValidSettingValue } from './helpers/is-valid-setting-value';
 import { resolveSettingValue } from './helpers/resolve-setting-value';
-import { MAC_MODULES, type MacModule, type ModuleContext } from './types/mac-module';
+import { MAC_MODULES, type MacModule, type ModuleContext, type StatusFields } from './types/mac-module';
 
 type Source = 'mac' | 'telegram' | 'web';
 
@@ -53,7 +53,17 @@ export class ModulesService {
       sendToMac: (command, source) => {
         bridge.sendCommand(command, source);
       },
+      status: () => this.status(),
     };
+  }
+
+  /** Спільний стан: поля всіх модулів, що пишуть у /status, в порядку модулів. */
+  status(): StatusFields {
+    const fields: StatusFields = {};
+    for (const module of this._byId.values()) {
+      Object.assign(fields, module.status?.(this.context(module.id)) ?? {});
+    }
+    return fields;
   }
 
   async buildTree(scope: UiScope): Promise<UiTree> {
