@@ -127,6 +127,19 @@ export interface UiPage {
   children: UiNode[];
 }
 
+/**
+ * Як дашборд дістається до агента напряму. Без цього блоку дашборд лише показує дерево,
+ * а всі керувальні елементи вимкнені.
+ */
+export interface UiLocalAccess {
+  /** HTTPS-адреса API агента в локальній мережі, напр. https://192.168.1.5:47800. */
+  url: string;
+  /** Одноразовий код сполучення: дашборд міняє його на токен пристрою. */
+  code: string;
+  /** PEM локального центру сертифікації, якому пристрій має довіритись один раз. */
+  ca: string;
+}
+
 /** Усе дерево застосунку. */
 export interface UiTree {
   app: {
@@ -134,8 +147,8 @@ export interface UiTree {
     host: string;
     online: boolean;
     updatedAt: string;
-    /** Адреса локального пульта з одноразовим кодом; лише в довіреній Wi-Fi і лише в дереві для Vercel. */
-    localUrl?: string | null;
+    /** Прямий доступ до агента; є лише в довіреній Wi-Fi і лише в дереві для Vercel. */
+    local?: UiLocalAccess | null;
   };
   pages: UiPage[];
 }
