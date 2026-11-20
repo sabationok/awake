@@ -1,6 +1,7 @@
 /**
  * Підписана кука входу в дашборд: `<expiresAt>.<hmac>`. Web Crypto, тож працює і в middleware.
  * Секрет — SESSION_SECRET, пароль — DASHBOARD_PASSWORD (обидва в env Vercel).
+ * Зміна SESSION_SECRET відкликає всі видані сесії.
  */
 export const SESSION_COOKIE = 'awake_session';
 export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
@@ -36,9 +37,12 @@ export async function isValidSession(value: string | undefined): Promise<boolean
   return safeEqual(signature, await hmac(expiresAt));
 }
 
+/** Короткий пароль не приймаємо зовсім, щоб перебір був безнадійним. */
+export const MIN_PASSWORD_LENGTH = 12;
+
 export async function isValidPassword(password: string): Promise<boolean> {
   const expected = process.env.DASHBOARD_PASSWORD;
-  if (!expected) return false;
+  if (!expected || expected.length < MIN_PASSWORD_LENGTH) return false;
   // Хешуємо обидва, щоб порівнювати рядки однакової довжини.
   const [a, b] = await Promise.all([hmac(`pw:${password}`), hmac(`pw:${expected}`)]);
   return safeEqual(a, b);

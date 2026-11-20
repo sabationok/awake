@@ -9,7 +9,11 @@ export interface LoginState {
 
 export async function login(_: LoginState, form: FormData): Promise<LoginState> {
   const password = String(form.get('password') ?? '');
-  if (!(await isValidPassword(password))) return { error: 'Невірний пароль' };
+  if (!(await isValidPassword(password))) {
+    // Пауза на кожну невдалу спробу сповільнює перебір.
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return { error: 'Невірний пароль' };
+  }
   (await cookies()).set(SESSION_COOKIE, await createSessionValue(), {
     httpOnly: true,
     secure: true,

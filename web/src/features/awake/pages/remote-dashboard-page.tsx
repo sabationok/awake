@@ -12,7 +12,14 @@ import { usePresence } from '../hooks/use-presence';
  * Дашборд на Vercel: лише стан з Upstash. Керування живе на самому Mac,
  * тож у довіреній мережі тут з'являється посилання на локальний пульт.
  */
-export function RemoteDashboardPage({ initial, logout }: { initial: Presence | null; logout: () => Promise<void> }) {
+interface RemoteDashboardPageProps {
+  initial: Presence | null;
+  /** false, поки в env Vercel немає ключів Upstash. */
+  configured: boolean;
+  logout: () => Promise<void>;
+}
+
+export function RemoteDashboardPage({ initial, configured, logout }: RemoteDashboardPageProps) {
   const now = useNow();
   const { data: presence } = usePresence(initial);
 
@@ -25,7 +32,13 @@ export function RemoteDashboardPage({ initial, logout }: { initial: Presence | n
         </form>
       }
     >
-      <MacStatusGroup state={presence?.state ?? null} updatedAt={presence?.updatedAt} now={now} />
+      {configured ? (
+        <MacStatusGroup state={presence?.state ?? null} updatedAt={presence?.updatedAt} now={now} />
+      ) : (
+        <Group footer="Додай базу Upstash до проєкту на Vercel: дашборд читає стан Mac звідти.">
+          <div className="px-4 py-3 text-[15px]">Upstash не налаштовано</div>
+        </Group>
+      )}
       <Group
         title="Керування"
         footer={

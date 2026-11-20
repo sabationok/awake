@@ -13,7 +13,7 @@ export function LoginPage() {
     <PageFrame title="Awake">
       <form action={action}>
         <FlexBox gap="md">
-          <Group footer={state.error ?? 'Пароль задається в DASHBOARD_PASSWORD на Vercel.'}>
+          <Group footer={state.error ?? 'Пароль задається в DASHBOARD_PASSWORD на Vercel, щонайменше 12 символів.'}>
             <input
               name="password"
               type="password"
