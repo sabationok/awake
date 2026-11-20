@@ -1,4 +1,26 @@
-import { Activity, BatteryMedium, Circle, Coffee, Laptop, LaptopMinimal, Lock, Moon, Plug, ScrollText, Send, Settings, Thermometer, Wifi, type LucideIcon } from 'lucide-react';
+import {
+  Activity,
+  BatteryLow,
+  BatteryMedium,
+  BatteryWarning,
+  ChartColumn,
+  Circle,
+  Coffee,
+  Flame,
+  Laptop,
+  LaptopMinimal,
+  Lock,
+  Monitor,
+  Moon,
+  Plug,
+  ScrollText,
+  Send,
+  Settings,
+  Shield,
+  Thermometer,
+  Wifi,
+  type LucideIcon,
+} from 'lucide-react';
 
 /** SF Symbol з дерева → іконка lucide. Невідома назва малює крапку-заглушку. */
 const SYMBOL_ICON: Record<string, LucideIcon | undefined> = {
@@ -7,6 +29,12 @@ const SYMBOL_ICON: Record<string, LucideIcon | undefined> = {
   'list.bullet.rectangle': ScrollText,
   'gearshape.fill': Settings,
   'battery.75': BatteryMedium,
+  'battery.25': BatteryLow,
+  'battery.0': BatteryWarning,
+  'chart.bar.xaxis': ChartColumn,
+  display: Monitor,
+  'shield.fill': Shield,
+  'flame.fill': Flame,
   'powerplug.fill': Plug,
   'thermometer.medium': Thermometer,
   laptopcomputer: Laptop,
