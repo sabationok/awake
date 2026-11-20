@@ -20,20 +20,23 @@ struct MainView: View {
         .frame(minWidth: 460, idealWidth: 720, minHeight: 360, idealHeight: 520)
     }
 
-    private var selection: MainPage { picked ?? sections.joined().first ?? .connection }
+    private var selection: MainPage { picked ?? sections.first?.items.first ?? .connection }
 
-    /// Бічне меню: сторінки модулів, далі системні сторінки дерева і нативні «Підключення» та «Дозвіл».
+    /// Бічне меню: модуль → його сторінки (Awake → Сесія, Налаштування сесії…), далі системні сторінки дерева
+    /// і нативні «Підключення» та «Дозвіл». Модуль з однією сторінкою (Telegram) іде без заголовка: він і є пунктом.
     /// Без дерева (агент не запущений) лишаються лише нативні.
-    private var sections: [[MainPage]] {
-        guard let tree = model.uiTree else { return [[.connection, .permission]] }
-        let modules = tree.modules.map { module in
-            tree.pages
+    private var sections: [SidebarSection<MainPage>] {
+        let native: [MainPage] = [.connection, .permission]
+        guard let tree = model.uiTree else { return [SidebarSection(items: native)] }
+        let modules = tree.modules.compactMap { module -> SidebarSection<MainPage>? in
+            let pages = tree.pages
                 .filter { $0.module == module.id && $0.group == .modules }
                 .map { MainPage.remote(id: $0.id) }
+            guard !pages.isEmpty else { return nil }
+            return SidebarSection(title: pages.count > 1 ? module.title : nil, items: pages)
         }
         let system: [MainPage] = tree.pages.filter { $0.group == .system }.map { .remote(id: $0.id) }
-        let last: [MainPage] = system + [.connection, .permission]
-        return modules.filter { !$0.isEmpty } + [last]
+        return modules + [SidebarSection(items: system + native)]
     }
 
     private func treePage(_ id: String) -> UiPage? {

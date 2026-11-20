@@ -1,12 +1,18 @@
 import SwiftUI
 
+/// Група пунктів меню. Із заголовком, якщо пункти належать чомусь більшому (модуль Awake → його сторінки).
+struct SidebarSection<Item: Hashable>: Hashable {
+    var title: String?
+    var items: [Item]
+}
+
 /// Меню розділів і сторінка.
 /// Широке вікно: меню стоїть поруч і згортається в іконковий рейл. Вузьке: меню виїжджає поверх.
 /// Заголовок сторінки і кнопки вікна лежать в одному рядку висотою `topRowHeight`.
 /// Універсальний: не знає про конкретні розділи, лише отримує секції і замикання.
 struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: View>: View {
     @Binding var selection: Item
-    let sections: [[Item]]
+    let sections: [SidebarSection<Item>]
     let title: (Item) -> String
     let symbol: (Item) -> String
     @ViewBuilder let footer: () -> Footer
@@ -102,9 +108,11 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
         List(selection: $selection) {
             ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
                 Section {
-                    ForEach(section) { item in
+                    ForEach(section.items) { item in
                         Label(title(item), systemImage: symbol(item)).tag(item)
                     }
+                } header: {
+                    if let header = section.title { Text(header) }
                 }
             }
         }
@@ -120,7 +128,7 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
                 if index > 0 {
                     Divider().padding(.vertical, 4)
                 }
-                ForEach(section) { item in
+                ForEach(section.items) { item in
                     railButton(item)
                 }
             }
