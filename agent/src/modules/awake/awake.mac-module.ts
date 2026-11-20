@@ -1,15 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import type { SettingValue, UiPage } from '@awake/contracts';
-import { LogsService } from '../../logs/logs.service';
 import { SessionsService } from '../../sessions/sessions.service';
 import type { MacModule, ModuleContext } from '../types/mac-module';
 import { AWAKE_SETTINGS } from './constants/awake-settings';
 import { DURATION_PATTERN } from './constants/duration-pattern';
-import { buildLogPage } from './pages/log-page';
+import { SESSION_HISTORY_LIMIT, TRACKING_QUERY_LIMIT } from './constants/session-limits';
+import { buildDisplayPage } from './pages/display-page';
+import { buildSafetyPage } from './pages/safety-page';
 import { buildSessionPage } from './pages/session-page';
 import { buildStatusPage } from './pages/status-page';
+import { buildTrackingPage } from './pages/tracking-page';
 
-/** Модуль Awake: керування сесією Mac, його стан, історія сесій і журнал. */
+/** Модуль Awake: керування сесією Mac, його стан, історія сесій і налаштування сторінок. */
 @Injectable()
 export class AwakeMacModule implements MacModule {
   readonly id = 'awake';
@@ -29,16 +31,17 @@ export class AwakeMacModule implements MacModule {
     displayOff: (_params, ctx, source) => ctx.sendToMac({ action: 'displayOff' }, source),
   };
 
-  constructor(
-    private readonly _sessions: SessionsService,
-    private readonly _logs: LogsService,
-  ) {}
+  constructor(private readonly _sessions: SessionsService) {}
 
   pages(ctx: ModuleContext): UiPage[] {
+    // Одна вибірка на всі сторінки: сесія показує 5, трекінг рахує за 7 днів і гортає історію.
+    const sessions = this._sessions.findMany({ limit: TRACKING_QUERY_LIMIT });
     return [
-      buildSessionPage(ctx.mac, this._sessions.findMany({ limit: 20 })),
+      buildSessionPage(ctx.mac, sessions.slice(0, SESSION_HISTORY_LIMIT)),
       buildStatusPage(ctx.mac),
-      buildLogPage(this._logs.findMany({ limit: 50 })),
+      buildTrackingPage(sessions, new Date()),
+      buildDisplayPage(ctx),
+      buildSafetyPage(ctx),
     ];
   }
 

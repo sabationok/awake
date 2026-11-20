@@ -1,8 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Subject } from 'rxjs';
 import type {
+  SettingDefinition,
   SettingValue,
   UiEvent,
+  UiNode,
   UiPage,
   UiScope,
   UiSection,
@@ -46,6 +48,8 @@ export class ModulesService {
         return bridge.state;
       },
       setting: <T extends SettingValue>(key: string) => this._readSetting(module, key) as T,
+      settingNode: (key: string): UiNode =>
+        buildSettingNode(module.id, this._definition(module, key), this._readSetting(module, key)),
       sendToMac: (command, source) => {
         bridge.sendCommand(command, source);
       },
@@ -104,32 +108,40 @@ export class ModulesService {
     return module;
   }
 
-  private _readSetting(module: MacModule, key: string): SettingValue {
+  private _definition(module: MacModule, key: string): SettingDefinition {
     const definition = module.settings.find((setting) => setting.key === key);
     if (!definition) throw new Error(`Unknown setting ${module.id}.${key}`);
-    return resolveSettingValue(definition, this._settings.get(module.id, key));
+    return definition;
   }
 
+  private _readSetting(module: MacModule, key: string): SettingValue {
+    return resolveSettingValue(this._definition(module, key), this._settings.get(module.id, key));
+  }
+
+  /** Налаштування з полем page показує сама сторінка модуля, тому на «Налаштуваннях» їх немає. */
   private _settingsPage(): UiPage {
     const sections: UiSection[] = [];
     for (const module of this._byId.values()) {
-      if (module.settings.length === 0) continue;
+      const definitions = module.settings.filter((definition) => definition.page === undefined);
+      if (definitions.length === 0) continue;
       sections.push({
         id: `settings-${module.id}`,
         type: 'section',
         title: module.title,
-        children: module.settings.map((definition) =>
+        children: definitions.map((definition) =>
           buildSettingNode(module.id, definition, this._readSetting(module, definition.key)),
         ),
       });
     }
+    const children: UiNode[] =
+      sections.length > 0 ? sections : [{ id: 'settings-empty', type: 'text', text: 'Загальних налаштувань поки немає' }];
     return {
       id: 'settings',
       module: 'host',
       title: 'Налаштування',
       icon: { symbol: 'gearshape.fill', tone: 'gray' },
       group: 'system',
-      children: sections,
+      children,
     };
   }
 }

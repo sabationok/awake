@@ -2,14 +2,11 @@ import type {
   MacState,
   SessionRecord,
   UiButton,
-  UiList,
   UiPage,
   UiStatus,
 } from '@awake/contracts';
 import { formatClock } from '../helpers/format-clock';
-import { formatElapsed } from '../helpers/format-elapsed';
-import { formatSessionStart } from '../helpers/format-session-start';
-import { sessionSourceLabel } from '../helpers/session-source-label';
+import { sessionListItem } from '../helpers/session-list-item';
 
 const START_OPTIONS = [
   { duration: '1h', label: '1 год' },
@@ -27,6 +24,7 @@ export function buildSessionPage(mac: MacState | null, sessions: SessionRecord[]
     disabled,
     action: { module: 'awake', name: 'start', params: { duration } },
   }));
+  const now = new Date();
 
   return {
     id: 'session',
@@ -71,8 +69,10 @@ export function buildSessionPage(mac: MacState | null, sessions: SessionRecord[]
       {
         id: 'history',
         type: 'section',
-        title: 'Сесії',
-        children: [{ id: 'sessions', type: 'list', items: sessions.map(sessionItem), empty: 'Ще не було жодної сесії' }],
+        title: 'Останні сесії',
+        children: [
+          { id: 'sessions', type: 'list', items: sessions.map((session) => sessionListItem(session, now)), empty: 'Ще не було жодної сесії' },
+        ],
       },
     ],
   };
@@ -101,18 +101,4 @@ function statusNode(mac: MacState | null): UiStatus {
     };
   }
   return { id: 'session-status', type: 'status', label: 'Сесія не активна', tone: 'gray', value: '—' };
-}
-
-function sessionItem(session: SessionRecord): UiList['items'][number] {
-  const parts = [
-    sessionSourceLabel(session.source),
-    session.duration,
-    session.endReason ?? (session.endedAt ? null : 'триває'),
-  ];
-  return {
-    id: String(session.id),
-    label: formatSessionStart(session.startedAt),
-    hint: parts.filter((part): part is string => part !== null).join(' · '),
-    value: formatElapsed(session.startedAt, session.endedAt ?? new Date().toISOString()),
-  };
 }
