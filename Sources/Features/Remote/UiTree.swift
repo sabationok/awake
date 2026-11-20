@@ -205,6 +205,7 @@ struct UiRow: Decodable, Hashable {
 struct UiTimer: Decodable, Hashable {
     var id: String
     var until: Date?
+    var from: Date?
     var value: String
     var caption: String?
     var tone: UiTone?

@@ -56,6 +56,7 @@ function timerNode(ctx: ModuleContext, mac: MacState | null, now: Date): UiTimer
       id: 'timer',
       type: 'timer',
       until: mac.until,
+      from: mac.startedAt,
       value: 'Не спить',
       caption: mac.until ? `Не спить до ${formatClock(mac.until)}` : undefined,
       tone: 'orange',

@@ -10,19 +10,26 @@ struct UiTimerView: View {
                 if let until = timer.until {
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         Text(Countdown.string(until: until, now: context.date))
+                            .foregroundStyle(color(until: until, now: context.date))
                     }
                 } else {
-                    Text(timer.value)
+                    Text(timer.value).foregroundStyle(.secondary)
                 }
             }
             .font(.system(size: 48, weight: .semibold, design: .rounded))
             .monospacedDigit()
-            .foregroundStyle(timer.until == nil ? .secondary : (timer.tone?.color ?? .primary))
             if let caption = timer.caption {
                 Text(caption).font(.callout).foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
+    }
+
+    /// Від зеленого (уся сесія попереду) до червоного (час майже вийшов). Без початку — колір тону.
+    private func color(until: Date, now: Date) -> Color {
+        guard let from = timer.from, until > from else { return timer.tone?.color ?? .primary }
+        let left = min(1, max(0, until.timeIntervalSince(now) / until.timeIntervalSince(from)))
+        return Color(hue: left / 3, saturation: 0.8, brightness: 0.85)
     }
 }

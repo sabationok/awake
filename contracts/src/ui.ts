@@ -155,6 +155,8 @@ export interface UiTimer extends UiNodeBase {
   type: 'timer';
   /** ISO-час: рендерер рахує H:MM:SS щосекунди. */
   until?: string | null;
+  /** ISO-час початку: з ним колір відліку йде від зеленого до червоного за часткою часу, що лишилась. */
+  from?: string | null;
   /** Текст замість відліку (запланована тривалість, «—»). */
   value: string;
   /** Підпис під таймером. */
