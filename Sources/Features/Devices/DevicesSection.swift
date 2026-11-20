@@ -68,6 +68,17 @@ private struct PairingSection: View {
                     }
                 }
                 .padding(.vertical, 4)
+            } else if pairing.reason == "loading" {
+                // Кеш без коду: місце під QR тримаємо, щоб сторінка не стрибнула, коли код прийде.
+                HStack(alignment: .top, spacing: 16) {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.quaternary)
+                        .frame(width: 148, height: 148)
+                        .overlay { ProgressView() }
+                    Text("Отримую код сполучення від агента…")
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 4)
             } else {
                 Text(pairing.reason == "noNetwork"
                      ? "Mac не в мережі: немає адреси, за якою пристрій міг би його знайти."

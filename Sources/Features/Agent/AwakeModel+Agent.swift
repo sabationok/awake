@@ -20,6 +20,7 @@ extension AwakeModel {
             if case .stopped = status, self?.agentEnabled == false {
                 self?.uiTree = nil
                 self?.devices = nil
+                AgentCache.clear()
             }
         }
         agent.onCommand = { [weak self] in self?.handleAgentCommand($0) }
