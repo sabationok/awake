@@ -13,23 +13,7 @@ struct TelegramSection: View {
         } header: {
             Text("Сповіщення в Telegram")
         } footer: {
-            Text("Початок і кінець сесії, відключення живлення, низький заряд, нагрівання. З увімкненими командами боту можна писати /awake (кнопки), /status, /start, /duration 4h, /stop, /lock, /screen, /quit. Які події надсилати, вибирай нижче.")
-        }
-        ForEach(AppModule.allCases) { module in
-            Section {
-                ForEach(TelegramEvent.allCases.filter { $0.module == module }) { event in
-                    SettingsRow(title: event.title, symbol: event.symbol, color: .blue) {
-                        Toggle("", isOn: Binding(
-                            get: { model.savedTelegram.events.contains(event) },
-                            set: { model.setTelegramEvent(event, enabled: $0) }
-                        ))
-                        .toggleStyle(.switch)
-                        .labelsHidden()
-                    }
-                }
-            } header: {
-                Text("Надсилати в Telegram · \(module.title)")
-            }
+            Text("Початок і кінець сесії, відключення живлення, низький заряд, нагрівання. Які події надсилати і команди боту, налаштовує агент.")
         }
         .animation(.default, value: model.telegramEditing)
         .animation(.default, value: model.telegramJustSaved)
@@ -52,27 +36,6 @@ struct TelegramSection: View {
                 Button("Змінити…") { model.telegramEditing = true }
             }
         }
-        SettingsRow(title: "Приймати команди", symbol: "terminal.fill", color: .indigo) {
-            HStack(spacing: 10) {
-                Text(listenerText).foregroundStyle(listenerColor)
-                Toggle("", isOn: $model.telegramCommands)
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-            }
-        }
-    }
-
-    private var listenerText: String {
-        switch model.telegramListener {
-        case .stopped: model.telegramCommands ? "Підключення…" : "Вимкнено"
-        case .listening: "Слухає"
-        case .failed(let message): "Помилка: \(message)"
-        }
-    }
-
-    private var listenerColor: Color {
-        if case .failed = model.telegramListener { return .red }
-        return .secondary
     }
 
     /// Поля вводу з кнопками. «Зберегти» синя лише коли є зміни.

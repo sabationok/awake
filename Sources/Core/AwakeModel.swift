@@ -38,17 +38,10 @@ final class AwakeModel: ObservableObject {
     @Published var telegramEditing = !TelegramSettingsStore.load().isConfigured
     /// Коротке «Збережено» після успішного запису.
     @Published var telegramJustSaved = false
-    /// Приймати команди від бота. Зберігається між запусками.
-    @Published var telegramCommands = UserDefaults.standard.bool(forKey: "telegram.commands") {
-        didSet {
-            UserDefaults.standard.set(telegramCommands, forKey: "telegram.commands")
-            applyTelegramListener()
-        }
-    }
-    @Published var telegramListener = TelegramCommandListener.Status.stopped
-    let commandListener = TelegramCommandListener()
 
     // MARK: пульт (агент)
+    /// Дерево UI від агента. nil, поки агента немає або він зупинений.
+    @Published var uiTree: UiTree?
     @Published var agentEnabled = UserDefaults.standard.object(forKey: "agent.enabled") as? Bool ?? true {
         didSet {
             UserDefaults.standard.set(agentEnabled, forKey: "agent.enabled")
@@ -83,7 +76,6 @@ final class AwakeModel: ObservableObject {
     private init() {
         refresh()
         restoreAfterCrash()
-        applyTelegramListener()
         setUpAgent()
         ticker = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in AwakeModel.shared.tick() }

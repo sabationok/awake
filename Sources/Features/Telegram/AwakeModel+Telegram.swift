@@ -10,7 +10,6 @@ extension AwakeModel {
             savedTelegram = telegram
             telegramEditing = false
             flashTelegramSaved()
-            applyTelegramListener()
             append("Налаштування Telegram збережено")
             return true
         } catch {
@@ -19,16 +18,21 @@ extension AwakeModel {
         }
     }
 
-    /// Перемикач події зберігається одразу. Незбережені поля токена і чату не чіпаються.
-    func setTelegramEvent(_ event: TelegramEvent, enabled: Bool) {
+    /// Вмикає або вимикає подію в telegram.env. Незбережені поля токена і чату не чіпаються.
+    /// Без змін файл не переписується: агент шле повний знімок налаштувань при кожному запуску.
+    @discardableResult
+    func setTelegramEvent(_ event: TelegramEvent, enabled: Bool) -> Bool {
         var updated = savedTelegram
         if enabled { updated.events.insert(event) } else { updated.events.remove(event) }
+        guard updated.events != savedTelegram.events else { return true }
         do {
             try TelegramSettingsStore.save(updated)
             savedTelegram = updated
             telegram.events = updated.events
+            return true
         } catch {
             append("Не вдалося зберегти: \(error.localizedDescription)")
+            return false
         }
     }
 

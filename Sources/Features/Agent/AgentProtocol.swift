@@ -17,12 +17,17 @@ struct AgentMacState: Encodable, Equatable {
     var appVersion: String
 }
 
-/// Команда від агента: що натиснули на пульті.
+/// Команда від агента: що натиснули на пульті або яке налаштування змінили.
 struct AgentCommand: Decodable {
-    enum Action: String, Decodable { case start, stop, lock, displayOff }
+    enum Action: String, Decodable { case start, stop, lock, displayOff, setting }
     var id: String
     var action: Action
     var duration: String?
+    /// Для setting: ключ `<module>.<key>` і нове значення.
+    var key: String?
+    var value: UiScalar?
+    /// Звідки прийшла дія: мак, Telegram чи веб. Без поля лишається веб.
+    var source: SessionSource?
 }
 
 enum AgentProtocol {
@@ -55,21 +60,40 @@ enum AgentProtocol {
         let reason: String?
     }
 
-    /// Рядок від агента. Цікавлять лише ready і command.
-    static func parse(_ line: String) -> (type: String, command: AgentCommand?, port: Int?)? {
-        struct Ready: Decodable { let port: Int }
-        struct Incoming: Decodable { let type: String }
+    /// Рядок від агента. Типи, які аппка не обробляє, дає як `.other`.
+    enum Incoming {
+        case ready(port: Int)
+        case command(AgentCommand)
+        case tree(UiTree)
+        case settings([String: UiScalar])
+        case other
+    }
+
+    static func parse(_ line: String) -> Incoming? {
+        struct Header: Decodable { let type: String }
         guard let data = line.data(using: .utf8),
-              let incoming = try? JSONDecoder().decode(Incoming.self, from: data) else { return nil }
-        switch incoming.type {
+              let header = try? JSONDecoder().decode(Header.self, from: data) else { return nil }
+        switch header.type {
+        case "ready":
+            struct Ready: Decodable { let port: Int }
+            struct Wrapper: Decodable { let data: Ready }
+            guard let port = try? JSONDecoder().decode(Wrapper.self, from: data).data.port else { return .other }
+            return .ready(port: port)
         case "command":
             struct Wrapper: Decodable { let data: AgentCommand }
-            return (incoming.type, try? JSONDecoder().decode(Wrapper.self, from: data).data, nil)
-        case "ready":
-            struct Wrapper: Decodable { let data: Ready }
-            return (incoming.type, nil, try? JSONDecoder().decode(Wrapper.self, from: data).data.port)
+            guard let command = try? JSONDecoder().decode(Wrapper.self, from: data).data else { return .other }
+            return .command(command)
+        case "tree":
+            // Дерево містить ISO-дати з мілісекундами, тож декодер свій, як у UiTreeDecoder.
+            struct Wrapper: Decodable { let data: UiTree }
+            guard let tree = try? UiTreeDecoder.decoder.decode(Wrapper.self, from: data).data else { return .other }
+            return .tree(tree)
+        case "settings":
+            struct Wrapper: Decodable { let data: [String: UiScalar] }
+            guard let settings = try? JSONDecoder().decode(Wrapper.self, from: data).data else { return .other }
+            return .settings(settings)
         default:
-            return (incoming.type, nil, nil)
+            return .other
         }
     }
 }

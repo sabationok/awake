@@ -3,9 +3,27 @@ import Foundation
 
 /// Агент і пульт: запуск підпроцесу, стан кожні 5 секунд, журнал і події сесій, команди з пульта.
 extension AwakeModel {
+    /// Telegram-події за ключами налаштувань `telegram.events.<name>`. Назви збігаються з контрактом агента.
+    private static let telegramEventKeys: [String: TelegramEvent] = [
+        "telegram.events.start": .start,
+        "telegram.events.stop": .stop,
+        "telegram.events.power": .power,
+        "telegram.events.batteryLow": .batteryLow,
+        "telegram.events.thermal": .thermal,
+    ]
+
     func setUpAgent() {
-        agent.onStatus = { [weak self] in self?.agentStatus = $0 }
+        agent.onStatus = { [weak self] status in
+            self?.agentStatus = status
+            // Агента немає: показувати останнє дерево було б неправдою.
+            switch status {
+            case .stopped, .failed: self?.uiTree = nil
+            case .starting, .running: break
+            }
+        }
         agent.onCommand = { [weak self] in self?.handleAgentCommand($0) }
+        agent.onTree = { [weak self] in self?.uiTree = $0 }
+        agent.onSettings = { [weak self] in self?.applyAgentSettings($0) }
         wifi.onAuthorizationChange = { [weak self] in self?.refreshWifi() }
         refreshWifi()
         applyAgent()
@@ -26,6 +44,11 @@ extension AwakeModel {
         // Нові ключі Upstash агент читає лише при старті.
         agent.stop()
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in self?.applyAgent() }
+    }
+
+    /// Натискання в SwiftUI-рендерері йде агентові, який виконує його як дію з вебу.
+    func sendUiEvent(_ event: UiEvent) {
+        agent.sendEvent(event)
     }
 
     // MARK: Wi-Fi
@@ -90,20 +113,90 @@ extension AwakeModel {
         if event == "stop" { sessionSource = .mac }
     }
 
+    // MARK: налаштування від агента
+
+    /// Знімок від агента при його старті: застосовуємо тихо, без журналу.
+    /// `awake.restoreSleep` — разова дія з команди, тож у знімку її немає.
+    func applyAgentSettings(_ settings: [String: UiScalar]) {
+        for (key, value) in settings where key != "awake.restoreSleep" {
+            applyAgentSetting(key: key, value: value)
+        }
+    }
+
+    /// Одне налаштування: зі знімка або з команди. false для невідомого ключа, поганого значення або збою запису.
+    @discardableResult
+    func applyAgentSetting(key: String, value: UiScalar) -> Bool {
+        if let event = Self.telegramEventKeys[key] {
+            guard let enabled = value.boolValue else { return false }
+            return setTelegramEvent(event, enabled: enabled)
+        }
+        switch key {
+        case "awake.duration":
+            guard let chosen = value.stringValue.flatMap(SessionPreset.find) else { return false }
+            preset = chosen
+        case "awake.displayOff":
+            guard let raw = Self.number(value),
+                  let option = DisplayOffOption.all.first(where: { $0.id == Int(raw) }) else { return false }
+            displayOff = option
+        case "awake.lockOnLidClose":
+            guard let flag = value.boolValue else { return false }
+            lockOnLidClose = flag
+        case "awake.batteryStop":
+            guard let percent = Self.percent(value) else { return false }
+            SafetyLimits.batteryStop = percent
+        case "awake.batteryWarn":
+            guard let percent = Self.percent(value) else { return false }
+            SafetyLimits.batteryWarn = percent
+        case "awake.restoreSleep":
+            forceRestore()
+        default:
+            return false
+        }
+        return true
+    }
+
+    private static func number(_ value: UiScalar) -> Double? {
+        if case .number(let number) = value { return number }
+        return nil
+    }
+
+    /// Відсоток батареї, 0…100.
+    private static func percent(_ value: UiScalar) -> Int? {
+        guard let raw = number(value), (0.0...100.0).contains(raw) else { return nil }
+        return Int(raw)
+    }
+
     // MARK: команди з пульта
 
     private func handleAgentCommand(_ command: AgentCommand) {
-        append("Пульт: \(command.action.rawValue)\(command.duration.map { " \($0)" } ?? "")")
+        if command.action != .setting {
+            append("Пульт: \(command.action.rawValue)\(command.duration.map { " \($0)" } ?? "")")
+        }
+        let source = command.source ?? .web
         switch command.action {
         case .start:
             let chosen = command.duration.flatMap(SessionPreset.find) ?? preset
-            restart(chosen, source: .web)
+            restart(chosen, source: source)
         case .stop:
-            if isRunning { stop(source: .web) }
+            if isRunning { stop(source: source) }
         case .lock:
             LockService.lockAndSleepDisplay()
         case .displayOff:
             turnDisplayOff()
+        case .setting:
+            guard let key = command.key, let value = command.value else { return }
+            // Журналюємо лише зміну, яку застосували.
+            if applyAgentSetting(key: key, value: value) {
+                append("Налаштування \(key) = \(Self.settingText(value))")
+            }
+        }
+    }
+
+    private static func settingText(_ value: UiScalar) -> String {
+        switch value {
+        case .string(let text): text
+        case .number(let number): number.rounded() == number ? String(Int(number)) : String(number)
+        case .bool(let flag): String(flag)
         }
     }
 

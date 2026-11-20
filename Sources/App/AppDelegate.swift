@@ -20,7 +20,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Вихід з аппки завершує сесію, щоб сон не лишився заблокованим.
     func applicationWillTerminate(_ notification: Notification) {
         MainActor.assumeIsolated {
-            AwakeModel.shared.commandListener.stop()
             AwakeModel.shared.agent.stop()
             AwakeModel.shared.stopAndWait()
         }

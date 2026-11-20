@@ -14,10 +14,13 @@ final class AgentService {
     private(set) var status = Status.stopped { didSet { onStatus?(status) } }
     var onStatus: ((Status) -> Void)?
     var onCommand: ((AgentCommand) -> Void)?
+    var onTree: ((UiTree) -> Void)?
+    var onSettings: (([String: UiScalar]) -> Void)?
 
     private var process: Process?
     private var input: FileHandle?
-    private var buffer = ""
+    /// Байти, а не рядок: багатобайтовий символ може розірватися між двома читаннями pipe.
+    private var buffer = Data()
     private var wantRunning = false
     private var crashes = 0
 
@@ -59,7 +62,7 @@ final class AgentService {
         proc.standardError = try? FileHandle(forWritingTo: Self.logURL)
 
         stdout.fileHandleForReading.readabilityHandler = { [weak self] handle in
-            let chunk = String(decoding: handle.availableData, as: UTF8.self)
+            let chunk = handle.availableData
             Task { @MainActor in self?.consume(chunk) }
         }
         proc.terminationHandler = { [weak self] finished in
@@ -72,7 +75,7 @@ final class AgentService {
             try proc.run()
             process = proc
             input = stdin.fileHandleForWriting
-            buffer = ""
+            buffer = Data()
             status = .starting
         } catch {
             status = .failed(error.localizedDescription)
@@ -93,17 +96,31 @@ final class AgentService {
         try? input.write(contentsOf: line)
     }
 
-    private func consume(_ chunk: String) {
-        buffer += chunk
-        while let newline = buffer.firstIndex(of: "\n") {
-            let line = String(buffer[..<newline])
-            buffer = String(buffer[buffer.index(after: newline)...])
+    /// Натискання в SwiftUI-рендерері: агент виконує його так само, як з вебу.
+    func sendEvent(_ event: UiEvent) {
+        send(type: "event", data: event)
+    }
+
+    /// Рядок декодується лише цілим, тож кирилиця в дереві не псується на межі читання.
+    private func consume(_ chunk: Data) {
+        buffer.append(chunk)
+        while let newline = buffer.firstIndex(of: 0x0A) {
+            let line = String(decoding: buffer[buffer.startIndex..<newline], as: UTF8.self)
+            buffer.removeSubrange(buffer.startIndex...newline)
             guard let message = AgentProtocol.parse(line) else { continue }
-            if message.type == "ready", let port = message.port {
+            switch message {
+            case .ready(let port):
                 crashes = 0
                 status = .running(port: port)
+            case .command(let command):
+                onCommand?(command)
+            case .tree(let tree):
+                onTree?(tree)
+            case .settings(let settings):
+                onSettings?(settings)
+            case .other:
+                break
             }
-            if let command = message.command { onCommand?(command) }
         }
     }
 
