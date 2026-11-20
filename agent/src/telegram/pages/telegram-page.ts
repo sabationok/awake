@@ -14,7 +14,7 @@ export function buildTelegramPage(ctx: ModuleContext): UiPage {
         type: 'section',
         title: 'Бот',
         footer:
-          'Команди /awake, /status, /start, /stop, /lock, /screen. Вимкни бота у старій аппці, інакше два боти конфліктують.',
+          'Команди /awake, /status, /start, /stop, /lock, /screen..',
         children: [ctx.settingNode('bot')],
       },
       {

@@ -103,6 +103,17 @@ export class ModulesService {
     await module.onSettingChanged?.(key, value, this.context(moduleId));
   }
 
+  /** Усі налаштування як `<module>.<key>` → значення (з default): знімок для Mac-аппки. */
+  settingsSnapshot(): Record<string, SettingValue> {
+    const snapshot: Record<string, SettingValue> = {};
+    for (const module of this._byId.values()) {
+      for (const definition of module.settings) {
+        snapshot[`${module.id}.${definition.key}`] = this._readSetting(module, definition.key);
+      }
+    }
+    return snapshot;
+  }
+
   private _find(moduleId: string): MacModule {
     const module = this._byId.get(moduleId);
     if (!module) throw new AppException(API_ERROR_CODES.invalidCommand, `Unknown module ${moduleId}`);

@@ -5,6 +5,7 @@ import { SettingsModule } from '../settings/settings.module';
 import { AwakeMacModule } from './awake/awake.mac-module';
 import { TelegramMacModule } from '../telegram/telegram.mac-module';
 import { ModulesService } from './modules.service';
+import { MacUiListener } from './mac-ui.listener';
 import { UiController } from './ui.controller';
 import { MAC_MODULES, type MacModule } from './types/mac-module';
 
@@ -14,6 +15,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
   controllers: [UiController],
   providers: [
     ModulesService,
+    MacUiListener,
     AwakeMacModule,
     TelegramMacModule,
     {

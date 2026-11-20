@@ -77,11 +77,17 @@ export type MacToAgentMessage =
         battery?: number | null;
         reason?: string;
       };
-    };
+    }
+  /** Натискання в SwiftUI-рендерері: агент виконує його так само, як з вебу. */
+  | { type: 'event'; data: import('./ui').UiEvent };
 
 export type AgentToMacMessage =
   | { type: 'ready'; data: { port: number } }
-  | { type: 'command'; data: CommandRequest & { id: string; source: SessionSource } };
+  | { type: 'command'; data: CommandRequest & { id: string; source: SessionSource } }
+  /** Повне дерево UI (scope local) для SwiftUI; шлеться при кожній зміні. */
+  | { type: 'tree'; data: import('./ui').UiTree }
+  /** Усі налаштування модулів `<module>.<key>` → значення: Mac застосовує їх у себе. */
+  | { type: 'settings'; data: Record<string, import('./modules').SettingValue> };
 
 
 /** Дерево UI для дашборду на Vercel (лише вузли зі scope all). Vercel лише читає його: керування йде на самому агенті. */

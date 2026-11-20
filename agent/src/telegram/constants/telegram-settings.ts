@@ -5,9 +5,9 @@ export const TELEGRAM_SETTINGS: SettingDefinition[] = [
     type: 'switch',
     key: 'bot',
     label: 'Бот у MacCC',
-    hint: 'Команди й кнопки в Telegram. Вимкни бота у старій аппці, інакше два боти конфліктують',
+    hint: 'Команди й кнопки в Telegram',
     page: 'telegram',
-    default: false,
+    default: true,
   },
   {
     type: 'switch',

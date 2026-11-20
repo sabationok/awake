@@ -4,6 +4,9 @@ import { randomUUID } from 'node:crypto';
 import { BehaviorSubject, Subject } from 'rxjs';
 import type {
   AgentToMacMessage,
+  SettingValue,
+  UiEvent,
+  UiTree,
   CommandRequest,
   MacState,
   MacToAgentMessage,
@@ -27,6 +30,8 @@ export class MacBridgeService implements OnModuleInit {
   readonly state$ = new BehaviorSubject<MacState | null>(null);
   readonly sessions$ = new Subject<SessionMessage>();
   readonly logs$ = new Subject<LogMessage>();
+  /** Натискання в SwiftUI-рендерері Mac-аппки. */
+  readonly events$ = new Subject<UiEvent>();
   private _stateAt = 0;
 
   onModuleInit() {
@@ -53,6 +58,14 @@ export class MacBridgeService implements OnModuleInit {
     return id;
   }
 
+  sendTree(tree: UiTree) {
+    this._send({ type: 'tree', data: tree });
+  }
+
+  sendSettings(settings: Record<string, SettingValue>) {
+    this._send({ type: 'settings', data: settings });
+  }
+
   private _send(message: AgentToMacMessage) {
     writeProtocolLine(message);
   }
@@ -76,6 +89,9 @@ export class MacBridgeService implements OnModuleInit {
         return;
       case 'log':
         this.logs$.next(message.data);
+        return;
+      case 'event':
+        this.events$.next(message.data);
         return;
     }
   }
