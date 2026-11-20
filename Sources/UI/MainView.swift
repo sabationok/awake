@@ -18,15 +18,16 @@ struct MainView: View {
             content(for: page)
         }
         .frame(minWidth: 460, idealWidth: 720, minHeight: 360, idealHeight: 520)
+        .pairingPrompt()
     }
 
     private var selection: MainPage { picked ?? sections.first?.items.first ?? .connection }
 
     /// Бічне меню: головний пункт модуля — його назва (Awake), він відкриває першу сторінку модуля з керуванням;
-    /// решта сторінок вкладені під ним. Далі системні сторінки дерева і нативні «Підключення» та «Дозвіл».
+    /// решта сторінок вкладені під ним. Далі системні сторінки дерева і нативні «Підключення», «Пристрої» та «Дозвіл».
     /// Без дерева (агент не запущений) лишаються лише нативні.
     private var sections: [SidebarSection<MainPage>] {
-        let native = [MainPage.connection, .permission].map { SidebarNode(item: $0) }
+        let native = [MainPage.connection, .devices, .permission].map { SidebarNode(item: $0) }
         guard let tree = model.uiTree else { return [SidebarSection(nodes: native)] }
         let modules = tree.modules.compactMap { module -> SidebarNode<MainPage>? in
             let pages = tree.pages
@@ -55,6 +56,7 @@ struct MainView: View {
         case .remote(let id): moduleOwning(id)?.title ?? treePage(id)?.title ?? ""
         case .permission: "Дозвіл"
         case .connection: "Підключення"
+        case .devices: "Пристрої"
         }
     }
 
@@ -63,6 +65,7 @@ struct MainView: View {
         case .remote(let id): moduleOwning(id)?.icon.symbol ?? treePage(id)?.icon.symbol ?? "questionmark.circle"
         case .permission: "lock.fill"
         case .connection: "antenna.radiowaves.left.and.right"
+        case .devices: "laptopcomputer.and.iphone"
         }
     }
 
@@ -86,6 +89,11 @@ struct MainView: View {
         case .connection:
             Form {
                 RemoteSection()
+            }
+            .formStyle(.grouped)
+        case .devices:
+            Form {
+                DevicesSection()
             }
             .formStyle(.grouped)
         case .permission:

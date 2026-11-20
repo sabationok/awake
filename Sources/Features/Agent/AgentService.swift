@@ -16,6 +16,7 @@ final class AgentService {
     var onCommand: ((AgentCommand) -> Void)?
     var onTree: ((UiTree) -> Void)?
     var onSettings: (([String: UiScalar]) -> Void)?
+    var onDevices: ((AgentDevices) -> Void)?
 
     private var process: Process?
     private var input: FileHandle?
@@ -118,6 +119,8 @@ final class AgentService {
                 onTree?(tree)
             case .settings(let settings):
                 onSettings?(settings)
+            case .devices(let devices):
+                onDevices?(devices)
             case .other:
                 break
             }

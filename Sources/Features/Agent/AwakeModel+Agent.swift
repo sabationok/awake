@@ -12,7 +12,9 @@ extension AwakeModel {
             self?.agentStatus = status
             // Агента немає: показувати останнє дерево було б неправдою.
             switch status {
-            case .stopped, .failed: self?.uiTree = nil
+            case .stopped, .failed:
+                self?.uiTree = nil
+                self?.devices = nil
             case .starting, .running: break
             }
         }
@@ -22,6 +24,7 @@ extension AwakeModel {
             self?.uiTree = tree
         }
         agent.onSettings = { [weak self] in self?.applyAgentSettings($0) }
+        agent.onDevices = { [weak self] in self?.devices = $0 }
         wifi.onAuthorizationChange = { [weak self] in self?.refreshWifi() }
         refreshWifi()
         applyAgent()

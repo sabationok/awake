@@ -66,6 +66,7 @@ enum AgentProtocol {
         case command(AgentCommand)
         case tree(UiTree)
         case settings([String: UiScalar])
+        case devices(AgentDevices)
         case other
     }
 
@@ -92,6 +93,10 @@ enum AgentProtocol {
             struct Wrapper: Decodable { let data: [String: UiScalar] }
             guard let settings = try? JSONDecoder().decode(Wrapper.self, from: data).data else { return .other }
             return .settings(settings)
+        case "devices":
+            struct Wrapper: Decodable { let data: AgentDevices }
+            guard let devices = try? UiTreeDecoder.decoder.decode(Wrapper.self, from: data).data else { return .other }
+            return .devices(devices)
         default:
             return .other
         }

@@ -79,7 +79,16 @@ export type MacToAgentMessage =
       };
     }
   /** Натискання в SwiftUI-рендерері: агент виконує його так само, як з вебу. */
-  | { type: 'event'; data: import('./ui').UiEvent };
+  | { type: 'event'; data: import('./ui').UiEvent }
+  /** Сторінка «Пристрої» в Mac-аппці: попросити свіжий знімок або відкликати пристрій. */
+  | {
+      type: 'devices';
+      data:
+        | { action: 'refresh' }
+        | { action: 'revoke'; id: number }
+        /** Відповідь на «Це ви?» для пристрою, що відкрив посилання з QR. */
+        | { action: 'answer'; requestId: string; approve: boolean };
+    };
 
 export type AgentToMacMessage =
   | { type: 'ready'; data: { port: number } }
@@ -87,7 +96,46 @@ export type AgentToMacMessage =
   /** Повне дерево UI (scope local) для SwiftUI; шлеться при кожній зміні. */
   | { type: 'tree'; data: import('./ui').UiTree }
   /** Усі налаштування модулів `<module>.<key>` → значення: Mac застосовує їх у себе. */
-  | { type: 'settings'; data: Record<string, import('./modules').SettingValue> };
+  | { type: 'settings'; data: Record<string, import('./modules').SettingValue> }
+  /** Сполучені пристрої і поточне посилання сполучення: лише для Mac-аппки, у веб не йде. */
+  | { type: 'devices'; data: DevicesSnapshot };
+
+/** Сполучений браузер: токен лежить лише в ньому, тут опис і коли його бачили. */
+export interface DeviceInfo {
+  id: number;
+  /** Коротко з User-Agent: «Chrome · macOS». */
+  name: string;
+  userAgent: string | null;
+  createdAt: string;
+  lastSeenAt: string | null;
+}
+
+/** Посилання для сполучення нового пристрою або чому його зараз немає. */
+export type DevicePairing =
+  | { url: string; expiresAt: string }
+  | { url: null; reason: 'untrusted' | 'noNetwork' };
+
+/** Пристрій відкрив посилання з QR і чекає, поки на Mac підтвердять, що це ти. */
+export interface DevicePairingRequest {
+  id: string;
+  name: string;
+  userAgent: string | null;
+  createdAt: string;
+  /** Після цього запит без відповіді протухає. */
+  expiresAt: string;
+}
+
+export interface DevicesSnapshot {
+  devices: DeviceInfo[];
+  requests: DevicePairingRequest[];
+  pairing: DevicePairing;
+}
+
+/** Відповідь агента пристрою, що чекає підтвердження. Токен приходить лише раз, разом з approved. */
+export interface DevicePairingPoll {
+  status: 'pending' | 'approved' | 'denied' | 'expired';
+  token?: string;
+}
 
 
 /** Дерево UI для дашборду на Vercel (лише вузли зі scope all). Vercel лише читає його: керування йде на самому агенті. */

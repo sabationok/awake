@@ -42,6 +42,8 @@ final class AwakeModel: ObservableObject {
     // MARK: пульт (агент)
     /// Дерево UI від агента. nil, поки агента немає або він зупинений.
     @Published var uiTree: UiTree?
+    /// Сполучені пристрої і посилання сполучення. nil, поки агент їх не надіслав.
+    @Published var devices: AgentDevices?
     @Published var agentEnabled = UserDefaults.standard.object(forKey: "agent.enabled") as? Bool ?? true {
         didSet {
             UserDefaults.standard.set(agentEnabled, forKey: "agent.enabled")

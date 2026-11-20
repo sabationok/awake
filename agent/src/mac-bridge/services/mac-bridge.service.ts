@@ -11,11 +11,13 @@ import type {
   MacState,
   MacToAgentMessage,
   SessionSource,
+  DevicesSnapshot,
 } from '@awake/contracts';
 import { writeProtocolLine } from './protocol-stdout';
 
 type SessionMessage = Extract<MacToAgentMessage, { type: 'session' }>['data'];
 type LogMessage = Extract<MacToAgentMessage, { type: 'log' }>['data'];
+type DevicesRequest = Extract<MacToAgentMessage, { type: 'devices' }>['data'];
 
 /** Mac вважається офлайн, якщо стан не приходив довше за цей час. */
 const STATE_STALE_MS = 30_000;
@@ -32,6 +34,8 @@ export class MacBridgeService implements OnModuleInit {
   readonly logs$ = new Subject<LogMessage>();
   /** Натискання в SwiftUI-рендерері Mac-аппки. */
   readonly events$ = new Subject<UiEvent>();
+  /** Запити сторінки «Пристрої» Mac-аппки. */
+  readonly devices$ = new Subject<DevicesRequest>();
   private _stateAt = 0;
 
   onModuleInit() {
@@ -66,6 +70,10 @@ export class MacBridgeService implements OnModuleInit {
     this._send({ type: 'settings', data: settings });
   }
 
+  sendDevices(snapshot: DevicesSnapshot) {
+    this._send({ type: 'devices', data: snapshot });
+  }
+
   private _send(message: AgentToMacMessage) {
     writeProtocolLine(message);
   }
@@ -92,6 +100,9 @@ export class MacBridgeService implements OnModuleInit {
         return;
       case 'event':
         this.events$.next(message.data);
+        return;
+      case 'devices':
+        this.devices$.next(message.data);
         return;
     }
   }
