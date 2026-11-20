@@ -5,6 +5,7 @@ import { SettingsModule } from '../settings/settings.module';
 import { AwakeMacModule } from './awake/awake.mac-module';
 import { AwakeSessionListener } from './awake/listeners/awake-session.listener';
 import { MacStateMacModule } from './mac/mac.mac-module';
+import { MediaMacModule } from './media/media.mac-module';
 import { TelegramMacModule } from '../telegram/telegram.mac-module';
 import { ModulesService } from './modules.service';
 import { MacUiListener } from './mac-ui.listener';
@@ -20,12 +21,13 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
     MacUiListener,
     AwakeSessionListener,
     AwakeMacModule,
+    MediaMacModule,
     MacStateMacModule,
     TelegramMacModule,
     {
       provide: MAC_MODULES,
       useFactory: (...modules: MacModule[]) => modules,
-      inject: [AwakeMacModule, MacStateMacModule, TelegramMacModule],
+      inject: [AwakeMacModule, MediaMacModule, MacStateMacModule, TelegramMacModule],
     },
   ],
   exports: [ModulesService],

@@ -15,6 +15,10 @@ final class AwakeModel: ObservableObject {
     @Published private(set) var startDate: Date?
     @Published private(set) var endDate: Date?
     @Published private(set) var now = Date()
+    /// Коли таймер сну присипить Mac. Змінюють лише методи в SleepTimer.swift.
+    @Published var sleepAt: Date?
+    /// Таймер сну зупинив сесію: щойно скрипт поверне сон, Mac засинає.
+    var sleepAfterStop = false
 
     // MARK: стан системи
     @Published private(set) var power = PowerStatus.unknown
@@ -110,6 +114,7 @@ final class AwakeModel: ObservableObject {
     private func tick() {
         now = Date()
         tickCount += 1
+        checkSleepTimer()
         if tickCount % 15 == 0 { refresh() }
         if isRunning { dimmer.update(limit: displayOff.seconds) }
         if tickCount % 2 == 0 { watchLid() }
@@ -204,6 +209,12 @@ final class AwakeModel: ObservableObject {
         sessionDuration = nil
         refresh()
         pushAgentState()
+        if sleepAfterStop {
+            sleepAfterStop = false
+            pendingRestart = nil
+            sleepSoon()
+            return
+        }
         if let next = pendingRestart {
             pendingRestart = nil
             start(next.preset, previousSeconds: next.previousSeconds)

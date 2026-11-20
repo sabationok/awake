@@ -68,10 +68,13 @@ struct UiSettingRef: Codable, Hashable {
 enum UiControl: Decodable, Hashable {
     /// Перемикач: з `setting` пише налаштування, без нього викликає `on` / `off`.
     case toggle(value: Bool, disabled: Bool, setting: UiSettingRef?, on: UiAction?, off: UiAction?)
-    case select(value: String, options: [UiOption], disabled: Bool, setting: UiSettingRef)
+    /// Вибір: з `setting` пише налаштування, без нього викликає `action` з `value` = вибране.
+    case select(value: String, options: [UiOption], disabled: Bool, setting: UiSettingRef?, action: UiAction?)
+    /// Повзунок: відпущений, викликає `action` з `value` = число.
+    case slider(value: Double, min: Double, max: Double, step: Double?, disabled: Bool, action: UiAction)
     case button(UiButton)
 
-    private enum Keys: String, CodingKey { case type, value, disabled, setting, on, off, options, button }
+    private enum Keys: String, CodingKey { case type, value, disabled, setting, on, off, options, button, action, min, max, step }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: Keys.self)
@@ -87,7 +90,14 @@ enum UiControl: Decodable, Hashable {
             self = .select(
                 value: try c.decode(String.self, forKey: .value),
                 options: try c.decode([UiOption].self, forKey: .options), disabled: disabled,
-                setting: try c.decode(UiSettingRef.self, forKey: .setting))
+                setting: try c.decodeIfPresent(UiSettingRef.self, forKey: .setting),
+                action: try c.decodeIfPresent(UiAction.self, forKey: .action))
+        case "slider":
+            self = .slider(
+                value: try c.decode(Double.self, forKey: .value),
+                min: try c.decode(Double.self, forKey: .min), max: try c.decode(Double.self, forKey: .max),
+                step: try c.decodeIfPresent(Double.self, forKey: .step), disabled: disabled,
+                action: try c.decode(UiAction.self, forKey: .action))
         default:
             self = .button(try c.decode(UiButton.self, forKey: .button))
         }

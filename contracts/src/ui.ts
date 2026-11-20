@@ -60,7 +60,18 @@ export type UiControl =
       on?: UiAction;
       off?: UiAction;
     }
-  | { type: 'select'; value: string; options: UiOption[]; disabled?: boolean; setting: { module: string; key: string } }
+  | {
+      type: 'select';
+      value: string;
+      options: UiOption[];
+      disabled?: boolean;
+      /** Вибір пише налаштування модуля… */
+      setting?: { module: string; key: string };
+      /** …або викликає дію з `params.value` = вибране значення (напр. таймер сну). */
+      action?: UiAction;
+    }
+  /** Повзунок: відпущений, викликає дію з `params.value` = число (гучність, яскравість). */
+  | { type: 'slider'; value: number; min: number; max: number; step?: number; disabled?: boolean; action: UiAction }
   | { type: 'button'; button: UiButton };
 
 /** Рядок «назва — значення» або «назва — керувальний елемент», як у SwiftUI-аппці. */

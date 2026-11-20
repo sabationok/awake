@@ -42,7 +42,8 @@ export interface BotCommand {
   /** Відповідь одразу після дії. */
   reply: string;
   /** Аргумент після команди, напр. тривалість. Порожній аргумент — дія без параметра. */
-  arg?: { param: string; pattern: RegExp; invalid: string };
+  /** `required` — без аргументу команда не виконується і бот відповідає `invalid`. */
+  arg?: { param: string; pattern: RegExp; invalid: string; required?: boolean };
 }
 
 /** Що модуль додає в Telegram-бот: свою головну команду (`/awake`) і команди другого рівня (`/awake_start`). */

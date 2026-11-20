@@ -18,6 +18,7 @@ export function awakeStatus(mac: MacState | null): StatusFields | null {
     awake: mac.active,
     until: mac.until ? formatHhmm(mac.until) : null,
     duration: mac.duration,
+    sleepAt: mac.sleepAt ? formatHhmm(mac.sleepAt) : null,
   };
 }
 
@@ -57,5 +58,17 @@ export const AWAKE_BOT: ModuleBot = {
     { name: 'stop', description: 'Повернути сон', action: 'stop', reply: 'Повертаю сон…' },
     { name: 'lock', description: 'Заблокувати екран', action: 'lock', reply: 'Блокую екран…' },
     { name: 'screen', description: 'Погасити екран', action: 'displayOff', reply: 'Гашу екран…' },
+    {
+      name: 'sleep',
+      description: 'Заснути через N хв (/awake_sleep 30, 0 скасовує)',
+      action: 'sleepTimer',
+      reply: '🌙 Таймер сну поставлено',
+      arg: {
+        param: 'value',
+        pattern: /^\d{1,3}$/,
+        required: true,
+        invalid: 'Вкажи хвилини: /awake_sleep 30. /awake_sleep 0 скасовує таймер',
+      },
+    },
   ],
 };

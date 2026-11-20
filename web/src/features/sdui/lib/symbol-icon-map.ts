@@ -12,6 +12,9 @@ import {
   Lock,
   Monitor,
   Moon,
+  Sun,
+  Volume2,
+  VolumeX,
   Plug,
   ScrollText,
   Send,
@@ -44,6 +47,10 @@ const SYMBOL_ICON: Record<string, LucideIcon | undefined> = {
   'lock.laptopcomputer': LaptopMinimal,
   'paperplane.fill': Send,
   'moon.fill': Moon,
+  'moon.zzz.fill': Moon,
+  'speaker.wave.2.fill': Volume2,
+  'speaker.slash.fill': VolumeX,
+  'sun.max.fill': Sun,
   lock: Lock,
 };
 

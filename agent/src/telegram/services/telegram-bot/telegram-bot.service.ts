@@ -139,7 +139,7 @@ export class TelegramBotService {
 
   private async _runCommand(ctx: Context, module: BotModule, command: BotCommand, payload: string) {
     const value = payload.trim();
-    if (command.arg && value && !command.arg.pattern.test(value)) {
+    if (command.arg && (value ? !command.arg.pattern.test(value) : command.arg.required)) {
       await ctx.reply(command.arg.invalid);
       return;
     }

@@ -18,7 +18,7 @@ struct UiNodeView: View {
                                  control: .toggle(value: value, disabled: disabled, setting: setting, on: nil, off: nil)))
         case .select(let id, let label, let hint, let icon, let setting, let value, let options, let disabled):
             UiRowView(row: UiRow(id: id, label: label, hint: hint, icon: icon,
-                                 control: .select(value: value, options: options, disabled: disabled, setting: setting)))
+                                 control: .select(value: value, options: options, disabled: disabled, setting: setting, action: nil)))
         case .buttons(_, let buttons):
             UiButtonRow(buttons: buttons)
         case .list(_, let items, let empty):

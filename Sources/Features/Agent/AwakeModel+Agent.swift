@@ -100,7 +100,11 @@ extension AwakeModel {
             sleepBlocked: sleepBlocked,
             ssid: currentSSID,
             trusted: currentNetworkTrusted,
-            appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+            appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?",
+            sleepAt: sleepAt,
+            volume: SoundService.volume(),
+            muted: SoundService.isMuted() ?? false,
+            brightness: BrightnessService.brightness()
         )
         agent.send(type: "state", data: state)
     }
@@ -179,7 +183,8 @@ extension AwakeModel {
 
     private func handleAgentCommand(_ command: AgentCommand) {
         if command.action != .setting {
-            append("Пульт: \(command.action.rawValue)\(command.duration.map { " \($0)" } ?? "")")
+            let argument = command.duration ?? command.value.map(Self.settingText)
+            append("Пульт: \(command.action.rawValue)\(argument.map { " \($0)" } ?? "")")
         }
         let source = command.source ?? .web
         switch command.action {
@@ -192,6 +197,21 @@ extension AwakeModel {
             LockService.lockAndSleepDisplay()
         case .displayOff:
             turnDisplayOff()
+        case .sleepTimer:
+            guard let minutes = command.value.flatMap(Self.number) else { return }
+            setSleepTimer(minutes: Int(minutes))
+        case .volume:
+            guard let percent = command.value.flatMap(Self.percent) else { return }
+            SoundService.setVolume(percent)
+            pushAgentState()
+        case .mute:
+            guard let muted = command.value?.boolValue else { return }
+            SoundService.setMuted(muted)
+            pushAgentState()
+        case .brightness:
+            guard let percent = command.value.flatMap(Self.percent) else { return }
+            BrightnessService.setBrightness(percent)
+            pushAgentState()
         case .setting:
             guard let key = command.key, let value = command.value else { return }
             // Журналюємо лише зміну, яку застосували.

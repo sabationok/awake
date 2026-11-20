@@ -15,11 +15,15 @@ struct AgentMacState: Encodable, Equatable {
     var ssid: String?
     var trusted: Bool
     var appVersion: String
+    var sleepAt: Date?
+    var volume: Int?
+    var muted: Bool
+    var brightness: Int?
 }
 
 /// Команда від агента: що натиснули на пульті або яке налаштування змінили.
 struct AgentCommand: Decodable {
-    enum Action: String, Decodable { case start, stop, lock, displayOff, setting }
+    enum Action: String, Decodable { case start, stop, lock, displayOff, setting, sleepTimer, volume, mute, brightness }
     var id: String
     var action: Action
     var duration: String?

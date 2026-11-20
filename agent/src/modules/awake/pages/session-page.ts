@@ -6,6 +6,7 @@ import { formatBattery } from '../helpers/format-battery';
 import { formatClock } from '../helpers/format-clock';
 import { durationSeconds, plannedDuration } from '../helpers/session-plan';
 import { sleepRow } from '../helpers/sleep-row';
+import { sleepTimerRow } from '../helpers/sleep-timer-row';
 import { thermalPresentation } from '../helpers/thermal-presentation';
 
 /**
@@ -31,7 +32,7 @@ export function buildSessionPage(ctx: ModuleContext): UiPage {
       footer: 'Mac не засинає навіть із закритою кришкою. Сон повертається сам після таймера, при низькому заряді або перегріві, і коли ти виходиш з аппки.',
       children: session,
     },
-    { id: 'screen', type: 'section', children: [displayOffNowRow(mac)] },
+    { id: 'screen', type: 'section', children: [sleepTimerRow(mac), displayOffNowRow(mac)] },
   ];
   if (mac !== null) {
     children.push({ id: 'state', type: 'section', title: 'Стан', children: stateRows(mac) });

@@ -7,7 +7,7 @@ export type ThermalLevel = 'nominal' | 'fair' | 'serious' | 'critical';
 /** Звідки прийшла дія над сесією. */
 export type SessionSource = 'mac' | 'telegram' | 'web';
 export type SessionEventType = 'start' | 'restart' | 'stop';
-export type CommandAction = 'start' | 'stop' | 'lock' | 'displayOff' | 'setting';
+export type CommandAction = 'start' | 'stop' | 'lock' | 'displayOff' | 'setting' | 'sleepTimer' | 'volume' | 'mute' | 'brightness';
 
 /** Знімок стану Mac, який Mac-аппка шле агенту. */
 export interface MacState {
@@ -27,6 +27,13 @@ export interface MacState {
   /** Мережа в списку довірених на Mac: лише тоді агент публікує локальну адресу. */
   trusted: boolean;
   appVersion: string;
+  /** ISO, коли таймер сну присипить Mac; null — таймера немає. */
+  sleepAt: string | null;
+  /** Гучність виходу 0…100; null — пристрій не дає її змінювати. */
+  volume: number | null;
+  muted: boolean;
+  /** Яскравість вбудованого дисплея 0…100; null — його немає (кришка закрита, лише зовнішній монітор). */
+  brightness: number | null;
 }
 
 
@@ -51,7 +58,10 @@ export interface CommandRequest {
   action: CommandAction;
   /** Для start: 30m, 1h, 2h… Без нього Mac бере тривалість за замовчуванням. */
   duration?: string;
-  /** Для setting: ключ `<module>.<key>` і нове значення, яке Mac має застосувати в себе. */
+  /**
+   * Для setting: ключ `<module>.<key>` і нове значення, яке Mac має застосувати в себе.
+   * Для sleepTimer — хвилини до сну (0 скасовує), volume / brightness — 0…100, mute — boolean.
+   */
   key?: string;
   value?: string | number | boolean;
 }
