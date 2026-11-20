@@ -1,3 +1,4 @@
+import type { UiTone } from '@awake/contracts';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
@@ -6,7 +7,7 @@ import { cn } from '@/lib/cn';
  * @spec Кольоровий квадрат з іконкою, як у «Системних параметрах».
  * @keywords icon, tile, badge, settings icon
  */
-export type SymbolTone = 'accent' | 'green' | 'orange' | 'red' | 'gray';
+export type SymbolTone = UiTone;
 
 const TONE: Record<SymbolTone, string> = {
   accent: 'bg-accent',
@@ -14,6 +15,8 @@ const TONE: Record<SymbolTone, string> = {
   orange: 'bg-orange',
   red: 'bg-red',
   gray: 'bg-gray',
+  indigo: 'bg-indigo',
+  yellow: 'bg-yellow',
 };
 
 export function SymbolIcon({ tone, children }: { tone: SymbolTone; children: ReactNode }) {

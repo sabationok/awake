@@ -1,9 +1,23 @@
-import { RemoteDashboardPage } from '@/features/awake/pages/remote-dashboard-page';
+'use client';
+import { Suspense } from 'react';
+import { SduiPage } from '@/features/sdui/pages/sdui-page';
+import { remoteSource } from '@/features/sdui/sources/remote-source';
 import { logout } from '@/server/auth-actions';
-import { isPresenceConfigured, readPresence } from '@/server/presence';
 
-export const dynamic = 'force-dynamic';
-
-export default async function Page() {
-  return <RemoteDashboardPage initial={await readPresence()} configured={isPresenceConfigured()} logout={logout} />;
+/** Дашборд на Vercel: дерево з Upstash через серверні екшени, вихід у шапці. */
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <SduiPage
+        source={remoteSource}
+        accessory={
+          <form action={logout}>
+            <button type="submit" className="pb-1.5 text-[15px] text-accent">
+              Вийти
+            </button>
+          </form>
+        }
+      />
+    </Suspense>
+  );
 }

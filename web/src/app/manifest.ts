@@ -4,8 +4,8 @@ export const dynamic = 'force-static';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Awake',
-    short_name: 'Awake',
+    name: 'MacCC',
+    short_name: 'MacCC',
     description: 'Стан і керування Mac',
     start_url: '/',
     display: 'standalone',

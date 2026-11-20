@@ -1,0 +1,30 @@
+import type { ComponentType } from 'react';
+import type { UiNode } from '@awake/contracts';
+import type { NodeProps } from '../sdui.types';
+import { ButtonsNode } from './buttons-node';
+import { ListNode } from './list-node';
+import { RowNode } from './row-node';
+import { SectionNode } from './section-node';
+import { SelectNode } from './select-node';
+import { StatusNode } from './status-node';
+import { SwitchNode } from './switch-node';
+import { TextNode } from './text-node';
+
+type NodeComponents = { [K in UiNode['type']]: ComponentType<NodeProps<Extract<UiNode, { type: K }>>> };
+
+const NODE_COMPONENTS: NodeComponents = {
+  section: SectionNode,
+  row: RowNode,
+  status: StatusNode,
+  switch: SwitchNode,
+  select: SelectNode,
+  buttons: ButtonsNode,
+  list: ListNode,
+  text: TextNode,
+};
+
+/** Вибирає компонент за типом вузла; рендерер не знає, звідки вузол узявся. */
+export function NodeView({ node, onEvent }: NodeProps<UiNode>) {
+  const View = NODE_COMPONENTS[node.type] as ComponentType<NodeProps<UiNode>>;
+  return <View node={node} onEvent={onEvent} />;
+}

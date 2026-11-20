@@ -12,6 +12,8 @@ const TONE: Record<SymbolTone, string> = {
   orange: 'bg-orange',
   red: 'bg-red',
   gray: 'bg-gray',
+  indigo: 'bg-indigo',
+  yellow: 'bg-yellow',
 };
 
 export function StatusDot({ tone, pulse = false }: { tone: SymbolTone; pulse?: boolean }) {

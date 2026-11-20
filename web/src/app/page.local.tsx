@@ -1,5 +1,10 @@
-import { LocalDashboardPage } from '@/features/awake/pages/local-dashboard-page';
+import { Suspense } from 'react';
+import { LocalSduiPage } from '@/features/sdui/pages/local-sdui-page';
 
 export default function Page() {
-  return <LocalDashboardPage />;
+  return (
+    <Suspense fallback={null}>
+      <LocalSduiPage />
+    </Suspense>
+  );
 }
