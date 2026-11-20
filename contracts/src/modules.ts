@@ -10,6 +10,11 @@ interface SettingBase {
   icon?: { symbol: string; tone: import('./ui').UiTone };
   /** local — налаштування видно лише на Mac (напр. довірені мережі), не на Vercel. */
   scope?: import('./ui').UiScope;
+  /**
+   * Id сторінки модуля, де модуль сам показує це налаштування (через ctx.settingNode).
+   * Тоді хост не дублює його на сторінці «Налаштування».
+   */
+  page?: string;
 }
 
 export interface SwitchSetting extends SettingBase {

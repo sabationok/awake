@@ -94,9 +94,5 @@ export type AgentToMacMessage =
 export const PRESENCE_KEY = 'awake:presence';
 export const PRESENCE_TTL_SECONDS = 45;
 
-/** Дерево UI для дашборду на Vercel (лише вузли зі scope all). */
+/** Дерево UI для дашборду на Vercel (лише вузли зі scope all). Vercel лише читає його: керування йде на самому агенті. */
 export const UI_TREE_KEY = 'maccc:ui';
-/** Черга подій UI з Vercel/WebApp до Mac. Nest читає її, поки хтось дивиться дашборд. */
-export const UI_EVENTS_KEY = 'maccc:events';
-/** Ключ «дашборд відкритий»: Vercel оновлює його, Nest тоді частіше читає чергу. */
-export const UI_WATCH_KEY = 'maccc:watch';

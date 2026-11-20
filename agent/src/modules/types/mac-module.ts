@@ -1,4 +1,4 @@
-import type { CommandRequest, MacState, SettingDefinition, SettingValue, UiPage } from '@awake/contracts';
+import type { CommandRequest, MacState, SettingDefinition, SettingValue, UiNode, UiPage } from '@awake/contracts';
 
 /**
  * Що модуль отримує від хоста. Модуль не лізе в SQLite, stdin чи Upstash напряму:
@@ -9,6 +9,8 @@ export interface ModuleContext {
   mac: MacState | null;
   /** Значення налаштування цього модуля (вже з default). */
   setting<T extends SettingValue>(key: string): T;
+  /** Готовий вузол switch/select для налаштування цього модуля з поточним значенням, щоб поставити його на свою сторінку. */
+  settingNode(key: string): UiNode;
   /** Команда для Mac-аппки (сон, блокування, екран). */
   sendToMac(command: CommandRequest, source: 'mac' | 'telegram' | 'web'): void;
 }
