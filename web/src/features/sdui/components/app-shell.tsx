@@ -191,7 +191,7 @@ function downloadCa(ca: string) {
   const url = URL.createObjectURL(new Blob([ca], { type: 'application/x-x509-ca-cert' }));
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'MacCC-Local-CA.crt';
+  link.download = 'MaControl-Local-CA.crt';
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

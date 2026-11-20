@@ -1,7 +1,7 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const OPENSSL_BIN = '/usr/bin/openssl';
-export const CA_SUBJECT = '/CN=MacCC Local CA';
+export const CA_SUBJECT = '/CN=MaControl Local CA';
 /** Сертифікат видається на аппку, а не на її модуль чи процес агента. */
 export const LEAF_SUBJECT = '/CN=MaControl';
 /** Довше 825 днів Apple не довіряє, тож 397 з запасом. */
