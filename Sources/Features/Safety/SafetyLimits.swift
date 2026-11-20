@@ -1,7 +1,7 @@
 import Foundation
 
 /// Пороги захисту. Єдине джерело: аппка передає їх скрипту через змінні середовища.
-/// Агент може змінити їх (`awake.batteryStop`, `awake.batteryWarn`), тож значення в UserDefaults.
+/// Агент може змінити їх (`awake.batteryStop`, `mac.batteryWarn`), тож значення в UserDefaults.
 enum SafetyLimits {
     private enum Key {
         static let batteryWarn = "safety.batteryWarn"

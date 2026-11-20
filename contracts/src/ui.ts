@@ -137,7 +137,16 @@ export interface UiText extends UiNodeBase {
   tone?: UiTone;
 }
 
-export type UiNode = UiSection | UiRow | UiStatus | UiSwitch | UiSelect | UiButtons | UiList | UiText;
+/**
+ * Вкладки всередині секції: перемикач зверху і вміст вибраної вкладки під ним.
+ * Вибір вкладки — стан рендерера, агентові він не потрібен.
+ */
+export interface UiTabs extends UiNodeBase {
+  type: 'tabs';
+  tabs: { id: string; label: string; children: UiNode[] }[];
+}
+
+export type UiNode = UiSection | UiRow | UiStatus | UiSwitch | UiSelect | UiButtons | UiList | UiText | UiTabs;
 
 /** Вкладка бічного меню. */
 export interface UiPage {

@@ -9,7 +9,8 @@ import { SduiIcon } from './sdui-icon';
 
 /** Рядок «назва — значення» або «назва — керування», з іконкою, крапкою стану і відліком. */
 export function RowNode({ node, onEvent }: NodeProps<UiRow>) {
-  const hasHint = Boolean(node.hint || node.dot || node.countdownTo);
+  // Крапка — лише позначка біля тексту: без підказки чи відліку рядок її не показує.
+  const hasHint = Boolean(node.hint || node.countdownTo);
   return (
     <KeyValueRow
       icon={<SduiIcon icon={node.icon} large={node.prominent} />}

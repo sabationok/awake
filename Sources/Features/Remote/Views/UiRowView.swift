@@ -51,7 +51,9 @@ struct UiRowView: View {
     /// Під назвою: крапка, опис і зворотний відлік. Показується лише те, що є.
     @ViewBuilder
     private func metaLine(withHint: Bool) -> some View {
-        if row.dot != nil || (withHint && row.hint != nil) || row.countdownTo != nil {
+        // Крапка — лише позначка біля тексту («● Вимкнено»): сама в рядку вона нічого не каже.
+        let hasText = (withHint && row.hint != nil) || row.countdownTo != nil
+        if hasText {
             HStack(spacing: 6) {
                 if let dot = row.dot {
                     StatusDot(color: dot.tone.color, pulse: dot.pulse ?? false)

@@ -9,10 +9,9 @@ import { LOG_QUERY_LIMIT, TRACKING_QUERY_LIMIT } from './constants/session-limit
 import { buildLogPage } from './pages/log-page';
 import { buildSessionPage } from './pages/session-page';
 import { buildSessionSettingsPage } from './pages/session-settings-page';
-import { buildStatusPage } from './pages/status-page';
 import { buildTrackingPage } from './pages/tracking-page';
 
-/** Модуль Awake: керування сесією Mac, його стан, історія сесій і налаштування сторінок. */
+/** Модуль Awake: сесія (Mac не спить), її налаштування, історія сесій і журнал. */
 @Injectable()
 export class AwakeMacModule implements MacModule {
   readonly id = 'awake';
@@ -46,7 +45,6 @@ export class AwakeMacModule implements MacModule {
     return [
       buildSessionPage(ctx),
       buildSessionSettingsPage(ctx),
-      buildStatusPage(ctx),
       buildTrackingPage(sessions, new Date()),
       buildLogPage(this._logs.findMany({ limit: LOG_QUERY_LIMIT }), new Date()),
     ];

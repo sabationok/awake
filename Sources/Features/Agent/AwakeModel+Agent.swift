@@ -147,7 +147,7 @@ extension AwakeModel {
         case "awake.batteryStop":
             guard let percent = Self.percent(value) else { return false }
             SafetyLimits.batteryStop = percent
-        case "awake.batteryWarn":
+        case "mac.batteryWarn", "awake.batteryWarn":
             guard let percent = Self.percent(value) else { return false }
             SafetyLimits.batteryWarn = percent
         case "awake.restoreSleep":

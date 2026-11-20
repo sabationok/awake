@@ -1,15 +1,15 @@
 import type { MacState, UiPage, UiRow } from '@awake/contracts';
 import type { ModuleContext } from '../../types/mac-module';
-import { sleepRow } from '../helpers/sleep-row';
-import { formatBattery } from '../helpers/format-battery';
-import { powerLabel } from '../helpers/power-label';
-import { thermalPresentation } from '../helpers/thermal-presentation';
+import { sleepRow } from '../../awake/helpers/sleep-row';
+import { formatBattery } from '../../awake/helpers/format-battery';
+import { powerLabel } from '../../awake/helpers/power-label';
+import { thermalPresentation } from '../../awake/helpers/thermal-presentation';
 
 export function buildStatusPage(ctx: ModuleContext): UiPage {
   const mac = ctx.mac;
   return {
     id: 'status',
-    module: 'awake',
+    module: 'mac',
     title: 'Стан',
     icon: { symbol: 'waveform.path.ecg', tone: 'green' },
     group: 'modules',

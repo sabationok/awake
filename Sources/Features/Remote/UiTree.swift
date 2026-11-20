@@ -116,12 +116,13 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
     case buttons(id: String, buttons: [UiButton])
     case list(id: String, items: [UiListItem], empty: String?)
     case text(id: String, text: String, tone: UiTone?)
+    case tabs(id: String, tabs: [UiTab])
     case unknown(id: String)
 
     var id: String {
         switch self {
         case .section(let id, _, _, _), .toggle(let id, _, _, _, _, _, _), .select(let id, _, _, _, _, _, _, _),
-             .buttons(let id, _), .list(let id, _, _), .text(let id, _, _), .unknown(let id):
+             .buttons(let id, _), .list(let id, _, _), .text(let id, _, _), .tabs(let id, _), .unknown(let id):
             id
         case .row(let row): row.id
         case .status(let status): status.id
@@ -129,7 +130,7 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
     }
 
     private enum Keys: String, CodingKey {
-        case type, id, title, footer, children, label, hint, icon, module, key, value, options, disabled, buttons, items, empty, text, tone
+        case type, id, title, footer, children, label, hint, icon, module, key, value, options, disabled, buttons, items, empty, text, tone, tabs
     }
 
     init(from decoder: Decoder) throws {
@@ -166,10 +167,19 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
         case "text":
             self = .text(id: id, text: try c.decode(String.self, forKey: .text),
                          tone: try c.decodeIfPresent(UiTone.self, forKey: .tone))
+        case "tabs":
+            self = .tabs(id: id, tabs: try c.decode([UiTab].self, forKey: .tabs))
         default:
             self = .unknown(id: id)
         }
     }
+}
+
+/// Вкладка вузла `tabs`: назва і її рядки.
+struct UiTab: Decodable, Hashable, Identifiable {
+    var id: String
+    var label: String
+    var children: [UiNode]
 }
 
 struct UiRow: Decodable, Hashable {

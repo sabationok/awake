@@ -54,7 +54,7 @@ function awakeRow(mac: MacState | null): UiRow {
     id: 'awake',
     type: 'row',
     prominent: true,
-    label: 'Awake',
+    label: 'Сесія',
     hint: 'Mac не засинає навіть із закритою кришкою. Сон повертається сам після таймера, при низькому заряді або перегріві.',
     icon: { symbol: 'cup.and.saucer.fill', tone: 'orange' },
     control: {
@@ -67,13 +67,16 @@ function awakeRow(mac: MacState | null): UiRow {
   };
 }
 
+/**
+ * Рядок під перемикачем сесії. Чи сесія увімкнена, вже каже перемикач, тож тут лише те, чого він не каже:
+ * тривалість, час до кінця, офлайн. Крапка лишається тільки для сну, заблокованого поза аппкою.
+ */
 function sessionStateRow(ctx: ModuleContext, mac: MacState | null): UiRow {
   if (mac === null) {
     return {
       id: 'session-state',
       type: 'row',
       label: 'Mac офлайн',
-      dot: { tone: 'gray' },
       hint: 'Mac вимкнений, спить або MacCC не запущений',
       control: durationControl(ctx, true),
     };
@@ -83,7 +86,6 @@ function sessionStateRow(ctx: ModuleContext, mac: MacState | null): UiRow {
       id: 'session-state',
       type: 'row',
       label: mac.until ? `Не спить до ${formatClock(mac.until)}` : 'Не спить',
-      dot: { tone: 'green', pulse: true },
       hint: 'Залишилось',
       countdownTo: mac.until,
       control: durationControl(ctx, true),
@@ -106,8 +108,6 @@ function sessionStateRow(ctx: ModuleContext, mac: MacState | null): UiRow {
     id: 'session-state',
     type: 'row',
     label: 'Тривалість',
-    dot: { tone: 'gray' },
-    hint: 'Вимкнено',
     control: durationControl(ctx, false),
   };
 }

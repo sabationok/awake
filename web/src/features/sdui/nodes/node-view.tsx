@@ -7,6 +7,7 @@ import { RowNode } from './row-node';
 import { SectionNode } from './section-node';
 import { SelectNode } from './select-node';
 import { StatusNode } from './status-node';
+import { TabsNode } from './tabs-node';
 import { SwitchNode } from './switch-node';
 import { TextNode } from './text-node';
 
@@ -21,6 +22,7 @@ const NODE_COMPONENTS: NodeComponents = {
   buttons: ButtonsNode,
   list: ListNode,
   text: TextNode,
+  tabs: TabsNode,
 };
 
 /** Вибирає компонент за типом вузла; рендерер не знає, звідки вузол узявся. */

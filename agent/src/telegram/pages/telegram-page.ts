@@ -18,19 +18,26 @@ export function buildTelegramPage(ctx: ModuleContext): UiPage {
         children: [ctx.settingNode('bot')],
       },
       {
-        id: 'awake-events',
+        id: 'events',
         type: 'section',
-        title: 'Сповіщення · Awake',
-        children: [ctx.settingNode('events.start'), ctx.settingNode('events.stop')],
-      },
-      {
-        id: 'mac-events',
-        type: 'section',
-        title: 'Сповіщення · Стан Mac',
+        title: 'Сповіщення',
         children: [
-          ctx.settingNode('events.power'),
-          ctx.settingNode('events.batteryLow'),
-          ctx.settingNode('events.thermal'),
+          {
+            id: 'events-tabs',
+            type: 'tabs',
+            tabs: [
+              { id: 'awake', label: 'Awake', children: [ctx.settingNode('events.start'), ctx.settingNode('events.stop')] },
+              {
+                id: 'mac',
+                label: 'Стан Mac',
+                children: [
+                  ctx.settingNode('events.power'),
+                  ctx.settingNode('events.batteryLow'),
+                  ctx.settingNode('events.thermal'),
+                ],
+              },
+            ],
+          },
         ],
       },
     ],

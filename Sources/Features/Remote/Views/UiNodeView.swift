@@ -31,6 +31,8 @@ struct UiNodeView: View {
             }
         case .text(_, let text, let tone):
             Text(text).foregroundStyle(tone?.color ?? .secondary)
+        case .tabs(_, let tabs):
+            UiTabsView(tabs: tabs)
         case .unknown:
             EmptyView()
         }
@@ -98,6 +100,25 @@ private struct UiListItemRow: View {
             if let value = item.value {
                 Text(value).foregroundStyle(.secondary)
             }
+        }
+    }
+}
+
+/// Перемикач вкладок рядком секції і рядки вибраної вкладки під ним.
+private struct UiTabsView: View {
+    let tabs: [UiTab]
+    @State private var picked: String?
+
+    private var current: UiTab? { tabs.first { $0.id == picked } ?? tabs.first }
+
+    var body: some View {
+        Picker("", selection: Binding(get: { current?.id ?? "" }, set: { picked = $0 })) {
+            ForEach(tabs) { Text($0.label).tag($0.id) }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        if let current {
+            ForEach(current.children) { UiNodeView(node: $0) }
         }
     }
 }

@@ -1,9 +1,17 @@
 import SwiftUI
 
-/// Група пунктів меню. Із заголовком, якщо пункти належать чомусь більшому (модуль Awake → його сторінки).
+/// Пункт меню і його вкладені пункти (модуль Awake → Налаштування сесії, Стан, Трекінг).
+struct SidebarNode<Item: Hashable>: Hashable {
+    var item: Item
+    var children: [Item] = []
+}
+
+/// Група пунктів меню, відділена від інших.
 struct SidebarSection<Item: Hashable>: Hashable {
-    var title: String?
-    var items: [Item]
+    var nodes: [SidebarNode<Item>]
+
+    /// Усі пункти по порядку: батько, далі його діти.
+    var items: [Item] { nodes.flatMap { [$0.item] + $0.children } }
 }
 
 /// Меню розділів і сторінка.
@@ -108,17 +116,43 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
         List(selection: $selection) {
             ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
                 Section {
-                    ForEach(section.items) { item in
-                        Label(title(item), systemImage: symbol(item)).tag(item)
+                    ForEach(section.nodes, id: \.item) { node in
+                        if node.children.isEmpty {
+                            label(node.item)
+                        } else {
+                            DisclosureGroup(isExpanded: expansion(of: node.item)) {
+                                // Другий рівень без іконок: іконка лишається за модулем.
+                                ForEach(node.children) { Text(title($0)).tag($0) }
+                            } label: {
+                                label(node.item)
+                            }
+                        }
                     }
-                } header: {
-                    if let header = section.title { Text(header) }
                 }
             }
         }
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
         .onChange(of: selection) { _, _ in onPick() }
+    }
+
+    private func label(_ item: Item) -> some View {
+        Label(title(item), systemImage: symbol(item)).tag(item)
+    }
+
+    /// Згорнуті батьківські пункти (за назвою, щоб пам'ятати між запусками). За замовчуванням розгорнуто.
+    @AppStorage("adaptiveSidebar.folded") private var folded = ""
+
+    private func expansion(of item: Item) -> Binding<Bool> {
+        let key = title(item)
+        return Binding(
+            get: { !folded.split(separator: "\n").contains(Substring(key)) },
+            set: { open in
+                var keys = folded.split(separator: "\n").map(String.init).filter { $0 != key }
+                if !open { keys.append(key) }
+                folded = keys.joined(separator: "\n")
+            }
+        )
     }
 
     /// Іконковий рейл: ті самі розділи, лише символи. Назва з'являється підказкою.

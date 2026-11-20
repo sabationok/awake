@@ -22,21 +22,28 @@ struct MainView: View {
 
     private var selection: MainPage { picked ?? sections.first?.items.first ?? .connection }
 
-    /// Бічне меню: модуль → його сторінки (Awake → Сесія, Налаштування сесії…), далі системні сторінки дерева
-    /// і нативні «Підключення» та «Дозвіл». Модуль з однією сторінкою (Telegram) іде без заголовка: він і є пунктом.
+    /// Бічне меню: головний пункт модуля — його назва (Awake), він відкриває першу сторінку модуля з керуванням;
+    /// решта сторінок вкладені під ним. Далі системні сторінки дерева і нативні «Підключення» та «Дозвіл».
     /// Без дерева (агент не запущений) лишаються лише нативні.
     private var sections: [SidebarSection<MainPage>] {
-        let native: [MainPage] = [.connection, .permission]
-        guard let tree = model.uiTree else { return [SidebarSection(items: native)] }
-        let modules = tree.modules.compactMap { module -> SidebarSection<MainPage>? in
+        let native = [MainPage.connection, .permission].map { SidebarNode(item: $0) }
+        guard let tree = model.uiTree else { return [SidebarSection(nodes: native)] }
+        let modules = tree.modules.compactMap { module -> SidebarNode<MainPage>? in
             let pages = tree.pages
                 .filter { $0.module == module.id && $0.group == .modules }
                 .map { MainPage.remote(id: $0.id) }
-            guard !pages.isEmpty else { return nil }
-            return SidebarSection(title: pages.count > 1 ? module.title : nil, items: pages)
+            guard let main = pages.first else { return nil }
+            return SidebarNode(item: main, children: Array(pages.dropFirst()))
         }
-        let system: [MainPage] = tree.pages.filter { $0.group == .system }.map { .remote(id: $0.id) }
-        return modules + [SidebarSection(items: system + native)]
+        let system = tree.pages.filter { $0.group == .system }.map { SidebarNode(item: MainPage.remote(id: $0.id)) }
+        return [SidebarSection(nodes: modules), SidebarSection(nodes: system + native)]
+    }
+
+    /// Модуль, головною сторінкою якого є ця: тоді пункт і заголовок носять назву та іконку модуля.
+    private func moduleOwning(_ id: String) -> UiModuleInfo? {
+        guard let tree = model.uiTree, let page = treePage(id) else { return nil }
+        let first = tree.pages.first { $0.module == page.module && $0.group == .modules }
+        return first?.id == id ? tree.modules.first { $0.id == page.module } : nil
     }
 
     private func treePage(_ id: String) -> UiPage? {
@@ -45,7 +52,7 @@ struct MainView: View {
 
     private func title(of page: MainPage) -> String {
         switch page {
-        case .remote(let id): treePage(id)?.title ?? ""
+        case .remote(let id): moduleOwning(id)?.title ?? treePage(id)?.title ?? ""
         case .permission: "Дозвіл"
         case .connection: "Підключення"
         }
@@ -53,7 +60,7 @@ struct MainView: View {
 
     private func symbol(of page: MainPage) -> String {
         switch page {
-        case .remote(let id): treePage(id)?.icon.symbol ?? "questionmark.circle"
+        case .remote(let id): moduleOwning(id)?.icon.symbol ?? treePage(id)?.icon.symbol ?? "questionmark.circle"
         case .permission: "lock.fill"
         case .connection: "antenna.radiowaves.left.and.right"
         }
