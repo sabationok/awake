@@ -16,6 +16,8 @@ await build({
   outfile: 'dist/agent.cjs',
   external: optional,
   legalComments: 'none',
+  // node-fetch у Telegraf перевіряє signal за іменем класу; без keepNames esbuild перейменовує AbortSignal.
+  keepNames: true,
   logLevel: 'warning',
 });
 console.log('bundled dist/agent.cjs');
