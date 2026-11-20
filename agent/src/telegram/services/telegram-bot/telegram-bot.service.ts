@@ -1,9 +1,10 @@
+import { Agent } from 'node:https';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Injectable, Logger } from '@nestjs/common';
 import { Context, Telegraf, TelegramError } from 'telegraf';
 import { AppException } from '../../../common/app-exception';
 import { ModulesService } from '../../../modules/modules.service';
-import type { BotCommand, MacModule, ModuleBot } from '../../../modules/types/mac-module';
+import type { MacModule, ModuleBot } from '../../../modules/types/mac-module';
 import { describeError } from '../../helpers/describe-error';
 import { readTelegramEnv } from '../../helpers/read-telegram-env';
 import type { TelegramEnv } from '../../types/telegram-env.types';
@@ -21,8 +22,8 @@ type BotModule = MacModule & { bot: ModuleBot };
 
 /**
  * Telegram-бот MaControl: long polling, команди складаються з модулів. Модуль із `bot` дає вхідну команду
- * (`/awake`) з інлайн-меню, по якому ходять вглиб екранами (`nav:awake:sleep`), і давні команди другого рівня
- * (`/awake_start 2h`). Усі дії йдуть через ModulesService.
+ * (`/awake`) з інлайн-меню, по якому ходять вглиб екранами (`nav:awake:sleep`). Команд другого рівня немає.
+ * Усі дії йдуть через ModulesService.
  */
 @Injectable()
 export class TelegramBotService {
@@ -38,7 +39,9 @@ export class TelegramBotService {
       this._logger.warn('telegram.env без TG_BOT_TOKEN або TG_CHAT_ID, бот не запущено');
       return;
     }
-    const bot = new Telegraf(env.token);
+    // IPv4: у частині мереж IPv6 до api.telegram.org висить і рветься через хвилину,
+    // а Telegraf сам на IPv4 не перемикається (setMyCommands і polling мовчки зависали).
+    const bot = new Telegraf(env.token, { telegram: { agent: new Agent({ keepAlive: true, family: 4 }) } });
     this._register(bot, env);
     this._bot = bot;
     void this._launch(bot, env);
@@ -111,11 +114,6 @@ export class TelegramBotService {
       const base = module.bot.command;
       if (!base) continue;
       bot.command(base, (ctx) => this._safe(ctx, env, () => this._replyMenu(ctx, module)));
-      for (const command of module.bot.commands ?? []) {
-        bot.command(`${base}_${command.name}`, (ctx) =>
-          this._safe(ctx, env, () => this._runCommand(ctx, module, command, ctx.payload)),
-        );
-      }
     }
 
     bot.action(/^(nav|do|act|menu):/, (ctx) =>
@@ -143,16 +141,6 @@ export class TelegramBotService {
   private _replyMenu(ctx: Context, module: BotModule) {
     const menu = module.bot.menu(this._modules.context(module.id), '');
     return ctx.reply(menu.text, { parse_mode: 'HTML', reply_markup: buildMenuKeyboard(module.id, '', menu) });
-  }
-
-  private async _runCommand(ctx: Context, module: BotModule, command: BotCommand, payload: string) {
-    const value = payload.trim();
-    if (command.arg && value && !command.arg.pattern.test(value)) {
-      await ctx.reply(command.arg.invalid);
-      return;
-    }
-    await this._dispatch(module.id, command.action, command.arg && value ? { [command.arg.param]: value } : undefined);
-    await ctx.reply(command.reply);
   }
 
   private async _editMenu(ctx: Context, env: TelegramEnv, module: BotModule, screen: string) {

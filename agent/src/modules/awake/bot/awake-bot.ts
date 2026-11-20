@@ -2,7 +2,6 @@ import type { MacState } from '@awake/contracts';
 import { escapeHtml } from '../../../common/escape-html';
 import { formatHhmm } from '../../../common/format-hhmm';
 import type { BotMenu, ModuleBot, StatusFields } from '../../types/mac-module';
-import { DURATION_PATTERN } from '../constants/duration-pattern';
 
 /** Швидкі тривалості під /awake. */
 const QUICK_DURATIONS = [
@@ -29,29 +28,13 @@ const SLEEP_MINUTES = [
 ];
 
 /**
- * /awake: стан сесії і кнопки. Вглиб — екран `sleep` (таймер сну) і перехід у модуль «Екран і звук».
- * /awake_start, /awake_stop… — давні команди без меню; нових команд не додаємо, лише екрани.
+ * /awake — єдина команда модуля: стан сесії і кнопки. Вглиб — екран `sleep` (таймер сну) і перехід
+ * у модуль «Екран і звук». Нові можливості додаються екранами, а не командами.
  */
 export const AWAKE_BOT: ModuleBot = {
   command: 'awake',
   description: '☕️ Awake',
   menu: (ctx, screen) => (screen === 'sleep' ? sleepScreen(ctx.mac) : mainScreen(ctx.mac)),
-  commands: [
-    {
-      name: 'start',
-      description: 'Не спати (/awake_start 2h)',
-      action: 'start',
-      reply: '☕️ Запускаю…',
-      arg: {
-        param: 'duration',
-        pattern: DURATION_PATTERN,
-        invalid: 'Не зрозумів тривалість. Приклади: /awake_start 30m, /awake_start 2h, /awake_start 1d',
-      },
-    },
-    { name: 'stop', description: 'Повернути сон', action: 'stop', reply: 'Повертаю сон…' },
-    { name: 'lock', description: 'Заблокувати екран', action: 'lock', reply: 'Блокую екран…' },
-    { name: 'screen', description: 'Погасити екран', action: 'displayOff', reply: 'Гашу екран…' },
-  ],
 };
 
 function mainScreen(mac: MacState | null): BotMenu {

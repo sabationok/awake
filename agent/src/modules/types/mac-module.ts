@@ -44,33 +44,17 @@ export interface BotMenu {
   back?: BotNav;
 }
 
-/** Команда другого рівня: `/awake_start 2h` → дія `start` модуля. */
-export interface BotCommand {
-  /** Частина після префікса модуля: `start` дає `/awake_start`. */
-  name: string;
-  description: string;
-  action: string;
-  /** Відповідь одразу після дії. */
-  reply: string;
-  /** Аргумент після команди, напр. тривалість. Порожній аргумент — дія без параметра. */
-  arg?: { param: string; pattern: RegExp; invalid: string };
-}
-
 /**
  * Що модуль додає в Telegram-бот. Нові можливості йдуть екранами меню (інлайн-навігація вглиб:
  * `/awake` → «Таймер сну» → «30 хв»), а не новими командами.
  */
 export interface ModuleBot {
-  /**
-   * Головна команда без слеша. Без неї модуль відкривається лише кнопками (з /start або з меню іншого модуля).
-   * Команди другого рівня — `<command>_<name>`.
-   */
+  /** Єдина команда модуля, без слеша. Без неї модуль відкривається лише кнопками (з /start або з меню іншого модуля). */
   command?: string;
   /** Назва модуля в /start і в меню команд. */
   description: string;
   /** Екран меню за шляхом: '' — головний. Невідомий шлях — головний. */
   menu(ctx: ModuleContext, screen: string): BotMenu;
-  commands?: BotCommand[];
 }
 
 /** Плагін MaControl. Реєструється в ModulesService і більше ніде не згадується. */
