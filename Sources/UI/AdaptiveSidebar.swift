@@ -15,8 +15,9 @@ struct SidebarSection<Item: Hashable>: Hashable {
 }
 
 /// Меню розділів і сторінка.
-/// Широке вікно: меню стоїть поруч і згортається в іконковий рейл. Вузьке: меню виїжджає поверх.
-/// Заголовок сторінки і кнопки вікна лежать в одному рядку висотою `topRowHeight`.
+/// Широке вікно: повне меню поруч зі сторінкою. Вузьке: меню стискається в іконковий рейл.
+/// Кнопки-перемикача немає: ширину меню задає ширина вікна.
+/// Назва вибраного розділу йде в заголовок вікна (`navigationTitle`), сторінка свого заголовка не малює.
 /// Універсальний: не знає про конкретні розділи, лише отримує секції і замикання.
 struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: View>: View {
     @Binding var selection: Item
@@ -26,83 +27,30 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
     @ViewBuilder let footer: () -> Footer
     @ViewBuilder let content: (Item) -> Content
 
-    /// Широке вікно: меню згорнуто в рейл.
-    @AppStorage("adaptiveSidebar.collapsed") private var collapsed = false
-    /// Вузьке вікно: меню показано поверх сторінки.
-    @AppStorage("adaptiveSidebar.open") private var overlayOpen = true
-
     private let pinnedWidth: CGFloat = 640
     private let expandedWidth: CGFloat = 200
     private let railWidth: CGFloat = 56
-    private let topRowHeight: CGFloat = 52
 
     var body: some View {
         GeometryReader { geo in
-            let pinned = geo.size.width >= pinnedWidth
-            ZStack(alignment: .leading) {
-                if pinned {
-                    HStack(spacing: 0) {
-                        panel(compact: collapsed) { }
-                        Divider()
-                        detail
-                    }
-                } else {
-                    detail
-                    if overlayOpen { overlay }
-                }
+            let compact = geo.size.width < pinnedWidth
+            HStack(spacing: 0) {
+                panel(compact: compact)
+                Divider()
+                content(selection).background(Palette.content)
             }
-            .animation(.easeOut(duration: 0.22), value: collapsed)
-            .animation(.easeOut(duration: 0.22), value: overlayOpen)
-            .toolbar {
-                ToolbarItem(placement: .navigation) {
-                    Button {
-                        if pinned { collapsed.toggle() } else { overlayOpen.toggle() }
-                    } label: {
-                        Image(systemName: "sidebar.left")
-                    }
-                    .help("Розділи")
-                }
-            }
+            .animation(.easeOut(duration: 0.22), value: compact)
         }
-        .ignoresSafeArea()
-        .onExitCommand { overlayOpen = false }
-        .navigationTitle("")
+        .navigationTitle(title(selection))
     }
 
-    /// Сторінка: заголовок у верхньому рядку, нижче вміст вибраного розділу.
-    private var detail: some View {
-        content(selection)
-            .safeAreaInset(edge: .top, spacing: 0) {
-                Text(title(selection))
-                    .font(.title2.weight(.semibold))
-                    .frame(maxWidth: .infinity, minHeight: topRowHeight, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .background(.background)
-            }
-        .background(Palette.content)
-    }
-
-    /// Затемнення і меню поверх сторінки. Клік поза меню або вибір розділу закриває його.
-    @ViewBuilder
-    private var overlay: some View {
-        Color.black.opacity(0.15)
-            .ignoresSafeArea()
-            .onTapGesture { overlayOpen = false }
-            .transition(.opacity)
-
-        panel(compact: false) { overlayOpen = false }
-            .transition(.move(edge: .leading))
-    }
-
-    /// Панель меню. Верхній рядок порожній, щоб меню не сідало під кнопки вікна.
-    /// Згорнута панель показує лише іконки, футер прихований.
-    private func panel(compact: Bool, onPick: @escaping () -> Void) -> some View {
+    /// Панель меню. Згорнута в рейл показує лише іконки, футер прихований.
+    private func panel(compact: Bool) -> some View {
         VStack(spacing: 0) {
-            Color.clear.frame(height: topRowHeight)
             if compact {
                 rail
             } else {
-                list(onPick: onPick)
+                list
                 Divider()
                 footer()
             }
@@ -112,7 +60,7 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
         .background(.regularMaterial)
     }
 
-    private func list(onPick: @escaping () -> Void) -> some View {
+    private var list: some View {
         List(selection: $selection) {
             ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
                 Section {
@@ -133,7 +81,6 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
         }
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
-        .onChange(of: selection) { _, _ in onPick() }
     }
 
     private func label(_ item: Item) -> some View {

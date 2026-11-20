@@ -11,7 +11,8 @@ struct AwakeApp: App {
         }
         .windowResizability(.contentMinSize)
         .defaultSize(width: 720, height: 520)
-        .windowStyle(.hiddenTitleBar)
+        // Назва сторінки — у заголовку вікна поруч із його кнопками, а не на самій сторінці.
+        .windowToolbarStyle(.unified)
 
         MenuBarExtra {
             MenuBarContent().environmentObject(model).environmentObject(delegate.updates)
