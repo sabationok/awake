@@ -27,8 +27,20 @@ struct SessionPreset: Identifiable, Hashable {
         set { UserDefaults.standard.set(newValue.id, forKey: defaultsKey) }
     }
 
+    /// Пресет або довільна тривалість `Nm` / `Nh` / `Nd` (агент шле «до 08:00» як хвилини).
     static func find(_ id: String) -> SessionPreset? {
-        all.first { $0.id == id.lowercased() }
+        let id = id.lowercased()
+        if let preset = all.first(where: { $0.id == id }) { return preset }
+        guard let unit = id.last, let count = Int(id.dropLast()), count > 0 else { return nil }
+        let unitSeconds: Int
+        switch unit {
+        case "m": unitSeconds = 60
+        case "h": unitSeconds = 3600
+        case "d": unitSeconds = 86400
+        default: return nil
+        }
+        let seconds = count * unitSeconds
+        return SessionPreset(id: id, title: String(format: "%d:%02d", seconds / 3600, seconds % 3600 / 60), seconds: seconds)
     }
 
     static var ids: String { all.map(\.id).joined(separator: " ") }

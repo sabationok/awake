@@ -10,6 +10,7 @@ import { StatusNode } from './status-node';
 import { TabsNode } from './tabs-node';
 import { SwitchNode } from './switch-node';
 import { TextNode } from './text-node';
+import { TimerNode } from './timer-node';
 
 type NodeComponents = { [K in UiNode['type']]: ComponentType<NodeProps<Extract<UiNode, { type: K }>>> };
 
@@ -23,6 +24,7 @@ const NODE_COMPONENTS: NodeComponents = {
   list: ListNode,
   text: TextNode,
   tabs: TabsNode,
+  timer: TimerNode,
 };
 
 /** Вибирає компонент за типом вузла; рендерер не знає, звідки вузол узявся. */

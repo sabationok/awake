@@ -31,8 +31,10 @@ struct UiNodeView: View {
             }
         case .text(_, let text, let tone):
             Text(text).foregroundStyle(tone?.color ?? .secondary)
-        case .tabs(_, let tabs):
-            UiTabsView(tabs: tabs)
+        case .tabs(_, let tabs, let value, let setting):
+            UiTabsView(tabs: tabs, value: value, setting: setting)
+        case .timer(let timer):
+            UiTimerView(timer: timer)
         case .unknown:
             EmptyView()
         }
@@ -104,21 +106,31 @@ private struct UiListItemRow: View {
     }
 }
 
-/// Перемикач вкладок рядком секції і рядки вибраної вкладки під ним.
+/// Перемикач вкладок рядком секції і рядки вибраної вкладки під ним. З `setting` вибір іде агентові.
 private struct UiTabsView: View {
     let tabs: [UiTab]
+    let value: String?
+    let setting: UiSettingRef?
+    @EnvironmentObject private var model: AwakeModel
     @State private var picked: String?
 
-    private var current: UiTab? { tabs.first { $0.id == picked } ?? tabs.first }
+    private var current: UiTab? { tabs.first { $0.id == (picked ?? value) } ?? tabs.first }
 
     var body: some View {
-        Picker("", selection: Binding(get: { current?.id ?? "" }, set: { picked = $0 })) {
+        Picker("", selection: Binding(get: { current?.id ?? "" }, set: { pick($0) })) {
             ForEach(tabs) { Text($0.label).tag($0.id) }
         }
         .pickerStyle(.segmented)
         .labelsHidden()
         if let current {
             ForEach(current.children) { UiNodeView(node: $0) }
+        }
+    }
+
+    private func pick(_ id: String) {
+        picked = id
+        if let setting {
+            model.sendUiEvent(.setting(module: setting.module, key: setting.key, value: .string(id)))
         }
     }
 }

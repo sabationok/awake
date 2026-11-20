@@ -3,6 +3,7 @@ import { LogsModule } from '../logs/logs.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { SettingsModule } from '../settings/settings.module';
 import { AwakeMacModule } from './awake/awake.mac-module';
+import { AwakeSessionListener } from './awake/listeners/awake-session.listener';
 import { MacStateMacModule } from './mac/mac.mac-module';
 import { TelegramMacModule } from '../telegram/telegram.mac-module';
 import { ModulesService } from './modules.service';
@@ -17,6 +18,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
   providers: [
     ModulesService,
     MacUiListener,
+    AwakeSessionListener,
     AwakeMacModule,
     MacStateMacModule,
     TelegramMacModule,

@@ -116,21 +116,23 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
     case buttons(id: String, buttons: [UiButton])
     case list(id: String, items: [UiListItem], empty: String?)
     case text(id: String, text: String, tone: UiTone?)
-    case tabs(id: String, tabs: [UiTab])
+    case tabs(id: String, tabs: [UiTab], value: String?, setting: UiSettingRef?)
+    case timer(UiTimer)
     case unknown(id: String)
 
     var id: String {
         switch self {
         case .section(let id, _, _, _), .toggle(let id, _, _, _, _, _, _), .select(let id, _, _, _, _, _, _, _),
-             .buttons(let id, _), .list(let id, _, _), .text(let id, _, _), .tabs(let id, _), .unknown(let id):
+             .buttons(let id, _), .list(let id, _, _), .text(let id, _, _), .tabs(let id, _, _, _), .unknown(let id):
             id
         case .row(let row): row.id
         case .status(let status): status.id
+        case .timer(let timer): timer.id
         }
     }
 
     private enum Keys: String, CodingKey {
-        case type, id, title, footer, children, label, hint, icon, module, key, value, options, disabled, buttons, items, empty, text, tone, tabs
+        case type, id, title, footer, children, label, hint, icon, module, key, value, options, disabled, buttons, items, empty, text, tone, tabs, setting
     }
 
     init(from decoder: Decoder) throws {
@@ -168,7 +170,11 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
             self = .text(id: id, text: try c.decode(String.self, forKey: .text),
                          tone: try c.decodeIfPresent(UiTone.self, forKey: .tone))
         case "tabs":
-            self = .tabs(id: id, tabs: try c.decode([UiTab].self, forKey: .tabs))
+            self = .tabs(id: id, tabs: try c.decode([UiTab].self, forKey: .tabs),
+                         value: try c.decodeIfPresent(String.self, forKey: .value),
+                         setting: try c.decodeIfPresent(UiSettingRef.self, forKey: .setting))
+        case "timer":
+            self = .timer(try UiTimer(from: decoder))
         default:
             self = .unknown(id: id)
         }
@@ -193,6 +199,15 @@ struct UiRow: Decodable, Hashable {
     /// Кінець зворотного відліку (ISO). Рендерер сам рахує H:MM:SS щосекунди.
     var countdownTo: Date?
     var control: UiControl?
+}
+
+/// Великий таймер: відлік до `until` або `value`, коли відліку немає.
+struct UiTimer: Decodable, Hashable {
+    var id: String
+    var until: Date?
+    var value: String
+    var caption: String?
+    var tone: UiTone?
 }
 
 struct UiStatus: Decodable, Hashable {

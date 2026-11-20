@@ -144,9 +144,25 @@ export interface UiText extends UiNodeBase {
 export interface UiTabs extends UiNodeBase {
   type: 'tabs';
   tabs: { id: string; label: string; children: UiNode[] }[];
+  /** Вкладка, з якої почати. */
+  value?: string;
+  /** Вибір вкладки пише це налаштування (id вкладки), коли від нього залежить дія модуля. */
+  setting?: { module: string; key: string };
 }
 
-export type UiNode = UiSection | UiRow | UiStatus | UiSwitch | UiSelect | UiButtons | UiList | UiText | UiTabs;
+/** Великий таймер на всю ширину: зворотний відлік до `until` або `value`, коли відліку немає. */
+export interface UiTimer extends UiNodeBase {
+  type: 'timer';
+  /** ISO-час: рендерер рахує H:MM:SS щосекунди. */
+  until?: string | null;
+  /** Текст замість відліку (запланована тривалість, «—»). */
+  value: string;
+  /** Підпис під таймером. */
+  caption?: string;
+  tone?: UiTone;
+}
+
+export type UiNode = UiSection | UiRow | UiStatus | UiSwitch | UiSelect | UiButtons | UiList | UiText | UiTabs | UiTimer;
 
 /** Вкладка бічного меню. */
 export interface UiPage {

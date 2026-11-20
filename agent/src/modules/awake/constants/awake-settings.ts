@@ -1,4 +1,5 @@
 import type { SettingDefinition, UiOption } from '@awake/contracts';
+import { UNTIL_OPTIONS } from './until-options';
 
 export const DURATION_OPTIONS: UiOption[] = [
   { value: '30m', label: '30 хв' },
@@ -16,6 +17,42 @@ export const AWAKE_SETTINGS: SettingDefinition[] = [
     default: '2h',
     page: 'session',
     options: DURATION_OPTIONS,
+  },
+  {
+    type: 'select',
+    key: 'mode',
+    label: 'Як задати сесію',
+    default: 'period',
+    page: 'session',
+    options: [
+      { value: 'period', label: 'Період' },
+      { value: 'time', label: 'Час' },
+    ],
+  },
+  {
+    type: 'select',
+    key: 'until',
+    label: 'Не спати до',
+    default: '08:00',
+    page: 'session',
+    options: UNTIL_OPTIONS,
+  },
+  {
+    type: 'switch',
+    key: 'startDisplayOff',
+    label: 'Погасити екран',
+    icon: { symbol: 'display', tone: 'accent' },
+    page: 'session',
+    default: false,
+  },
+  {
+    type: 'switch',
+    key: 'startLock',
+    label: 'Заблокувати',
+    hint: 'Лише для цієї сесії: після неї вимикається',
+    icon: { symbol: 'lock.fill', tone: 'accent' },
+    page: 'session',
+    default: false,
   },
   {
     type: 'select',

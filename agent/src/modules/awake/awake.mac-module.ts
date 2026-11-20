@@ -7,6 +7,7 @@ import { AWAKE_BOT, awakeStatus } from './bot/awake-bot';
 import { AWAKE_SETTINGS } from './constants/awake-settings';
 import { DURATION_PATTERN } from './constants/duration-pattern';
 import { LOG_QUERY_LIMIT, TRACKING_QUERY_LIMIT } from './constants/session-limits';
+import { plannedDuration } from './helpers/session-plan';
 import { buildLogPage } from './pages/log-page';
 import { buildSessionPage } from './pages/session-page';
 import { buildSessionSettingsPage } from './pages/session-settings-page';
@@ -30,8 +31,11 @@ export class AwakeMacModule implements MacModule {
     start: (params, ctx, source) => {
       const requested = params.duration;
       const duration =
-        typeof requested === 'string' && DURATION_PATTERN.test(requested) ? requested : ctx.setting<string>('duration');
+        typeof requested === 'string' && DURATION_PATTERN.test(requested) ? requested : plannedDuration(ctx, new Date());
       ctx.sendToMac({ action: 'start', duration }, source);
+      // Перемикачі на сторінці сесії: що зробити одразу після старту. Блокування гасить і екран.
+      if (ctx.setting<boolean>('startLock')) ctx.sendToMac({ action: 'lock' }, source);
+      else if (ctx.setting<boolean>('startDisplayOff')) ctx.sendToMac({ action: 'displayOff' }, source);
     },
     stop: (_params, ctx, source) => ctx.sendToMac({ action: 'stop' }, source),
     restoreSleep: (_params, ctx, source) =>
