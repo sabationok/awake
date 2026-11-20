@@ -1,4 +1,12 @@
-import type { SettingDefinition } from '@awake/contracts';
+import type { SettingDefinition, UiOption } from '@awake/contracts';
+
+export const DURATION_OPTIONS: UiOption[] = [
+  { value: '30m', label: '30 хв' },
+  { value: '1h', label: '1 год' },
+  { value: '2h', label: '2 год' },
+  { value: '4h', label: '4 год' },
+  { value: '8h', label: '8 год' },
+];
 
 export const AWAKE_SETTINGS: SettingDefinition[] = [
   {
@@ -6,13 +14,8 @@ export const AWAKE_SETTINGS: SettingDefinition[] = [
     key: 'duration',
     label: 'Тривалість за замовчуванням',
     default: '2h',
-    options: [
-      { value: '30m', label: '30 хв' },
-      { value: '1h', label: '1 год' },
-      { value: '2h', label: '2 год' },
-      { value: '4h', label: '4 год' },
-      { value: '8h', label: '8 год' },
-    ],
+    page: 'session',
+    options: DURATION_OPTIONS,
   },
   {
     type: 'select',

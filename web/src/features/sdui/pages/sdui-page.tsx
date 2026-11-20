@@ -1,16 +1,20 @@
 'use client';
 import type { ReactNode } from 'react';
+import type { UiTree } from '@awake/contracts';
 import { AppShell } from '../components/app-shell';
-import { useUiTree } from '../hooks/use-ui-tree';
-import type { UiSource } from '../sources/ui-source';
+import type { SduiEventHandler, SduiMode } from '../sdui.types';
 
 interface SduiPageProps {
-  source: UiSource;
+  tree: UiTree | null;
+  /** Без send дерево лише для перегляду. */
+  send?: SduiEventHandler;
+  /** Дашборд на Vercel: режим зв'язку з Mac для шапки. На локальному пульті не задається. */
+  mode?: SduiMode;
+  directError?: boolean;
   accessory?: ReactNode;
 }
 
-/** Сторінка, яку малює дерево з джерела: локальний агент або Upstash через серверні екшени. */
-export function SduiPage({ source, accessory }: SduiPageProps) {
-  const { tree, send, readOnly } = useUiTree(source);
-  return <AppShell tree={tree} send={send} readOnly={readOnly} accessory={accessory} />;
+/** Сторінка, яку малює дерево: його дає хук джерела (локальний агент або гібрид Upstash/Mac). */
+export function SduiPage({ tree, send, mode, directError, accessory }: SduiPageProps) {
+  return <AppShell tree={tree} send={send} mode={mode} directError={directError} accessory={accessory} />;
 }

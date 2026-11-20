@@ -1,104 +1,126 @@
-import type {
-  MacState,
-  SessionRecord,
-  UiButton,
-  UiPage,
-  UiStatus,
-} from '@awake/contracts';
+import type { MacState, UiControl, UiNode, UiPage, UiRow } from '@awake/contracts';
+import type { ModuleContext } from '../../types/mac-module';
+import { DURATION_OPTIONS } from '../constants/awake-settings';
+import { formatBattery } from '../helpers/format-battery';
 import { formatClock } from '../helpers/format-clock';
-import { sessionListItem } from '../helpers/session-list-item';
+import { sleepRow } from '../helpers/sleep-row';
+import { thermalPresentation } from '../helpers/thermal-presentation';
 
-const START_OPTIONS = [
-  { duration: '1h', label: '1 год' },
-  { duration: '2h', label: '2 год' },
-  { duration: '4h', label: '4 год' },
-];
-
-export function buildSessionPage(mac: MacState | null, sessions: SessionRecord[]): UiPage {
-  const active = mac?.active === true;
-  const disabled = mac === null;
-  const startButtons: UiButton[] = START_OPTIONS.map(({ duration, label }) => ({
-    id: `start-${duration}`,
-    label,
-    variant: 'filled',
-    disabled,
-    action: { module: 'awake', name: 'start', params: { duration } },
-  }));
-  const now = new Date();
-
+/** Сторінка «Сесія»: копія головної картки і стану з SwiftUI (SessionSection + StatusSection). */
+export function buildSessionPage(ctx: ModuleContext): UiPage {
+  const mac = ctx.mac;
+  const children: UiNode[] = [
+    {
+      id: 'session',
+      type: 'section',
+      footer: 'Сесія також зупиняється, коли ти виходиш з аппки.',
+      children: [awakeRow(mac), sessionStateRow(ctx, mac)],
+    },
+  ];
+  if (mac !== null) {
+    children.push({ id: 'state', type: 'section', title: 'Стан', children: stateRows(mac) });
+  }
   return {
     id: 'session',
     module: 'awake',
     title: 'Сесія',
     icon: { symbol: 'cup.and.saucer.fill', tone: 'orange' },
     group: 'modules',
-    children: [
-      { id: 'status', type: 'section', children: [statusNode(mac)] },
-      {
-        id: 'controls',
-        type: 'section',
-        title: 'Керування',
-        footer: active
-          ? 'Нова тривалість перезапускає сесію з нуля.'
-          : 'Mac не спатиме обраний час, навіть із закритою кришкою.',
-        children: [
-          { id: 'start', type: 'buttons', buttons: startButtons },
-          {
-            id: 'session-actions',
-            type: 'buttons',
-            buttons: [
-              {
-                id: 'stop',
-                label: 'Стоп',
-                variant: 'destructive',
-                disabled: disabled || !active,
-                action: { module: 'awake', name: 'stop' },
-              },
-              { id: 'lock', label: 'Заблокувати', variant: 'plain', disabled, action: { module: 'awake', name: 'lock' } },
-              {
-                id: 'display-off',
-                label: 'Екран',
-                variant: 'plain',
-                disabled,
-                action: { module: 'awake', name: 'displayOff' },
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: 'history',
-        type: 'section',
-        title: 'Останні сесії',
-        children: [
-          { id: 'sessions', type: 'list', items: sessions.map((session) => sessionListItem(session, now)), empty: 'Ще не було жодної сесії' },
-        ],
-      },
-    ],
+    children,
   };
 }
 
-function statusNode(mac: MacState | null): UiStatus {
+function awakeRow(mac: MacState | null): UiRow {
+  return {
+    id: 'awake',
+    type: 'row',
+    prominent: true,
+    label: 'Awake',
+    hint: 'Mac не засинає навіть із закритою кришкою. Сон повертається сам після таймера, при низькому заряді або перегріві.',
+    icon: { symbol: 'cup.and.saucer.fill', tone: 'orange' },
+    control: {
+      type: 'switch',
+      value: mac?.active ?? false,
+      disabled: mac === null,
+      on: { module: 'awake', name: 'start' },
+      off: { module: 'awake', name: 'stop' },
+    },
+  };
+}
+
+function sessionStateRow(ctx: ModuleContext, mac: MacState | null): UiRow {
   if (mac === null) {
     return {
-      id: 'session-status',
-      type: 'status',
+      id: 'session-state',
+      type: 'row',
       label: 'Mac офлайн',
-      tone: 'gray',
+      dot: { tone: 'gray' },
       hint: 'Mac вимкнений, спить або MacCC не запущений',
+      control: durationControl(ctx, true),
     };
   }
   if (mac.active) {
-    const parts = [mac.until ? `до ${formatClock(mac.until)}` : null, mac.duration];
     return {
-      id: 'session-status',
-      type: 'status',
-      label: 'Не спить',
-      tone: 'green',
-      pulse: true,
+      id: 'session-state',
+      type: 'row',
+      label: mac.until ? `Не спить до ${formatClock(mac.until)}` : 'Не спить',
+      dot: { tone: 'green', pulse: true },
+      hint: 'Залишилось',
       countdownTo: mac.until,
-      hint: parts.filter((part): part is string => part !== null).join(' · '),
+      control: durationControl(ctx, true),
     };
   }
-  return { id: 'session-status', type: 'status', label: 'Сесія не активна', tone: 'gray', value: '—' };
+  if (mac.sleepBlocked) {
+    return {
+      id: 'session-state',
+      type: 'row',
+      label: 'Сон заблоковано поза аппкою',
+      dot: { tone: 'red' },
+      hint: 'Скрипт не працює, а сон вимкнено',
+      control: {
+        type: 'button',
+        button: { id: 'restore-sleep', label: 'Повернути сон', variant: 'plain', action: { module: 'awake', name: 'restoreSleep' } },
+      },
+    };
+  }
+  return {
+    id: 'session-state',
+    type: 'row',
+    label: 'Тривалість',
+    dot: { tone: 'gray' },
+    hint: 'Вимкнено',
+    control: durationControl(ctx, false),
+  };
+}
+
+/** Вибір тривалості пише налаштування `awake.duration`, яке потім читає старт. */
+function durationControl(ctx: ModuleContext, disabled: boolean): UiControl {
+  return {
+    type: 'select',
+    value: ctx.setting<string>('duration'),
+    options: DURATION_OPTIONS,
+    disabled,
+    setting: { module: 'awake', key: 'duration' },
+  };
+}
+
+function stateRows(mac: MacState): UiRow[] {
+  const thermal = thermalPresentation(mac.thermal);
+  return [
+    sleepRow(mac),
+    {
+      id: 'battery',
+      type: 'row',
+      label: 'Батарея',
+      value: `${formatBattery(mac.battery)} · ${mac.power === 'AC' ? 'від мережі' : 'від батареї'}`,
+      icon: { symbol: 'battery.75', tone: 'green' },
+    },
+    {
+      id: 'thermal',
+      type: 'row',
+      label: 'Температура',
+      value: thermal.label,
+      icon: { symbol: 'thermometer.medium', tone: thermal.tone },
+    },
+  ];
 }

@@ -29,13 +29,6 @@ export interface MacState {
   appVersion: string;
 }
 
-/** Те, що лежить в Upstash: живий стан плюс локальна адреса для довіреної мережі. */
-export interface Presence {
-  state: MacState;
-  /** http-адреса агента в локальній мережі з токеном у фрагменті; null поза довіреною мережею. */
-  localUrl: string | null;
-  updatedAt: string;
-}
 
 export interface SessionRecord {
   id: number;
@@ -90,9 +83,6 @@ export type AgentToMacMessage =
   | { type: 'ready'; data: { port: number } }
   | { type: 'command'; data: CommandRequest & { id: string; source: SessionSource } };
 
-/** Ключ стану в Upstash. TTL короткий: застарілий ключ означає, що Mac офлайн. */
-export const PRESENCE_KEY = 'awake:presence';
-export const PRESENCE_TTL_SECONDS = 45;
 
 /** Дерево UI для дашборду на Vercel (лише вузли зі scope all). Vercel лише читає його: керування йде на самому агенті. */
 export const UI_TREE_KEY = 'maccc:ui';

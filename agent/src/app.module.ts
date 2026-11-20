@@ -11,6 +11,7 @@ import { ModulesModule } from './modules/modules.module';
 import { PresenceModule } from './presence/presence.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { TelegramModule } from './telegram/telegram.module';
+import { TlsModule } from './tls/tls.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TelegramModule } from './telegram/telegram.module';
     DevicesModule,
     SessionsModule,
     LogsModule,
+    TlsModule,
     PresenceModule,
     ModulesModule,
     TelegramModule,

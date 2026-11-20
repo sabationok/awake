@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import type { SettingValue, UiPage } from '@awake/contracts';
+import { LogsService } from '../../logs/logs.service';
 import { SessionsService } from '../../sessions/sessions.service';
 import type { MacModule, ModuleContext } from '../types/mac-module';
 import { AWAKE_SETTINGS } from './constants/awake-settings';
 import { DURATION_PATTERN } from './constants/duration-pattern';
-import { SESSION_HISTORY_LIMIT, TRACKING_QUERY_LIMIT } from './constants/session-limits';
+import { LOG_QUERY_LIMIT, TRACKING_QUERY_LIMIT } from './constants/session-limits';
 import { buildDisplayPage } from './pages/display-page';
+import { buildLogPage } from './pages/log-page';
 import { buildSafetyPage } from './pages/safety-page';
 import { buildSessionPage } from './pages/session-page';
 import { buildStatusPage } from './pages/status-page';
@@ -27,21 +29,27 @@ export class AwakeMacModule implements MacModule {
       ctx.sendToMac({ action: 'start', duration }, source);
     },
     stop: (_params, ctx, source) => ctx.sendToMac({ action: 'stop' }, source),
+    restoreSleep: (_params, ctx, source) =>
+      ctx.sendToMac({ action: 'setting', key: 'awake.restoreSleep', value: true }, source),
     lock: (_params, ctx, source) => ctx.sendToMac({ action: 'lock' }, source),
     displayOff: (_params, ctx, source) => ctx.sendToMac({ action: 'displayOff' }, source),
   };
 
-  constructor(private readonly _sessions: SessionsService) {}
+  constructor(
+    private readonly _sessions: SessionsService,
+    private readonly _logs: LogsService,
+  ) {}
 
   pages(ctx: ModuleContext): UiPage[] {
-    // Одна вибірка на всі сторінки: сесія показує 5, трекінг рахує за 7 днів і гортає історію.
+    // Одна вибірка на всі сторінки: трекінг рахує за 7 днів і гортає історію.
     const sessions = this._sessions.findMany({ limit: TRACKING_QUERY_LIMIT });
     return [
-      buildSessionPage(ctx.mac, sessions.slice(0, SESSION_HISTORY_LIMIT)),
+      buildSessionPage(ctx),
       buildStatusPage(ctx.mac),
       buildTrackingPage(sessions, new Date()),
       buildDisplayPage(ctx),
       buildSafetyPage(ctx),
+      buildLogPage(this._logs.findMany({ limit: LOG_QUERY_LIMIT }), new Date()),
     ];
   }
 

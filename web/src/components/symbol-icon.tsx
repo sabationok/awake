@@ -19,9 +19,13 @@ const TONE: Record<SymbolTone, string> = {
   yellow: 'bg-yellow',
 };
 
-export function SymbolIcon({ tone, children }: { tone: SymbolTone; children: ReactNode }) {
+export type SymbolSize = 'sm' | 'lg';
+
+const SIZE: Record<SymbolSize, string> = { sm: 'size-7', lg: 'size-9' };
+
+export function SymbolIcon({ tone, size = 'sm', children }: { tone: SymbolTone; size?: SymbolSize; children: ReactNode }) {
   return (
-    <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-md text-[15px] text-white', TONE[tone])}>
+    <span className={cn('flex shrink-0 items-center justify-center rounded-md text-[15px] text-white', SIZE[size], TONE[tone])}>
       {children}
     </span>
   );

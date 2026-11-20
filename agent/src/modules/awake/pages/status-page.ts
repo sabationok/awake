@@ -1,4 +1,5 @@
 import type { MacState, UiPage, UiRow } from '@awake/contracts';
+import { sleepRow } from '../helpers/sleep-row';
 import { formatBattery } from '../helpers/format-battery';
 import { powerLabel } from '../helpers/power-label';
 import { thermalPresentation } from '../helpers/thermal-presentation';
@@ -23,6 +24,7 @@ export function buildStatusPage(mac: MacState | null): UiPage {
 function macRows(mac: MacState): UiRow[] {
   const thermal = thermalPresentation(mac.thermal);
   return [
+    sleepRow(mac),
     {
       id: 'battery',
       type: 'row',

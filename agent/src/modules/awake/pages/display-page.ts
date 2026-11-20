@@ -18,17 +18,19 @@ export function buildDisplayPage(ctx: ModuleContext): UiPage {
         children: [
           ctx.settingNode('displayOff'),
           {
-            id: 'display-actions',
-            type: 'buttons',
-            buttons: [
-              {
-                id: 'display-off-now',
-                label: 'Погасити зараз',
+            id: 'display-off-now',
+            type: 'row',
+            label: 'Погасити екран зараз',
+            control: {
+              type: 'button',
+              button: {
+                id: 'display-off',
+                label: 'Погасити',
                 variant: 'plain',
                 disabled: ctx.mac === null,
                 action: { module: 'awake', name: 'displayOff' },
               },
-            ],
+            },
           },
         ],
       },

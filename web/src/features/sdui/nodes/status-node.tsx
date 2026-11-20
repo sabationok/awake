@@ -2,8 +2,7 @@ import type { UiStatus } from '@awake/contracts';
 import { FlexRow } from '@/components/flex';
 import { KeyValueRow } from '@/components/key-value-row';
 import { StatusDot } from '@/components/status-dot';
-import { useNow } from '../hooks/use-now';
-import { formatRemaining } from '../lib/format-time';
+import { useCountdown } from '../hooks/use-countdown';
 import type { NodeProps } from '../sdui.types';
 import { SduiIcon } from './sdui-icon';
 
@@ -27,6 +26,5 @@ export function StatusNode({ node }: NodeProps<UiStatus>) {
 }
 
 function Countdown({ until }: { until: string }) {
-  const now = useNow();
-  return formatRemaining(until, now) ?? '—';
+  return useCountdown(until) ?? '—';
 }
