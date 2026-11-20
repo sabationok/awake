@@ -31,7 +31,8 @@ struct PermissionSection: View {
             Text("Одне правило sudoers з трьома командами без пароля. macOS попросить пароль один раз. Модулі не можуть отримати більше, ніж видано тут.")
         }
 
-        if let modules = model.uiTree?.modules {
+        // Лише модулі, що просять хоч один системний дозвіл: решті тут нічого видавати.
+        if let modules = model.uiTree?.modules.filter({ !($0.permissions ?? []).isEmpty }) {
             ForEach(modules) { module in
                 ModuleSection(module: module, systemGranted: model.permissionGranted)
             }
@@ -73,9 +74,6 @@ private struct ModuleSection: View {
         let known = requested.compactMap(AppPermission.init(rawValue:))
         let unknown = requested.filter { AppPermission(rawValue: $0) == nil }
         Section {
-            if requested.isEmpty {
-                Text("Не просить системних дозволів").foregroundStyle(.secondary)
-            }
             ForEach(known) { permission in
                 ModulePermissionRow(module: module.id, permission: permission, systemGranted: systemGranted)
             }

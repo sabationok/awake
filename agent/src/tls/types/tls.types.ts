@@ -1,5 +1,7 @@
-/** Що зберігаємо в leaf.json: за яким списком LAN-адрес і до якої дати виданий сертифікат. */
+/** Що зберігаємо в leaf.json: на кого, за яким списком LAN-адрес і до якої дати виданий сертифікат. */
 export interface LeafIndex {
+  /** На кого виданий; зміна імені теж перевипускає сертифікат. */
+  subject?: string;
   addresses: string[];
   keyPath: string;
   certPath: string;

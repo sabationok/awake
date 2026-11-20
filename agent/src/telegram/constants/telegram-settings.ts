@@ -5,7 +5,7 @@ export const TELEGRAM_SETTINGS: SettingDefinition[] = [
   {
     type: 'switch',
     key: 'bot',
-    label: 'Бот у MacCC',
+    label: 'Бот у MaControl',
     hint: 'Команди й кнопки в Telegram',
     page: 'telegram',
     default: true,

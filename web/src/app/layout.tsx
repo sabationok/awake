@@ -3,9 +3,9 @@ import type { ReactNode } from 'react';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'MacCC',
+  title: 'MaControl',
   description: 'Стан і керування Mac',
-  appleWebApp: { capable: true, title: 'MacCC', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'MaControl', statusBarStyle: 'default' },
   icons: { icon: '/icon-192.png', apple: '/apple-touch-icon.png' },
 };
 

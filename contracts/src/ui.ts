@@ -1,4 +1,4 @@
-// Server-driven UI MacCC. Модулі в Nest будують дерево з цих вузлів, а Next (і пізніше SwiftUI)
+// Server-driven UI MaControl. Модулі в Nest будують дерево з цих вузлів, а Next (і пізніше SwiftUI)
 // лише малюють його і повертають дії. Жодної логіки модулів у рендерерах.
 
 export type UiTone = 'accent' | 'green' | 'orange' | 'red' | 'gray' | 'indigo' | 'yellow';

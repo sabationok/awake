@@ -54,7 +54,7 @@ export interface ModuleBot {
   commands?: BotCommand[];
 }
 
-/** Плагін MacCC. Реєструється в ModulesService і більше ніде не згадується. */
+/** Плагін MaControl. Реєструється в ModulesService і більше ніде не згадується. */
 export interface MacModule {
   id: string;
   title: string;

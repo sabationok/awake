@@ -19,7 +19,7 @@ import { isOwnerChat } from './helpers/is-owner-chat';
 type BotModule = MacModule & { bot: ModuleBot };
 
 /**
- * Telegram-бот MacCC: long polling, команди складаються з модулів. Кожен модуль із `bot` дає вхідну команду
+ * Telegram-бот MaControl: long polling, команди складаються з модулів. Кожен модуль із `bot` дає вхідну команду
  * (`/awake`: меню з кнопками) і команди другого рівня (`/awake_start 2h`); усе йде через ModulesService.
  */
 @Injectable()

@@ -4,7 +4,7 @@ import type { MacModule, ModuleContext } from '../modules/types/mac-module';
 import { TELEGRAM_SETTINGS } from './constants/telegram-settings';
 import { buildTelegramPage } from './pages/telegram-page';
 
-/** Модуль Telegram у MacCC: перемикач бота і сповіщення, які Mac-аппка пише у свій конфіг скрипта. */
+/** Модуль Telegram у MaControl: перемикач бота і сповіщення, які Mac-аппка пише у свій конфіг скрипта. */
 @Injectable()
 export class TelegramMacModule implements MacModule {
   readonly id = 'telegram';

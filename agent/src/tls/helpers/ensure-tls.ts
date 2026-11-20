@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { LEAF_VALIDITY_DAYS } from '../constants/tls.constants';
+import { LEAF_SUBJECT, LEAF_VALIDITY_DAYS } from '../constants/tls.constants';
 import type { TlsMaterial } from '../types/tls.types';
 import { createLeaf } from './create-leaf';
 import { ensureCa } from './ensure-ca';
@@ -21,6 +21,7 @@ export function ensureTls(dir: string, addresses: string[]): TlsMaterial {
   if (!isLeafReusable(index, wanted, Date.now())) {
     const { keyPath, certPath } = createLeaf(dir, wanted);
     index = {
+      subject: LEAF_SUBJECT,
       addresses: wanted,
       keyPath,
       certPath,

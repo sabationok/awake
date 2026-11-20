@@ -11,9 +11,9 @@ struct TelegramSection: View {
                 summary
             }
         } header: {
-            Text("Сповіщення в Telegram")
+            Text("Підключення")
         } footer: {
-            Text("Початок і кінець сесії, відключення живлення, низький заряд, нагрівання. Які події надсилати і команди боту, налаштовує агент.")
+            Text("Токен бота і чат зберігаються лише на цьому Mac.")
         }
         .animation(.default, value: model.telegramEditing)
         .animation(.default, value: model.telegramJustSaved)

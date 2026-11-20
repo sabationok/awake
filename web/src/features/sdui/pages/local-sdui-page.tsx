@@ -15,11 +15,11 @@ export function LocalSduiPage() {
   const { status, token, forget } = useDevicePairing();
   const source = useMemo(() => (token ? localSource(token) : null), [token]);
 
-  if (status === 'checking') return <PageFrame title="MacCC">{null}</PageFrame>;
+  if (status === 'checking') return <PageFrame title="MaControl">{null}</PageFrame>;
 
   if (!source) {
     return (
-      <PageFrame title="MacCC">
+      <PageFrame title="MaControl">
         <Group
           footer={
             status === 'failed'

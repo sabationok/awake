@@ -4,8 +4,8 @@ export const dynamic = 'force-static';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'MacCC',
-    short_name: 'MacCC',
+    name: 'MaControl',
+    short_name: 'MaControl',
     description: 'Стан і керування Mac',
     start_url: '/',
     display: 'standalone',

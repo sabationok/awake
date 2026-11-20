@@ -21,7 +21,7 @@ import { MAC_MODULES, type MacModule, type ModuleContext, type StatusFields } fr
 
 type Source = 'mac' | 'telegram' | 'web';
 
-/** Реєстр модулів MacCC: з них будується дерево UI і сюди приходять дії та налаштування. */
+/** Реєстр модулів MaControl: з них будується дерево UI і сюди приходять дії та налаштування. */
 @Injectable()
 export class ModulesService {
   readonly settingChanged$ = new Subject<{ module: string; key: string; value: SettingValue }>();
@@ -86,7 +86,7 @@ export class ModulesService {
         permissions: module.permissions,
       })),
       app: {
-        title: 'MacCC',
+        title: 'MaControl',
         host: mac?.host ?? 'Mac',
         online: mac !== null,
         updatedAt: new Date().toISOString(),

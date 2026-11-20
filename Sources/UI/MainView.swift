@@ -72,6 +72,10 @@ struct MainView: View {
         case .remote(let id):
             if let uiPage = treePage(id) {
                 Form {
+                    // Токен і чат живуть лише на Mac (telegram.env), тож цю секцію малює аппка, а не агент.
+                    if uiPage.module == "telegram" {
+                        TelegramSection()
+                    }
                     ForEach(uiPage.children) { UiNodeView(node: $0) }
                 }
                 .formStyle(.grouped)
@@ -82,7 +86,6 @@ struct MainView: View {
         case .connection:
             Form {
                 RemoteSection()
-                TelegramSection()
             }
             .formStyle(.grouped)
         case .permission:

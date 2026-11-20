@@ -59,7 +59,7 @@ export function AppShell({ tree, send, mode, directError = false, accessory }: A
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const title = tree?.app.title ?? 'MacCC';
+  const title = tree?.app.title ?? 'MaControl';
   const onlineTone = tree?.app.online ? 'green' : 'gray';
   const local = tree?.app.local ?? null;
   const offline = mode === 'readonly' && directError && local !== null;
