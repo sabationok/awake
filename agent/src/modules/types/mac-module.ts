@@ -23,7 +23,10 @@ export interface MacModule {
   /** Вкладки модуля в бічному меню. Будуються з поточного стану щоразу. */
   pages(ctx: ModuleContext): UiPage[] | Promise<UiPage[]>;
   /** Обробники дій з кнопок: name → handler. */
-  actions: Record<string, (params: Record<string, string | number | boolean>, ctx: ModuleContext) => void | Promise<void>>;
+  actions: Record<
+    string,
+    (params: Record<string, string | number | boolean>, ctx: ModuleContext, source: 'mac' | 'telegram' | 'web') => void | Promise<void>
+  >;
   /** Налаштування змінилось (вже збережене). Напр. Awake пересилає його в Mac-аппку. */
   onSettingChanged?(key: string, value: string | number | boolean, ctx: ModuleContext): void | Promise<void>;
 }

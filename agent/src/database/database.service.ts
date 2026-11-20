@@ -38,6 +38,12 @@ export class DatabaseService implements OnModuleDestroy {
         created_at TEXT NOT NULL,
         last_seen_at TEXT
       );
+      CREATE TABLE IF NOT EXISTS settings (
+        module TEXT NOT NULL,
+        key TEXT NOT NULL,
+        value TEXT NOT NULL,
+        PRIMARY KEY (module, key)
+      );
     `);
   }
 

@@ -1,0 +1,135 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { Subject } from 'rxjs';
+import type {
+  SettingValue,
+  UiEvent,
+  UiPage,
+  UiScope,
+  UiSection,
+  UiTree,
+} from '@awake/contracts';
+import { API_ERROR_CODES, AppException } from '../common/app-exception';
+import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
+import { SettingsService } from '../settings/settings.service';
+import { buildSettingNode } from './helpers/build-setting-node';
+import { filterNodesByScope } from './helpers/filter-nodes-by-scope';
+import { isValidSettingValue } from './helpers/is-valid-setting-value';
+import { resolveSettingValue } from './helpers/resolve-setting-value';
+import { MAC_MODULES, type MacModule, type ModuleContext } from './types/mac-module';
+
+type Source = 'mac' | 'telegram' | 'web';
+
+/** Реєстр модулів MacCC: з них будується дерево UI і сюди приходять дії та налаштування. */
+@Injectable()
+export class ModulesService {
+  readonly settingChanged$ = new Subject<{ module: string; key: string; value: SettingValue }>();
+  private readonly _byId: Map<string, MacModule>;
+
+  constructor(
+    @Inject(MAC_MODULES) modules: MacModule[],
+    private readonly _bridge: MacBridgeService,
+    private readonly _settings: SettingsService,
+  ) {
+    this._byId = new Map(modules.map((module) => [module.id, module]));
+  }
+
+  list(): MacModule[] {
+    return [...this._byId.values()];
+  }
+
+  context(moduleId: string): ModuleContext {
+    const module = this._find(moduleId);
+    // Звичайний get-аксесор у літералі бачить сам літерал, тож сервіс беремо в змінну.
+    const bridge = this._bridge;
+    return {
+      get mac() {
+        return bridge.state;
+      },
+      setting: <T extends SettingValue>(key: string) => this._readSetting(module, key) as T,
+      sendToMac: (command, source) => {
+        bridge.sendCommand(command, source);
+      },
+    };
+  }
+
+  async buildTree(scope: UiScope): Promise<UiTree> {
+    const mac = this._bridge.state;
+    const pages: UiPage[] = [];
+    for (const module of this._byId.values()) {
+      pages.push(...(await module.pages(this.context(module.id))));
+    }
+    pages.push(this._settingsPage());
+
+    const visible = pages
+      .filter((page) => scope === 'local' || page.scope !== 'local')
+      .map((page) => ({ ...page, children: filterNodesByScope(page.children, scope) }));
+
+    return {
+      app: {
+        title: 'MacCC',
+        host: mac?.host ?? 'Mac',
+        online: mac !== null,
+        updatedAt: new Date().toISOString(),
+      },
+      pages: visible,
+    };
+  }
+
+  async dispatch(event: UiEvent, source: Source): Promise<void> {
+    if (event.type === 'action') {
+      const { module: moduleId, name, params } = event.action;
+      const module = this._find(moduleId);
+      // Object.hasOwn, щоб імена на кшталт `constructor` не знаходили прототип.
+      if (!Object.hasOwn(module.actions, name)) {
+        throw new AppException(API_ERROR_CODES.invalidCommand, `Unknown action ${moduleId}.${name}`);
+      }
+      await module.actions[name](params ?? {}, this.context(moduleId), source);
+      return;
+    }
+
+    const { module: moduleId, key, value } = event.change;
+    const module = this._find(moduleId);
+    const definition = module.settings.find((setting) => setting.key === key);
+    if (!definition || !isValidSettingValue(definition, value)) {
+      throw new AppException(API_ERROR_CODES.invalidCommand, `Invalid setting ${moduleId}.${key}`);
+    }
+    this._settings.set(moduleId, key, value);
+    this.settingChanged$.next({ module: moduleId, key, value });
+    await module.onSettingChanged?.(key, value, this.context(moduleId));
+  }
+
+  private _find(moduleId: string): MacModule {
+    const module = this._byId.get(moduleId);
+    if (!module) throw new AppException(API_ERROR_CODES.invalidCommand, `Unknown module ${moduleId}`);
+    return module;
+  }
+
+  private _readSetting(module: MacModule, key: string): SettingValue {
+    const definition = module.settings.find((setting) => setting.key === key);
+    if (!definition) throw new Error(`Unknown setting ${module.id}.${key}`);
+    return resolveSettingValue(definition, this._settings.get(module.id, key));
+  }
+
+  private _settingsPage(): UiPage {
+    const sections: UiSection[] = [];
+    for (const module of this._byId.values()) {
+      if (module.settings.length === 0) continue;
+      sections.push({
+        id: `settings-${module.id}`,
+        type: 'section',
+        title: module.title,
+        children: module.settings.map((definition) =>
+          buildSettingNode(module.id, definition, this._readSetting(module, definition.key)),
+        ),
+      });
+    }
+    return {
+      id: 'settings',
+      module: 'host',
+      title: 'Налаштування',
+      icon: { symbol: 'gearshape.fill', tone: 'gray' },
+      group: 'system',
+      children: sections,
+    };
+  }
+}
