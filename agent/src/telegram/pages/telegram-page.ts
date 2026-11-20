@@ -14,7 +14,7 @@ export function buildTelegramPage(ctx: ModuleContext): UiPage {
         type: 'section',
         title: 'Бот',
         footer:
-          'Кожен модуль має одну команду, далі все кнопками вглиб: /awake → «Таймер сну», «Екран і звук». /status — спільний стан Mac і модулів, /start — усі модулі.',
+          'Кожен модуль має одну команду, далі все кнопками вглиб: /awake → «Таймер сну», /media → гучність і яскравість. /status — спільний стан Mac і модулів, /start — усі модулі.',
         children: [ctx.settingNode('bot')],
       },
       {

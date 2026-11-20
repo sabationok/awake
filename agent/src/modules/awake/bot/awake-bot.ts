@@ -28,8 +28,8 @@ const SLEEP_MINUTES = [
 ];
 
 /**
- * /awake — єдина команда модуля: стан сесії і кнопки. Вглиб — екран `sleep` (таймер сну) і перехід
- * у модуль «Екран і звук». Нові можливості додаються екранами, а не командами.
+ * /awake — єдина команда модуля: стан сесії і кнопки. Вглиб — екран `sleep` (таймер сну).
+ * Нові можливості додаються екранами, а не командами.
  */
 export const AWAKE_BOT: ModuleBot = {
   command: 'awake',
@@ -49,10 +49,7 @@ function mainScreen(mac: MacState | null): BotMenu {
         { label: 'Екран', action: 'displayOff' },
         { label: 'Замок', action: 'lock' },
       ],
-      [
-        { label: mac?.sleepAt ? `🌙 Сон о ${formatHhmm(mac.sleepAt)}` : '🌙 Таймер сну', go: { screen: 'sleep' } },
-        { label: '🔊 Екран і звук', go: { module: 'media', screen: '' } },
-      ],
+      [{ label: mac?.sleepAt ? `🌙 Сон о ${formatHhmm(mac.sleepAt)}` : '🌙 Таймер сну', go: { screen: 'sleep' } }],
     ],
   };
 }

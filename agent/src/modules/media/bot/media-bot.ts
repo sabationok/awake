@@ -11,15 +11,13 @@ export function mediaStatus(mac: MacState | null): StatusFields | null {
   return { volume: mac.volume, muted: mac.muted, brightness: mac.brightness };
 }
 
-/**
- * «Екран і звук» без своєї команди: відкривається з /awake або /start. Екрани: головний,
- * `volume` і `brightness` з рівнями на кнопках.
- */
+/** /media — єдина команда модуля. Екрани: головний, `volume` і `brightness` з рівнями на кнопках. */
 export const MEDIA_BOT: ModuleBot = {
+  command: 'media',
   description: '🔊 Екран і звук',
   menu: (ctx, screen) => {
     const mac = ctx.mac;
-    if (!mac) return { text: '💤 Mac офлайн', buttons: [], back: { module: 'awake', screen: '' } };
+    if (!mac) return { text: '💤 Mac офлайн', buttons: [] };
     if (screen === 'volume') return levelScreen('🔊 Гучність', percent(mac.volume), 'volume', VOLUME_LEVELS);
     if (screen === 'brightness') return levelScreen('☀️ Яскравість', percent(mac.brightness), 'brightness', BRIGHTNESS_LEVELS);
     return mainScreen(mac);
@@ -37,7 +35,6 @@ function mainScreen(mac: MacState): BotMenu {
       ],
       [{ label: mac.muted ? '🔈 Увімкнути звук' : '🔇 Без звуку', action: 'mute', params: { value: String(!mac.muted) } }],
     ],
-    back: { module: 'awake', screen: '' },
   };
 }
 
