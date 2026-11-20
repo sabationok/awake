@@ -10,6 +10,7 @@ import { MacBridgeModule } from './mac-bridge/mac-bridge.module';
 import { ModulesModule } from './modules/modules.module';
 import { PresenceModule } from './presence/presence.module';
 import { SessionsModule } from './sessions/sessions.module';
+import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { SessionsModule } from './sessions/sessions.module';
     LogsModule,
     PresenceModule,
     ModulesModule,
+    TelegramModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: AgentTokenGuard },
