@@ -18,6 +18,7 @@ BUILD=$(( $(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$PLIST") + 1 ))
 /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" "$PLIST"
 /usr/libexec/PlistBuddy -c "Set CFBundleVersion $BUILD" "$PLIST"
 
+./scripts/build-agent.sh
 ./scripts/build.sh
 mkdir -p releases
 # У releases/ лишається лише поточний архів: префікс URL прив'язаний до тегу цього релізу.

@@ -44,6 +44,8 @@ struct MainView: View {
             SafetySection()
         case .telegram:
             TelegramSection()
+        case .remote:
+            RemoteSection()
         case .permission:
             PermissionSection()
         case .log:

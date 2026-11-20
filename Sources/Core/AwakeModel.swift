@@ -48,6 +48,28 @@ final class AwakeModel: ObservableObject {
     @Published var telegramListener = TelegramCommandListener.Status.stopped
     let commandListener = TelegramCommandListener()
 
+    // MARK: пульт (агент)
+    @Published var agentEnabled = UserDefaults.standard.object(forKey: "agent.enabled") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(agentEnabled, forKey: "agent.enabled")
+            applyAgent()
+        }
+    }
+    @Published var agentStatus = AgentService.Status.stopped
+    @Published var agentSettings = AgentSettingsStore.load()
+    @Published var trustedNetworks = TrustedNetworks.saved {
+        didSet { TrustedNetworks.saved = trustedNetworks }
+    }
+    @Published var currentSSID: String?
+    @Published var wifiAuthorized = false
+    @Published var wifiDenied = false
+    let agent = AgentService()
+    let wifi = WifiService()
+    /// Хто почав або зупинив поточну сесію: потрапляє в історію агента.
+    var sessionSource = SessionSource.mac
+    /// Тривалість поточної сесії, як її передали скрипту: 2h, 30m.
+    private(set) var sessionDuration: String?
+
     // MARK: журнал
     @Published private(set) var log = LogStore.load()
 
@@ -62,6 +84,7 @@ final class AwakeModel: ObservableObject {
         refresh()
         restoreAfterCrash()
         applyTelegramListener()
+        setUpAgent()
         ticker = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in AwakeModel.shared.tick() }
         }
@@ -96,6 +119,7 @@ final class AwakeModel: ObservableObject {
         if tickCount % 15 == 0 { refresh() }
         if isRunning { dimmer.update(limit: displayOff.seconds) }
         if tickCount % 2 == 0 { watchLid() }
+        if tickCount % 5 == 0 { pushAgentState() }
     }
 
     /// Перехід кришки у «закрито» під час сесії блокує екран, бо Mac не засне і сам не заблокується.
@@ -109,7 +133,8 @@ final class AwakeModel: ObservableObject {
 
     // MARK: дії сесії
 
-    func start(_ preset: SessionPreset? = nil) {
+    func start(_ preset: SessionPreset? = nil, source: SessionSource = .mac) {
+        sessionSource = source
         start(preset, previousSeconds: nil)
     }
 
@@ -130,23 +155,27 @@ final class AwakeModel: ObservableObject {
             )
             isRunning = true
             startDate = Date()
+            sessionDuration = chosen.id
             endDate = Date().addingTimeInterval(TimeInterval(chosen.seconds))
+            pushAgentState()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.refresh() }
         } catch {
             append("Не вдалося запустити скрипт: \(error.localizedDescription)")
         }
     }
 
-    func stop() {
+    func stop(source: SessionSource = .mac) {
+        sessionSource = source
         pendingRestart = nil
         runner.stop()
     }
 
     /// Нова сесія з новим часом. Якщо сесія вже працює, зупиняє її і стартує знову,
     /// щойно скрипт завершиться: таймер рахується з нуля, а не додається до решти.
-    func restart(_ preset: SessionPreset? = nil) {
+    func restart(_ preset: SessionPreset? = nil, source: SessionSource = .mac) {
         let chosen = preset ?? self.preset
-        guard isRunning else { start(chosen); return }
+        guard isRunning else { start(chosen, source: source); return }
+        sessionSource = source
         let elapsed = Int(Date().timeIntervalSince(startDate ?? Date()))
         pendingRestart = (chosen, elapsed)
         runner.stopForRestart()
@@ -178,7 +207,9 @@ final class AwakeModel: ObservableObject {
         isRunning = false
         startDate = nil
         endDate = nil
+        sessionDuration = nil
         refresh()
+        pushAgentState()
         if let next = pendingRestart {
             pendingRestart = nil
             start(next.preset, previousSeconds: next.previousSeconds)
@@ -194,6 +225,7 @@ final class AwakeModel: ObservableObject {
         let entry = LogEntry(date: Date(), text: text)
         log.append(entry)
         LogStore.append(entry)
+        forwardToAgent(entry)
         if let first = log.first, Date().timeIntervalSince(first.date) > LogStore.retention {
             log = LogStore.prune(log)
             LogStore.rewrite(log)

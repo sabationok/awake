@@ -50,7 +50,7 @@ extension AwakeModel {
                 return .text(TelegramMessage.format(title: "⛔️ Немає дозволу на керування сном", fields: [("event", "error")]))
             }
             // Під час активної сесії /start перезапускає її з новим часом.
-            restart(chosen)
+            restart(chosen, source: .telegram)
             return TelegramOutput()   // скрипт сам напише «Сон повернуто» і «Сон заблоковано»
 
         case "/duration":
@@ -112,7 +112,7 @@ extension AwakeModel {
                 return TelegramOutput(callbackAnswer: "Немає дозволу на керування сном")
             }
             let answer = isRunning ? "Перезапускаю на \(chosen.title)" : "Запускаю на \(chosen.title)"
-            restart(chosen)
+            restart(chosen, source: .telegram)
             return TelegramOutput(callbackAnswer: answer)
 
         case "stop":
@@ -129,7 +129,7 @@ extension AwakeModel {
 
     private func stopSession() -> TelegramOutput {
         if isRunning {
-            stop()
+            stop(source: .telegram)
             return TelegramOutput()   // скрипт сам напише «Сон повернуто»
         }
         if sleepBlockedOutside {

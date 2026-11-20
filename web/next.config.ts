@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { join } from 'node:path';
 
 /**
  * Дві збірки з одного коду.
@@ -11,7 +12,9 @@ const local = process.env.BUILD_TARGET === 'local';
 const config: NextConfig = {
   pageExtensions: local ? ['local.tsx', 'tsx', 'ts'] : ['vercel.tsx', 'vercel.ts', 'tsx', 'ts'],
   output: local ? 'export' : undefined,
-  distDir: local ? '.next-local' : '.next',
+  // Статичний експорт лягає в distDir: його копіює build-agent.sh у бандл Mac-аппки.
+  distDir: local ? 'out' : '.next',
+  outputFileTracingRoot: join(__dirname, '..'),
   transpilePackages: ['@awake/contracts'],
   env: { NEXT_PUBLIC_BUILD_TARGET: local ? 'local' : 'vercel' },
 };

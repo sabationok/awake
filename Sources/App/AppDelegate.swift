@@ -6,6 +6,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var updater: AppUpdater?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Запис у pipe агента, що щойно впав, інакше вбив би аппку сигналом SIGPIPE.
+        signal(SIGPIPE, SIG_IGN)
         MainActor.assumeIsolated {
             DockVisibility.startObserving()
             updater = AppUpdater(status: updates)
@@ -19,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         MainActor.assumeIsolated {
             AwakeModel.shared.commandListener.stop()
+            AwakeModel.shared.agent.stop()
             AwakeModel.shared.stopAndWait()
         }
     }

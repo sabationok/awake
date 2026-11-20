@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Розділи бічного меню. Кожен розділ — окрема сторінка з власною формою.
 enum SettingsPage: String, CaseIterable, Identifiable {
-    case session, status, tracking, display, safety, telegram, settings, permission, log
+    case session, status, tracking, display, safety, telegram, remote, settings, permission, log
 
     var id: String { rawValue }
 
@@ -14,6 +14,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .display: "Дисплей"
         case .safety: "Безпека"
         case .telegram: "Telegram"
+        case .remote: "Пульт"
         case .settings: "Налаштування"
         case .permission: "Дозвіл"
         case .log: "Журнал"
@@ -28,6 +29,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .display: "display"
         case .safety: "shield.fill"
         case .telegram: "paperplane.fill"
+        case .remote: "iphone.radiowaves.left.and.right"
         case .settings: "gearshape.fill"
         case .permission: "lock.fill"
         case .log: "list.bullet.rectangle"
@@ -37,7 +39,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     /// Групи бічного меню в порядку показу.
     static let groups: [[SettingsPage]] = [
         [.session, .status, .tracking],
-        [.display, .safety, .telegram],
+        [.display, .safety, .telegram, .remote],
         [.settings, .permission, .log],
     ]
 }
