@@ -142,7 +142,7 @@
 - Сесії: останні 20 viewer-ів, яких агент пустив, з поміткою «через проксі webhooxy». Подія виходу viewer-а (`relay:viewer:left`) ще не погоджена з webhooxy.
 - Дашборд: server action `getRelayAccess` (`web/src/server/relay-actions.ts`) підписує квиток для дійсної сесії; env Vercel: `WEBHOOXY_JWT_TICKET_KEY`, `WEBHOOXY_ROOM`, `WEBHOOXY_WORKSPACE`, а URL — зі stage. Пріоритет режимів дашборду: напряму → relay → лише перегляд.
 
-## Авторизація пристрою: два шари (схема погоджена; webhooxy прийняв, чекає реалізації)
+## Авторизація пристрою: два шари (контракт фінальний; webhooxy#12 відкритий, агент ще не реалізований)
 
 Замінює поточну схему, де квиток підписує Next (розділ «Токен viewer-а»). Next стає тупим проксі: має одну адресу upstream і нічого не знає про relay, room чи квитки. Ключ квитків лежить лише на Маці.
 
@@ -161,41 +161,71 @@
 
 **Проксі Vercel.** Легкий middleware: прокидає запит і відповідь як є, але в upstream пропускає лише кукі `mc_*`, бо сесія дашборду не повинна йти в webhooxy. URL upstream береться зі stage, ніколи від клієнта.
 
-**webhooxy: `relay:request` (специфікацію прийнято; окремий PR поверх #5 і #9, реалізацію почнуть після «так» Віталія):**
+**webhooxy: `relay:request` (контракт хоста фінальний; [webhooxy#12](https://github.com/sabationok/webhooxy/pull/12) поверх #9 → dev, не змерджений; порядок merge #5 → #9 → #12 після «так» Віталія).** Поки PR не змерджений, ендпоінта на dev немає.
 
-- `POST /api/relay/rooms/:roomId/request?mt_workspace=…`. Ключ іде в `X-Relay-Key: <relay-request credential>`, а не в `Authorization`: webhooxy вирізає цей заголовок, тож `Authorization` браузера доходить до хоста без змін. Помилки:
-  - 503 `HOST_OFFLINE`;
-  - 504 `TIMEOUT` (за замовчуванням ~10 с, максимум 30 с);
-  - 401 і 403;
-  - 413, якщо запит більший за `maxPayloadBytes`;
-  - 429;
-  - 502 `RESPONSE_TOO_LARGE`, якщо відповідь більша за `maxResponseBytes` (за замовчуванням 1 МБ, обидва ліміти не більші за `maxHttpBufferSize`);
-  - 502 `BAD_ACK`, якщо ack невалідний.
-- Хост отримує подію `relay:request` з ack. Поля `data`:
-  - `{ method, path, query: Record<string, string | string[]>, headers, body, bodyEncoding: 'json' | 'text' | 'base64' }`;
-  - `path` приходить без query string, а `bodyEncoding` webhooxy визначає за content-type;
-  - `headers` приходять як є, `cookie` теж. webhooxy вирізає hop-by-hop, `host`, `content-length`, вхідні `x-webhooxy-*` і `x-relay-key`, а `x-forwarded-for` і `x-forwarded-proto` ставить сам.
-  - Довірені дані лежать у `meta`: `{ requestId, via: { server }, caller: { credentialId } }`.
-- Ack хоста:
+- **Ендпоінт:** `ALL /api/relay/rooms/:roomId/request[/<path>]?mt_workspace=<slug>`. Метод і суфікс `/<path>` потрапляють у `data.method` і `data.path`; без суфікса `path` = `/`.
+- **Ключ:** `X-Relay-Key: rq_<kid>.<secret>`, credential типу `relay-request`.
+  - Створюється через `POST /api/workspaces/credentials/create { workspaceId, type: 'relay-request', destId }`. Відповідь: `{ kid, version, type, key, destId }`, де `key` і є значення заголовка.
+  - Один поточний ключ на DEST. Після ротації старий працює ще 1 год.
+  - Ключ лежить лише в env проксі (Envify), клієнт його не бачить. webhooxy вирізає цей заголовок, тож `Authorization` браузера доходить до хоста без змін.
+- **server → host `relay:request` (з ack):**
   ```ts
-  { statusCode: number; headers?: Record<string, string>; body?: unknown;
-    bodyEncoding?: 'json' | 'text' | 'base64';   // за замовчуванням 'json'
-    cookies?: Array<{ name: string; value: string; maxAge?: number; path?: string;
-                      httpOnly?: boolean; sameSite?: 'lax' | 'strict' }> }
+  { statusCode: 200, message: 'Success',
+    data: { method, path, query: Record<string, string | string[]>, headers: Record<string, string>,
+            body, bodyEncoding: 'json' | 'text' | 'base64' },
+    meta: { requestId, via: { server }, caller: { credentialId } } }   // довірене — лише meta
   ```
-  - З `cookies` webhooxy робить `Set-Cookie` і при цьому:
-    - завжди ставить `Secure`;
-    - за замовчуванням ставить `HttpOnly`;
-    - відкидає `domain` і `sameSite: 'none'`.
-  - `;`, `,`, `\r` або `\n` в імені чи значенні кукі дають 502 `BAD_ACK`.
-  - `set-cookie` і hop-by-hop із `headers` не пропускаються.
+  - `mt_workspace` з `query` прибрано.
+  - Без тіла: `body: null`, `bodyEncoding: 'json'`. Невалідний JSON приходить як `'text'`.
+  - `headers` приходять як є, `cookie` теж. webhooxy вирізає hop-by-hop, `host`, `content-length`, `x-relay-key` і `x-webhooxy-*`, а `x-forwarded-for` і `x-forwarded-proto` ставить сам.
+- **Ack хоста:** HTTP-відповідь лежить усередині `data`:
+  ```ts
+  { data: { statusCode: number /* 200..599 */; headers?: Record<string, string>; body?: unknown;
+            bodyEncoding?: 'json' | 'text' | 'base64';   // за замовчуванням 'json'
+            cookies?: Array<{ name: string; value: string; maxAge?: number; path?: string;
+                              httpOnly?: boolean; sameSite?: 'lax' | 'strict' }> },
+    meta?: { redact?: RedactRule[] } }   // redact лише для частини відповіді
+  ```
+  - Кожна кукі стає окремим `Set-Cookie` з такими атрибутами:
+    - `Secure` завжди;
+    - `HttpOnly`, якщо не `httpOnly: false`;
+    - за замовчуванням `SameSite=Lax` і `Path=/`.
+  - 502 `BAD_ACK` дають:
+    - `domain`;
+    - `sameSite: 'none'`;
+    - `;`, `,`, CR або LF в імені, значенні чи `path`;
+    - CR або LF у значенні заголовка.
+  - З `headers` webhooxy відкидає `set-cookie`, hop-by-hop, `content-length` і `x-webhooxy-*`.
+  - Без `content-type` webhooxy ставить типовий для `bodyEncoding`.
+  - Кожна відповідь має `x-webhooxy-request-id`.
   - Стримінгу і chunked немає.
-- `redact` у `auth.relay` handshake (поруч з `allowedOrigins`): `[{ in: 'cookies' | 'headers', name } | { in: 'body', path }]`.
-  - `path` записується через крапку, масиви — лише через `*`.
-  - Діє на запит і відповідь. Список задається в handshake, бо запит потрапляє в лог ще до ack.
-  - Завжди маскуються `authorization`, `cookie`, `set-cookie`, `x-relay-key` і `cookies[].value` відповіді. Усе інше логується.
-- `relay:viewer:left { viewerId, reason }` іде в тому ж PR.
-- Ще відкрито в webhooxy: куди писати лог (таблиця requests чи звичайні логи) і скільки його зберігати.
+- **Помилки:** `{ message: <CODE>, statusCode, innerCode: <CODE> }`. Перевіряються в такому порядку:
+  - 401 `UNAUTHORIZED`;
+  - 403 `FORBIDDEN`, якщо room не є DEST-room ключа;
+  - 429 `TOO_MANY_REQUESTS`, спершу ліміт на credential, потім на room;
+  - 413 `PAYLOAD_TOO_LARGE`;
+  - 503 `HOST_OFFLINE`;
+  - 504 `TIMEOUT`;
+  - 502 `BAD_ACK`;
+  - 502 `RESPONSE_TOO_LARGE`.
+- **Ліміти:** у `config.transports.ws.relay` або в override хоста `auth.relay`:
+
+  | Поле | За замовчуванням | Максимум |
+  |---|---|---|
+  | `requestTimeoutMs` | 10000 | 30000 |
+  | `maxResponseBytes` | 1000000 | 1000000 |
+  | `requests.perCredentialPerMin` | 60 | 6000 |
+  | `requests.perRoomPerMin` | 600 | 12000 |
+  | `redact` | до 50 правил | |
+
+- **`redact`:** правила `RedactRule = { in: 'headers' | 'cookies', name } | { in: 'body', path }`.
+  - `name` без урахування регістру. `path` записується через крапку, масиви — через `*`.
+  - Правила з `auth.relay` діють на весь обмін. `meta.redact` з ack діє лише на відповідь.
+  - Завжди маскуються `authorization`, `cookie`, `set-cookie`, `x-relay-key` і значення всіх кукі відповіді.
+  - Ще може змінитись: Віталій попросив зберігати лог у `requests` із зашифрованими чутливими полями. Якщо зміниться назва поля `redact`, координатор повідомить.
+- **server → host `relay:viewer:left`:** `{ statusCode: 200, message: 'Success', data: { viewerId, reason: 'disconnect' | 'kicked' | 'timeout' | 'denied' } }`.
+  - Шлеться лише для viewer-ів, які пройшли `relay:authorize`.
+  - Іде поточному хосту. Якщо хоста в room немає, подія не шлеться.
 
 **Проксі Vercel:** кілька `Set-Cookie` треба передавати окремими заголовками (`headers.append` / `getSetCookie()`, не `set`), інакше вони зіллються через кому. У webhooxy проксі сам додає `X-Relay-Key`, а клієнт цього ключа не бачить.
 
