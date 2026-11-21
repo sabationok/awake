@@ -12,7 +12,9 @@ function decodePart(part: string): unknown {
  * Перевіряє квиток viewer-а (JWT HS256): підпис, alg, aud, room, iat/exp і межу TTL.
  * Одноразовість jti перевіряє викликач: тут лише чиста функція.
  */
-export function verifyViewerTicket(token: string, key: string, room: string, nowSeconds = Math.floor(Date.now() / 1000)): TicketCheck {
+export function verifyViewerTicket(token: unknown, key: string, room: string, nowSeconds = Math.floor(Date.now() / 1000)): TicketCheck {
+  // Токен приходить від viewer-а через webhooxy без перевірки: будь-що, крім рядка розумної довжини, відкидаємо одразу.
+  if (typeof token !== 'string' || token.length > 4096) return { ok: false, reason: 'malformed' };
   const parts = token.split('.');
   if (parts.length !== 3) return { ok: false, reason: 'malformed' };
   const [headerPart, payloadPart, signaturePart] = parts;

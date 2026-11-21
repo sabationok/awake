@@ -121,9 +121,21 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     socket.on('relay:limits:effective', (envelope: ServerEnvelope<{ maxPayloadBytes?: number }>) => {
       this._maxPayloadBytes = envelope.data?.maxPayloadBytes ?? this._maxPayloadBytes;
     });
-    socket.on('relay:authorize', (envelope: ServerEnvelope<AuthorizeData>, ack: Ack) => ack({ data: this._authorize(envelope.data, env) }));
-    socket.on('relay:message', (envelope: ServerEnvelope<unknown>, ack: Ack) => {
-      void this._handle(envelope.data).then((data) => ack({ data }));
+    // Дані viewer-а не перевірені: виняток у слухачі socket.io поклав би весь агент, тож завжди відповідаємо в ack.
+    socket.on('relay:authorize', (envelope: ServerEnvelope<AuthorizeData> | undefined, ack: Ack) => {
+      if (typeof ack !== 'function') return;
+      try {
+        ack({ data: this._authorize(envelope?.data, env) });
+      } catch (error) {
+        this._logger.warn(`Relay authorize failed: ${(error as Error).message}`);
+        ack({ data: { allow: false } });
+      }
+    });
+    socket.on('relay:message', (envelope: ServerEnvelope<unknown> | undefined, ack: Ack) => {
+      if (typeof ack !== 'function') return;
+      void this._handle(envelope?.data)
+        .catch((): RelayHostReply => ({ type: 'error', message: 'Internal error' }))
+        .then((data) => ack({ data }));
     });
   }
 
@@ -140,8 +152,9 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private _authorize(data: AuthorizeData, env: RelayEnv): { allow: boolean; sub?: string } {
-    const origin = data.headers?.origin;
+  private _authorize(data: AuthorizeData | undefined, env: RelayEnv): { allow: boolean; sub?: string } {
+    if (!data || typeof data !== 'object' || typeof data.viewerId !== 'string') return this._deny('?', 'malformed request');
+    const origin = typeof data.headers?.origin === 'string' ? data.headers.origin : undefined;
     const allowedOrigins = [...this._config.dashboardOrigins, this._config.corsOrigin];
     if (origin && !allowedOrigins.includes(origin)) return this._deny(data.viewerId, `origin ${origin}`);
     const check = verifyViewerTicket(data.token, env.ticketKey, env.room);
