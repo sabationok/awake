@@ -19,7 +19,7 @@ import { filterNodesByScope } from './helpers/filter-nodes-by-scope';
 import { isValidSettingValue } from './helpers/is-valid-setting-value';
 import { resolveSettingValue } from './helpers/resolve-setting-value';
 import { MACONTROL_BOT } from './constants/macontrol-bot';
-import { MAC_MODULES, type MacModule, type ModuleContext, type StatusFields } from './types/mac-module';
+import { MAC_MODULES, type MacModule, type ModuleContext, type ModulesStatus, type StatusFields } from './types/mac-module';
 import type { ModuleSource } from './types/module-source';
 
 /** Реєстр модулів MaControl: з них будується дерево UI і сюди приходять дії та налаштування. */
@@ -59,13 +59,14 @@ export class ModulesService {
     };
   }
 
-  /** Спільний стан: поля всіх модулів, що пишуть у /status, в порядку модулів. */
-  status(): StatusFields {
-    const fields: StatusFields = {};
+  /** Спільний стан: кожен модуль пише у свій ключ. Поля з null відкидаються, модуль без полів — без ключа. */
+  status(): ModulesStatus {
+    const status: ModulesStatus = {};
     for (const module of this._byId.values()) {
-      Object.assign(fields, module.status?.(this.context(module.id)) ?? {});
+      const entries = Object.entries(module.status?.(this.context(module.id)) ?? {}).filter(([, value]) => value !== null);
+      if (entries.length > 0) status[module.id] = Object.fromEntries(entries) as StatusFields;
     }
-    return fields;
+    return status;
   }
 
   async buildTree(scope: UiScope): Promise<UiTree> {

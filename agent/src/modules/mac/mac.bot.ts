@@ -3,7 +3,7 @@ import { escapeHtml } from '../../common/escape-html';
 import { MACONTROL_BOT } from '../constants/macontrol-bot';
 import type { ModuleContext } from '../types/mac-module';
 
-/** /status: увесь спільний стан, у який пишуть і система, і модулі (awake, until, sleepAt…). */
+/** /status: спільний стан, кожен модуль під своїм ключем (`system`, `media`, `awake` — поки йде сесія…). */
 @Bot(MACONTROL_BOT, { namespace: 'system', command: 'status', description: 'Стан Mac і модулів' })
 export class MacBot {
   @BotScreen()

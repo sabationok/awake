@@ -1,7 +1,7 @@
 import type { MacState } from '@awake/contracts';
 import type { StatusFields } from '../../types/mac-module';
 
-/** Поля системного модуля в спільному /status. */
+/** /status → `system`: стан Mac. */
 export function macStatus(mac: MacState | null): StatusFields | null {
   if (!mac) return null;
   return {

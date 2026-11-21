@@ -2,8 +2,11 @@ import type { MacState } from '@awake/contracts';
 import { formatHhmm } from '../../../common/format-hhmm';
 import type { StatusFields } from '../../types/mac-module';
 
-/** Поля таймера в спільному /status. */
+/** /status → `sleep`: лише поки йде таймер. */
 export function sleepStatus(mac: MacState | null): StatusFields | null {
-  if (!mac) return null;
-  return { sleepAt: mac.sleepAt ? formatHhmm(mac.sleepAt) : null };
+  if (!mac?.sleepAt) return null;
+  return {
+    startedAt: mac.sleepStartedAt ? formatHhmm(mac.sleepStartedAt) : null,
+    sleepAt: formatHhmm(mac.sleepAt),
+  };
 }

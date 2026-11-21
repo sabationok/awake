@@ -14,12 +14,15 @@ export interface ModuleContext {
   settingNode(key: string): UiNode;
   /** Команда для Mac-аппки (сон, блокування, екран). */
   sendToMac(command: CommandRequest, source: ModuleSource): void;
-  /** Спільний стан для /status: поля, які пишуть усі модулі (`status`), у порядку модулів. */
-  status(): StatusFields;
+  /** Спільний стан для /status: кожен модуль під своїм id, у порядку модулів. */
+  status(): ModulesStatus;
 }
 
-/** Поля модуля в спільному стані /status. null — поле є, але значення невідоме. */
+/** Поля модуля в /status. Поля з null не потрапляють у вивід. */
 export type StatusFields = Record<string, string | number | boolean | null>;
+
+/** /status: `{ <id модуля>: його поля }`. Модуля, якому нема що писати, тут немає. */
+export type ModulesStatus = Record<string, StatusFields>;
 
 /**
  * Плагін MaControl: сторінки, налаштування і стан. Дії та екрани бота — окремий клас `@Bot(MACONTROL_BOT, { namespace: id })`.
@@ -34,7 +37,7 @@ export interface MacModule {
   settings: SettingDefinition[];
   /** Вкладки модуля в бічному меню. Будуються з поточного стану щоразу. */
   pages(ctx: ModuleContext): UiPage[] | Promise<UiPage[]>;
-  /** Поля, які модуль пише в спільний стан /status. */
+  /** Поля модуля в /status під ключем його id. null або без значень — ключа немає. */
   status?(ctx: ModuleContext): StatusFields | null;
   /** Налаштування змінилось (вже збережене). Напр. Awake пересилає його в Mac-аппку. */
   onSettingChanged?(key: string, value: string | number | boolean, ctx: ModuleContext): void | Promise<void>;
