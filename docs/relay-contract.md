@@ -4,6 +4,10 @@
 
 Модель погоджено з webhooxy 2026-11-21. Вона замінила попередні варіанти (REST-квитки, спільний JWT-ключ, ES256-ключі воркспейсу в `credentials`, reveal). Остаточні форми подій прийдуть разом з оновленим PR #5 (`feat/ws-relay` → `dev`), тому до того під них у коді не прив'язуватись.
 
+## Середовища
+
+Поки є тільки dev, і середовища не змішуються: MaControl dev UI (Vercel, гілка `dev`) → webhooxy API dev (`webhooks-proxy-dev.up.railway.app`) → агент на Mac. Агент і дашборд беруть URL webhooxy з env (`WEBHOOXY_URL` / `NEXT_PUBLIC_WEBHOOXY_URL`), а ключ `WEBHOOXY_JWT_TICKET_KEY` — з dev-середовища Envify. Прод (`main` ↔ production) з'явиться окремо.
+
 ## Підключення
 
 - **Namespace:** socket.io `/relay` (path `/socket.io`, хост API).
