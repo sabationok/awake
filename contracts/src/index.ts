@@ -174,5 +174,11 @@ export interface DevicePairingPoll {
 }
 
 
+/**
+ * Префікс усіх ключів MaControl у Redis. База Upstash спільна з іншими проєктами (envify),
+ * тож ключ без префікса не пишемо: новий ключ — лише як `${REDIS_KEY_PREFIX}<name>`.
+ */
+export const REDIS_KEY_PREFIX = 'macontrol:';
+
 /** Дерево UI для дашборду на Vercel (лише вузли зі scope all). Vercel лише читає його: керування йде на самому агенті. */
-export const UI_TREE_KEY = 'maccc:ui';
+export const UI_TREE_KEY = `${REDIS_KEY_PREFIX}ui`;
