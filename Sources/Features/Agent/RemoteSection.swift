@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Сторінка «Підключення»: довірені мережі Wi-Fi і ключі Upstash. Вмикач агента — в AgentSection.
+/// Сторінка «Підключення»: довірені мережі Wi-Fi (список у SQLite агента) і ключі Upstash. Вмикач агента — в AgentSection.
 struct RemoteSection: View {
     @EnvironmentObject private var model: AwakeModel
     @State private var upstashURL = ""
@@ -38,7 +38,7 @@ struct RemoteSection: View {
         } header: {
             Text("Довірені мережі Wi-Fi")
         } footer: {
-            Text("macOS показує назву мережі лише застосункам з дозволом геолокації. Поза довіреними мережами агент відповідає тільки цьому Mac.")
+            Text("macOS показує назву мережі лише застосункам з дозволом геолокації. Поза довіреними мережами агент відповідає тільки цьому Mac. Список зберігає агент у своїй базі, тож змінювати його можна, коли агент запущений.")
         }
 
         Section {

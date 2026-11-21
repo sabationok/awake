@@ -58,9 +58,8 @@ final class AwakeModel: ObservableObject {
     }
     @Published var agentStatus = AgentService.Status.stopped
     @Published var agentSettings = AgentSettingsStore.load()
-    @Published var trustedNetworks = TrustedNetworks.saved {
-        didSet { TrustedNetworks.saved = trustedNetworks }
-    }
+    /// Довірені мережі Wi-Fi з SQLite агента. Порожньо, поки агент їх не надіслав.
+    @Published var trustedNetworks: [String] = []
     @Published var currentSSID: String?
     @Published var wifiAuthorized = false
     @Published var wifiDenied = false

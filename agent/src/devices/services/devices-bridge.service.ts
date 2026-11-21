@@ -3,6 +3,7 @@ import { Subscription, distinctUntilChanged, map, merge } from 'rxjs';
 import type { DevicePairing, DevicesSnapshot } from '@awake/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';
 import { MacBridgeService } from '../../mac-bridge/services/mac-bridge.service';
+import { TrustedNetworksService } from '../../trusted-networks';
 import { findLanAddress } from '../../presence/helpers/find-lan-address';
 import { describeUserAgent } from '../helpers/describe-user-agent';
 import { DevicesRepository } from '../repositories/devices.repository';
@@ -21,11 +22,12 @@ export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
     private readonly _bridge: MacBridgeService,
     private readonly _devices: DevicesRepository,
     private readonly _pairing: PairingService,
+    private readonly _networks: TrustedNetworksService,
   ) {}
 
   onModuleInit() {
-    const trustedChanged = this._bridge.state$.pipe(
-      map((state) => !!state?.trusted),
+    const trustedChanged = merge(this._bridge.state$, this._networks.changed$).pipe(
+      map(() => this._networks.isCurrentTrusted),
       distinctUntilChanged(),
     );
     this._subscription = merge(trustedChanged, this._pairing.changed$).subscribe(() => this._push());
@@ -54,7 +56,7 @@ export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
 
   /** Посилання з кодом. Поза довіреною Wi-Fi гард однаково не пустить, тож його й не даємо. */
   private _pairingLink(): DevicePairing {
-    if (!this._bridge.state?.trusted) return { url: null, reason: 'untrusted' };
+    if (!this._networks.isCurrentTrusted) return { url: null, reason: 'untrusted' };
     const address = findLanAddress();
     if (!address) return { url: null, reason: 'noNetwork' };
     const code = this._pairing.currentCodeInfo();

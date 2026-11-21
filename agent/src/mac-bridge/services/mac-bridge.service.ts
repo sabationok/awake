@@ -20,6 +20,7 @@ import { writeProtocolLine } from './protocol-stdout';
 type SessionMessage = Extract<MacToAgentMessage, { type: 'session' }>['data'];
 type LogMessage = Extract<MacToAgentMessage, { type: 'log' }>['data'];
 type DevicesRequest = Extract<MacToAgentMessage, { type: 'devices' }>['data'];
+type TrustedNetworksRequest = Extract<MacToAgentMessage, { type: 'trustedNetworks' }>['data'];
 
 /** Mac вважається офлайн, якщо стан не приходив довше за цей час. */
 const STATE_STALE_MS = 30_000;
@@ -43,6 +44,8 @@ export class MacBridgeService implements OnModuleInit {
   readonly relayEnvReload$ = new Subject<void>();
   /** Аппка переписала envify.env або натиснула «Оновити». */
   readonly envifyReload$ = new Subject<void>();
+  /** Аппка додала або прибрала довірену мережу. */
+  readonly trustedNetworks$ = new Subject<TrustedNetworksRequest>();
   private _stateAt = 0;
 
   onModuleInit() {
@@ -79,6 +82,10 @@ export class MacBridgeService implements OnModuleInit {
 
   sendDevices(snapshot: DevicesSnapshot) {
     this._send({ type: 'devices', data: snapshot });
+  }
+
+  sendTrustedNetworks(ssids: string[]) {
+    this._send({ type: 'trustedNetworks', data: { ssids } });
   }
 
   sendSecrets(snapshot: SecretsSnapshot) {
@@ -123,6 +130,9 @@ export class MacBridgeService implements OnModuleInit {
         return;
       case 'envify':
         this.envifyReload$.next();
+        return;
+      case 'trustedNetworks':
+        this.trustedNetworks$.next(message.data);
         return;
     }
   }

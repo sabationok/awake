@@ -1,11 +1,10 @@
 import Foundation
 
-/// Мережі Wi-Fi, у яких агент публікує свою локальну адресу і приймає запити з інших пристроїв.
-enum TrustedNetworks {
+/// Старе місце списку довірених мереж (UserDefaults). Тепер список у SQLite агента; звідси його один раз переносять.
+enum LegacyTrustedNetworks {
     private static let key = "agent.trustedSSIDs"
 
-    static var saved: [String] {
-        get { UserDefaults.standard.stringArray(forKey: key) ?? [] }
-        set { UserDefaults.standard.set(newValue, forKey: key) }
-    }
+    static var saved: [String] { UserDefaults.standard.stringArray(forKey: key) ?? [] }
+
+    static func clear() { UserDefaults.standard.removeObject(forKey: key) }
 }

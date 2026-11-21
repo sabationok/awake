@@ -6,6 +6,7 @@ import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { DevicesModule } from './devices/devices.module';
 import { EnvifyModule } from './envify';
+import { TrustedNetworksModule } from './trusted-networks';
 import { LogsModule } from './logs/logs.module';
 import { MacBridgeModule } from './mac-bridge/mac-bridge.module';
 import { ModulesModule } from './modules/modules.module';
@@ -26,6 +27,7 @@ import { TlsModule } from './tls/tls.module';
     DatabaseModule,
     MacBridgeModule,
     EnvifyModule,
+    TrustedNetworksModule,
     DevicesModule,
     SessionsModule,
     LogsModule,

@@ -3,6 +3,7 @@ import type { MacState, UiLocalAccess } from '@awake/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';
 import { PairingService } from '../../devices/services/pairing.service';
 import { TlsService } from '../../tls/services/tls.service';
+import { TrustedNetworksService } from '../../trusted-networks';
 import { findLanAddress } from '../helpers/find-lan-address';
 
 /** Прямий доступ до агента для дашборду: лише в довіреній Wi-Fi. */
@@ -12,6 +13,7 @@ export class PresenceService {
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     private readonly _pairing: PairingService,
     private readonly _tls: TlsService,
+    private readonly _networks: TrustedNetworksService,
   ) {}
 
   /**
@@ -19,7 +21,7 @@ export class PresenceService {
    * Головний токен з Mac не виходить: сторінка міняє код на власний токен пристрою, а код швидко протухає.
    */
   localAccess(state: MacState): UiLocalAccess | null {
-    if (!state.trusted) return null;
+    if (!this._networks.isTrusted(state.ssid)) return null;
     const address = findLanAddress();
     if (!address) return null;
     return {

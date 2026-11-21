@@ -6,7 +6,7 @@ import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 import { BOT_CONTEXT_TYPE } from '../bot';
 import { API_ERROR_CODES, AppException } from '../common/app-exception';
 import { PairingService } from '../devices/services/pairing.service';
-import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
+import { TrustedNetworksService } from '../trusted-networks';
 import { PUBLIC_ROUTE } from './decorators/public-route.decorator';
 
 const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
@@ -21,7 +21,7 @@ export class AgentTokenGuard implements CanActivate {
 
   constructor(
     @Inject(AGENT_CONFIG) config: AgentConfig,
-    private readonly _bridge: MacBridgeService,
+    private readonly _networks: TrustedNetworksService,
     private readonly _pairing: PairingService,
     private readonly _reflector: Reflector,
   ) {
@@ -35,7 +35,7 @@ export class AgentTokenGuard implements CanActivate {
     if (context.getType() !== 'http') return false;
     const req = context.switchToHttp().getRequest<Request>();
     const remote = req.socket.remoteAddress ?? '';
-    if (!LOOPBACK.has(remote) && !this._bridge.state?.trusted) {
+    if (!LOOPBACK.has(remote) && !this._networks.isCurrentTrusted) {
       throw new AppException(API_ERROR_CODES.untrustedNetwork, 'Mac is not on a trusted network', HttpStatus.FORBIDDEN);
     }
     if (this._reflector.getAllAndOverride<boolean>(PUBLIC_ROUTE, [context.getHandler(), context.getClass()])) return true;

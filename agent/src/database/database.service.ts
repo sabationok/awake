@@ -66,6 +66,10 @@ export class DatabaseService implements OnModuleDestroy {
         value INTEGER NOT NULL,
         PRIMARY KEY (day, metric)
       );
+      CREATE TABLE IF NOT EXISTS trusted_networks (
+        ssid TEXT PRIMARY KEY,
+        added_at TEXT NOT NULL
+      );
       CREATE TABLE IF NOT EXISTS settings (
         module TEXT NOT NULL,
         key TEXT NOT NULL,

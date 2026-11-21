@@ -18,6 +18,7 @@ final class AgentService {
     var onSettings: (([String: UiScalar]) -> Void)?
     var onDevices: ((AgentDevices) -> Void)?
     var onSecrets: ((AgentSecrets) -> Void)?
+    var onTrustedNetworks: (([String]) -> Void)?
 
     private var process: Process?
     private var input: FileHandle?
@@ -126,6 +127,8 @@ final class AgentService {
                 onDevices?(devices)
             case .secrets(let secrets):
                 onSecrets?(secrets)
+            case .trustedNetworks(let ssids):
+                onTrustedNetworks?(ssids)
             case .other:
                 break
             }

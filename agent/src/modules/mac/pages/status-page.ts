@@ -5,7 +5,8 @@ import { formatBattery } from '../../awake/helpers/format-battery';
 import { powerLabel } from '../../awake/helpers/power-label';
 import { thermalPresentation } from '../../awake/helpers/thermal-presentation';
 
-export function buildStatusPage(ctx: ModuleContext): UiPage {
+/** `trusted` — поточна мережа в довірених (TrustedNetworksService). */
+export function buildStatusPage(ctx: ModuleContext, trusted: boolean): UiPage {
   const mac = ctx.mac;
   return {
     id: 'status',
@@ -17,7 +18,7 @@ export function buildStatusPage(ctx: ModuleContext): UiPage {
       {
         id: 'rows',
         type: 'section',
-        children: mac === null ? [{ id: 'no-data', type: 'row', label: 'Немає даних' }] : macRows(mac),
+        children: mac === null ? [{ id: 'no-data', type: 'row', label: 'Немає даних' }] : macRows(mac, trusted),
       },
       // Стосується Mac загалом, а не сесії: попередження приходить і без Awake.
       { id: 'warnings', type: 'section', title: 'Попередження', children: [ctx.settingNode('batteryWarn')] },
@@ -25,7 +26,7 @@ export function buildStatusPage(ctx: ModuleContext): UiPage {
   };
 }
 
-function macRows(mac: MacState): UiRow[] {
+function macRows(mac: MacState, trusted: boolean): UiRow[] {
   const thermal = thermalPresentation(mac.thermal);
   return [
     sleepRow(mac),
@@ -62,7 +63,7 @@ function macRows(mac: MacState): UiRow[] {
       type: 'row',
       scope: 'local',
       label: 'Мережа',
-      value: `${mac.ssid ?? '—'}${mac.trusted ? ' · довірена' : ''}`,
+      value: `${mac.ssid ?? '—'}${trusted ? ' · довірена' : ''}`,
       icon: { symbol: 'wifi', tone: 'accent' },
     },
   ];

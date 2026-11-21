@@ -25,8 +25,6 @@ export interface MacState {
   sleepBlocked: boolean;
   /** Поточна мережа Wi-Fi, null без дозволу геолокації або без Wi-Fi. */
   ssid: string | null;
-  /** Мережа в списку довірених на Mac: лише тоді агент публікує локальну адресу. */
-  trusted: boolean;
   appVersion: string;
   /** ISO, коли поставили таймер сну; null — таймера немає. */
   sleepStartedAt: string | null;
@@ -129,7 +127,9 @@ export type MacToAgentMessage =
   /** Аппка переписала ~/.config/awake/relay.env: агент перечитує ключі й перепідключає webhooxy. Значень тут немає. */
   | { type: 'relayEnv'; data: { action: 'reload' } }
   /** Аппка переписала ~/.config/awake/envify.env або просить оновити: агент заново тягне змінні з Envify. */
-  | { type: 'envify'; data: { action: 'reload' } };
+  | { type: 'envify'; data: { action: 'reload' } }
+  /** Довірені мережі Wi-Fi: список у SQLite агента, аппка лише додає й прибирає. */
+  | { type: 'trustedNetworks'; data: { action: 'add' | 'remove'; ssid: string } };
 
 export type AgentToMacMessage =
   | { type: 'ready'; data: { port: number } }
@@ -141,7 +141,9 @@ export type AgentToMacMessage =
   /** Сполучені пристрої і поточне посилання сполучення: лише для Mac-аппки, у веб не йде. */
   | { type: 'devices'; data: DevicesSnapshot }
   /** Звідки агент узяв ключі (Envify, relay.env, process.env) і стан Envify: лише для Mac-аппки, без секретів. */
-  | { type: 'secrets'; data: SecretsSnapshot };
+  | { type: 'secrets'; data: SecretsSnapshot }
+  /** Довірені мережі Wi-Fi з SQLite агента: шлеться на старті й після кожної зміни. */
+  | { type: 'trustedNetworks'; data: { ssids: string[] } };
 
 /** Звідки взявся ключ: process.env, Envify, файл у ~/.config/awake, або його немає. */
 export type SecretSource = 'env' | 'envify' | 'file' | null;

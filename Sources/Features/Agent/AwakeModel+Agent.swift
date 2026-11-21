@@ -33,6 +33,10 @@ extension AwakeModel {
         agent.onDevices = { [weak self] devices in
             if self?.devices != devices { self?.devices = devices }
         }
+        agent.onTrustedNetworks = { [weak self] ssids in
+            self?.importLegacyTrustedNetworks(known: ssids)
+            if self?.trustedNetworks != ssids { self?.trustedNetworks = ssids }
+        }
         agent.onSecrets = { [weak self] secrets in
             if self?.secrets != secrets { self?.secrets = secrets }
         }
@@ -76,13 +80,25 @@ extension AwakeModel {
         return trustedNetworks.contains(currentSSID)
     }
 
+    /// Список зберігає агент: аппка шле зміну, а новий список приходить у `trustedNetworks`.
     func setTrusted(_ ssid: String, _ trusted: Bool) {
+        struct Change: Encodable { let action: String; let ssid: String }
+        agent.send(type: "trustedNetworks", data: Change(action: trusted ? "add" : "remove", ssid: ssid))
+        // Одразу в UI, щоб перемикач не відскакував до відповіді агента.
         if trusted {
             if !trustedNetworks.contains(ssid) { trustedNetworks.append(ssid) }
         } else {
             trustedNetworks.removeAll { $0 == ssid }
         }
-        pushAgentState()
+    }
+
+    /// Мережі з UserDefaults (до переїзду в SQLite) один раз переходять в агента, потім ключ стирається.
+    private func importLegacyTrustedNetworks(known: [String]) {
+        let legacy = LegacyTrustedNetworks.saved
+        guard !legacy.isEmpty else { return }
+        for ssid in legacy where !known.contains(ssid) { setTrusted(ssid, true) }
+        LegacyTrustedNetworks.clear()
+        append("Довірені мережі перенесено в базу агента: \(legacy.count)")
     }
 
     // MARK: стан → агент
@@ -102,7 +118,6 @@ extension AwakeModel {
             lidClosed: ClamshellService.isClosed(),
             sleepBlocked: sleepBlocked,
             ssid: currentSSID,
-            trusted: currentNetworkTrusted,
             appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?",
             sleepStartedAt: sleepTimer?.startedAt,
             sleepAt: sleepTimer?.sleepAt,

@@ -13,7 +13,6 @@ struct AgentMacState: Encodable, Equatable {
     var lidClosed: Bool
     var sleepBlocked: Bool
     var ssid: String?
-    var trusted: Bool
     var appVersion: String
     /// Сесія таймера сну: коли поставили і коли Mac засне.
     var sleepStartedAt: Date?
@@ -86,6 +85,7 @@ enum AgentProtocol {
         case settings([String: UiScalar])
         case devices(AgentDevices)
         case secrets(AgentSecrets)
+        case trustedNetworks([String])
         case other
     }
 
@@ -116,6 +116,11 @@ enum AgentProtocol {
             struct Wrapper: Decodable { let data: AgentDevices }
             guard let devices = try? UiTreeDecoder.decoder.decode(Wrapper.self, from: data).data else { return .other }
             return .devices(devices)
+        case "trustedNetworks":
+            struct Networks: Decodable { let ssids: [String] }
+            struct Wrapper: Decodable { let data: Networks }
+            guard let ssids = try? JSONDecoder().decode(Wrapper.self, from: data).data.ssids else { return .other }
+            return .trustedNetworks(ssids)
         case "secrets":
             struct Wrapper: Decodable { let data: AgentSecrets }
             guard let secrets = try? UiTreeDecoder.decoder.decode(Wrapper.self, from: data).data else { return .other }
