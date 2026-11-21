@@ -6,6 +6,6 @@
     "build:agent": "pnpm --filter @awake/agent build",
     "build:web:local": "pnpm --filter @awake/web build:local",
     "dev:web": "pnpm --filter @awake/web dev",
-    "deploy:web": "vercel build --prod && vercel deploy --prebuilt --prod"
+    "deploy:web": "scripts/deploy-web-dev.sh"
   }
 }
