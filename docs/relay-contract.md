@@ -45,6 +45,8 @@
 
 ## Токен viewer-а (наш формат)
 
+> Поточна реалізація. Її замінить схема «Авторизація пристрою: два шари» нижче.
+
 - Server action на Vercel підписує його після перевірки сесії дашборду. Агент перевіряє його в `relay:authorize`.
 - Ключ — `WEBHOOXY_JWT_TICKET_KEY`: він для квитків на webhooxy-relay, тому має префікс сервісу, а не `MACONTROL_`. Ключ спільний для Vercel і агента й лежить в Envify проєкту MaControl. Сам webhooxy його не знає і токен не перевіряє.
 - Формат: JWT HS256, claims:
@@ -140,9 +142,42 @@
 - Сесії: останні 20 viewer-ів, яких агент пустив, з поміткою «через проксі webhooxy». Подія виходу viewer-а (`relay:viewer:left`) ще не погоджена з webhooxy.
 - Дашборд: server action `getRelayAccess` (`web/src/server/relay-actions.ts`) підписує квиток для дійсної сесії; env Vercel: `WEBHOOXY_JWT_TICKET_KEY`, `WEBHOOXY_ROOM`, `WEBHOOXY_WORKSPACE`, а URL — зі stage. Пріоритет режимів дашборду: напряму → relay → лише перегляд.
 
-## Реєстрація пристрою за QR (план, не погоджено)
+## Авторизація пристрою: два шари (схема погоджена, чекає webhooxy)
 
-Дашборд не має підписувати квиток будь-якому браузеру з паролем. План: Mac показує на сторінці Relay QR з посиланням на дашборд і одноразовим кодом; браузер робить пару ключів P-256 (WebCrypto, приватний не експортується); Next шле `{ type: 'pair', code, publicKey, userAgent, sub }` через HTTPS → webhooxy → WSS → агент; Mac питає «Це ви?»; агент зберігає публічний ключ. Далі токен viewer-а — квиток плюс підпис його `jti` ключем пристрою. Для цього webhooxy має дати `POST /api/relay/rooms/:roomId/request` з DEST-ключем і подією `relay:request` для host-а (пропозиція webhooxy, чекає рішення). Відповідь: `pending`, далі Next опитує `pair:status`.
+Замінює поточну схему, де квиток підписує Next (розділ «Токен viewer-а»). Next стає тупим проксі: має одну адресу upstream і нічого не знає про relay, room чи квитки. Ключ квитків лежить лише на Маці.
+
+| | Шар 1: пристрій | Шар 2: signed URL |
+|---|---|---|
+| Що відповідає | чи пристрій свій | можна відкрити сокет зараз |
+| Носій | кукі `mc_device` (HttpOnly) на домені дашборду | `ticket` у query URL сокета |
+| Час життя | до відкликання | ≤ 300 с, одноразовий `jti` |
+| Видає / перевіряє | Мак: pairing / кожен HTTP-запит | Мак: відповідь на connect / `relay:authorize` |
+
+**Pairing (раз).** Мак показує QR → `https://<dashboard>/pair?code=…` (код одноразовий, ~2 хв). Браузер → проксі Vercel → `relay:request` → Мак перевіряє код, створює пристрій (зберігає лише хеш токена) і відповідає `cookies: [{ name: 'mc_device', … }]`.
+
+**Connect (кожен раз).** Браузер → проксі (з `mc_device`) → `relay:request` → Мак перевіряє пристрій і відповідає `{ url: 'wss://…/relay?mt_workspace=…&ticket=…' }`. Квиток підписує Мак, і `sub` у ньому — id пристрою. Браузер підключається за `url` напряму, а Мак перевіряє свій квиток у `relay:authorize`.
+
+**Відкликання.** На Маці або через ТГ: пристрій видаляється, а його живі сесії Мак виганяє через `relay:kick`.
+
+**Проксі Vercel.** Легкий middleware: прокидає запит і відповідь як є, але в upstream пропускає лише кукі `mc_*`, бо сесія дашборду не повинна йти в webhooxy. URL upstream береться зі stage, ніколи від клієнта.
+
+**Що потрібно від webhooxy (запит координатору):**
+
+- `relay:request` як HTTP-тунель до host-а. Хосту передаються `{ method, path, headers, body }`, а `headers` разом із `cookie` ідуть як є. Ack хоста:
+  ```ts
+  { statusCode: number; headers?: Record<string, string>; body?: unknown;
+    cookies?: Array<{ name: string; value: string; maxAge?: number; path?: string;
+                      httpOnly?: boolean; sameSite?: 'lax' | 'strict' }> }
+  ```
+  webhooxy робить з `cookies` заголовок `Set-Cookie` і при цьому:
+  - завжди ставить `Secure`;
+  - за замовчуванням ставить `HttpOnly`;
+  - відкидає `domain`, щоб кукі лягла на хост проксі;
+  - не пропускає `set-cookie` і hop-by-hop із `headers`.
+- `redact` у `auth.relay` handshake (поруч з `allowedOrigins`): `[{ in: 'cookies' | 'headers', name } | { in: 'body', path }]`. Діє на запит і відповідь, у логах значення стають `[redacted]`. `authorization`, `cookie` і `set-cookie` маскуються завжди. Разові поля хост може додати в `meta` відповіді.
+- `relay:viewer:left { viewerId, reason }`, щоб Мак вів список сесій.
+
+Шифрування `value` поки не робимо. Для webhooxy значення непрозоре, тож пізніше Мак може почати класти туди AES-GCM, і контракт від цього не зміниться.
 
 ## Обмеження й секрети
 
