@@ -57,7 +57,8 @@ export class DatabaseService implements OnModuleDestroy {
         namespace TEXT NOT NULL,
         name TEXT NOT NULL,
         ok INTEGER NOT NULL,
-        error TEXT
+        error TEXT,
+        proxy TEXT
       );
       CREATE TABLE IF NOT EXISTS bot_metrics (
         day TEXT NOT NULL,
@@ -71,6 +72,24 @@ export class DatabaseService implements OnModuleDestroy {
         value TEXT NOT NULL,
         PRIMARY KEY (module, key)
       );
+    `);
+    this._migrateRelaySource();
+  }
+
+  /**
+   * Webhooxy був джерелом `relay`, тепер це проксі вебу: колонка `proxy`, старі записи й лічильники
+   * `src.relay` переходять у `src.web` + `proxy.webhooxy`. Ідемпотентно: після першого запуску `relay` не лишається.
+   */
+  private _migrateRelaySource() {
+    const columns = this.db.prepare('PRAGMA table_info(bot_events)').all() as { name: string }[];
+    if (!columns.some((column) => column.name === 'proxy')) this.db.exec('ALTER TABLE bot_events ADD COLUMN proxy TEXT');
+    this.db.exec(`
+      UPDATE bot_events SET source = 'web', proxy = 'webhooxy' WHERE source = 'relay';
+      INSERT INTO bot_metrics (day, metric, value)
+        SELECT day, m.metric, value FROM bot_metrics, (SELECT 'src.web' AS metric UNION ALL SELECT 'proxy.webhooxy') AS m
+        WHERE bot_metrics.metric = 'src.relay'
+        ON CONFLICT (day, metric) DO UPDATE SET value = bot_metrics.value + excluded.value;
+      DELETE FROM bot_metrics WHERE metric = 'src.relay';
     `);
   }
 

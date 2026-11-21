@@ -10,13 +10,13 @@ export class BotEventsRepository {
 
   create(data: Omit<BotEventRecord, 'id'>) {
     this._database.db
-      .prepare('INSERT INTO bot_events (at, source, type, namespace, name, ok, error) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .run(data.at, data.source, data.type, data.namespace, data.name, data.ok ? 1 : 0, data.error);
+      .prepare('INSERT INTO bot_events (at, source, type, namespace, name, ok, error, proxy) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(data.at, data.source, data.type, data.namespace, data.name, data.ok ? 1 : 0, data.error, data.proxy);
   }
 
   findMany(query: { limit: number }): BotEventRecord[] {
     const rows = this._database.db
-      .prepare('SELECT id, at, source, type, namespace, name, ok, error FROM bot_events ORDER BY id DESC LIMIT ?')
+      .prepare('SELECT id, at, source, type, namespace, name, ok, error, proxy FROM bot_events ORDER BY id DESC LIMIT ?')
       .all(query.limit) as unknown as BotEventRow[];
     return rows.map((row) => ({ ...row, ok: row.ok === 1 }));
   }

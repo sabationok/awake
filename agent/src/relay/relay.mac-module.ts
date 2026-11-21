@@ -3,11 +3,14 @@ import type { UiPage } from '@awake/contracts';
 import { BotJournalService } from '../bot-journal';
 import type { MacModule, ModuleContext, StatusFields } from '../modules/types/mac-module';
 import { RELAY_SETTINGS } from './constants/relay-settings';
+import { buildRelayLimitsPage } from './pages/relay-limits-page';
 import { buildRelayPage } from './pages/relay-page';
+import { buildRelaySessionsPage } from './pages/relay-sessions-page';
+import { buildRelayTrackingPage } from './pages/relay-tracking-page';
 import { RelayStateService } from './state/relay-state.service';
 
 /**
- * Модуль Webhooxy у MaControl: ліміти, трекінг і сповіщення relay, лише в SwiftUI. Сам сокет — RelayHostService.
+ * Модуль Webhooxy у MaControl (проксі до вебу): host, ліміти, трекінг і сесії, лише в SwiftUI. Сповіщення — у Telegram. Сам сокет — RelayHostService.
  * id лишається `relay`, щоб збережені налаштування (`relay.enabled`) і команда /relay не змінились.
  */
 @Injectable()
@@ -24,7 +27,13 @@ export class RelayMacModule implements MacModule {
   ) {}
 
   pages(ctx: ModuleContext): UiPage[] {
-    return [buildRelayPage(ctx, this._state.state, this._journal.metrics())];
+    const { state } = this._state;
+    return [
+      buildRelayPage(state),
+      buildRelayLimitsPage(ctx, state),
+      buildRelayTrackingPage(this._journal.metrics()),
+      buildRelaySessionsPage(state),
+    ];
   }
 
   status(): StatusFields {

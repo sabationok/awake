@@ -17,7 +17,7 @@ export class UiController {
     // HTTP-сервер агента: дашборд у домашній мережі (LAN). Поки агент живий — він слухає.
     transports.register({
       id: 'web',
-      title: 'Веб (LAN)',
+      title: 'Веб',
       icon: { symbol: 'network', tone: 'accent' },
       status: () => ({ online: true, hint: `https, порт ${config.port}` }),
     });

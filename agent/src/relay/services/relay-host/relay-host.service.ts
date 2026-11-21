@@ -9,6 +9,7 @@ import { TelegramNotificationsService } from '../../../telegram/notifications';
 import { TransportsService } from '../../../transports';
 import { RELAY_MAX_PAYLOAD_BYTES, RELAY_RETRY_MS } from '../../constants/relay-limits';
 import { RELAY_METRICS } from '../../constants/relay-metrics';
+import { RELAY_PROXY_ID } from '../../constants/relay-proxy';
 import { buildRelayLimits, type RelayLimitsOverride } from '../../helpers/build-relay-limits';
 import { readRelayEnv } from '../../helpers/read-relay-env';
 import { RELAY_STATUS_VIEW } from '../../helpers/relay-status-label';
@@ -54,8 +55,9 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     private readonly _notifications: TelegramNotificationsService,
     transports: TransportsService,
   ) {
-    transports.register({
-      id: 'relay',
+    transports.registerProxy({
+      id: RELAY_PROXY_ID,
+      via: 'web',
       title: 'Webhooxy',
       icon: { symbol: 'antenna.radiowaves.left.and.right', tone: 'accent' },
       status: () => {
@@ -261,7 +263,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
         }
         case 'event':
           if (!isUiEvent(message.event)) return { type: 'error', message: 'Invalid UI event' };
-          await this._modules.dispatch(message.event, 'relay');
+          await this._modules.dispatch(message.event, 'web', { proxy: RELAY_PROXY_ID });
           void this.broadcastTree();
           return { type: 'accepted' };
         default:

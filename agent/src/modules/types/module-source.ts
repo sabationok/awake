@@ -1,2 +1,5 @@
-/** Звідки прийшла дія модуля: транспорт агента. `web` — дашборд напряму (LAN), `relay` — дашборд через webhooxy. */
-export type ModuleSource = 'mac' | 'telegram' | 'web' | 'relay';
+/**
+ * Звідки прийшла дія модуля: транспорт агента. `web` — вебдашборд, напряму (LAN) чи через проксі
+ * (webhooxy, далі, може, Cloudflare): проксі — це не окреме джерело, а шлях до `web`, він іде окремим полем.
+ */
+export type ModuleSource = 'mac' | 'telegram' | 'web';

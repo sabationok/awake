@@ -9,7 +9,7 @@ export interface AgentTransportStatus {
 }
 
 /**
- * Вхідна точка в нашого бота: Mac, веб (LAN), webhooxy, Telegram. Дії з неї йдуть у той самий
+ * Вхідна точка в нашого бота: Mac, веб, Telegram. Проксі до транспорту (webhooxy) — AgentProxy. Дії з неї йдуть у той самий
  * ModulesService.dispatch з `source = id`, тож журнал і статистика рахують їх окремо.
  */
 export interface AgentTransport {

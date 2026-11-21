@@ -23,7 +23,7 @@ export class BotJournalService {
 
   record(event: BotEventCreate, now = new Date()) {
     const name = event.name.length > BOT_EVENT_NAME_MAX ? `${event.name.slice(0, BOT_EVENT_NAME_MAX - 1)}…` : event.name;
-    this._events.create({ ...event, name, at: now.toISOString(), ok: event.ok ?? true, error: event.error ?? null });
+    this._events.create({ ...event, name, at: now.toISOString(), ok: event.ok ?? true, error: event.error ?? null, proxy: event.proxy ?? null });
     this._events.deleteBeyond(BOT_EVENTS_KEEP);
     this.count(eventMetrics(event), now);
   }

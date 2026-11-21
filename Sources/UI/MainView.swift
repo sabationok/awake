@@ -84,8 +84,12 @@ struct MainView: View {
             if let uiPage = treePage(id) {
                 Form {
                     // Токен і чат живуть лише на Mac (telegram.env), тож цю секцію малює аппка, а не агент.
-                    if uiPage.module == "telegram" {
+                    // Підключення модуля — лише на його головній вкладці.
+                    if uiPage.id == "telegram" {
                         TelegramSection()
+                    }
+                    if uiPage.id == "bot-overview" {
+                        AgentSection()
                     }
                     ForEach(uiPage.children) { UiNodeView(node: $0) }
                 }
@@ -96,6 +100,10 @@ struct MainView: View {
             }
         case .connection:
             Form {
+                // Без дерева немає вкладки Агент: вмикач лишається тут, щоб агента можна було ввімкнути.
+                if model.uiTree == nil {
+                    AgentSection()
+                }
                 RemoteSection()
             }
             .formStyle(.grouped)

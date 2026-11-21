@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Сторінка «Пульт»: агент, довірені мережі Wi-Fi і ключі Upstash.
+/// Сторінка «Підключення»: довірені мережі Wi-Fi і ключі Upstash. Вмикач агента — в AgentSection.
 struct RemoteSection: View {
     @EnvironmentObject private var model: AwakeModel
     @State private var upstashURL = ""
@@ -8,23 +8,6 @@ struct RemoteSection: View {
     @State private var saveError: String?
 
     var body: some View {
-        Section {
-            SettingsRow(title: "Агент", symbol: "server.rack", color: .indigo) {
-                HStack(spacing: 10) {
-                    Text(model.agentStatus.statusText).foregroundStyle(statusColor)
-                    Toggle("", isOn: $model.agentEnabled).toggleStyle(.switch).labelsHidden()
-                }
-            }
-            if case .running(let port) = model.agentStatus {
-                SettingsRow(title: "Адреса в мережі", symbol: "network", color: .blue,
-                            text: model.currentNetworkTrusted ? "порт \(port), видно в довіреній Wi-Fi" : "лише на цьому Mac")
-            }
-        } header: {
-            Text("Пульт")
-        } footer: {
-            Text("Агент веде історію сесій і журнал у SQLite та роздає пульт у локальній мережі. Дашборд на Vercel бачить лише стан, а посилання на пульт показує тільки коли Mac у довіреній Wi-Fi.")
-        }
-
         Section {
             if model.wifiAuthorized {
                 SettingsRow(title: model.currentSSID ?? "Не підключено", symbol: "wifi", color: .blue) {
@@ -100,10 +83,5 @@ struct RemoteSection: View {
         } catch {
             saveError = error.localizedDescription
         }
-    }
-
-    private var statusColor: Color {
-        if case .failed = model.agentStatus { return .red }
-        return .secondary
     }
 }

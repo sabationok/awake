@@ -60,8 +60,7 @@ export class ModulesService {
         return buildSettingNode(owner.id, this._definition(owner, key), this._readSetting(owner, key));
       },
       sendToMac: (command, source) => {
-        // Сесії Mac знають лише mac / telegram / web: relay для них — той самий дашборд.
-        bridge.sendCommand(command, source === 'relay' ? 'web' : source);
+        bridge.sendCommand(command, source);
       },
       status: () => this.status(),
     };
@@ -118,13 +117,14 @@ export class ModulesService {
 
   /**
    * Кнопка SDUI, Telegram чи Mac: дія йде в `@BotAction` модуля (namespace = id модуля),
-   * налаштування — в SettingsService. Кожен виклик іде в журнал бота з джерелом.
+   * налаштування — в SettingsService. Кожен виклик іде в журнал бота з джерелом і проксі (`via.proxy`), якщо він був.
    */
-  async dispatch(event: UiEvent, source: ModuleSource): Promise<void> {
+  async dispatch(event: UiEvent, source: ModuleSource, via: { proxy?: string } = {}): Promise<void> {
+    const proxy = via.proxy ?? null;
     const entry: BotEventCreate =
       event.type === 'action'
-        ? { source, type: 'action', namespace: event.action.module, name: event.action.name }
-        : { source, type: 'setting', namespace: event.change.module, name: `${event.change.key} = ${String(event.change.value)}` };
+        ? { source, proxy, type: 'action', namespace: event.action.module, name: event.action.name }
+        : { source, proxy, type: 'setting', namespace: event.change.module, name: `${event.change.key} = ${String(event.change.value)}` };
     await this._journaled(entry, () => this._dispatch(event, source));
   }
 
@@ -176,8 +176,8 @@ export class ModulesService {
     if (!definition || !isValidSettingValue(definition, value)) {
       throw new AppException(API_ERROR_CODES.invalidCommand, `Invalid setting ${moduleId}.${key}`);
     }
-    // Налаштування SwiftUI міняють лише Mac і Telegram, не вебдашборд чи relay.
-    if (definition.scope === 'mac' && (source === 'web' || source === 'relay')) {
+    // Налаштування SwiftUI міняють лише Mac і Telegram, не вебдашборд — ні напряму, ні через проксі.
+    if (definition.scope === 'mac' && source === 'web') {
       throw new AppException(API_ERROR_CODES.invalidCommand, `Setting ${moduleId}.${key} is Mac-only`);
     }
     this._settings.set(moduleId, key, value);

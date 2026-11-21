@@ -1,28 +1,32 @@
 import type { UiNode, UiPage } from '@awake/contracts';
 import type { BotMetrics } from '../../../bot-journal';
-import type { AgentTransport } from '../../../transports';
+import type { AgentProxy, AgentTransport } from '../../../transports';
 import type { ModuleContext } from '../../types/mac-module';
-import { BOT_NOTIFICATIONS } from '../constants/bot-notifications';
 
 export const BOT_OVERVIEW_PAGE = 'bot-overview';
 
-function transportNode(transport: AgentTransport, metrics: BotMetrics): UiNode {
-  const { online, hint } = transport.status();
+function statusNode(id: string, label: string, status: { online: boolean; hint?: string }): UiNode {
+  return { id, type: 'status', label, hint: status.hint, tone: status.online ? 'green' : 'gray' };
+}
+
+/** Транспорт, а під ним — проксі, що ведуть до нього: виклики через проксі входять і в лічильник транспорту. */
+function transportNodes(transport: AgentTransport, proxies: AgentProxy[], metrics: BotMetrics): UiNode[] {
   const calls = metrics.today[`src.${transport.id}`] ?? 0;
-  return {
-    id: `transport-${transport.id}`,
-    type: 'status',
-    label: `${transport.title} · сьогодні ${calls}`,
-    hint,
-    tone: online ? 'green' : 'gray',
-  };
+  return [
+    statusNode(`transport-${transport.id}`, `${transport.title} · сьогодні ${calls}`, transport.status()),
+    ...proxies
+      .filter((proxy) => proxy.via === transport.id)
+      .map((proxy) =>
+        statusNode(`proxy-${proxy.id}`, `↳ ${proxy.title} (проксі) · сьогодні ${metrics.today[`proxy.${proxy.id}`] ?? 0}`, proxy.status()),
+      ),
+  ];
 }
 
 /**
- * «Огляд» Агента: перемикач webhooxy (налаштування модуля relay), транспорти, що зареєстрували себе, і сповіщення
- * Агента в Telegram. Ліміти й трекінг webhooxy — його власна вкладка.
+ * «Огляд» Агента. Підключення агента (вмикач, адреса) малює SwiftUI над цією сторінкою; тут — перемикач webhooxy
+ * (налаштування модуля relay) і транспорти з проксі. Сповіщення Агента — у Telegram → Сповіщення.
  */
-export function buildBotOverviewPage(ctx: ModuleContext, transports: AgentTransport[], metrics: BotMetrics): UiPage {
+export function buildBotOverviewPage(ctx: ModuleContext, transports: AgentTransport[], proxies: AgentProxy[], metrics: BotMetrics): UiPage {
   return {
     id: BOT_OVERVIEW_PAGE,
     module: 'bot',
@@ -36,21 +40,15 @@ export function buildBotOverviewPage(ctx: ModuleContext, transports: AgentTransp
         title: 'Webhooxy',
         // Перемикач лише в SwiftUI: у вебі секція була б порожня.
         scope: 'mac',
-        footer: 'Пускати дашборд через webhooxy, коли Mac поза домашньою мережею. Ліміти й сесії — вкладка Webhooxy.',
+        footer: 'Проксі до вебдашборду, коли Mac поза домашньою мережею. Хост, ліміти й сесії — вкладки Webhooxy.',
         children: [ctx.settingNode('enabled', 'relay')],
       },
       {
         id: 'transports',
         type: 'section',
         title: 'Транспорти',
-        footer: 'Вхідні точки в того самого бота: дії з усіх ідуть в один журнал.',
-        children: transports.map((transport) => transportNode(transport, metrics)),
-      },
-      {
-        id: 'notifications',
-        type: 'section',
-        title: 'Сповіщення в Telegram',
-        children: BOT_NOTIFICATIONS.events.map((event) => ctx.settingNode(`events.bot.${event.type}`, 'telegram')),
+        footer: 'Вхідні точки в того самого бота: дії з усіх ідуть в один журнал. Проксі — інший шлях до транспорту.',
+        children: transports.flatMap((transport) => transportNodes(transport, proxies, metrics)),
       },
     ],
   };

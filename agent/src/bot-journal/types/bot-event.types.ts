@@ -15,11 +15,17 @@ export interface BotEventRecord {
   name: string;
   ok: boolean;
   error: string | null;
+  /** Проксі, через який прийшов виклик (`webhooxy`), або null — напряму. */
+  proxy: string | null;
 }
 
-export type BotEventCreate = Omit<BotEventRecord, 'id' | 'at' | 'ok' | 'error'> & { ok?: boolean; error?: string | null };
+export type BotEventCreate = Omit<BotEventRecord, 'id' | 'at' | 'ok' | 'error' | 'proxy'> & {
+  ok?: boolean;
+  error?: string | null;
+  proxy?: string | null;
+};
 
-/** Лічильники за день і за весь час: `total`, `src.<source>`, `type.<type>`, `ns.<namespace>`, `error`, плюс довільні від транспортів. */
+/** Лічильники за день і за весь час: `total`, `src.<source>`, `proxy.<id>`, `type.<type>`, `ns.<namespace>`, `error`, плюс довільні від транспортів. */
 export interface BotMetrics {
   today: Record<string, number>;
   total: Record<string, number>;

@@ -6,6 +6,9 @@ export const RELAY_LIMIT_DEFAULT = 'default';
 
 /** Id сторінки Webhooxy: ліміти хост не дублює на «Налаштуваннях». */
 export const RELAY_PAGE = 'relay';
+export const RELAY_LIMITS_PAGE = 'relay-limits';
+export const RELAY_TRACKING_PAGE = 'relay-tracking';
+export const RELAY_SESSIONS_PAGE = 'relay-sessions';
 
 const fromWebhooxy = (label: string): UiOption => ({ value: RELAY_LIMIT_DEFAULT, label: `Як у webhooxy (${label})` });
 
@@ -31,7 +34,7 @@ export const RELAY_SETTINGS: SettingDefinition[] = [
     label: 'Viewer-ів у кімнаті',
     icon: { symbol: 'person.2.fill', tone: 'accent' },
     scope: 'mac',
-    page: RELAY_PAGE,
+    page: RELAY_LIMITS_PAGE,
     default: String(RELAY_MAX_VIEWERS),
     options: ['1', '2', '5', '10', '20'].map((value) => ({ value, label: value })),
   },
@@ -42,7 +45,7 @@ export const RELAY_SETTINGS: SettingDefinition[] = [
     hint: 'Дерево агента має вміщатися',
     icon: { symbol: 'shippingbox.fill', tone: 'accent' },
     scope: 'mac',
-    page: RELAY_PAGE,
+    page: RELAY_LIMITS_PAGE,
     default: String(RELAY_MAX_PAYLOAD_BYTES),
     options: [
       { value: String(256 * 1024), label: '256 КБ' },
@@ -56,7 +59,7 @@ export const RELAY_SETTINGS: SettingDefinition[] = [
     label: 'Чекати відповідь агента',
     icon: { symbol: 'timer', tone: 'accent' },
     scope: 'mac',
-    page: RELAY_PAGE,
+    page: RELAY_LIMITS_PAGE,
     default: RELAY_LIMIT_DEFAULT,
     options: [fromWebhooxy('10 с'), { value: '5000', label: '5 с' }, { value: '30000', label: '30 с' }, { value: '60000', label: '60 с' }],
   },
@@ -66,7 +69,7 @@ export const RELAY_SETTINGS: SettingDefinition[] = [
     label: 'Подій від viewer-а за секунду',
     icon: { symbol: 'speedometer', tone: 'accent' },
     scope: 'mac',
-    page: RELAY_PAGE,
+    page: RELAY_LIMITS_PAGE,
     default: RELAY_LIMIT_DEFAULT,
     options: [fromWebhooxy('10'), ...['5', '20', '50'].map((value) => ({ value, label: value }))],
   },
@@ -77,7 +80,7 @@ export const RELAY_SETTINGS: SettingDefinition[] = [
     hint: 'Скільки подій чекають, поки агент зайнятий; 0 — без черги',
     icon: { symbol: 'list.number', tone: 'accent' },
     scope: 'mac',
-    page: RELAY_PAGE,
+    page: RELAY_LIMITS_PAGE,
     default: RELAY_LIMIT_DEFAULT,
     options: [fromWebhooxy('50'), ...['0', '20', '100', '200'].map((value) => ({ value, label: value }))],
   },
@@ -87,7 +90,7 @@ export const RELAY_SETTINGS: SettingDefinition[] = [
     label: 'Розсилок дерева за секунду',
     icon: { symbol: 'dot.radiowaves.left.and.right', tone: 'accent' },
     scope: 'mac',
-    page: RELAY_PAGE,
+    page: RELAY_LIMITS_PAGE,
     default: RELAY_LIMIT_DEFAULT,
     options: [fromWebhooxy('30'), ...['10', '60', '100'].map((value) => ({ value, label: value }))],
   },

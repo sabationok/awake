@@ -14,7 +14,7 @@ import { buildBotStatsPage } from './pages/bot-stats-page';
 
 /**
  * Модуль Агент у MaControl: наш бот (BotRouterService) і транспорти, через які в нього приходять дії
- * (Mac, веб, webhooxy, Telegram). Власних налаштувань немає: перемикач webhooxy належить модулю relay,
+ * (Mac, веб, Telegram), з проксі до них (webhooxy → веб). Власних налаштувань немає: перемикач webhooxy належить модулю relay,
  * команди Telegram — модулю Telegram. Сповіщення Агента реєструє в Telegram.
  */
 @Injectable()
@@ -36,10 +36,11 @@ export class BotMacModule implements MacModule {
 
   pages(ctx: ModuleContext): UiPage[] {
     const metrics = this._journal.metrics();
+    const proxies = this._transports.proxies();
     return [
-      buildBotOverviewPage(ctx, this._transports.list(), metrics),
-      buildBotJournalPage(this._journal.findEvents({ limit: BOT_EVENTS_PAGE_LIMIT })),
-      buildBotStatsPage(metrics, this._router.namespaces(MACONTROL_BOT)),
+      buildBotOverviewPage(ctx, this._transports.list(), proxies, metrics),
+      buildBotJournalPage(this._journal.findEvents({ limit: BOT_EVENTS_PAGE_LIMIT }), proxies),
+      buildBotStatsPage(metrics, this._router.namespaces(MACONTROL_BOT), proxies),
     ];
   }
 
