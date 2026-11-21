@@ -16,6 +16,8 @@ import { SleepMacModule } from './sleep/sleep.mac-module';
 import { TelegramMacModule } from '../telegram/telegram.mac-module';
 import { RelayBot } from '../relay/relay.bot';
 import { RelayMacModule } from '../relay/relay.mac-module';
+import { BotMacModule } from './bot/bot.mac-module';
+import { BotJournalListener } from './bot/listeners/bot-journal.listener';
 import { ModulesService } from './modules.service';
 import { MacUiListener } from './mac-ui.listener';
 import { UiController } from './ui.controller';
@@ -34,6 +36,8 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
     MediaMacModule,
     MacStateMacModule,
     TelegramMacModule,
+    BotMacModule,
+    BotJournalListener,
     RelayMacModule,
     // Дії й екрани модулів: @Bot(MACONTROL_BOT, { namespace }). Порядок — порядок команд у Telegram.
     AwakeBot,
@@ -44,7 +48,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
     {
       provide: MAC_MODULES,
       useFactory: (...modules: MacModule[]) => modules,
-      inject: [AwakeMacModule, SleepMacModule, MediaMacModule, MacStateMacModule, TelegramMacModule, RelayMacModule],
+      inject: [AwakeMacModule, SleepMacModule, MediaMacModule, MacStateMacModule, TelegramMacModule, BotMacModule, RelayMacModule],
     },
   ],
   exports: [ModulesService],
