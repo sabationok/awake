@@ -142,7 +142,7 @@
 - Сесії: останні 20 viewer-ів, яких агент пустив, з поміткою «через проксі webhooxy». Подія виходу viewer-а (`relay:viewer:left`) ще не погоджена з webhooxy.
 - Дашборд: server action `getRelayAccess` (`web/src/server/relay-actions.ts`) підписує квиток для дійсної сесії; env Vercel: `WEBHOOXY_JWT_TICKET_KEY`, `WEBHOOXY_ROOM`, `WEBHOOXY_WORKSPACE`, а URL — зі stage. Пріоритет режимів дашборду: напряму → relay → лише перегляд.
 
-## Авторизація пристрою: два шари (схема погоджена, чекає webhooxy)
+## Авторизація пристрою: два шари (схема погоджена; webhooxy прийняв, чекає реалізації)
 
 Замінює поточну схему, де квиток підписує Next (розділ «Токен viewer-а»). Next стає тупим проксі: має одну адресу upstream і нічого не знає про relay, room чи квитки. Ключ квитків лежить лише на Маці.
 
@@ -161,21 +161,43 @@
 
 **Проксі Vercel.** Легкий middleware: прокидає запит і відповідь як є, але в upstream пропускає лише кукі `mc_*`, бо сесія дашборду не повинна йти в webhooxy. URL upstream береться зі stage, ніколи від клієнта.
 
-**Що потрібно від webhooxy (запит координатору):**
+**webhooxy: `relay:request` (специфікацію прийнято; окремий PR поверх #5 і #9, реалізацію почнуть після «так» Віталія):**
 
-- `relay:request` як HTTP-тунель до host-а. Хосту передаються `{ method, path, headers, body }`, а `headers` разом із `cookie` ідуть як є. Ack хоста:
+- `POST /api/relay/rooms/:roomId/request?mt_workspace=…`. Ключ іде в `X-Relay-Key: <relay-request credential>`, а не в `Authorization`: webhooxy вирізає цей заголовок, тож `Authorization` браузера доходить до хоста без змін. Помилки:
+  - 503 `HOST_OFFLINE`;
+  - 504 `TIMEOUT` (за замовчуванням ~10 с, максимум 30 с);
+  - 401 і 403;
+  - 413, якщо запит більший за `maxPayloadBytes`;
+  - 429;
+  - 502 `RESPONSE_TOO_LARGE`, якщо відповідь більша за `maxResponseBytes` (за замовчуванням 1 МБ, обидва ліміти не більші за `maxHttpBufferSize`);
+  - 502 `BAD_ACK`, якщо ack невалідний.
+- Хост отримує подію `relay:request` з ack. Поля `data`:
+  - `{ method, path, query: Record<string, string | string[]>, headers, body, bodyEncoding: 'json' | 'text' | 'base64' }`;
+  - `path` приходить без query string, а `bodyEncoding` webhooxy визначає за content-type;
+  - `headers` приходять як є, `cookie` теж. webhooxy вирізає hop-by-hop, `host`, `content-length`, вхідні `x-webhooxy-*` і `x-relay-key`, а `x-forwarded-for` і `x-forwarded-proto` ставить сам.
+  - Довірені дані лежать у `meta`: `{ requestId, via: { server }, caller: { credentialId } }`.
+- Ack хоста:
   ```ts
   { statusCode: number; headers?: Record<string, string>; body?: unknown;
+    bodyEncoding?: 'json' | 'text' | 'base64';   // за замовчуванням 'json'
     cookies?: Array<{ name: string; value: string; maxAge?: number; path?: string;
                       httpOnly?: boolean; sameSite?: 'lax' | 'strict' }> }
   ```
-  webhooxy робить з `cookies` заголовок `Set-Cookie` і при цьому:
-  - завжди ставить `Secure`;
-  - за замовчуванням ставить `HttpOnly`;
-  - відкидає `domain`, щоб кукі лягла на хост проксі;
-  - не пропускає `set-cookie` і hop-by-hop із `headers`.
-- `redact` у `auth.relay` handshake (поруч з `allowedOrigins`): `[{ in: 'cookies' | 'headers', name } | { in: 'body', path }]`. Діє на запит і відповідь, у логах значення стають `[redacted]`. `authorization`, `cookie` і `set-cookie` маскуються завжди. Разові поля хост може додати в `meta` відповіді.
-- `relay:viewer:left { viewerId, reason }`, щоб Мак вів список сесій.
+  - З `cookies` webhooxy робить `Set-Cookie` і при цьому:
+    - завжди ставить `Secure`;
+    - за замовчуванням ставить `HttpOnly`;
+    - відкидає `domain` і `sameSite: 'none'`.
+  - `;`, `,`, `\r` або `\n` в імені чи значенні кукі дають 502 `BAD_ACK`.
+  - `set-cookie` і hop-by-hop із `headers` не пропускаються.
+  - Стримінгу і chunked немає.
+- `redact` у `auth.relay` handshake (поруч з `allowedOrigins`): `[{ in: 'cookies' | 'headers', name } | { in: 'body', path }]`.
+  - `path` записується через крапку, масиви — лише через `*`.
+  - Діє на запит і відповідь. Список задається в handshake, бо запит потрапляє в лог ще до ack.
+  - Завжди маскуються `authorization`, `cookie`, `set-cookie`, `x-relay-key` і `cookies[].value` відповіді. Усе інше логується.
+- `relay:viewer:left { viewerId, reason }` іде в тому ж PR.
+- Ще відкрито в webhooxy: куди писати лог (таблиця requests чи звичайні логи) і скільки його зберігати.
+
+**Проксі Vercel:** кілька `Set-Cookie` треба передавати окремими заголовками (`headers.append` / `getSetCookie()`, не `set`), інакше вони зіллються через кому. У webhooxy проксі сам додає `X-Relay-Key`, а клієнт цього ключа не бачить.
 
 Шифрування `value` поки не робимо. Для webhooxy значення непрозоре, тож пізніше Мак може почати класти туди AES-GCM, і контракт від цього не зміниться.
 
