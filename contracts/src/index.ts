@@ -125,7 +125,9 @@ export type MacToAgentMessage =
         | { action: 'revoke'; id: number }
         /** Відповідь на «Це ви?» для пристрою, що відкрив посилання з QR. */
         | { action: 'answer'; requestId: string; approve: boolean };
-    };
+    }
+  /** Аппка переписала ~/.config/awake/relay.env: агент перечитує ключі й перепідключає webhooxy. Значень тут немає. */
+  | { type: 'relayEnv'; data: { action: 'reload' } };
 
 export type AgentToMacMessage =
   | { type: 'ready'; data: { port: number } }

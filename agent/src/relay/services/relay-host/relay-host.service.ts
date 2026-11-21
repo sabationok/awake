@@ -73,10 +73,23 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleInit() {
+    this._readEnv();
+    this.setEnabled(this._modules.context('relay').setting<boolean>('enabled'));
+  }
+
+  /** Аппка переписала relay.env: нові ключі діють одразу, кімната перепідключається, якщо relay увімкнено. */
+  reloadEnv() {
+    this._readEnv();
+    this._stop();
+    this.setEnabled(this._modules.context('relay').setting<boolean>('enabled'));
+    // Статус міг не змінитись (off → off), а «Підключення» змінилось.
+    this._modules.treeChanged$.next();
+  }
+
+  private _readEnv() {
     const read = readRelayEnv();
     this._env = read.env;
     this._state.setConnection({ stage: this._config.stage, url: this._config.webhooxyUrl, envPath: read.path, keys: read.keys });
-    this.setEnabled(this._modules.context('relay').setting<boolean>('enabled'));
   }
 
   onModuleDestroy() {

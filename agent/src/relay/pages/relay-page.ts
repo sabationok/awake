@@ -35,7 +35,7 @@ export function buildRelayPage(state: RelayStateSnapshot): UiPage {
               id: 'connection',
               type: 'section' as const,
               title: 'Підключення',
-              footer: `Ключі — у ${state.connection.envPath} або в process.env (Envify має пріоритет). Агент читає їх на старті; секрети тут не показуються.`,
+              footer: `Ключі з ${state.connection.envPath} — у формі вище. Тут — те, що перебиває Envify, і чого бракує.`,
               children: relayConnectionNodes(state.connection),
             },
           ]

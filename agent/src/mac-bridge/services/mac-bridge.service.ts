@@ -38,6 +38,8 @@ export class MacBridgeService implements OnModuleInit {
   readonly events$ = new Subject<UiEvent>();
   /** Запити сторінки «Пристрої» Mac-аппки. */
   readonly devices$ = new Subject<DevicesRequest>();
+  /** Аппка переписала relay.env. */
+  readonly relayEnvReload$ = new Subject<void>();
   private _stateAt = 0;
 
   onModuleInit() {
@@ -108,6 +110,9 @@ export class MacBridgeService implements OnModuleInit {
         return;
       case 'devices':
         this.devices$.next(message.data);
+        return;
+      case 'relayEnv':
+        this.relayEnvReload$.next();
         return;
     }
   }

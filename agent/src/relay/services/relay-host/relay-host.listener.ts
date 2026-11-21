@@ -4,7 +4,7 @@ import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.servic
 import { ModulesService } from '../../../modules/modules.service';
 import { RelayHostService } from './relay-host.service';
 
-/** Перемикач relay → host підключається або відпускає кімнату; новий стан Mac чи налаштування → дерево viewer-ам. */
+/** Перемикач relay → host підключається або відпускає кімнату; новий relay.env → перечитати й перепідключитись; новий стан Mac чи налаштування → дерево viewer-ам. */
 @Injectable()
 export class RelayHostListener implements OnModuleInit, OnModuleDestroy {
   private readonly _subscriptions: Subscription[] = [];
@@ -23,6 +23,7 @@ export class RelayHostListener implements OnModuleInit, OnModuleDestroy {
       this._modules.settingChanged$
         .pipe(filter((change) => change.module === 'relay' && change.key.startsWith('limits.')))
         .subscribe(() => void this._relay.applyLimits()),
+      this._bridge.relayEnvReload$.subscribe(() => this._relay.reloadEnv()),
       merge(this._bridge.state$, this._modules.settingChanged$).subscribe(() => void this._relay.broadcastTree()),
     );
   }

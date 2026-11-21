@@ -17,7 +17,10 @@ function keyNode(key: RelayConnectionKey): UiNode {
   return { id: `key-${key.field}`, type: 'row', label: KEY_LABEL[key.field], value, hint: [key.name, from].filter(Boolean).join(' · ') };
 }
 
-/** Рядки «Підключення»: stage, URL webhooxy і кожен ключ relay; значення секретів не показуються. */
+/**
+ * Рядки «Підключення»: stage, URL webhooxy і ключі, яких не видно у формі relay.env у SwiftUI — ті, що перебиває
+ * process.env (Envify), і ті, яких немає ніде. Значення секретів не показуються.
+ */
 export function relayConnectionNodes(connection: RelayConnectionInfo): UiNode[] {
   return [
     { id: 'stage', type: 'row', label: 'Stage', value: connection.stage },
@@ -25,7 +28,7 @@ export function relayConnectionNodes(connection: RelayConnectionInfo): UiNode[] 
     // Порядок KEY_LABEL: спершу куди підключаємось, потім секрети.
     ...(Object.keys(KEY_LABEL) as RelayConnectionKey['field'][])
       .map((field) => connection.keys.find((key) => key.field === field))
-      .filter((key): key is RelayConnectionKey => !!key)
+      .filter((key): key is RelayConnectionKey => !!key && key.source !== 'file')
       .map(keyNode),
   ];
 }

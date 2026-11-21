@@ -91,6 +91,9 @@ struct MainView: View {
                     if uiPage.id == "bot-overview" {
                         AgentSection()
                     }
+                    if uiPage.id == "relay" {
+                        WebhooxySection()
+                    }
                     ForEach(uiPage.children) { UiNodeView(node: $0) }
                 }
                 .formStyle(.grouped)
