@@ -184,7 +184,7 @@
             bodyEncoding?: 'json' | 'text' | 'base64';   // за замовчуванням 'json'
             cookies?: Array<{ name: string; value: string; maxAge?: number; path?: string;
                               httpOnly?: boolean; sameSite?: 'lax' | 'strict' }> },
-    meta?: { redact?: RedactRule[] } }   // redact лише для частини відповіді
+    meta?: { sensitive?: RelaySensitive } }   // лише для частини відповіді
   ```
   - Кожна кукі стає окремим `Set-Cookie` з такими атрибутами:
     - `Secure` завжди;
@@ -216,13 +216,30 @@
   | `maxResponseBytes` | 1000000 | 1000000 |
   | `requests.perCredentialPerMin` | 60 | 6000 |
   | `requests.perRoomPerMin` | 600 | 12000 |
-  | `redact` | до 50 правил | |
+  | `sensitive` | до 50 ключів у кожному списку | |
 
-- **`redact`:** правила `RedactRule = { in: 'headers' | 'cookies', name } | { in: 'body', path }`.
-  - `name` без урахування регістру. `path` записується через крапку, масиви — через `*`.
-  - Правила з `auth.relay` діють на весь обмін. `meta.redact` з ack діє лише на відповідь.
-  - Завжди маскуються `authorization`, `cookie`, `set-cookie`, `x-relay-key` і значення всіх кукі відповіді.
-  - Ще може змінитись: Віталій попросив зберігати лог у `requests` із зашифрованими чутливими полями. Якщо зміниться назва поля `redact`, координатор повідомить.
+- **`sensitive`** (webhooxy#12 7c3c173, замінив `redact`): `RelaySensitive = { headerKeys?: string[]; queryKeys?: string[]; cookieKeys?: string[]; bodyKeys?: string[] }`.
+  - Задається в чотирьох місцях:
+    - handshake `auth.relay`;
+    - `relay:limits { data }`;
+    - DEST `config.transports.ws.relay`;
+    - ack `meta.sensitive` (та сама форма, але лише для відповіді).
+  - До 50 ключів у кожному списку. Невалідне значення дає `connect_error BAD_REQUEST`, а для `relay:limits` — ack 400.
+  - Що покриває кожен список:
+
+    | Список | Що покриває |
+    |---|---|
+    | `headerKeys` | імена заголовків без урахування регістру; заголовки запиту й відповіді |
+    | `queryKeys` | імена query-параметрів запиту |
+    | `bodyKeys` | шлях через крапку в JSON-тілі, масиви через `*` (`items.*.token`); тіла запиту й відповіді |
+    | `cookieKeys` | приймається, але поки нічого не робить: кукі й так шифруються всі |
+
+  - Завжди шифруються:
+    - `authorization`, `cookie`, `set-cookie` і `x-relay-key` у запиті й відповіді;
+    - значення всіх `cookies[].value` відповіді.
+  - **Зберігання:** кожен запит, що пройшов перевірку ключа (тобто з 403 і далі), записується одним рядком у `requests`. Рядок має `type: 'relay'`, `id = meta.requestId` і містить відповідь.
+    - Чутливі значення там зашифровані, а не замасковані.
+    - Тіла `text` і `base64` зберігаються як є, бо `bodyKeys` діють лише на JSON. Тож секрети в агента йдуть лише в JSON-тілах або в заголовках зі списку.
 - **server → host `relay:viewer:left`:** `{ statusCode: 200, message: 'Success', data: { viewerId, reason: 'disconnect' | 'kicked' | 'timeout' | 'denied' } }`.
   - Шлеться лише для viewer-ів, які пройшли `relay:authorize`.
   - Іде поточному хосту. Якщо хоста в room немає, подія не шлеться.
