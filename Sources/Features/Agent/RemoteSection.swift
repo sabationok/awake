@@ -60,7 +60,9 @@ struct RemoteSection: View {
 
         Section {
             TextField("REST URL", text: $upstashURL, prompt: Text("https://….upstash.io"))
-            SecureField("REST токен", text: $upstashToken)
+            LabeledContent("REST токен") {
+                SecretField(text: $upstashToken, prompt: "токен з консолі Upstash")
+            }
             HStack {
                 if let saveError {
                     Text(saveError).foregroundStyle(.red)

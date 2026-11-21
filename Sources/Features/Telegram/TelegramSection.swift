@@ -42,10 +42,9 @@ struct TelegramSection: View {
     @ViewBuilder
     private var editor: some View {
         SettingsRow(title: "Токен бота", symbol: "key.fill", color: .gray) {
-            SecureField("", text: $model.telegram.token, prompt: Text("від @BotFather"))
+            SecretField(text: $model.telegram.token, prompt: "від @BotFather")
                 .frame(maxWidth: 220)
                 .textFieldStyle(.roundedBorder)
-                .multilineTextAlignment(.trailing)
         }
         SettingsRow(title: "Chat ID", symbol: "number", color: .gray) {
             TextField("", text: $model.telegram.chatId, prompt: Text("123456789"))
