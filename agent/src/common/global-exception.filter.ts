@@ -8,6 +8,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly _logger = new Logger(GlobalExceptionFilter.name);
 
   catch(error: unknown, host: ArgumentsHost) {
+    // Не HTTP (дії `@Bot`): відповідати нікуди, помилку отримує той, хто викликав роутер.
+    if (host.getType() !== 'http') throw error;
     const res = host.switchToHttp().getResponse<Response>();
     if (error instanceof AppException) {
       res.status(error.status).json(AppResponse.fail(error.innerCode, error.message));

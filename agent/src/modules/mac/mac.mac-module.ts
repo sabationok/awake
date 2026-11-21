@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { SettingValue, UiPage } from '@awake/contracts';
 import type { MacModule, ModuleContext } from '../types/mac-module';
-import { MAC_BOT, macStatus } from './bot/mac-bot';
+import { macStatus } from './helpers/mac-status';
 import { MAC_SETTINGS } from './constants/mac-settings';
 import { buildStatusPage } from './pages/status-page';
 
@@ -16,8 +16,6 @@ export class MacStateMacModule implements MacModule {
   readonly icon = { symbol: 'waveform.path.ecg', tone: 'green' } as const;
   readonly permissions: MacModule['permissions'] = ['thermalRead'];
   readonly settings = MAC_SETTINGS;
-  readonly actions: MacModule['actions'] = {};
-  readonly bot = MAC_BOT;
 
   status(ctx: ModuleContext) {
     return macStatus(ctx.mac);

@@ -18,8 +18,6 @@ export class TelegramMacModule implements MacModule {
     return [buildTelegramPage(ctx)];
   }
 
-  readonly actions: MacModule['actions'] = {};
-
   onSettingChanged(key: string, value: SettingValue, ctx: ModuleContext) {
     // bot обробляє сам TelegramBotListener, на Mac його не шлемо. Події sleep шле агент (SleepTimerEventsListener),
     // скрипт про них не знає: у telegram.env ідуть лише awake.* і system.*.

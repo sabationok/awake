@@ -1,12 +1,17 @@
 import { Global, Module } from '@nestjs/common';
+import { BotModule } from '../bot';
 import { LogsModule } from '../logs/logs.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { SleepTimersModule } from '../sleep-timers/sleep-timers.module';
 import { SettingsModule } from '../settings/settings.module';
+import { AwakeBot } from './awake/awake.bot';
 import { AwakeMacModule } from './awake/awake.mac-module';
 import { AwakeSessionListener } from './awake/listeners/awake-session.listener';
+import { MacBot } from './mac/mac.bot';
 import { MacStateMacModule } from './mac/mac.mac-module';
+import { MediaBot } from './media/media.bot';
 import { MediaMacModule } from './media/media.mac-module';
+import { SleepBot } from './sleep/sleep.bot';
 import { SleepMacModule } from './sleep/sleep.mac-module';
 import { TelegramMacModule } from '../telegram/telegram.mac-module';
 import { ModulesService } from './modules.service';
@@ -16,7 +21,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
 
 @Global()
 @Module({
-  imports: [SettingsModule, SessionsModule, SleepTimersModule, LogsModule],
+  imports: [BotModule, SettingsModule, SessionsModule, SleepTimersModule, LogsModule],
   controllers: [UiController],
   providers: [
     ModulesService,
@@ -27,6 +32,11 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
     MediaMacModule,
     MacStateMacModule,
     TelegramMacModule,
+    // Дії й екрани модулів: @Bot(MACONTROL_BOT, { namespace }). Порядок — порядок команд у Telegram.
+    AwakeBot,
+    SleepBot,
+    MediaBot,
+    MacBot,
     {
       provide: MAC_MODULES,
       useFactory: (...modules: MacModule[]) => modules,

@@ -2,9 +2,9 @@ import { Agent } from 'node:https';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Injectable, Logger } from '@nestjs/common';
 import { Context, Telegraf, TelegramError } from 'telegraf';
+import type { BotMenu } from '../../../bot';
 import { AppException } from '../../../common/app-exception';
 import { ModulesService } from '../../../modules/modules.service';
-import type { MacModule, ModuleBot } from '../../../modules/types/mac-module';
 import { describeError } from '../../helpers/describe-error';
 import { readTelegramEnv } from '../../helpers/read-telegram-env';
 import type { TelegramEnv } from '../../types/telegram-env.types';
@@ -17,8 +17,6 @@ import { buildMenuKeyboard } from './helpers/build-menu-keyboard';
 import { buildStartKeyboard } from './helpers/build-start-keyboard';
 import { decodeCallback } from './helpers/callback-data';
 import { isOwnerChat } from './helpers/is-owner-chat';
-
-type BotModule = MacModule & { bot: ModuleBot };
 
 /**
  * Telegram-бот MaControl: long polling, команди складаються з модулів. Модуль із `bot` дає вхідну команду
@@ -71,7 +69,7 @@ export class TelegramBotService {
 
   private async _launch(bot: Telegraf, env: TelegramEnv) {
     try {
-      await bot.telegram.setMyCommands(buildBotCommands(this._modules.list()));
+      await bot.telegram.setMyCommands(buildBotCommands(this._modules.botNamespaces()));
     } catch (error) {
       this._logger.warn(`setMyCommands не вдався: ${describeError(error, env.token)}`);
     }
@@ -106,10 +104,6 @@ export class TelegramBotService {
     timer.unref();
   }
 
-  private _botModules(): BotModule[] {
-    return this._modules.list().filter((module): module is BotModule => !!module.bot);
-  }
-
   private _register(bot: Telegraf, env: TelegramEnv) {
     bot.catch((error) => this._logger.error(`Помилка Telegram-бота: ${describeError(error, env.token)}`));
 
@@ -120,53 +114,59 @@ export class TelegramBotService {
 
     const help = (ctx: Context) =>
       this._safe(ctx, env, () =>
-        ctx.reply(buildHelpText(this._modules.list()), { reply_markup: buildStartKeyboard(this._modules.list()) }),
+        ctx.reply(buildHelpText(this._modules.botNamespaces()), {
+          reply_markup: buildStartKeyboard(this._modules.botNamespaces()),
+        }),
       );
     bot.start(help);
     bot.help(help);
 
-    for (const module of this._botModules()) {
-      const base = module.bot.command;
-      if (!base) continue;
-      bot.command(base, (ctx) => this._safe(ctx, env, () => this._replyMenu(ctx, module)));
+    for (const { namespace, command } of this._modules.botNamespaces()) {
+      if (!command) continue;
+      bot.command(command, (ctx) => this._safe(ctx, env, () => this._replyMenu(ctx, namespace)));
     }
 
     bot.action(/^(nav|do|act|menu):/, (ctx) =>
       this._safe(ctx, env, async () => {
         const callback = decodeCallback(ctx.match.input);
-        const module = callback && this._botModules().find((m) => m.id === callback.module);
-        if (!callback || !module) {
+        const known = callback && this._modules.botNamespaces().some((ns) => ns.namespace === callback.module);
+        if (!callback || !known) {
           await ctx.answerCbQuery(BOT_TEXTS.unknown);
           return;
         }
         if (callback.kind === 'nav') {
           await ctx.answerCbQuery();
-          await this._editMenu(ctx, env, module, callback.screen);
+          await this._editMenu(ctx, env, callback.module, callback.screen);
           return;
         }
         await ctx.answerCbQuery(BOT_TEXTS.answerDone);
-        await this._dispatch(module.id, callback.action, callback.params);
+        await this._dispatch(callback.module, callback.action, callback.params);
         // Mac застосовує дію і шле новий стан: чекаємо його, щоб екран показав результат.
         await delay(MENU_REFRESH_MS);
-        await this._editMenu(ctx, env, module, callback.screen);
+        await this._editMenu(ctx, env, callback.module, callback.screen);
       }),
     );
   }
 
-  private _replyMenu(ctx: Context, module: BotModule) {
-    const menu = module.bot.menu(this._modules.context(module.id), '');
-    return ctx.reply(menu.text, { parse_mode: 'HTML', reply_markup: buildMenuKeyboard(module.id, '', menu) });
+  private async _replyMenu(ctx: Context, namespace: string) {
+    const menu = await this._menu(namespace, '');
+    return ctx.reply(menu.text, { parse_mode: 'HTML', reply_markup: buildMenuKeyboard(namespace, '', menu) });
   }
 
-  private async _editMenu(ctx: Context, env: TelegramEnv, module: BotModule, screen: string) {
-    const menu = module.bot.menu(this._modules.context(module.id), screen);
+  private async _editMenu(ctx: Context, env: TelegramEnv, namespace: string, screen: string) {
+    const menu = await this._menu(namespace, screen);
     try {
-      await ctx.editMessageText(menu.text, { parse_mode: 'HTML', reply_markup: buildMenuKeyboard(module.id, screen, menu) });
+      await ctx.editMessageText(menu.text, { parse_mode: 'HTML', reply_markup: buildMenuKeyboard(namespace, screen, menu) });
     } catch (error) {
       // Стан не змінився: Telegram відмовляє в редагуванні на той самий текст, це не помилка.
       if (error instanceof TelegramError && error.description.includes('message is not modified')) return;
       throw new Error(describeError(error, env.token));
     }
+  }
+
+  /** Namespace без жодного `@BotScreen` усе одно відповідає: порожнім екраном з «Оновити». */
+  private async _menu(namespace: string, screen: string): Promise<BotMenu> {
+    return (await this._modules.screen(namespace, screen, 'telegram')) ?? { text: BOT_TEXTS.unknown, buttons: [] };
   }
 
   private _dispatch(module: string, name: string, params?: Record<string, string>) {

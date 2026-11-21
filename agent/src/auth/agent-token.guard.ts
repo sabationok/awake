@@ -28,6 +28,8 @@ export class AgentTokenGuard implements CanActivate {
   }
 
   canActivate(context: ExecutionContext): boolean {
+    // Дії `@Bot` (тип 'bot') вже пройшли перевірку свого транспорту: HTTP — цей guard, Telegram — чат власника, Mac — stdin.
+    if (context.getType() !== 'http') return true;
     const req = context.switchToHttp().getRequest<Request>();
     const remote = req.socket.remoteAddress ?? '';
     if (!LOOPBACK.has(remote) && !this._bridge.state?.trusted) {

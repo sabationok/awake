@@ -10,6 +10,7 @@ import type {
   UiSection,
   UiTree,
 } from '@awake/contracts';
+import { type BotMenu, type BotNamespace, BotRouterService } from '../bot';
 import { API_ERROR_CODES, AppException } from '../common/app-exception';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
 import { SettingsService } from '../settings/settings.service';
@@ -17,9 +18,9 @@ import { buildSettingNode } from './helpers/build-setting-node';
 import { filterNodesByScope } from './helpers/filter-nodes-by-scope';
 import { isValidSettingValue } from './helpers/is-valid-setting-value';
 import { resolveSettingValue } from './helpers/resolve-setting-value';
+import { MACONTROL_BOT } from './constants/macontrol-bot';
 import { MAC_MODULES, type MacModule, type ModuleContext, type StatusFields } from './types/mac-module';
-
-type Source = 'mac' | 'telegram' | 'web';
+import type { ModuleSource } from './types/module-source';
 
 /** Реєстр модулів MaControl: з них будується дерево UI і сюди приходять дії та налаштування. */
 @Injectable()
@@ -31,6 +32,7 @@ export class ModulesService {
     @Inject(MAC_MODULES) modules: MacModule[],
     private readonly _bridge: MacBridgeService,
     private readonly _settings: SettingsService,
+    private readonly _router: BotRouterService,
   ) {
     this._byId = new Map(modules.map((module) => [module.id, module]));
   }
@@ -95,15 +97,43 @@ export class ModulesService {
     };
   }
 
-  async dispatch(event: UiEvent, source: Source): Promise<void> {
+  /** Namespace-и бота MaControl (модулі з `@Bot`): команди й стартовий екран Telegram. */
+  botNamespaces(): BotNamespace[] {
+    return this._router.namespaces(MACONTROL_BOT);
+  }
+
+  /** Екран бота модуля з його контекстом; невідомий шлях — головний. */
+  async screen(moduleId: string, screen: string, source: ModuleSource): Promise<BotMenu | null> {
+    this._find(moduleId);
+    return this._router.screen({
+      bot: MACONTROL_BOT,
+      namespace: moduleId,
+      name: screen,
+      params: {},
+      source,
+      context: this.context(moduleId),
+    });
+  }
+
+  /**
+   * Кнопка SDUI, Telegram чи Mac: дія йде в `@BotAction` модуля (namespace = id модуля),
+   * налаштування — в SettingsService.
+   */
+  async dispatch(event: UiEvent, source: ModuleSource): Promise<void> {
     if (event.type === 'action') {
       const { module: moduleId, name, params } = event.action;
-      const module = this._find(moduleId);
-      // Object.hasOwn, щоб імена на кшталт `constructor` не знаходили прототип.
-      if (!Object.hasOwn(module.actions, name)) {
+      this._find(moduleId);
+      if (!this._router.hasAction(MACONTROL_BOT, moduleId, name)) {
         throw new AppException(API_ERROR_CODES.invalidCommand, `Unknown action ${moduleId}.${name}`);
       }
-      await module.actions[name](params ?? {}, this.context(moduleId), source);
+      await this._router.action({
+        bot: MACONTROL_BOT,
+        namespace: moduleId,
+        name,
+        params: params ?? {},
+        source,
+        context: this.context(moduleId),
+      });
       return;
     }
 

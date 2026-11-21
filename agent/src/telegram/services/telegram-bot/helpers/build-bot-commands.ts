@@ -1,7 +1,7 @@
 import type { BotCommand as TelegramCommand } from 'telegraf/types';
-import type { MacModule } from '../../../../modules/types/mac-module';
+import type { BotNamespace } from '../../../../bot';
 
-/** Меню команд Telegram: по одній команді на модуль. Модуль без команди тут не з'являється. */
-export function buildBotCommands(modules: MacModule[]): TelegramCommand[] {
-  return modules.flatMap(({ bot }) => (bot?.command ? [{ command: bot.command, description: bot.description }] : []));
+/** Меню команд Telegram: по одній команді на namespace. Namespace без команди тут не з'являється. */
+export function buildBotCommands(namespaces: BotNamespace[]): TelegramCommand[] {
+  return namespaces.flatMap(({ command, description }) => (command ? [{ command, description: description ?? command }] : []));
 }
