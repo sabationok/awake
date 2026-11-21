@@ -1,3 +1,5 @@
+import type { RelayConnectionInfo } from './relay-connection.types';
+
 /**
  * Стан host-а relay:
  * off — вимкнено перемикачем; unconfigured — немає relay.env або URL webhooxy цього stage;
@@ -35,4 +37,6 @@ export interface RelayStateSnapshot {
   since: string;
   viewers: RelayViewerSession[];
   limits: RelayLimitsState;
+  /** З чим host підключається; null — агент ще не читав relay.env. */
+  connection: RelayConnectionInfo | null;
 }

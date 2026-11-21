@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BehaviorSubject } from 'rxjs';
 import { RELAY_SESSIONS_LIMIT } from '../constants/relay-limits';
+import type { RelayConnectionInfo } from '../types/relay-connection.types';
 import type { RelayLimitsState, RelayStateSnapshot, RelayStatus, RelayViewerSession } from '../types/relay-status.types';
 
 /**
@@ -15,6 +16,7 @@ export class RelayStateService {
     since: new Date().toISOString(),
     viewers: [],
     limits: { effective: null, override: false, error: null },
+    connection: null,
   });
 
   get state(): RelayStateSnapshot {
@@ -30,6 +32,10 @@ export class RelayStateService {
   setLimits(limits: Partial<RelayLimitsState>) {
     const current = this.state$.value;
     this.state$.next({ ...current, limits: { ...current.limits, ...limits } });
+  }
+
+  setConnection(connection: RelayConnectionInfo) {
+    this.state$.next({ ...this.state$.value, connection });
   }
 
   addViewer(session: RelayViewerSession) {

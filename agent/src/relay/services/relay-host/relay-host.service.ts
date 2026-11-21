@@ -73,7 +73,9 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleInit() {
-    this._env = readRelayEnv();
+    const read = readRelayEnv();
+    this._env = read.env;
+    this._state.setConnection({ stage: this._config.stage, url: this._config.webhooxyUrl, envPath: read.path, keys: read.keys });
     this.setEnabled(this._modules.context('relay').setting<boolean>('enabled'));
   }
 
