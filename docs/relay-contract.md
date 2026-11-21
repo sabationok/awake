@@ -80,5 +80,6 @@
 ## Обмеження й секрети
 
 - Один інстанс API: реєстр host-ів зберігається в пам'яті.
+- TODO webhooxy (запитано 2026-11-21): ліміти relay для кожного DEST, через UI і dest bootstrap. Сюди входять handshake rate, maxPending / maxViewers, таймаути, черга send з rate / maxInFlight / `429`, maxPayloadBytes, allowlist origin. Поки що ліміти зашиті: 10 handshake за хвилину з IP і 20 pending у кімнаті.
 - Токен воркспейсу, `destId` і `mt_workspace` потрібні тільки агенту, тож вони лежать локально в `~/.config/awake/agent.env`.
 - Ключ токена viewer-а спільний для Vercel і агента, тому він в Envify.
