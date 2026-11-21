@@ -2,7 +2,7 @@
 
 Дашборд (браузер) і агент на Mac тримають WSS до двосторонньої room у webhooxy. Агент виступає як `host`, браузери як `viewer`. Контракт погоджено з сесією webhooxy 2026-11-21.
 
-- **Namespace:** socket.io `/relay`. Прод: `https://webhooks-proxy-dev.up.railway.app/relay`, локально: `http://localhost:3106/relay`. REST: `<base>/api`.
+- **Namespace:** socket.io `/relay` (path `/socket.io`, хост API). Реалізація: webhooxy PR #5 (base `dev`); на 2026-11-21 вона ще за першою версією контракту і доводиться до цієї. Прод: `https://webhooks-proxy-dev.up.railway.app/relay`, локально: `http://localhost:3106/relay`. REST: `<base>/api`.
 - **Авторизація однакова для обох ролей:** `io(URL + '/relay', { auth: (cb) => cb({ token: signFresh() }) })`. Токен також приймається як `auth.authorization: 'Bearer <jwt>'` (як в erp), а Node-клієнт може слати заголовок `Authorization: Bearer <jwt>`. Токен у query string не приймається. Що в токені — нижче, у «Relay JWT».
   - `auth` має бути функцією: `jti` одноразовий, тож кожне (пере)підключення підписує новий токен. Інакше після першого обриву reconnect отримає `UNAUTHORIZED`.
   - host (агент, `sub: 'macontrol-agent'`, `role: 'host'`): новий host витісняє старого. `destId` і `mt_workspace` у handshake не потрібні.
