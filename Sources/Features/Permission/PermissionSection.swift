@@ -8,33 +8,19 @@ struct PermissionSection: View {
 
     var body: some View {
         Section {
-            SettingsRow(title: "Права sudo",
-                        symbol: model.permissionGranted ? "checkmark.shield.fill" : "exclamationmark.shield.fill",
-                        color: model.permissionGranted ? .green : .orange) {
-                if model.permissionGranted {
-                    HStack(spacing: 10) {
-                        Text("Видано").foregroundStyle(.secondary)
-                        Button("Відкликати…") { model.revokePermission() }
-                            .disabled(model.isRunning)
-                    }
-                } else {
-                    Button("Надати дозвіл…") { model.grantPermission() }
-                        .buttonStyle(.borderedProminent)
-                }
-            }
             ForEach(AppPermission.allCases) { permission in
-                SystemPermissionRow(permission: permission, granted: model.permissionGranted)
+                SystemPermissionRow(permission: permission)
             }
         } header: {
             Text("Система")
         } footer: {
-            Text("Одне правило sudoers з трьома командами без пароля. macOS попросить пароль один раз. Модулі не можуть отримати більше, ніж видано тут.")
+            Text("Кожен дозвіл — окреме правило sudoers із фіксованими командами без пароля. macOS попросить пароль при видачі й відкликанні. Модулі не можуть отримати більше, ніж видано тут.")
         }
 
         // Лише модулі, що просять хоч один системний дозвіл: решті тут нічого видавати.
         if let modules = model.uiTree?.modules.filter({ !($0.permissions ?? []).isEmpty }) {
             ForEach(modules) { module in
-                ModuleSection(module: module, systemGranted: model.permissionGranted)
+                ModuleSection(module: module)
             }
         } else {
             Section {
@@ -47,27 +33,33 @@ struct PermissionSection: View {
     }
 }
 
-/// Що система дозволила аппці: один дозвіл і команди, які він покриває.
+/// Що система дозволила аппці: стан одного дозволу і дія для нього, як у дозволах Mia.
 private struct SystemPermissionRow: View {
+    @EnvironmentObject private var model: AwakeModel
     let permission: AppPermission
-    let granted: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            SettingsRow(title: permission.title, symbol: permission.symbol, color: granted ? .green : .gray,
-                        text: granted ? "Видано" : "Не видано")
-            Text(permission.commands.joined(separator: "\n"))
-                .font(.caption.monospaced())
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
+        let granted = model.isGranted(permission)
+        SettingsRow(title: permission.title, symbol: permission.symbol, color: granted ? .green : .gray) {
+            HStack(spacing: 8) {
+                StatusDot(color: granted ? .green : .gray)
+                Text(granted ? "Видано" : "Не видано").foregroundStyle(.secondary)
+                if granted {
+                    Button("Відкликати…") { model.revoke(permission) }
+                        .disabled(permission == .sleepControl && model.isRunning)
+                } else {
+                    Button("Надати…") { model.grant(permission) }
+                }
+            }
         }
+        .help("\(permission.purpose)\n\n" + permission.commands.joined(separator: "\n"))
     }
 }
 
 /// Модуль від сервера і дозволи, які він декларує.
 private struct ModuleSection: View {
+    @EnvironmentObject private var model: AwakeModel
     let module: UiModuleInfo
-    let systemGranted: Bool
 
     var body: some View {
         let requested = module.permissions ?? []
@@ -75,7 +67,7 @@ private struct ModuleSection: View {
         let unknown = requested.filter { AppPermission(rawValue: $0) == nil }
         Section {
             ForEach(known) { permission in
-                ModulePermissionRow(module: module.id, permission: permission, systemGranted: systemGranted)
+                ModulePermissionRow(module: module.id, permission: permission, systemGranted: model.isGranted(permission))
             }
             ForEach(unknown, id: \.self) { name in
                 SettingsRow(title: name, symbol: "questionmark.circle", color: .gray,

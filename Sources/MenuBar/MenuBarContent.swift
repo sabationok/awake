@@ -41,7 +41,7 @@ struct MenuBarContent: View {
             ForEach(SessionPreset.all) { preset in
                 Button("Не спати \(preset.title)") { model.start(preset) }
             }
-            .disabled(!model.permissionGranted)
+            .disabled(!model.isGranted(.sleepControl))
             if model.sleepBlocked {
                 Button("Повернути сон") { model.forceRestore() }
             }

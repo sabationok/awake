@@ -1,10 +1,14 @@
 extension AwakeModel {
-    func grantPermission() {
-        report(PermissionService.grant(), success: "Дозвіл надано")
+    func isGranted(_ permission: AppPermission) -> Bool {
+        grantedPermissions.contains(permission)
     }
 
-    func revokePermission() {
-        report(PermissionService.revoke(), success: "Дозвіл відкликано")
+    func grant(_ permission: AppPermission) {
+        report(PermissionService.grant(permission), success: "Дозвіл «\(permission.title)» надано")
+    }
+
+    func revoke(_ permission: AppPermission) {
+        report(PermissionService.revoke(permission), success: "Дозвіл «\(permission.title)» відкликано")
     }
 
     private func report(_ outcome: PermissionService.Outcome, success: String) {

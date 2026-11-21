@@ -24,7 +24,7 @@ final class AwakeModel: ObservableObject {
     @Published private(set) var power = PowerStatus.unknown
     @Published private(set) var thermal = ProcessInfo.processInfo.thermalState
     @Published private(set) var sleepBlocked = false
-    @Published private(set) var permissionGranted = false
+    @Published private(set) var grantedPermissions: Set<AppPermission> = []
 
     // MARK: налаштування
     @Published var displayOff = DisplayOffOption.saved {
@@ -109,7 +109,7 @@ final class AwakeModel: ObservableObject {
         power = PowerService.battery()
         thermal = ProcessInfo.processInfo.thermalState
         sleepBlocked = PowerService.isSleepBlocked()
-        permissionGranted = PermissionService.isGranted()
+        grantedPermissions = PermissionService.granted()
     }
 
     private func tick() {
@@ -139,7 +139,7 @@ final class AwakeModel: ObservableObject {
     }
 
     private func start(_ preset: SessionPreset?, previousSeconds: Int?) {
-        guard PermissionGate.isUsable(.sleepControl, by: "awake", appGranted: permissionGranted) else {
+        guard PermissionGate.isUsable(.sleepControl, by: "awake", appGranted: isGranted(.sleepControl)) else {
             append("Керування сном вимкнено для модуля Awake або не видано дозвіл")
             return
         }
