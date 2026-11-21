@@ -11,7 +11,9 @@ import { ModulesModule } from './modules/modules.module';
 import { PresenceModule } from './presence/presence.module';
 import { RelayModule } from './relay/relay.module';
 import { RelayStateModule } from './relay/state/relay-state.module';
+import { TelegramNotificationsModule } from './telegram/notifications';
 import { TelegramStateModule } from './telegram/state/telegram-state.module';
+import { TransportsModule } from './transports';
 import { BotJournalModule } from './bot-journal';
 import { SessionsModule } from './sessions/sessions.module';
 import { TelegramModule } from './telegram/telegram.module';
@@ -29,6 +31,8 @@ import { TlsModule } from './tls/tls.module';
     PresenceModule,
     RelayStateModule,
     TelegramStateModule,
+    TelegramNotificationsModule,
+    TransportsModule,
     BotJournalModule,
     ModulesModule,
     RelayModule,

@@ -1,11 +1,17 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { io, type Socket } from 'socket.io-client';
 import type { RelayHostBroadcast, RelayHostReply, UiTree } from '@awake/contracts';
+import { BotJournalService } from '../../../bot-journal';
 import { AGENT_CONFIG, type AgentConfig } from '../../../config/agent-config';
 import { isUiEvent } from '../../../modules/helpers/is-ui-event';
 import { ModulesService } from '../../../modules/modules.service';
-import { RELAY_MAX_PAYLOAD_BYTES, RELAY_MAX_VIEWERS, RELAY_RETRY_MS } from '../../constants/relay-limits';
+import { TelegramNotificationsService } from '../../../telegram/notifications';
+import { TransportsService } from '../../../transports';
+import { RELAY_MAX_PAYLOAD_BYTES, RELAY_RETRY_MS } from '../../constants/relay-limits';
+import { RELAY_METRICS } from '../../constants/relay-metrics';
+import { buildRelayLimits, type RelayLimitsOverride } from '../../helpers/build-relay-limits';
 import { readRelayEnv } from '../../helpers/read-relay-env';
+import { RELAY_STATUS_VIEW } from '../../helpers/relay-status-label';
 import { RelayStateService } from '../../state/relay-state.service';
 import { verifyViewerTicket } from '../../helpers/verify-viewer-ticket';
 import type { RelayEnv } from '../../types/relay-env.types';
@@ -44,7 +50,21 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     private readonly _modules: ModulesService,
     private readonly _state: RelayStateService,
-  ) {}
+    private readonly _journal: BotJournalService,
+    private readonly _notifications: TelegramNotificationsService,
+    transports: TransportsService,
+  ) {
+    transports.register({
+      id: 'relay',
+      title: 'Webhooxy',
+      icon: { symbol: 'antenna.radiowaves.left.and.right', tone: 'accent' },
+      status: () => {
+        const { status, reason, viewers } = _state.state;
+        const label = RELAY_STATUS_VIEW[status].label;
+        return { online: status === 'online', hint: status === 'online' ? `${label}, сесій: ${viewers.length}` : (reason ?? label) };
+      },
+    });
+  }
 
   get isOnline(): boolean {
     return this._socket?.connected ?? false;
@@ -75,6 +95,22 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     this._connect(this._config.webhooxyUrl, this._env);
   }
 
+  /** Select лімітів змінився: `relay:limits` повністю замінює override, тож шлемо всі поля разом. */
+  async applyLimits() {
+    if (!this.isOnline) return;
+    const reply = (await this._socket!.emitWithAck('relay:limits', { data: this._limits() })) as ServerEnvelope<Record<string, unknown> | null>;
+    if (reply.statusCode === 200 && reply.data) {
+      this._onEffectiveLimits(reply);
+      return;
+    }
+    const error = `${reply.statusCode} ${reply.message}`;
+    this._logger.warn(`Relay limits rejected: ${error}`);
+    this._journal.count([RELAY_METRICS.errors]);
+    this._state.setLimits({ error });
+    this._modules.treeChanged$.next();
+    this._notifications.notify({ source: 'relay', type: 'limits', title: '⚠️ webhooxy не прийняв ліміти', fields: { error } });
+  }
+
   /** Розсилає дерево авторизованим viewer-ам, якщо воно змінилося. */
   async broadcastTree() {
     if (!this.isOnline) return;
@@ -85,7 +121,10 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     if (!this._fits(data)) return;
     const reply = (await this._socket!.emitWithAck('relay:broadcast', { data })) as ServerEnvelope<unknown>;
     if (reply.statusCode === 200) this._lastTree = fingerprint;
-    else this._logger.warn(`Broadcast rejected: ${reply.statusCode} ${reply.message}`);
+    else {
+      this._logger.warn(`Broadcast rejected: ${reply.statusCode} ${reply.message}`);
+      this._journal.count([RELAY_METRICS.errors]);
+    }
   }
 
   private _connect(url: string, env: RelayEnv) {
@@ -95,7 +134,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
       auth: {
         token: env.workspaceToken,
         destId: env.destId,
-        relay: { allowedOrigins, maxViewers: RELAY_MAX_VIEWERS, maxPayloadBytes: RELAY_MAX_PAYLOAD_BYTES },
+        relay: { allowedOrigins, ...this._limits() },
       },
       query: { mt_workspace: env.workspace },
     });
@@ -104,6 +143,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     socket.on('connect', () => {
       this._lastTree = '';
       this._logger.log(`Relay host online (${this._config.stage})`);
+      this._journal.count([RELAY_METRICS.connects]);
       this._setStatus('online');
     });
     socket.on('connect_error', (error) => this._onConnectError(socket, error));
@@ -118,9 +158,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
       this._logger.warn(`Relay host disconnected: ${reason}`);
       this._setStatus('offline', reason);
     });
-    socket.on('relay:limits:effective', (envelope: ServerEnvelope<{ maxPayloadBytes?: number }>) => {
-      this._maxPayloadBytes = envelope.data?.maxPayloadBytes ?? this._maxPayloadBytes;
-    });
+    socket.on('relay:limits:effective', (envelope: ServerEnvelope<Record<string, unknown> | null>) => this._onEffectiveLimits(envelope));
     // Дані viewer-а не перевірені: виняток у слухачі socket.io поклав би весь агент, тож завжди відповідаємо в ack.
     socket.on('relay:authorize', (envelope: ServerEnvelope<AuthorizeData> | undefined, ack: Ack) => {
       if (typeof ack !== 'function') return;
@@ -133,6 +171,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     });
     socket.on('relay:message', (envelope: ServerEnvelope<unknown> | undefined, ack: Ack) => {
       if (typeof ack !== 'function') return;
+      this._journal.count([RELAY_METRICS.messages]);
       void this._handle(envelope?.data)
         .catch((): RelayHostReply => ({ type: 'error', message: 'Internal error' }))
         .then((data) => ack({ data }));
@@ -161,6 +200,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     if (!check.ok) return this._deny(data.viewerId, check.reason);
     if (!this._used.claim(check.claims.jti, check.claims.exp)) return this._deny(data.viewerId, 'ticket reused');
     this._logger.log(`Viewer ${data.viewerId} allowed (${check.claims.sub})`);
+    this._journal.count([RELAY_METRICS.viewerAllowed]);
     this._state.addViewer({
       viewerId: data.viewerId,
       sub: check.claims.sub,
@@ -187,8 +227,25 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     if (this._state.state !== before) this._modules.treeChanged$.next();
   }
 
+  /** Поля override з select-ів Webhooxy; handshake і `relay:limits` беруть одне й те саме. */
+  private _limits(): RelayLimitsOverride {
+    const ctx = this._modules.context('relay');
+    return buildRelayLimits((key) => ctx.setting<string>(key));
+  }
+
+  private _onEffectiveLimits(envelope: ServerEnvelope<Record<string, unknown> | null>) {
+    const effective = envelope.data;
+    if (!effective) return;
+    const maxPayloadBytes = effective.maxPayloadBytes;
+    this._maxPayloadBytes = typeof maxPayloadBytes === 'number' ? maxPayloadBytes : RELAY_MAX_PAYLOAD_BYTES;
+    this._state.setLimits({ effective, override: envelope.meta?.source?.override ?? false, error: null });
+    this._modules.treeChanged$.next();
+  }
+
   private _deny(viewerId: string, reason: string) {
     this._logger.warn(`Viewer ${viewerId} denied: ${reason}`);
+    this._journal.count([RELAY_METRICS.viewerDenied]);
+    this._notifications.notify({ source: 'relay', type: 'denied', title: '🚫 Viewer-а не пущено', fields: { viewerId, reason } });
     return { allow: false };
   }
 
@@ -204,7 +261,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
         }
         case 'event':
           if (!isUiEvent(message.event)) return { type: 'error', message: 'Invalid UI event' };
-          await this._modules.dispatch(message.event, 'web');
+          await this._modules.dispatch(message.event, 'relay');
           void this.broadcastTree();
           return { type: 'accepted' };
         default:

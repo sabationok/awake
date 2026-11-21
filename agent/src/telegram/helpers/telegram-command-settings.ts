@@ -9,7 +9,7 @@ export function telegramCommandSettings(namespaces: BotNamespace[]): SettingDefi
     key: telegramCommandSettingKey(ns.namespace),
     label: ns.command ? `/${ns.command}` : ns.namespace,
     hint: ns.description ?? (ns.command ? undefined : 'Лише кнопками з /start'),
-    page: 'telegram',
+    page: 'telegram-commands',
     default: true,
   }));
 }

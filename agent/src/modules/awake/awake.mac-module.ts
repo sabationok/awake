@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type { SettingValue, UiPage } from '@awake/contracts';
 import { LogsService } from '../../logs/logs.service';
 import { SessionsService } from '../../sessions/sessions.service';
+import { TelegramNotificationsService } from '../../telegram/notifications';
+import { AWAKE_NOTIFICATIONS } from './constants/awake-notifications';
 import type { MacModule, ModuleContext } from '../types/mac-module';
 import { awakeStatus } from './helpers/awake-status';
 import { AWAKE_SETTINGS } from './constants/awake-settings';
@@ -27,7 +29,10 @@ export class AwakeMacModule implements MacModule {
   constructor(
     private readonly _sessions: SessionsService,
     private readonly _logs: LogsService,
-  ) {}
+    notifications: TelegramNotificationsService,
+  ) {
+    notifications.register(AWAKE_NOTIFICATIONS);
+  }
 
   pages(ctx: ModuleContext): UiPage[] {
     // Одна вибірка на всі сторінки: трекінг рахує за 7 днів і гортає історію.

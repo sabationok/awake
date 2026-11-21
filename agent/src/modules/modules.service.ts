@@ -55,10 +55,13 @@ export class ModulesService {
         return bridge.state;
       },
       setting: <T extends SettingValue>(key: string) => this._readSetting(module, key) as T,
-      settingNode: (key: string): UiNode =>
-        buildSettingNode(module.id, this._definition(module, key), this._readSetting(module, key)),
+      settingNode: (key: string, ofModule?: string): UiNode => {
+        const owner = ofModule ? this._find(ofModule) : module;
+        return buildSettingNode(owner.id, this._definition(owner, key), this._readSetting(owner, key));
+      },
       sendToMac: (command, source) => {
-        bridge.sendCommand(command, source);
+        // Сесії Mac знають лише mac / telegram / web: relay для них — той самий дашборд.
+        bridge.sendCommand(command, source === 'relay' ? 'web' : source);
       },
       status: () => this.status(),
     };
@@ -174,7 +177,7 @@ export class ModulesService {
       throw new AppException(API_ERROR_CODES.invalidCommand, `Invalid setting ${moduleId}.${key}`);
     }
     // Налаштування SwiftUI міняють лише Mac і Telegram, не вебдашборд чи relay.
-    if (definition.scope === 'mac' && source === 'web') {
+    if (definition.scope === 'mac' && (source === 'web' || source === 'relay')) {
       throw new AppException(API_ERROR_CODES.invalidCommand, `Setting ${moduleId}.${key} is Mac-only`);
     }
     this._settings.set(moduleId, key, value);

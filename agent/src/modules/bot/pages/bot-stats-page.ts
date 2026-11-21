@@ -4,7 +4,7 @@ import type { BotMetrics } from '../../../bot-journal';
 import type { ModuleSource } from '../../types/module-source';
 import { BOT_SOURCE_LABEL } from '../constants/bot-source-labels';
 
-const SOURCES: ModuleSource[] = ['mac', 'web', 'telegram'];
+const SOURCES: ModuleSource[] = ['mac', 'web', 'relay', 'telegram'];
 
 /** «сьогодні / усього» для лічильника. */
 function countValue(metrics: BotMetrics, metric: string): string {
@@ -15,12 +15,12 @@ function row(id: string, label: string, value: string, hint?: string): UiNode {
   return { id, type: 'row', label, value, hint };
 }
 
-/** «Огляд»: усі виклики нашого бота з усіх транспортів — разом, за джерелом і за модулем. */
-export function buildBotMetricsPage(metrics: BotMetrics, namespaces: BotNamespace[]): UiPage {
+/** «Статистика»: усі виклики нашого бота з усіх транспортів — разом, за джерелом і за модулем. */
+export function buildBotStatsPage(metrics: BotMetrics, namespaces: BotNamespace[]): UiPage {
   return {
-    id: 'bot-metrics',
+    id: 'bot-stats',
     module: 'bot',
-    title: 'Огляд',
+    title: 'Статистика',
     icon: { symbol: 'chart.bar.fill', tone: 'accent' },
     group: 'modules',
     children: [
@@ -28,7 +28,7 @@ export function buildBotMetricsPage(metrics: BotMetrics, namespaces: BotNamespac
         id: 'totals',
         type: 'section',
         title: 'Виклики',
-        footer: 'Сьогодні / усього. Дії, екрани й налаштування з Mac, вебу, relay і Telegram — усе, що йде через бота.',
+        footer: 'Сьогодні / усього. Дії, екрани й налаштування з Mac, вебу, webhooxy і Telegram — усе, що йде через бота.',
         children: [row('total', 'Усього', countValue(metrics, 'total')), row('error', 'Помилок', countValue(metrics, 'error'))],
       },
       {

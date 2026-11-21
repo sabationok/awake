@@ -20,6 +20,9 @@ export class RelayHostListener implements OnModuleInit, OnModuleDestroy {
       this._modules.settingChanged$
         .pipe(filter((change) => change.module === 'relay' && change.key === 'enabled'))
         .subscribe((change) => this._relay.setEnabled(change.value === true)),
+      this._modules.settingChanged$
+        .pipe(filter((change) => change.module === 'relay' && change.key.startsWith('limits.')))
+        .subscribe(() => void this._relay.applyLimits()),
       merge(this._bridge.state$, this._modules.settingChanged$).subscribe(() => void this._relay.broadcastTree()),
     );
   }

@@ -18,10 +18,21 @@ export interface RelayViewerSession {
   authorizedAt: string;
 }
 
+/** Ліміти кімнати, як їх розрезолвив webhooxy (`relay:limits:effective` або ack `relay:limits`). */
+export interface RelayLimitsState {
+  /** Усі поля RelayLimitsDef з default-ами; null — ще не підключались. */
+  effective: Record<string, unknown> | null;
+  /** Чи діє наш override. */
+  override: boolean;
+  /** Останнє `relay:limits`, яке webhooxy не прийняв. */
+  error: string | null;
+}
+
 export interface RelayStateSnapshot {
   status: RelayStatus;
   /** Причина для offline / refused / evicted. */
   reason: string | null;
   since: string;
   viewers: RelayViewerSession[];
+  limits: RelayLimitsState;
 }

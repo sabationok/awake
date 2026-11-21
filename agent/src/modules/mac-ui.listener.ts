@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Subscription, debounceTime, merge } from 'rxjs';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
+import { TransportsService } from '../transports';
 import { ModulesService } from './modules.service';
 
 /**
@@ -17,7 +18,15 @@ export class MacUiListener implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly _bridge: MacBridgeService,
     private readonly _modules: ModulesService,
-  ) {}
+    transports: TransportsService,
+  ) {
+    transports.register({
+      id: 'mac',
+      title: 'Mac',
+      icon: { symbol: 'macbook', tone: 'accent' },
+      status: () => ({ online: _bridge.state !== null, hint: _bridge.state?.host ?? 'Аппка мовчить' }),
+    });
+  }
 
   onModuleInit() {
     this._subscriptions.push(

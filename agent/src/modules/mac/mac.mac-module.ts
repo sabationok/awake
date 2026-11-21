@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { SettingValue, UiPage } from '@awake/contracts';
+import { TelegramNotificationsService } from '../../telegram/notifications';
 import type { MacModule, ModuleContext } from '../types/mac-module';
+import { MAC_NOTIFICATIONS } from './constants/mac-notifications';
 import { macStatus } from './helpers/mac-status';
 import { MAC_SETTINGS } from './constants/mac-settings';
 import { buildStatusPage } from './pages/status-page';
@@ -16,6 +18,10 @@ export class MacStateMacModule implements MacModule {
   readonly icon = { symbol: 'waveform.path.ecg', tone: 'green' } as const;
   readonly permissions: MacModule['permissions'] = ['thermalRead'];
   readonly settings = MAC_SETTINGS;
+
+  constructor(notifications: TelegramNotificationsService) {
+    notifications.register(MAC_NOTIFICATIONS);
+  }
 
   status(ctx: ModuleContext) {
     return macStatus(ctx.mac);

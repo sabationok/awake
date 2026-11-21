@@ -6,6 +6,7 @@ import type { BotMenu, BotNamespace } from '../../../bot';
 import { BotJournalService } from '../../../bot-journal';
 import { AppException } from '../../../common/app-exception';
 import { ModulesService } from '../../../modules/modules.service';
+import { TransportsService } from '../../../transports';
 import { TELEGRAM_METRICS } from '../../constants/telegram-metrics';
 import { describeError } from '../../helpers/describe-error';
 import { readTelegramEnv } from '../../helpers/read-telegram-env';
@@ -37,7 +38,15 @@ export class TelegramBotService {
     private readonly _modules: ModulesService,
     private readonly _journal: BotJournalService,
     private readonly _state: TelegramStateService,
-  ) {}
+    transports: TransportsService,
+  ) {
+    transports.register({
+      id: 'telegram',
+      title: 'Telegram',
+      icon: { symbol: 'paperplane.fill', tone: 'accent' },
+      status: () => ({ online: _state.state.running, hint: _state.state.running ? 'Polling працює' : 'Бот вимкнено або немає telegram.env' }),
+    });
+  }
 
   start(): void {
     if (this._bot) return;

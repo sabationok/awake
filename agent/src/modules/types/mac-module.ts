@@ -10,8 +10,11 @@ export interface ModuleContext {
   mac: MacState | null;
   /** Значення налаштування цього модуля (вже з default). */
   setting<T extends SettingValue>(key: string): T;
-  /** Готовий вузол switch/select для налаштування цього модуля з поточним значенням, щоб поставити його на свою сторінку. */
-  settingNode(key: string): UiNode;
+  /**
+   * Готовий вузол switch/select з поточним значенням, щоб поставити налаштування на свою сторінку.
+   * `ofModule` — налаштування іншого модуля (напр. перемикач webhooxy на сторінці Агента); зміна йде власнику.
+   */
+  settingNode(key: string, ofModule?: string): UiNode;
   /** Команда для Mac-аппки (сон, блокування, екран). */
   sendToMac(command: CommandRequest, source: ModuleSource): void;
   /** Спільний стан для /status: кожен модуль під своїм id, у порядку модулів. */

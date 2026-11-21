@@ -17,7 +17,9 @@ import { TelegramMacModule } from '../telegram/telegram.mac-module';
 import { RelayBot } from '../relay/relay.bot';
 import { RelayMacModule } from '../relay/relay.mac-module';
 import { BotMacModule } from './bot/bot.mac-module';
+import { BotEventsListener } from './bot/listeners/bot-events.listener';
 import { BotJournalListener } from './bot/listeners/bot-journal.listener';
+import { SleepTimerEventsListener } from './sleep/listeners/sleep-timer-events.listener';
 import { ModulesService } from './modules.service';
 import { MacUiListener } from './mac-ui.listener';
 import { UiController } from './ui.controller';
@@ -38,6 +40,8 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
     TelegramMacModule,
     BotMacModule,
     BotJournalListener,
+    BotEventsListener,
+    SleepTimerEventsListener,
     RelayMacModule,
     // Дії й екрани модулів: @Bot(MACONTROL_BOT, { namespace }). Порядок — порядок команд у Telegram.
     AwakeBot,
