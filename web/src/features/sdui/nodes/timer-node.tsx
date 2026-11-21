@@ -30,5 +30,5 @@ function timerColor(node: UiTimer, now: number): string | undefined {
   const from = node.from ? new Date(node.from).getTime() : NaN;
   if (!(until > from)) return node.tone ? `var(--${node.tone})` : undefined;
   const left = Math.min(1, Math.max(0, (until - now) / (until - from)));
-  return `hsl(${Math.round(left * 120)} 75% 42%)`;
+  return `hsl(${Math.round(left * 120)} 45% 56%)`;
 }

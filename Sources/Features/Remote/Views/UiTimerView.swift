@@ -26,10 +26,11 @@ struct UiTimerView: View {
         .padding(.vertical, 12)
     }
 
-    /// Від зеленого (уся сесія попереду) до червоного (час майже вийшов). Без початку — колір тону.
+    /// Від зеленого (уся сесія попереду) до червоного (час майже вийшов), приглушено, як у «Екранному часі».
+    /// Без початку — колір тону.
     private func color(until: Date, now: Date) -> Color {
         guard let from = timer.from, until > from else { return timer.tone?.color ?? .primary }
         let left = min(1, max(0, until.timeIntervalSince(now) / until.timeIntervalSince(from)))
-        return Color(hue: left / 3, saturation: 0.8, brightness: 0.85)
+        return Color(hue: left / 3, saturation: 0.48, brightness: 0.78)
     }
 }
