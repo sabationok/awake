@@ -184,7 +184,7 @@
             bodyEncoding?: 'json' | 'text' | 'base64';   // за замовчуванням 'json'
             cookies?: Array<{ name: string; value: string; maxAge?: number; path?: string;
                               httpOnly?: boolean; sameSite?: 'lax' | 'strict' }> },
-    meta?: { sensitive?: RelaySensitive } }   // лише для частини відповіді
+    meta?: { sensitive?: RelaySensitiveRule[] } }   // лише для частини відповіді
   ```
   - Кожна кукі стає окремим `Set-Cookie` з такими атрибутами:
     - `Secure` завжди;
@@ -216,24 +216,25 @@
   | `maxResponseBytes` | 1000000 | 1000000 |
   | `requests.perCredentialPerMin` | 60 | 6000 |
   | `requests.perRoomPerMin` | 600 | 12000 |
-  | `sensitive` | до 50 ключів у кожному списку | |
+  | `sensitive` | до 50 правил разом | |
 
-- **`sensitive`** (webhooxy#12 7c3c173, замінив `redact`): `RelaySensitive = { headerKeys?: string[]; queryKeys?: string[]; cookieKeys?: string[]; bodyKeys?: string[] }`.
+- **`sensitive`:** один масив правил. Координатор прийняв цей формат замість чотирьох списків із 7c3c173; у коді #12 його ще немає.
+  ```ts
+  type RelaySensitiveRule =
+    | { in: 'headers' | 'query' | 'cookies'; name: string }
+    | { in: 'body'; path: string };
+  sensitive?: RelaySensitiveRule[]   // до 50 правил разом
+  ```
   - Задається в чотирьох місцях:
     - handshake `auth.relay`;
     - `relay:limits { data }`;
     - DEST `config.transports.ws.relay`;
-    - ack `meta.sensitive` (та сама форма, але лише для відповіді).
-  - До 50 ключів у кожному списку. Невалідне значення дає `connect_error BAD_REQUEST`, а для `relay:limits` — ack 400.
-  - Що покриває кожен список:
-
-    | Список | Що покриває |
-    |---|---|
-    | `headerKeys` | імена заголовків без урахування регістру; заголовки запиту й відповіді |
-    | `queryKeys` | імена query-параметрів запиту |
-    | `bodyKeys` | шлях через крапку в JSON-тілі, масиви через `*` (`items.*.token`); тіла запиту й відповіді |
-    | `cookieKeys` | приймається, але поки нічого не робить: кукі й так шифруються всі |
-
+    - ack `meta.sensitive` (лише для відповіді).
+  - Невалідне значення дає `connect_error BAD_REQUEST`, а для `relay:limits` — ack 400.
+  - `name` для `headers` і `cookies` без урахування регістру. Для `query` це точне ім'я параметра, і крапка в ньому — частина імені.
+  - `path` записується через крапку в JSON-тілі, масиви — через `*` (`items.*.token`). Діє на тіла запиту й відповіді.
+  - `in: 'cookies'` поки нічого не робить: кукі й так шифруються всі.
+  - Ще не відповіли: `action?: 'encrypt' | 'mask' | 'remove'` у правилі плюс типова дія з налаштувань workspace (запропоновано `relay.sensitiveDefault`). Віталій просив, щоб кожен workspace сам вибирав, шифрувати чи маскувати.
   - Завжди шифруються:
     - `authorization`, `cookie`, `set-cookie` і `x-relay-key` у запиті й відповіді;
     - значення всіх `cookies[].value` відповіді.
