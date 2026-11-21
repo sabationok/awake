@@ -1,7 +1,8 @@
-import type { MacState, UiButton, UiButtons, UiNode, UiPage, UiRow, UiTimer } from '@awake/contracts';
+import type { MacState, UiNode, UiPage, UiRow } from '@awake/contracts';
 import { UNTIL_OPTIONS } from '../../constants/until-options';
 import { formatClock } from '../../helpers/format-clock';
 import { planTabsNode } from '../../helpers/plan-tabs-node';
+import { type SessionCard, sessionButtons, sessionTimerNode } from '../../helpers/session-card';
 import type { ModuleContext } from '../../types/mac-module';
 import { SLEEP_TIMER_OPTIONS } from '../constants/sleep-timer-options';
 import { plannedMinutes } from '../helpers/planned-minutes';
@@ -13,9 +14,9 @@ import { plannedMinutes } from '../helpers/planned-minutes';
 export function buildTimerPage(ctx: ModuleContext): UiPage {
   const mac = ctx.mac;
   const now = new Date();
-  const minutes = plannedMinutes(ctx, now);
+  const card = sleepCard(ctx, mac, plannedMinutes(ctx, now), now);
   const children: UiNode[] = [
-    timerNode(mac, minutes, now),
+    sessionTimerNode(card),
     planTabsNode(
       ctx,
       'sleep',
@@ -24,7 +25,7 @@ export function buildTimerPage(ctx: ModuleContext): UiPage {
     ),
   ];
   if (mac?.active && !mac.sleepAt) children.push(awakeRunningRow());
-  children.push(timerButtons(ctx, mac, minutes));
+  children.push(sessionButtons(card));
   return {
     id: 'sleep-timer',
     module: 'sleep',
@@ -42,41 +43,24 @@ export function buildTimerPage(ctx: ModuleContext): UiPage {
   };
 }
 
-function timerNode(mac: MacState | null, minutes: number, now: Date): UiTimer {
-  if (mac === null) return { id: 'countdown', type: 'timer', value: '—', caption: 'Mac офлайн', tone: 'gray' };
-  if (mac.sleepAt) {
-    return {
-      id: 'countdown',
-      type: 'timer',
-      until: mac.sleepAt,
-      from: mac.sleepStartedAt,
-      value: 'Засинає',
-      caption: `Засне о ${formatClock(mac.sleepAt)}`,
-      tone: 'indigo',
-    };
-  }
+/** Таймер і кнопки таймера сну. */
+function sleepCard(ctx: ModuleContext, mac: MacState | null, minutes: number, now: Date): SessionCard {
   return {
-    id: 'countdown',
-    type: 'timer',
-    value: `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}:00`,
-    caption: `Старт — засне о ${formatClock(new Date(now.getTime() + minutes * 60_000).toISOString())}`,
-    tone: 'gray',
+    module: 'sleep',
+    mac,
+    run: mac?.sleepAt ? { until: mac.sleepAt, from: mac.sleepStartedAt, changed: planChanged(ctx, mac, minutes) } : null,
+    plannedSeconds: minutes * 60,
+    now,
+    tone: 'indigo',
+    timerId: 'countdown',
+    buttonsId: 'timer-buttons',
+    texts: {
+      running: 'Засинає',
+      runningCaption: (until) => `Засне о ${until}`,
+      idleCaption: (end) => `Старт — засне о ${end}`,
+      stop: 'Скасувати',
+    },
   };
-}
-
-/** Таймер іде, а вибрано інший час: «Перезапустити» поруч зі «Скасувати». */
-function timerButtons(ctx: ModuleContext, mac: MacState | null, minutes: number): UiButtons {
-  const start = (label: string): UiButton => ({
-    id: 'start',
-    label,
-    variant: 'filled',
-    disabled: mac === null,
-    action: { module: 'sleep', name: 'start' },
-  });
-  const stop: UiButton = { id: 'stop', label: 'Скасувати', variant: 'destructive', action: { module: 'sleep', name: 'stop' } };
-  const changed = !!mac?.sleepAt && planChanged(ctx, mac, minutes);
-  const buttons = !mac?.sleepAt ? [start('Старт')] : changed ? [start('Перезапустити'), stop] : [stop];
-  return { id: 'timer-buttons', type: 'buttons', buttons };
 }
 
 /** Як у Awake: на вкладці «Час» порівнюємо годину, на «Період» — тривалість таймера, що йде. */

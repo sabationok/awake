@@ -1,10 +1,11 @@
-import type { MacState, UiButton, UiButtons, UiNode, UiPage, UiRow, UiTimer } from '@awake/contracts';
+import type { MacState, UiNode, UiPage, UiRow } from '@awake/contracts';
 import type { ModuleContext } from '../../types/mac-module';
 import { DURATION_OPTIONS } from '../constants/awake-settings';
 import { UNTIL_OPTIONS } from '../../constants/until-options';
 import { formatBattery } from '../helpers/format-battery';
 import { formatClock } from '../../helpers/format-clock';
 import { planTabsNode } from '../../helpers/plan-tabs-node';
+import { type SessionCard, sessionButtons, sessionTimerNode } from '../../helpers/session-card';
 import { durationSeconds, plannedDuration } from '../helpers/session-plan';
 import { sleepRow } from '../helpers/sleep-row';
 import { thermalPresentation } from '../helpers/thermal-presentation';
@@ -15,9 +16,9 @@ import { thermalPresentation } from '../helpers/thermal-presentation';
  */
 export function buildSessionPage(ctx: ModuleContext): UiPage {
   const mac = ctx.mac;
-  const now = new Date();
+  const card = sessionCard(ctx, mac, new Date());
   const session: UiNode[] = [
-    timerNode(ctx, mac, now),
+    sessionTimerNode(card),
     planTabsNode(
       ctx,
       'awake',
@@ -28,7 +29,7 @@ export function buildSessionPage(ctx: ModuleContext): UiPage {
     ctx.settingNode('startLock'),
   ];
   if (mac && !mac.active && mac.sleepBlocked) session.push(sleepBlockedRow());
-  session.push(sessionButtons(ctx, mac));
+  session.push(sessionButtons(card));
 
   const children: UiNode[] = [
     {
@@ -52,44 +53,24 @@ export function buildSessionPage(ctx: ModuleContext): UiPage {
   };
 }
 
-/** Відлік, поки сесія йде; без сесії — скільки триватиме та, яку запустить «Старт», і до котрої. */
-function timerNode(ctx: ModuleContext, mac: MacState | null, now: Date): UiTimer {
-  if (mac === null) {
-    return { id: 'timer', type: 'timer', value: '—', caption: 'Mac офлайн', tone: 'gray' };
-  }
-  if (mac.active) {
-    return {
-      id: 'timer',
-      type: 'timer',
-      until: mac.until,
-      from: mac.startedAt,
-      value: 'Не спить',
-      caption: mac.until ? `Не спить до ${formatClock(mac.until)}` : undefined,
-      tone: 'orange',
-    };
-  }
-  const seconds = durationSeconds(plannedDuration(ctx, now));
+/** Таймер і кнопки сесії Awake. */
+function sessionCard(ctx: ModuleContext, mac: MacState | null, now: Date): SessionCard {
   return {
-    id: 'timer',
-    type: 'timer',
-    value: formatSpan(seconds),
-    caption: `Старт — до ${formatClock(new Date(now.getTime() + seconds * 1000).toISOString())}`,
-    tone: 'gray',
+    module: 'awake',
+    mac,
+    run: mac?.active ? { until: mac.until, from: mac.startedAt, changed: planChanged(ctx, mac) } : null,
+    plannedSeconds: durationSeconds(plannedDuration(ctx, now)),
+    now,
+    tone: 'orange',
+    timerId: 'timer',
+    buttonsId: 'session-buttons',
+    texts: {
+      running: 'Не спить',
+      runningCaption: (until) => `Не спить до ${until}`,
+      idleCaption: (end) => `Старт — до ${end}`,
+      stop: 'Стоп',
+    },
   };
-}
-
-/** Сесія йде, а вибрано інший час: «Перезапустити» поруч зі «Стоп». */
-function sessionButtons(ctx: ModuleContext, mac: MacState | null): UiButtons {
-  const start = (label: string): UiButton => ({
-    id: 'start',
-    label,
-    variant: 'filled',
-    disabled: mac === null,
-    action: { module: 'awake', name: 'start' },
-  });
-  const stop: UiButton = { id: 'stop', label: 'Стоп', variant: 'destructive', action: { module: 'awake', name: 'stop' } };
-  const buttons = !mac?.active ? [start('Старт')] : planChanged(ctx, mac) ? [start('Перезапустити'), stop] : [stop];
-  return { id: 'session-buttons', type: 'buttons', buttons };
 }
 
 function planChanged(ctx: ModuleContext, mac: MacState): boolean {
@@ -111,13 +92,6 @@ function sleepBlockedRow(): UiRow {
       button: { id: 'restore-sleep', label: 'Повернути сон', variant: 'plain', action: { module: 'awake', name: 'restoreSleep' } },
     },
   };
-}
-
-/** «2:00:00» для запланованої тривалості. */
-function formatSpan(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  return `${h}:${String(m).padStart(2, '0')}:00`;
 }
 
 /** Дія, а не налаштування: тому тут, а не в «Налаштуваннях сесії». */
