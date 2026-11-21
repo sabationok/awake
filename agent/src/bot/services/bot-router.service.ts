@@ -4,6 +4,7 @@ import { DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core';
 import { ExternalContextCreator, type ParamsFactory } from '@nestjs/core/helpers/external-context-creator';
 import { BOT_ACTION_METADATA, BOT_CONTEXT_TYPE, BOT_METADATA, BOT_SCREEN_METADATA } from '../constants/bot-metadata';
 import type { BotArgs } from '../types/bot-args.types';
+import type { BotNamespaceCatalog } from '../types/bot-catalog.types';
 import type { BotMenu } from '../types/bot-menu.types';
 import type { BotNamespace } from '../types/bot-options.types';
 
@@ -48,6 +49,15 @@ export class BotRouterService implements OnModuleInit {
   /** Namespace-и бота в порядку реєстрації: для меню команд і стартового екрана. */
   namespaces(bot: string): BotNamespace[] {
     return [...(this._bots.get(bot)?.values() ?? [])].map((routes) => routes.meta);
+  }
+
+  /** Namespace-и з іменами дій і екранів (головний екран — ''). */
+  catalog(bot: string): BotNamespaceCatalog[] {
+    return [...(this._bots.get(bot)?.values() ?? [])].map((routes) => ({
+      meta: routes.meta,
+      actions: [...routes.actions.keys()],
+      screens: [...routes.screens.keys()],
+    }));
   }
 
   hasAction(bot: string, namespace: string, name: string): boolean {

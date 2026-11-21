@@ -4,12 +4,15 @@ import { RELAY_STATUS_VIEW } from '../helpers/relay-status-label';
 import { relaySessionListItem } from '../helpers/relay-session-list-item';
 import type { RelayStateSnapshot } from '../types/relay-status.types';
 
-/** Сторінка relay лише в SwiftUI: перемикач, стан host-а і сесії viewer-ів. */
+/**
+ * Сторінка relay лише в SwiftUI: перемикач, стан host-а і сесії viewer-ів. Relay — проксі до нашого бота,
+ * тож сторінка стоїть у сайдбарі під Bot (`module: 'bot'`); налаштування лишаються модуля relay (ctx).
+ */
 export function buildRelayPage(ctx: ModuleContext, state: RelayStateSnapshot): UiPage {
   const view = RELAY_STATUS_VIEW[state.status];
   return {
     id: 'relay',
-    module: 'relay',
+    module: 'bot',
     title: 'Relay',
     icon: { symbol: 'antenna.radiowaves.left.and.right', tone: 'accent' },
     group: 'modules',

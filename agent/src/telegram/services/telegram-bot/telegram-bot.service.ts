@@ -3,13 +3,14 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { Injectable, Logger } from '@nestjs/common';
 import { Context, Telegraf, TelegramError } from 'telegraf';
 import type { BotMenu, BotNamespace } from '../../../bot';
-import { BotJournalService, stripHtml } from '../../../bot-journal';
-import type { BotMessageRecord } from '../../../bot-journal';
-import { botCommandSettingKey } from '../../../modules/bot/helpers/bot-command-setting-key';
+import { BotJournalService } from '../../../bot-journal';
 import { AppException } from '../../../common/app-exception';
 import { ModulesService } from '../../../modules/modules.service';
+import { TELEGRAM_METRICS } from '../../constants/telegram-metrics';
 import { describeError } from '../../helpers/describe-error';
 import { readTelegramEnv } from '../../helpers/read-telegram-env';
+import { telegramCommandSettingKey } from '../../helpers/telegram-command-setting-key';
+import { TelegramStateService } from '../../state/telegram-state.service';
 import type { TelegramEnv } from '../../types/telegram-env.types';
 import { BOT_TEXTS } from './constants/bot-texts';
 import { MENU_REFRESH_MS } from './constants/menu-refresh-ms';
@@ -21,13 +22,10 @@ import { buildStartKeyboard } from './helpers/build-start-keyboard';
 import { decodeCallback } from './helpers/callback-data';
 import { isOwnerChat } from './helpers/is-owner-chat';
 
-/** Що пишемо в журнал про вхідну команду чи кнопку. */
-type JournalEntry = Pick<BotMessageRecord, 'type' | 'namespace' | 'text'>;
-
 /**
  * Telegram-бот MaControl: long polling, команди складаються з модулів. Модуль із `bot` дає вхідну команду
  * (`/awake`) з інлайн-меню, по якому ходять вглиб екранами (`nav:awake:sleep`). Команд другого рівня немає.
- * Усі дії йдуть через ModulesService.
+ * Усі дії йдуть через ModulesService, він і пише їх у журнал бота; тут лише лічильники Telegram (відмови, сповіщення).
  */
 @Injectable()
 export class TelegramBotService {
@@ -38,6 +36,7 @@ export class TelegramBotService {
   constructor(
     private readonly _modules: ModulesService,
     private readonly _journal: BotJournalService,
+    private readonly _state: TelegramStateService,
   ) {}
 
   start(): void {
@@ -62,10 +61,10 @@ export class TelegramBotService {
     this._bot = null;
     this._env = null;
     this._stopPolling(bot);
-    this._journal.setRunning(false);
+    this._state.setRunning(false);
   }
 
-  /** Перемикач команди в модулі Bot змінився: оновлюємо меню команд Telegram. */
+  /** Перемикач команди в модулі Telegram змінився: оновлюємо меню команд Telegram. */
   async refreshCommands(): Promise<void> {
     const bot = this._bot;
     const env = this._env;
@@ -84,11 +83,10 @@ export class TelegramBotService {
     if (!bot || !env) return;
     try {
       await bot.telegram.sendMessage(env.chatId, html, { parse_mode: 'HTML' });
-      this._journal.record({ direction: 'out', type: 'notify', namespace: null, text: stripHtml(html) });
+      this._journal.count([TELEGRAM_METRICS.notify]);
     } catch (error) {
-      const message = describeError(error, env.token);
-      this._logger.error(`Сповіщення в Telegram не надіслано: ${message}`);
-      this._journal.record({ direction: 'out', type: 'notify', namespace: null, text: stripHtml(html), ok: false, error: message });
+      this._logger.error(`Сповіщення в Telegram не надіслано: ${describeError(error, env.token)}`);
+      this._journal.count([TELEGRAM_METRICS.notifyFailed]);
     }
   }
 
@@ -102,12 +100,12 @@ export class TelegramBotService {
     if (this._bot !== bot) return;
     try {
       await bot.launch({ dropPendingUpdates: true }, () => {
-        if (this._bot === bot) this._journal.setRunning(true);
+        if (this._bot === bot) this._state.setRunning(true);
       });
     } catch (error) {
       if (this._bot === bot) {
         this._bot = null;
-        this._journal.setRunning(false);
+        this._state.setRunning(false);
         this._logger.error(`Telegram-бот не запустився: ${describeError(error, env.token)}`);
       }
     }
@@ -140,20 +138,17 @@ export class TelegramBotService {
       await next();
     });
 
-    const help = (text: string) => (ctx: Context) =>
-      this._safe(ctx, env, { type: 'command', namespace: null, text }, () =>
-        ctx.reply(buildHelpText(this._namespaces()), { reply_markup: buildStartKeyboard(this._namespaces()) }),
-      );
-    bot.start(help('/start'));
-    bot.help(help('/help'));
+    const help = (ctx: Context) =>
+      this._safe(ctx, env, () => ctx.reply(buildHelpText(this._namespaces()), { reply_markup: buildStartKeyboard(this._namespaces()) }));
+    bot.start(help);
+    bot.help(help);
 
-    // Команди реєструються всі: перемикач у модулі Bot перевіряється на кожному виклику, без перезапуску polling-у.
+    // Команди реєструються всі: перемикач у модулі Telegram перевіряється на кожному виклику, без перезапуску polling-у.
     for (const { namespace, command } of this._modules.botNamespaces()) {
       if (!command) continue;
       bot.command(command, (ctx) => {
-        const entry = { type: 'command', namespace, text: `/${command}` } as const;
-        if (!this._isEnabled(namespace)) return this._deny(ctx, entry, () => ctx.reply(BOT_TEXTS.disabled));
-        return this._safe(ctx, env, entry, () => this._replyMenu(ctx, namespace));
+        if (!this._isEnabled(namespace)) return this._deny(() => ctx.reply(BOT_TEXTS.disabled));
+        return this._safe(ctx, env, () => this._replyMenu(ctx, namespace));
       });
     }
 
@@ -161,13 +156,8 @@ export class TelegramBotService {
       const callback = decodeCallback(ctx.match.input);
       const known = callback && this._modules.botNamespaces().some((ns) => ns.namespace === callback.module);
       if (!callback || !known) return ctx.answerCbQuery(BOT_TEXTS.unknown);
-      const entry = {
-        type: 'button',
-        namespace: callback.module,
-        text: callback.kind === 'nav' ? `${callback.module} → ${callback.screen || 'меню'}` : `${callback.module}.${callback.action}`,
-      } as const;
-      if (!this._isEnabled(callback.module)) return this._deny(ctx, entry, () => ctx.answerCbQuery(BOT_TEXTS.disabled));
-      return this._safe(ctx, env, entry, async () => {
+      if (!this._isEnabled(callback.module)) return this._deny(() => ctx.answerCbQuery(BOT_TEXTS.disabled));
+      return this._safe(ctx, env, async () => {
         if (callback.kind === 'nav') {
           await ctx.answerCbQuery();
           await this._editMenu(ctx, env, callback.module, callback.screen);
@@ -182,24 +172,23 @@ export class TelegramBotService {
     });
   }
 
-  /** Увімкнені в модулі Bot namespace-и: для меню команд, /start і /help. */
+  /** Увімкнені в модулі Telegram namespace-и: для меню команд, /start і /help. */
   private _namespaces(): BotNamespace[] {
     return this._modules.botNamespaces().filter((ns) => this._isEnabled(ns.namespace));
   }
 
   private _isEnabled(namespace: string): boolean {
-    return this._modules.context('bot').setting<boolean>(botCommandSettingKey(namespace));
+    return this._modules.context('telegram').setting<boolean>(telegramCommandSettingKey(namespace));
   }
 
-  /** Модуль вимкнено в MaControl: відповідаємо коротко й пишемо в журнал як `denied`. */
-  private async _deny(ctx: Context, entry: JournalEntry, answer: () => Promise<unknown>) {
-    this._journal.record({ direction: 'in', ...entry, ok: false, error: 'denied' });
+  /** Модуль вимкнено для Telegram: відповідаємо коротко й рахуємо відмову. У журнал бота не йде, бо до бота виклик не дійшов. */
+  private async _deny(answer: () => Promise<unknown>) {
+    this._journal.count([TELEGRAM_METRICS.denied]);
     try {
       await answer();
     } catch {
       // Відповідь на вимкнену команду не критична.
     }
-    void ctx;
   }
 
   private async _replyMenu(ctx: Context, namespace: string) {
@@ -227,20 +216,16 @@ export class TelegramBotService {
     return this._modules.dispatch({ type: 'action', action: { module, name, params } }, 'telegram');
   }
 
-  /** Виконує команду чи кнопку й пише її в журнал з результатом. */
-  private async _safe(ctx: Context, env: TelegramEnv, entry: JournalEntry, run: () => Promise<unknown>) {
+  /** Виконує команду чи кнопку; помилку показує в чаті. Журнал пише ModulesService. */
+  private async _safe(ctx: Context, env: TelegramEnv, run: () => Promise<unknown>) {
     try {
       await run();
-      this._journal.record({ direction: 'in', ...entry });
     } catch (error) {
       if (error instanceof AppException) {
-        this._journal.record({ direction: 'in', ...entry, ok: false, error: error.message });
         await ctx.reply(`⚠️ ${error.message}`);
         return;
       }
-      const message = describeError(error, env.token);
-      this._logger.error(`Команда Telegram не виконалась: ${message}`);
-      this._journal.record({ direction: 'in', ...entry, ok: false, error: message });
+      this._logger.error(`Команда Telegram не виконалась: ${describeError(error, env.token)}`);
       await ctx.reply(`⚠️ ${BOT_TEXTS.commandFailed}`);
     }
   }

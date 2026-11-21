@@ -9,3 +9,4 @@ export { BotRouterService } from './services/bot-router.service';
 export type { BotArgs, BotContextType, BotParamValue } from './types/bot-args.types';
 export type { BotButton, BotMenu, BotNav } from './types/bot-menu.types';
 export type { BotNamespace, BotOptions } from './types/bot-options.types';
+export type { BotNamespaceCatalog } from './types/bot-catalog.types';

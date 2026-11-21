@@ -48,13 +48,14 @@ export class DatabaseService implements OnModuleDestroy {
         created_at TEXT NOT NULL,
         last_seen_at TEXT
       );
-      CREATE TABLE IF NOT EXISTS bot_messages (
+      DROP TABLE IF EXISTS bot_messages;
+      CREATE TABLE IF NOT EXISTS bot_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         at TEXT NOT NULL,
-        direction TEXT NOT NULL,
+        source TEXT NOT NULL,
         type TEXT NOT NULL,
-        namespace TEXT,
-        text TEXT NOT NULL,
+        namespace TEXT NOT NULL,
+        name TEXT NOT NULL,
         ok INTEGER NOT NULL,
         error TEXT
       );

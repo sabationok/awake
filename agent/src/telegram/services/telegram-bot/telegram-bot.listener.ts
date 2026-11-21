@@ -3,7 +3,7 @@ import { filter, type Subscription } from 'rxjs';
 import { ModulesService } from '../../../modules/modules.service';
 import { TelegramBotService } from './telegram-bot.service';
 
-/** Запускає й зупиняє бота за налаштуванням telegram.bot і оновлює меню команд за перемикачами модуля Bot. */
+/** Запускає й зупиняє бота за налаштуванням telegram.bot і оновлює меню команд за перемикачами команд модуля Telegram. */
 @Injectable()
 export class TelegramBotListener implements OnModuleInit, OnModuleDestroy {
   private _subscription: Subscription | null = null;
@@ -19,9 +19,9 @@ export class TelegramBotListener implements OnModuleInit, OnModuleDestroy {
     this._subscription = this._modules.settingChanged$
       .pipe(filter((change) => change.module === 'telegram' && change.key === 'bot'))
       .subscribe((change) => (change.value === true ? this._bot.start() : this._bot.stop()));
-    // Перемикачі команд у модулі Bot: меню команд Telegram оновлюється одразу.
+    // Перемикачі команд у модулі Telegram: меню команд Telegram оновлюється одразу.
     this._commandsSubscription = this._modules.settingChanged$
-      .pipe(filter((change) => change.module === 'bot' && change.key.startsWith('commands.')))
+      .pipe(filter((change) => change.module === 'telegram' && change.key.startsWith('commands.')))
       .subscribe(() => void this._bot.refreshCommands());
   }
 

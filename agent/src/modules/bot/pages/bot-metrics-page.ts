@@ -1,22 +1,22 @@
 import type { UiNode, UiPage } from '@awake/contracts';
 import type { BotNamespace } from '../../../bot';
-import type { BotMetrics, BotRunState } from '../../../bot-journal';
-import { formatSessionStart } from '../../helpers/format-session-start';
+import type { BotMetrics } from '../../../bot-journal';
+import type { ModuleSource } from '../../types/module-source';
+import { BOT_SOURCE_LABEL } from '../constants/bot-source-labels';
 
-const TOTALS: { metric: string; label: string }[] = [
-  { metric: 'in.command', label: 'Команд' },
-  { metric: 'in.button', label: 'Натискань кнопок' },
-  { metric: 'out.notify', label: 'Сповіщень' },
-  { metric: 'error', label: 'Помилок' },
-  { metric: 'denied', label: 'Вимкнених команд' },
-];
+const SOURCES: ModuleSource[] = ['mac', 'web', 'telegram'];
 
-function countRows(prefix: string, counts: Record<string, number>): UiNode[] {
-  return TOTALS.map(({ metric, label }) => ({ id: `${prefix}-${metric}`, type: 'row', label, value: String(counts[metric] ?? 0) }));
+/** «сьогодні / усього» для лічильника. */
+function countValue(metrics: BotMetrics, metric: string): string {
+  return `${metrics.today[metric] ?? 0} / ${metrics.total[metric] ?? 0}`;
 }
 
-/** «Огляд»: стан polling-у, лічильники за сьогодні й за весь час, і по кожній команді. */
-export function buildBotMetricsPage(run: BotRunState, metrics: BotMetrics, namespaces: BotNamespace[]): UiPage {
+function row(id: string, label: string, value: string, hint?: string): UiNode {
+  return { id, type: 'row', label, value, hint };
+}
+
+/** «Огляд»: усі виклики нашого бота з усіх транспортів — разом, за джерелом і за модулем. */
+export function buildBotMetricsPage(metrics: BotMetrics, namespaces: BotNamespace[]): UiPage {
   return {
     id: 'bot-metrics',
     module: 'bot',
@@ -25,33 +25,23 @@ export function buildBotMetricsPage(run: BotRunState, metrics: BotMetrics, names
     group: 'modules',
     children: [
       {
-        id: 'state',
+        id: 'totals',
         type: 'section',
-        children: [
-          {
-            id: 'run',
-            type: 'status',
-            label: run.running ? 'Бот працює' : 'Бот зупинено',
-            hint: run.since ? `з ${formatSessionStart(run.since)}` : 'Telegram вимкнено або немає telegram.env',
-            tone: run.running ? 'green' : 'gray',
-            pulse: run.running,
-          },
-        ],
+        title: 'Виклики',
+        footer: 'Сьогодні / усього. Дії, екрани й налаштування з Mac, вебу, relay і Telegram — усе, що йде через бота.',
+        children: [row('total', 'Усього', countValue(metrics, 'total')), row('error', 'Помилок', countValue(metrics, 'error'))],
       },
-      { id: 'today', type: 'section', title: 'Сьогодні', children: countRows('today', metrics.today) },
-      { id: 'total', type: 'section', title: 'Усього', children: countRows('total', metrics.total) },
       {
-        id: 'by-command',
+        id: 'by-source',
+        type: 'section',
+        title: 'За джерелом',
+        children: SOURCES.map((source) => row(`src-${source}`, BOT_SOURCE_LABEL[source], countValue(metrics, `src.${source}`))),
+      },
+      {
+        id: 'by-module',
         type: 'section',
         title: 'За модулями',
-        footer: 'Сьогодні / усього: команди й кнопки цього модуля.',
-        children: namespaces.map((ns) => ({
-          id: `ns-${ns.namespace}`,
-          type: 'row',
-          label: ns.command ? `/${ns.command}` : ns.namespace,
-          hint: ns.description,
-          value: `${metrics.today[`ns.${ns.namespace}`] ?? 0} / ${metrics.total[`ns.${ns.namespace}`] ?? 0}`,
-        })),
+        children: namespaces.map((ns) => row(`ns-${ns.namespace}`, ns.namespace, countValue(metrics, `ns.${ns.namespace}`), ns.description)),
       },
     ],
   };

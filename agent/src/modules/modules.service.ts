@@ -11,6 +11,7 @@ import type {
   UiTree,
 } from '@awake/contracts';
 import { type BotMenu, type BotNamespace, BotRouterService } from '../bot';
+import { BotJournalService, type BotEventCreate } from '../bot-journal';
 import { API_ERROR_CODES, AppException } from '../common/app-exception';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
 import { SettingsService } from '../settings/settings.service';
@@ -36,6 +37,7 @@ export class ModulesService {
     private readonly _bridge: MacBridgeService,
     private readonly _settings: SettingsService,
     private readonly _router: BotRouterService,
+    private readonly _journal: BotJournalService,
   ) {
     this._byId = new Map(modules.map((module) => [module.id, module]));
   }
@@ -108,6 +110,34 @@ export class ModulesService {
 
   /** Екран бота модуля з його контекстом; невідомий шлях — головний. */
   async screen(moduleId: string, screen: string, source: ModuleSource): Promise<BotMenu | null> {
+    return this._journaled({ source, type: 'screen', namespace: moduleId, name: screen }, () => this._screen(moduleId, screen, source));
+  }
+
+  /**
+   * Кнопка SDUI, Telegram чи Mac: дія йде в `@BotAction` модуля (namespace = id модуля),
+   * налаштування — в SettingsService. Кожен виклик іде в журнал бота з джерелом.
+   */
+  async dispatch(event: UiEvent, source: ModuleSource): Promise<void> {
+    const entry: BotEventCreate =
+      event.type === 'action'
+        ? { source, type: 'action', namespace: event.action.module, name: event.action.name }
+        : { source, type: 'setting', namespace: event.change.module, name: `${event.change.key} = ${String(event.change.value)}` };
+    await this._journaled(entry, () => this._dispatch(event, source));
+  }
+
+  /** Виконує виклик і пише його в журнал бота з результатом; помилку пробрасує далі. */
+  private async _journaled<T>(entry: BotEventCreate, run: () => Promise<T>): Promise<T> {
+    try {
+      const result = await run();
+      this._journal.record(entry);
+      return result;
+    } catch (error) {
+      this._journal.record({ ...entry, ok: false, error: error instanceof Error ? error.message : String(error) });
+      throw error;
+    }
+  }
+
+  private async _screen(moduleId: string, screen: string, source: ModuleSource): Promise<BotMenu | null> {
     this._find(moduleId);
     return this._router.screen({
       bot: MACONTROL_BOT,
@@ -119,11 +149,7 @@ export class ModulesService {
     });
   }
 
-  /**
-   * Кнопка SDUI, Telegram чи Mac: дія йде в `@BotAction` модуля (namespace = id модуля),
-   * налаштування — в SettingsService.
-   */
-  async dispatch(event: UiEvent, source: ModuleSource): Promise<void> {
+  private async _dispatch(event: UiEvent, source: ModuleSource): Promise<void> {
     if (event.type === 'action') {
       const { module: moduleId, name, params } = event.action;
       this._find(moduleId);

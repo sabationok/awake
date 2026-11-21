@@ -6,5 +6,5 @@ export const BOT_TEXTS = {
   refreshButton: '↻ Оновити',
   backButton: '← Назад',
   unknown: 'Невідома кнопка',
-  disabled: 'Цей модуль вимкнено в MaControl → Bot → Команди',
+  disabled: 'Цей модуль вимкнено в MaControl → Telegram → Команди',
 };
