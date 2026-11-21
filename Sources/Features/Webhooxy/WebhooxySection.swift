@@ -11,15 +11,16 @@ struct WebhooxySection: View {
 
     var body: some View {
         Section {
-            if editing {
-                editor
-            } else {
-                summary
-            }
+            field("Workspace", symbol: "building.2", text: $draft.workspace, value: saved.workspace, prompt: "slug воркспейсу")
+            field("Destination", symbol: "arrow.triangle.branch", text: $draft.destId, value: saved.destId, prompt: "id DEST-а")
+            field("Room", symbol: "door.left.hand.open", text: $draft.room, value: saved.room, prompt: "room DEST-а")
+            secret("Токен воркспейсу", text: $secrets.workspaceToken, isSet: saved.hasWorkspaceToken)
+            secret("Ключ квитків", text: $secrets.ticketKey, isSet: saved.hasTicketKey)
+            buttons
         } header: {
             Text("Ключі")
         } footer: {
-            Text("Зберігаються в ~/.config/awake/relay.env лише на цьому Mac; агент перепідключається одразу. Ключі з Envify (process.env) мають пріоритет над файлом.")
+            Text("relay.env на цьому Mac; після збереження агент перепідключається. Ключі з Envify мають пріоритет над файлом.")
         }
         .animation(.default, value: editing)
         .onAppear {
@@ -29,50 +30,50 @@ struct WebhooxySection: View {
         }
     }
 
-    @ViewBuilder
-    private var summary: some View {
-        SettingsRow(title: "Webhooxy", symbol: "key.fill", color: .indigo) {
-            HStack(spacing: 10) {
-                Text("\(saved.workspace) · \(saved.destId)").foregroundStyle(.secondary)
-                Button("Змінити…") { editing = true }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var editor: some View {
-        field("Workspace", symbol: "building.2", text: $draft.workspace, prompt: "slug воркспейсу")
-        field("Destination", symbol: "arrow.triangle.branch", text: $draft.destId, prompt: "id DEST-а")
-        field("Room", symbol: "door.left.hand.open", text: $draft.room, prompt: "room DEST-а")
-        SettingsRow(title: "Токен воркспейсу", symbol: "lock.fill", color: .gray) {
-            SecretField(text: $secrets.workspaceToken, prompt: saved.hasWorkspaceToken ? "задано, лишити" : "WEBHOOXY_WORKSPACE_TOKEN")
-                .frame(maxWidth: 240)
-                .textFieldStyle(.roundedBorder)
-        }
-        SettingsRow(title: "Ключ квитків", symbol: "lock.fill", color: .gray) {
-            SecretField(text: $secrets.ticketKey, prompt: saved.hasTicketKey ? "задано, лишити" : "WEBHOOXY_JWT_TICKET_KEY")
-                .frame(maxWidth: 240)
-                .textFieldStyle(.roundedBorder)
-        }
+    /// «Змінити» в перегляді; «Скасувати» + «Зберегти» в редагуванні.
+    private var buttons: some View {
         HStack {
             if let saveError { Text(saveError).foregroundStyle(.red) }
             Spacer()
-            if saved.isConfigured {
-                Button("Скасувати") { cancel() }
+            if editing {
+                if saved.isConfigured {
+                    Button("Скасувати") { cancel() }
+                }
+                Button("Зберегти") { save() }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!isDirty || !canSave)
+                    .keyboardShortcut(.defaultAction)
+            } else {
+                Button("Змінити") { editing = true }
             }
-            Button("Зберегти") { save() }
-                .buttonStyle(.borderedProminent)
-                .disabled(!isDirty || !canSave)
-                .keyboardShortcut(.defaultAction)
         }
     }
 
-    private func field(_ title: String, symbol: String, text: Binding<String>, prompt: String) -> some View {
-        SettingsRow(title: title, symbol: symbol, color: .gray) {
-            TextField("", text: text, prompt: Text(prompt))
-                .frame(maxWidth: 240)
-                .textFieldStyle(.roundedBorder)
-                .multilineTextAlignment(.trailing)
+    @ViewBuilder
+    private func field(_ title: String, symbol: String, text: Binding<String>, value: String, prompt: String) -> some View {
+        if editing {
+            SettingsRow(title: title, symbol: symbol, color: .gray) {
+                TextField("", text: text, prompt: Text(prompt))
+                    .frame(maxWidth: 240)
+                    .textFieldStyle(.roundedBorder)
+                    .multilineTextAlignment(.trailing)
+            }
+        } else {
+            SettingsRow(title: title, symbol: symbol, color: .gray, text: value.isEmpty ? "немає" : value)
+        }
+    }
+
+    /// Секрет ніколи не показується: у перегляді лише «задано», у редагуванні — порожнє поле, порожнє = лишити.
+    @ViewBuilder
+    private func secret(_ title: String, text: Binding<String>, isSet: Bool) -> some View {
+        if editing {
+            SettingsRow(title: title, symbol: "lock.fill", color: .gray) {
+                SecretField(text: text, prompt: isSet ? "задано, лишити" : "новий ключ")
+                    .frame(maxWidth: 240)
+                    .textFieldStyle(.roundedBorder)
+            }
+        } else {
+            SettingsRow(title: title, symbol: "lock.fill", color: .gray, text: isSet ? "задано" : "немає")
         }
     }
 
