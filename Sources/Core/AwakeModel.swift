@@ -48,6 +48,8 @@ final class AwakeModel: ObservableObject {
     @Published var uiTree: UiTree?
     /// Сполучені пристрої і посилання сполучення. nil, поки агент їх не надіслав.
     @Published var devices: AgentDevices?
+    /// Стан Envify і звідки агент узяв кожен ключ. nil, поки агент його не надіслав.
+    @Published var secrets: AgentSecrets?
     @Published var agentEnabled = UserDefaults.standard.object(forKey: "agent.enabled") as? Bool ?? true {
         didSet {
             UserDefaults.standard.set(agentEnabled, forKey: "agent.enabled")

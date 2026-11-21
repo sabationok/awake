@@ -33,6 +33,9 @@ extension AwakeModel {
         agent.onDevices = { [weak self] devices in
             if self?.devices != devices { self?.devices = devices }
         }
+        agent.onSecrets = { [weak self] secrets in
+            if self?.secrets != secrets { self?.secrets = secrets }
+        }
         wifi.onAuthorizationChange = { [weak self] in self?.refreshWifi() }
         refreshWifi()
         applyAgent()

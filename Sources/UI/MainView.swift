@@ -108,6 +108,7 @@ struct MainView: View {
                     AgentSection()
                 }
                 RemoteSection()
+                EnvifySection()
             }
             .formStyle(.grouped)
         case .devices:

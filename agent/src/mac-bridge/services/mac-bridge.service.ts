@@ -13,6 +13,7 @@ import type {
   SessionSource,
   SleepTimerEvent,
   DevicesSnapshot,
+  SecretsSnapshot,
 } from '@awake/contracts';
 import { writeProtocolLine } from './protocol-stdout';
 
@@ -40,6 +41,8 @@ export class MacBridgeService implements OnModuleInit {
   readonly devices$ = new Subject<DevicesRequest>();
   /** Аппка переписала relay.env. */
   readonly relayEnvReload$ = new Subject<void>();
+  /** Аппка переписала envify.env або натиснула «Оновити». */
+  readonly envifyReload$ = new Subject<void>();
   private _stateAt = 0;
 
   onModuleInit() {
@@ -78,6 +81,10 @@ export class MacBridgeService implements OnModuleInit {
     this._send({ type: 'devices', data: snapshot });
   }
 
+  sendSecrets(snapshot: SecretsSnapshot) {
+    this._send({ type: 'secrets', data: snapshot });
+  }
+
   private _send(message: AgentToMacMessage) {
     writeProtocolLine(message);
   }
@@ -113,6 +120,9 @@ export class MacBridgeService implements OnModuleInit {
         return;
       case 'relayEnv':
         this.relayEnvReload$.next();
+        return;
+      case 'envify':
+        this.envifyReload$.next();
         return;
     }
   }

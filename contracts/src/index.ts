@@ -127,7 +127,9 @@ export type MacToAgentMessage =
         | { action: 'answer'; requestId: string; approve: boolean };
     }
   /** Аппка переписала ~/.config/awake/relay.env: агент перечитує ключі й перепідключає webhooxy. Значень тут немає. */
-  | { type: 'relayEnv'; data: { action: 'reload' } };
+  | { type: 'relayEnv'; data: { action: 'reload' } }
+  /** Аппка переписала ~/.config/awake/envify.env або просить оновити: агент заново тягне змінні з Envify. */
+  | { type: 'envify'; data: { action: 'reload' } };
 
 export type AgentToMacMessage =
   | { type: 'ready'; data: { port: number } }
@@ -137,7 +139,36 @@ export type AgentToMacMessage =
   /** Усі налаштування модулів `<module>.<key>` → значення: Mac застосовує їх у себе. */
   | { type: 'settings'; data: Record<string, import('./modules').SettingValue> }
   /** Сполучені пристрої і поточне посилання сполучення: лише для Mac-аппки, у веб не йде. */
-  | { type: 'devices'; data: DevicesSnapshot };
+  | { type: 'devices'; data: DevicesSnapshot }
+  /** Звідки агент узяв ключі (Envify, relay.env, process.env) і стан Envify: лише для Mac-аппки, без секретів. */
+  | { type: 'secrets'; data: SecretsSnapshot };
+
+/** Звідки взявся ключ: process.env, Envify, файл у ~/.config/awake, або його немає. */
+export type SecretSource = 'env' | 'envify' | 'file' | null;
+
+/** Стан Envify в агенті. `off` — токена немає. */
+export interface EnvifyStatus {
+  state: 'off' | 'loading' | 'ok' | 'error';
+  /** Envify цього stage. */
+  url: string | null;
+  error: string | null;
+  /** Скільки змінних прийшло з Envify. */
+  count: number;
+  loadedAt: string | null;
+}
+
+/** Один ключ: ім'я змінної, звідки він і значення (для секретів завжди null). */
+export interface SecretKeyInfo {
+  name: string;
+  source: SecretSource;
+  secret: boolean;
+  value: string | null;
+}
+
+export interface SecretsSnapshot {
+  envify: EnvifyStatus;
+  relay: SecretKeyInfo[];
+}
 
 /** Сполучений браузер: токен лежить лише в ньому, тут опис і коли його бачили. */
 export interface DeviceInfo {

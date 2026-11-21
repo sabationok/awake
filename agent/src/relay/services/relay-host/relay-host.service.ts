@@ -3,6 +3,8 @@ import { io, type Socket } from 'socket.io-client';
 import type { RelayHostBroadcast, RelayHostReply, UiTree } from '@awake/contracts';
 import { BotJournalService } from '../../../bot-journal';
 import { AGENT_CONFIG, type AgentConfig } from '../../../config/agent-config';
+import { EnvifyService } from '../../../envify';
+import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
 import { isUiEvent } from '../../../modules/helpers/is-ui-event';
 import { ModulesService } from '../../../modules/modules.service';
 import { TelegramNotificationsService } from '../../../telegram/notifications';
@@ -53,6 +55,8 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     private readonly _state: RelayStateService,
     private readonly _journal: BotJournalService,
     private readonly _notifications: TelegramNotificationsService,
+    private readonly _envify: EnvifyService,
+    private readonly _bridge: MacBridgeService,
     transports: TransportsService,
   ) {
     transports.registerProxy({
@@ -77,19 +81,27 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     this.setEnabled(this._modules.context('relay').setting<boolean>('enabled'));
   }
 
-  /** Аппка переписала relay.env: нові ключі діють одразу, кімната перепідключається, якщо relay увімкнено. */
+  /**
+   * Аппка переписала relay.env або Envify віддав нові змінні: нові ключі діють одразу. Кімната перепідключається,
+   * лише якщо ключі справді змінились (оновлення Envify з тими самими значеннями не рве сесії viewer-ів).
+   */
   reloadEnv() {
+    const before = JSON.stringify(this._env);
     this._readEnv();
-    this._stop();
-    this.setEnabled(this._modules.context('relay').setting<boolean>('enabled'));
+    if (JSON.stringify(this._env) !== before) {
+      this._stop();
+      this.setEnabled(this._modules.context('relay').setting<boolean>('enabled'));
+    }
     // Статус міг не змінитись (off → off), а «Підключення» змінилось.
     this._modules.treeChanged$.next();
   }
 
   private _readEnv() {
-    const read = readRelayEnv();
+    const read = readRelayEnv(this._envify.variables);
     this._env = read.env;
     this._state.setConnection({ stage: this._config.stage, url: this._config.webhooxyUrl, envPath: read.path, keys: read.keys });
+    // Аппці — звідки кожен ключ і стан Envify; значень секретів тут немає (value: null).
+    this._bridge.sendSecrets({ envify: this._envify.status, relay: read.keys.map(({ name, source, secret, value }) => ({ name, source, secret, value })) });
   }
 
   onModuleDestroy() {

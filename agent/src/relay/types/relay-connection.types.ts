@@ -1,7 +1,8 @@
+import type { SecretSource } from '@awake/contracts';
 import type { RelayEnv } from './relay-env.types';
 
-/** Звідки взявся ключ relay: process.env (Envify), relay.env, або його немає. */
-export type RelayEnvKeySource = 'env' | 'file' | null;
+/** Звідки взявся ключ relay: process.env, Envify, relay.env, або його немає. */
+export type RelayEnvKeySource = SecretSource;
 
 /** Один ключ relay для сторінки Webhooxy. Секрети без значення: лише чи задано і звідки. */
 export interface RelayConnectionKey {
@@ -14,7 +15,7 @@ export interface RelayConnectionKey {
   value: string | null;
 }
 
-/** З чим host підключається до webhooxy: URL цього stage і ключі з relay.env / process.env. */
+/** З чим host підключається до webhooxy: URL цього stage і ключі з relay.env / Envify / process.env. */
 export interface RelayConnectionInfo {
   stage: string;
   url: string | null;

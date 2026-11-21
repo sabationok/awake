@@ -7,9 +7,9 @@ const DEFAULT_DASHBOARD_ORIGINS = ['https://awake-lemon.vercel.app'];
 export type Stage = 'dev' | 'production';
 
 /** Залежності кожного stage: агент ходить лише в сервіси свого stage. */
-const STAGE_DEPS: Record<Stage, { webhooxyUrl: string | null }> = {
-  dev: { webhooxyUrl: 'https://webhooks-proxy-dev.up.railway.app' },
-  production: { webhooxyUrl: null },
+const STAGE_DEPS: Record<Stage, { webhooxyUrl: string | null; envifyUrl: string | null }> = {
+  dev: { webhooxyUrl: 'https://webhooks-proxy-dev.up.railway.app', envifyUrl: 'https://envify-manager.vercel.app' },
+  production: { webhooxyUrl: null, envifyUrl: null },
 };
 
 function readStage(value: string | undefined): Stage {
@@ -23,6 +23,8 @@ export interface AgentConfig {
   stage: Stage;
   /** webhooxy того самого stage; null, поки для stage його немає. */
   webhooxyUrl: string | null;
+  /** Envify того самого stage; токен сервісу лежить у ~/.config/awake/envify.env. */
+  envifyUrl: string | null;
   port: number;
   token: string;
   dbPath: string;
@@ -47,6 +49,7 @@ export function readAgentConfig(env: NodeJS.ProcessEnv = process.env): AgentConf
   return {
     stage,
     webhooxyUrl: env.WEBHOOXY_URL || STAGE_DEPS[stage].webhooxyUrl,
+    envifyUrl: env.ENVIFY_URL || STAGE_DEPS[stage].envifyUrl,
     port: Number(env.MACONTROL_AGENT_PORT ?? 47800),
     token,
     dbPath: env.MACONTROL_DB ?? join(homedir(), '.config/awake/awake.db'),
