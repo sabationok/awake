@@ -32,7 +32,7 @@
 ## Токен viewer-а (наш формат)
 
 - Server action на Vercel підписує його після перевірки сесії дашборду. Агент перевіряє його в `relay:authorize`.
-- Ключ спільний для Vercel і агента. Він лежить в Envify проєкту MaControl, webhooxy його не бачить. Назва змінної ще не вирішена, пропозиція — `MACONTROL_RELAY_VIEWER_KEY`; попередня `WEBHOOXY_JWT_TICKET_KEY` у цій моделі не потрібна.
+- Ключ — `WEBHOOXY_JWT_TICKET_KEY`: він для квитків на webhooxy-relay, тому має префікс сервісу, а не `MACONTROL_`. Ключ спільний для Vercel і агента й лежить в Envify проєкту MaControl. Сам webhooxy його не знає і токен не перевіряє.
 - Формат: JWT HS256, claims:
   - `aud: 'macontrol-agent'`;
   - `sub` — id користувача дашборду;
