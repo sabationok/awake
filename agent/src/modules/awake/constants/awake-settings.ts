@@ -1,5 +1,5 @@
 import type { SettingDefinition, UiOption } from '@awake/contracts';
-import { UNTIL_OPTIONS } from './until-options';
+import { UNTIL_OPTIONS } from '../../constants/until-options';
 
 export const DURATION_OPTIONS: UiOption[] = [
   { value: '30m', label: '30 хв' },

@@ -1,9 +1,10 @@
-import type { MacState, UiButton, UiButtons, UiNode, UiOption, UiPage, UiRow, UiTimer } from '@awake/contracts';
+import type { MacState, UiButton, UiButtons, UiNode, UiPage, UiRow, UiTimer } from '@awake/contracts';
 import type { ModuleContext } from '../../types/mac-module';
 import { DURATION_OPTIONS } from '../constants/awake-settings';
-import { UNTIL_OPTIONS } from '../constants/until-options';
+import { UNTIL_OPTIONS } from '../../constants/until-options';
 import { formatBattery } from '../helpers/format-battery';
 import { formatClock } from '../../helpers/format-clock';
+import { planTabsNode } from '../../helpers/plan-tabs-node';
 import { durationSeconds, plannedDuration } from '../helpers/session-plan';
 import { sleepRow } from '../helpers/sleep-row';
 import { thermalPresentation } from '../helpers/thermal-presentation';
@@ -17,7 +18,12 @@ export function buildSessionPage(ctx: ModuleContext): UiPage {
   const now = new Date();
   const session: UiNode[] = [
     timerNode(ctx, mac, now),
-    planTabs(ctx),
+    planTabsNode(
+      ctx,
+      'awake',
+      { key: 'duration', label: 'Тривалість', options: DURATION_OPTIONS },
+      { key: 'until', label: 'Не спати до', options: UNTIL_OPTIONS },
+    ),
     ctx.settingNode('startDisplayOff'),
     ctx.settingNode('startLock'),
   ];
@@ -69,29 +75,6 @@ function timerNode(ctx: ModuleContext, mac: MacState | null, now: Date): UiTimer
     value: formatSpan(seconds),
     caption: `Старт — до ${formatClock(new Date(now.getTime() + seconds * 1000).toISOString())}`,
     tone: 'gray',
-  };
-}
-
-/** Вкладка пише `awake.mode`: від неї залежить, що запустить «Старт». */
-function planTabs(ctx: ModuleContext): UiNode {
-  return {
-    id: 'plan',
-    type: 'tabs',
-    value: ctx.setting<string>('mode'),
-    setting: { module: 'awake', key: 'mode' },
-    tabs: [
-      { id: 'period', label: 'Період', children: [settingSelectRow(ctx, 'duration', 'Тривалість', DURATION_OPTIONS)] },
-      { id: 'time', label: 'Час', children: [settingSelectRow(ctx, 'until', 'Не спати до', UNTIL_OPTIONS)] },
-    ],
-  };
-}
-
-function settingSelectRow(ctx: ModuleContext, key: string, label: string, options: UiOption[]): UiRow {
-  return {
-    id: `plan-${key}`,
-    type: 'row',
-    label,
-    control: { type: 'select', value: ctx.setting<string>(key), options, setting: { module: 'awake', key } },
   };
 }
 

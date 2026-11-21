@@ -1,17 +1,30 @@
 import type { MacState, UiButton, UiButtons, UiNode, UiPage, UiRow, UiTimer } from '@awake/contracts';
+import { UNTIL_OPTIONS } from '../../constants/until-options';
 import { formatClock } from '../../helpers/format-clock';
+import { planTabsNode } from '../../helpers/plan-tabs-node';
 import type { ModuleContext } from '../../types/mac-module';
+import { SLEEP_TIMER_OPTIONS } from '../constants/sleep-timer-options';
+import { plannedMinutes } from '../helpers/planned-minutes';
 
 /**
- * Сторінка «Таймер сну»: відлік зверху, скільки хвилин і кнопка внизу, як у сесії Awake.
+ * Сторінка «Таймер сну» за патерном сесії Awake: відлік зверху, вкладки «Період» | «Час» і кнопка внизу.
  * Одночасно працює одна сесія: старт таймера закриває Awake, старт Awake — таймер.
  */
 export function buildTimerPage(ctx: ModuleContext): UiPage {
   const mac = ctx.mac;
-  const minutes = Number(ctx.setting<string>('minutes'));
-  const children: UiNode[] = [timerNode(mac, minutes, new Date()), ctx.settingNode('minutes')];
+  const now = new Date();
+  const minutes = plannedMinutes(ctx, now);
+  const children: UiNode[] = [
+    timerNode(mac, minutes, now),
+    planTabsNode(
+      ctx,
+      'sleep',
+      { key: 'minutes', label: 'Тривалість', options: SLEEP_TIMER_OPTIONS },
+      { key: 'until', label: 'Заснути о', options: UNTIL_OPTIONS },
+    ),
+  ];
   if (mac?.active && !mac.sleepAt) children.push(awakeRunningRow());
-  children.push(timerButtons(mac, minutes));
+  children.push(timerButtons(ctx, mac, minutes));
   return {
     id: 'sleep-timer',
     module: 'sleep',
@@ -52,7 +65,7 @@ function timerNode(mac: MacState | null, minutes: number, now: Date): UiTimer {
 }
 
 /** Таймер іде, а вибрано інший час: «Перезапустити» поруч зі «Скасувати». */
-function timerButtons(mac: MacState | null, minutes: number): UiButtons {
+function timerButtons(ctx: ModuleContext, mac: MacState | null, minutes: number): UiButtons {
   const start = (label: string): UiButton => ({
     id: 'start',
     label,
@@ -61,13 +74,17 @@ function timerButtons(mac: MacState | null, minutes: number): UiButtons {
     action: { module: 'sleep', name: 'start' },
   });
   const stop: UiButton = { id: 'stop', label: 'Скасувати', variant: 'destructive', action: { module: 'sleep', name: 'stop' } };
-  const changed = !!mac?.sleepAt && !!mac.sleepStartedAt && plannedMinutes(mac) !== minutes;
+  const changed = !!mac?.sleepAt && planChanged(ctx, mac, minutes);
   const buttons = !mac?.sleepAt ? [start('Старт')] : changed ? [start('Перезапустити'), stop] : [stop];
   return { id: 'timer-buttons', type: 'buttons', buttons };
 }
 
-function plannedMinutes(mac: MacState): number {
-  return Math.round((new Date(mac.sleepAt!).getTime() - new Date(mac.sleepStartedAt!).getTime()) / 60_000);
+/** Як у Awake: на вкладці «Час» порівнюємо годину, на «Період» — тривалість таймера, що йде. */
+function planChanged(ctx: ModuleContext, mac: MacState, minutes: number): boolean {
+  if (!mac.sleepAt) return false;
+  if (ctx.setting<string>('mode') === 'time') return formatClock(mac.sleepAt) !== ctx.setting<string>('until');
+  if (!mac.sleepStartedAt) return false;
+  return Math.round((new Date(mac.sleepAt).getTime() - new Date(mac.sleepStartedAt).getTime()) / 60_000) !== minutes;
 }
 
 function awakeRunningRow(): UiRow {

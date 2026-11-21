@@ -10,5 +10,5 @@ export const SLEEP_TIMER_OPTIONS: UiOption[] = [
   { value: '120', label: '2 год' },
 ];
 
-/** Найдовший таймер, який приймає дія: 12 год. */
-export const SLEEP_TIMER_MAX_MINUTES = 720;
+/** Найдовший таймер, який приймає дія: доба, бо вкладка «Час» дає до 24 год наперед. */
+export const SLEEP_TIMER_MAX_MINUTES = 1440;
