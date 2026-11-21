@@ -218,11 +218,12 @@
   | `requests.perRoomPerMin` | 600 | 12000 |
   | `sensitive` | до 50 правил разом | |
 
-- **`sensitive`:** один масив правил. Координатор прийняв цей формат замість чотирьох списків із 7c3c173; у коді #12 його ще немає.
+- **`sensitive`:** один масив правил з дією. Назви фінальні; relay-сесія реалізує їх у #12 разом з переходом на масив (замість чотирьох списків із 7c3c173), у коді їх ще немає.
   ```ts
   type RelaySensitiveRule =
-    | { in: 'headers' | 'query' | 'cookies'; name: string }
-    | { in: 'body'; path: string };
+    | { in: 'headers' | 'query' | 'cookies'; name: string; action?: RelaySensitiveAction }
+    | { in: 'body'; path: string; action?: RelaySensitiveAction };
+  type RelaySensitiveAction = 'encrypt' | 'mask' | 'remove';
   sensitive?: RelaySensitiveRule[]   // до 50 правил разом
   ```
   - Задається в чотирьох місцях:
@@ -234,12 +235,20 @@
   - `name` для `headers` і `cookies` без урахування регістру. Для `query` це точне ім'я параметра, і крапка в ньому — частина імені.
   - `path` записується через крапку в JSON-тілі, масиви — через `*` (`items.*.token`). Діє на тіла запиту й відповіді.
   - `in: 'cookies'` поки нічого не робить: кукі й так шифруються всі.
-  - Ще не відповіли: `action?: 'encrypt' | 'mask' | 'remove'` у правилі плюс типова дія з налаштувань workspace (запропоновано `relay.sensitiveDefault`). Віталій просив, щоб кожен workspace сам вибирав, шифрувати чи маскувати.
-  - Завжди шифруються:
+  - Що означає кожна дія (впливає лише на рядок у `requests`; запит до хоста й відповідь викликачу не змінюються):
+    - `encrypt` — значення зберігається зашифрованим;
+    - `mask` — значення зберігається як `'[masked]'`;
+    - `remove` — ключа в рядку немає взагалі; для шляхів з `*` — у кожному елементі.
+  - Правило без `action` бере типову дію workspace: `WorkspaceConfig.relay.sensitiveDefault`, за замовчуванням `'encrypt'`. Вона лежить у конфігу workspace (шар контексту WSPC) і змінюється через API оновлення workspace.
+  - Якщо один ключ потрапляє під кілька правил, перемагає найсуворіша дія: `remove` > `mask` > `encrypt`.
+  - Агент для pairing-коду, `mc_device` і полів пристрою передає `mask` або `remove`.
+  - Завжди захищені такі поля:
     - `authorization`, `cookie`, `set-cookie` і `x-relay-key` у запиті й відповіді;
     - значення всіх `cookies[].value` відповіді.
+
+    Для них діє типова дія workspace, і відкритим текстом вони не зберігаються ніколи.
   - **Зберігання:** кожен запит, що пройшов перевірку ключа (тобто з 403 і далі), записується одним рядком у `requests`. Рядок має `type: 'relay'`, `id = meta.requestId` і містить відповідь.
-    - Чутливі значення там зашифровані, а не замасковані.
+    - Чутливі значення там зашифровані, замасковані або видалені, залежно від дії.
     - Тіла `text` і `base64` зберігаються як є, бо `bodyKeys` діють лише на JSON. Тож секрети в агента йдуть лише в JSON-тілах або в заголовках зі списку.
 - **server → host `relay:viewer:left`:** `{ statusCode: 200, message: 'Success', data: { viewerId, reason: 'disconnect' | 'kicked' | 'timeout' | 'denied' } }`.
   - Шлеться лише для viewer-ів, які пройшли `relay:authorize`.
