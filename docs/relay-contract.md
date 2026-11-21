@@ -106,15 +106,19 @@
     - `'disconnect'` — його відключають з `io server disconnect`, без `relay:denied`;
   - `allowedOrigins: string[]` — до 50 значень, точний збіг, а `[]` означає будь-який origin.
 - **Глобальна стеля webhooxy:** 120 handshake за хвилину з IP (env `RELAY_HANDSHAKE_PER_IP_PER_MIN`). Перевіряється ще до звернення в БД.
-- **Override на сесію host-а** (додається в PR #9, форми попередні):
-  - **Як передати:** тільки host, і тільки по WS.
-    - На handshake: `auth: { token, destId, relay?: RelayLimitsDef }`.
-    - Під час сесії: `relay:limits { data: RelayLimitsDef }` з ack. Кожен виклик повністю замінює попередній override, а `{}` його скидає.
-    - REST-bootstrap override не приймає.
-  - **Пріоритет:** override → DEST → дефолти. Поля зливаються глибоко, `allowedOrigins` замінюється цілим масивом.
-  - **Валідація:** ті самі min/max і стелі. Невалідний override на handshake дає `connect_error 'BAD_REQUEST'`, а в `relay:limits` — ack `400`. Viewer override передати не може (`403 FORBIDDEN`).
-  - **Скільки живе:** override прив'язаний до сесії host-а. Після відключення він тримається ще `pendingTimeoutMs` і видаляється. Новий host приносить свій.
-  - **Ефективні ліміти:** одразу після handshake host отримує `relay:limits:effective { data: <повні ліміти>, meta: { source: { override } } }`. Ack на `relay:limits` повертає те саме.
+- **Override на сесію host-а** (PR #9, коміт `1abf28a`, ще не змерджений; форми остаточні):
+  - **Handshake host-а:** `auth: { token, destId, relay?: RelayLimitsDef }`.
+    - Помилки йдуть у такому порядку: `RATE_LIMITED` (глобальна стеля) → `UNAUTHORIZED` → `BAD_REQUEST` (невалідний `relay`).
+    - Від viewer-а `auth.relay` ігнорується.
+  - **Одразу після handshake** host отримує `relay:limits:effective { 200, 'Success', data: <усі розрезолвлені ліміти>, meta: { source: { override: boolean } } }`.
+  - **Під час сесії** host шле `relay:limits { data: RelayLimitsDef }` з ack такої ж форми, як `relay:limits:effective`.
+    - Кожен виклик повністю замінює override, `{}` його скидає.
+    - Невалідний override → `{ 400, 'BAD_REQUEST', data: null }`, попередній лишається чинним.
+    - Від viewer-а → `{ 403, 'FORBIDDEN' }`; від витісненого host-а → `{ 401, 'UNAUTHORIZED' }`.
+  - **Пріоритет:** override → DEST → дефолти. Об'єкти зливаються глибоко, `allowedOrigins` замінюється цілим.
+  - **Межі:** ті самі, що в DTO DEST; після злиття результат ще раз обрізається до стель. Глобальну стелю за IP override не змінює.
+  - **Скільки живе:** тільки в пам'яті. Після disconnect host-а override тримається `pendingTimeoutMs`, потім видаляється. Новий host приносить свій. Зміни діють одразу на живі сокети.
+  - REST-bootstrap override не приймає.
 - **MaControl:** агент на старті передає в handshake `relay: { allowedOrigins, maxViewers, maxPayloadBytes }` зі свого stage-конфігу. Кімнату має один користувач, тож варто задати `allowedOrigins` (dev-дашборд Vercel і `localhost` для `next dev`) і невеликий `maxViewers`. Tree агента може бути великим, тому треба перевірити, що його розмір вкладається в `maxPayloadBytes`.
 
 ## `data` (формат MaControl, webhooxy його не розбирає)
