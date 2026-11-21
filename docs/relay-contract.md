@@ -106,7 +106,16 @@
     - `'disconnect'` — його відключають з `io server disconnect`, без `relay:denied`;
   - `allowedOrigins: string[]` — до 50 значень, точний збіг, а `[]` означає будь-який origin.
 - **Глобальна стеля webhooxy:** 120 handshake за хвилину з IP (env `RELAY_HANDSHAKE_PER_IP_PER_MIN`). Перевіряється ще до звернення в БД.
-- **MaControl:** кімнату має один користувач, тож варто задати `allowedOrigins` (dev-дашборд Vercel і `localhost` для `next dev`) і невеликий `maxViewers`. Tree агента може бути великим, тому треба перевірити, що його розмір вкладається в `maxPayloadBytes`.
+- **Override на сесію host-а** (додається в PR #9, форми попередні):
+  - **Як передати:** тільки host, і тільки по WS.
+    - На handshake: `auth: { token, destId, relay?: RelayLimitsDef }`.
+    - Під час сесії: `relay:limits { data: RelayLimitsDef }` з ack. Кожен виклик повністю замінює попередній override, а `{}` його скидає.
+    - REST-bootstrap override не приймає.
+  - **Пріоритет:** override → DEST → дефолти. Поля зливаються глибоко, `allowedOrigins` замінюється цілим масивом.
+  - **Валідація:** ті самі min/max і стелі. Невалідний override на handshake дає `connect_error 'BAD_REQUEST'`, а в `relay:limits` — ack `400`. Viewer override передати не може (`403 FORBIDDEN`).
+  - **Скільки живе:** override прив'язаний до сесії host-а. Після відключення він тримається ще `pendingTimeoutMs` і видаляється. Новий host приносить свій.
+  - **Ефективні ліміти:** одразу після handshake host отримує `relay:limits:effective { data: <повні ліміти>, meta: { source: { override } } }`. Ack на `relay:limits` повертає те саме.
+- **MaControl:** агент на старті передає в handshake `relay: { allowedOrigins, maxViewers, maxPayloadBytes }` зі свого stage-конфігу. Кімнату має один користувач, тож варто задати `allowedOrigins` (dev-дашборд Vercel і `localhost` для `next dev`) і невеликий `maxViewers`. Tree агента може бути великим, тому треба перевірити, що його розмір вкладається в `maxPayloadBytes`.
 
 ## `data` (формат MaControl, webhooxy його не розбирає)
 
