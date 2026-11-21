@@ -23,18 +23,18 @@ export interface AgentConfig {
 export const AGENT_CONFIG = Symbol('AGENT_CONFIG');
 
 export function readAgentConfig(env: NodeJS.ProcessEnv = process.env): AgentConfig {
-  const token = env.AWAKE_AGENT_TOKEN ?? '';
-  if (token.length < 16) throw new Error('AWAKE_AGENT_TOKEN missing or shorter than 16 characters');
-  const listedOrigins = (env.AWAKE_DASHBOARD_ORIGINS ?? '').split(',').map((origin) => origin.trim()).filter(Boolean);
+  const token = env.MACONTROL_AGENT_TOKEN ?? '';
+  if (token.length < 16) throw new Error('MACONTROL_AGENT_TOKEN missing or shorter than 16 characters');
+  const listedOrigins = (env.MACONTROL_DASHBOARD_ORIGINS ?? '').split(',').map((origin) => origin.trim()).filter(Boolean);
   return {
-    port: Number(env.AWAKE_AGENT_PORT ?? 47800),
+    port: Number(env.MACONTROL_AGENT_PORT ?? 47800),
     token,
-    dbPath: env.AWAKE_DB ?? join(homedir(), '.config/awake/awake.db'),
-    webDir: env.AWAKE_WEB_DIR || null,
+    dbPath: env.MACONTROL_DB ?? join(homedir(), '.config/awake/awake.db'),
+    webDir: env.MACONTROL_WEB_DIR || null,
     upstashUrl: env.UPSTASH_REDIS_REST_URL || null,
     upstashToken: env.UPSTASH_REDIS_REST_TOKEN || null,
-    corsOrigin: env.AWAKE_CORS_ORIGIN || null,
+    corsOrigin: env.MACONTROL_CORS_ORIGIN || null,
     dashboardOrigins: listedOrigins.length ? listedOrigins : DEFAULT_DASHBOARD_ORIGINS,
-    tlsDir: env.AWAKE_TLS_DIR || join(homedir(), '.config/awake/tls'),
+    tlsDir: env.MACONTROL_TLS_DIR || join(homedir(), '.config/awake/tls'),
   };
 }

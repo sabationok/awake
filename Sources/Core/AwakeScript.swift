@@ -8,9 +8,9 @@ enum AwakeScript {
     /// Середовище: пороги з `SafetyLimits` і дозвіл на читання температури.
     static var environment: [String: String] {
         var env = ProcessInfo.processInfo.environment
-        env["AWAKE_BATT_WARN"] = String(SafetyLimits.batteryWarn)
-        env["AWAKE_BATT_STOP"] = String(SafetyLimits.batteryStop)
-        env["AWAKE_THERMAL"] = PermissionGate.thermalForScript ? "1" : "0"
+        env["MACONTROL_BATT_WARN"] = String(SafetyLimits.batteryWarn)
+        env["MACONTROL_BATT_STOP"] = String(SafetyLimits.batteryStop)
+        env["MACONTROL_THERMAL"] = PermissionGate.thermalForScript ? "1" : "0"
         return env
     }
 

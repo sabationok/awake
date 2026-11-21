@@ -13,10 +13,10 @@
 #   /usr/bin/powermetrics -n 1 -i 500 --samplers thermal
 # Правило sudoers з install.sh дозволяє саме їх без пароля.
 
-CHECK_EVERY=${AWAKE_CHECK_EVERY:-300}   # секунд між перевірками температури
-BATT_EVERY=${AWAKE_BATT_EVERY:-30}      # секунд між перевірками батареї і живлення
-BATT_WARN=${AWAKE_BATT_WARN:-25}    # %, попередження (на батареї)
-BATT_STOP=${AWAKE_BATT_STOP:-10}    # %, зупинка (на батареї)
+CHECK_EVERY=${MACONTROL_CHECK_EVERY:-300}   # секунд між перевірками температури
+BATT_EVERY=${MACONTROL_BATT_EVERY:-30}      # секунд між перевірками батареї і живлення
+BATT_WARN=${MACONTROL_BATT_WARN:-25}    # %, попередження (на батареї)
+BATT_STOP=${MACONTROL_BATT_STOP:-10}    # %, зупинка (на батареї)
 CONFIG="${AWAKE_CONFIG:-$HOME/.config/awake/telegram.env}"
 # PID активної сесії. За ним аппка відрізняє живу сесію від сну, що лишився вимкненим після збою.
 PIDFILE="${AWAKE_PIDFILE:-$HOME/.config/awake/session.pid}"
@@ -100,7 +100,7 @@ battery() {   # друкує "<відсоток> <AC|BAT>"
 }
 
 thermal() {   # Nominal | Moderate | Heavy | Trapping | Sleeping; порожньо, якщо читання вимкнено в налаштуваннях
-  [ "${AWAKE_THERMAL:-1}" = 0 ] && return 0
+  [ "${MACONTROL_THERMAL:-1}" = 0 ] && return 0
   sudo -n /usr/bin/powermetrics -n 1 -i 500 --samplers thermal 2>/dev/null |
     awk -F': ' '/pressure level/ {print $2; exit}'
 }

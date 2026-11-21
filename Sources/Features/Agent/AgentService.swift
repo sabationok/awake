@@ -47,7 +47,7 @@ final class AgentService {
         }
 
         var env = AgentSettingsStore.environment(settings)
-        env["AWAKE_WEB_DIR"] = directory.appendingPathComponent("web").path
+        env["MACONTROL_WEB_DIR"] = directory.appendingPathComponent("web").path
         env["NODE_NO_WARNINGS"] = "1"
 
         let proc = Process()

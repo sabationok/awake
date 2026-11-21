@@ -26,8 +26,8 @@ enum AgentSettingsStore {
                 guard parts.count == 2 else { continue }
                 let value = parts[1].trimmingCharacters(in: CharacterSet(charactersIn: "'\" "))
                 switch parts[0] {
-                case "AWAKE_AGENT_TOKEN": settings.token = value
-                case "AWAKE_AGENT_PORT": settings.port = Int(value) ?? settings.port
+                case "MACONTROL_AGENT_TOKEN", "AWAKE_AGENT_TOKEN": settings.token = value
+                case "MACONTROL_AGENT_PORT", "AWAKE_AGENT_PORT": settings.port = Int(value) ?? settings.port
                 case "UPSTASH_REDIS_REST_URL": settings.upstashURL = value
                 case "UPSTASH_REDIS_REST_TOKEN": settings.upstashToken = value
                 case "NODE": settings.nodePath = value
@@ -50,9 +50,9 @@ enum AgentSettingsStore {
             throw TelegramSettingsStore.StoreError.invalidCharacter
         }
         let body = """
-        # Налаштування агента Awake (пульт і Upstash)
-        AWAKE_AGENT_TOKEN='\(settings.token)'
-        AWAKE_AGENT_PORT='\(settings.port)'
+        # Налаштування агента MaControl (пульт і Upstash)
+        MACONTROL_AGENT_TOKEN='\(settings.token)'
+        MACONTROL_AGENT_PORT='\(settings.port)'
         UPSTASH_REDIS_REST_URL='\(values[0])'
         UPSTASH_REDIS_REST_TOKEN='\(values[1])'
         NODE='\(values[2])'
@@ -66,8 +66,8 @@ enum AgentSettingsStore {
     /// Змінні середовища для процесу агента.
     static func environment(_ settings: AgentSettings) -> [String: String] {
         var env = ProcessInfo.processInfo.environment
-        env["AWAKE_AGENT_TOKEN"] = settings.token
-        env["AWAKE_AGENT_PORT"] = String(settings.port)
+        env["MACONTROL_AGENT_TOKEN"] = settings.token
+        env["MACONTROL_AGENT_PORT"] = String(settings.port)
         if settings.hasUpstash {
             env["UPSTASH_REDIS_REST_URL"] = settings.upstashURL
             env["UPSTASH_REDIS_REST_TOKEN"] = settings.upstashToken
