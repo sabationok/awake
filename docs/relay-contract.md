@@ -2,7 +2,7 @@
 
 Дашборд (браузер) і агент на Mac тримають WSS до двосторонньої room у webhooxy. Агент виступає як `host`, браузери як `viewer`. Контракт погоджено з сесією webhooxy 2026-11-21.
 
-- **Namespace:** socket.io `/relay` (path `/socket.io`, хост API). Реалізація: webhooxy PR #5 (`feat/ws-relay` → `dev`, коміт 6f3b9ba) відповідає цьому контракту. Документація: `packages/api/src/relay/CLAUDE.md` у webhooxy. Прод: `https://webhooks-proxy-dev.up.railway.app/relay`, локально: `http://localhost:3106/relay`. REST: `<base>/api`.
+- **Namespace:** socket.io `/relay` (path `/socket.io`, хост API). Реалізація: webhooxy PR #5 (`feat/ws-relay` → `dev`, коміт cf25d6a; ключі в окремій таблиці `credentials`) відповідає цьому контракту. Документація: `packages/api/src/relay/CLAUDE.md` у webhooxy. Прод: `https://webhooks-proxy-dev.up.railway.app/relay`, локально: `http://localhost:3106/relay`. REST: `<base>/api`.
 - **Авторизація однакова для обох ролей:** `io(URL + '/relay', { auth: (cb) => cb({ authorization: 'Bearer ' + signFresh() }) })`, це основний спосіб. Також приймаються `auth.token` і заголовок `Authorization` (Node). Префікс `Bearer` необов'язковий. Токен у query string не приймається. Що в токені — нижче, у «Relay JWT».
   - `auth` має бути функцією: `jti` одноразовий, тож кожне (пере)підключення підписує новий токен. Інакше після першого обриву reconnect отримає `UNAUTHORIZED`.
   - host (агент, `sub: 'macontrol-agent'`, `role: 'host'`): новий host витісняє старого. Витіснений отримує disconnect з reason `'io server disconnect'` і не повинен перепідключатися в циклі. `destId` і `mt_workspace` у handshake не потрібні.
@@ -27,7 +27,7 @@
   - Header: `{ alg: 'ES256', kid: jwk.kid }`. Підпис: jose `new SignJWT(claims).setProtectedHeader({ alg: 'ES256', kid }).sign(await importJWK(jwk, 'ES256'))`, або `jsonwebtoken.sign(claims, crypto.createPrivateKey({ key: jwk, format: 'jwk' }), { algorithm: 'ES256', keyid: jwk.kid })`.
   - Ключ — облікові дані воркспейсу з `type: 'relay'` у `config.keyring` (поруч із `api`). Admin-ендпоінти, SDK `WorkspaceCredentialsSdk`:
     - admin-доступ: `POST /api/auth/login { key }` → `Authorization: Bearer`;
-    - `POST /api/workspaces/credentials/create { workspaceId, type: 'relay' }` → `{ kid, type, privateJwk }`, приватний JWK повертається у відповіді; 409, якщо активний relay-ключ уже є (тоді rotate);
+    - `POST /api/workspaces/credentials/create { workspaceId, type: 'relay' }` → `{ kid, type, version, privateJwk }` (`version` з 1, +1 на кожен rotate; є і в `many`), приватний JWK повертається у відповіді; 409, якщо активний relay-ключ уже є (тоді rotate);
     - `POST /api/workspaces/credentials/rotate { workspaceId, type: 'relay' }`;
     - `POST /api/workspaces/credentials/revoke { workspaceId, kid }`;
     - `GET /api/workspaces/credentials/many?workspaceId=&type=` — лише метадані й маска;
@@ -50,6 +50,6 @@
   - `{ type: 'state', … }` — від host.
 - **Обмеження:** один інстанс API (реєстр host-ів у пам'яті). Revoke поки що не розриває вже прийняті сокети.
 - **Локальний тест** (webhooxy, гілка `feat/ws-relay`):
-  1. `pnpm build:api`, потім `pnpm dev:api` (порт `PORT`, за замовчуванням 3106);
+  1. на свіжій БД `pnpm --filter @webhooxy/api migration:run`; далі `pnpm build:api`, потім `pnpm dev:api` (порт `PORT`, за замовчуванням 3106);
   2. `pnpm --filter @webhooxy/api relay:seed [workspaceSlug] [roomId]` (за замовчуванням `relay-local`, `relay-local-room`) — знаходить або створює воркспейс і DEST, ротує relay-ключ і друкує приватний JWK та зразкові JWT для host і viewer;
   3. приватний JWK — у server env MaControl як `WEBHOOXY_JWT_TICKET_KEY`.
