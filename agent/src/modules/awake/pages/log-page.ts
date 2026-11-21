@@ -1,5 +1,5 @@
 import type { LogRecord, UiPage } from '@awake/contracts';
-import { formatClock } from '../helpers/format-clock';
+import { formatClock } from '../../helpers/format-clock';
 import { isToday } from '../helpers/is-today';
 
 /** Сторінка «Журнал» системна: видна і на Mac, і у вебі, тож без scope local. */

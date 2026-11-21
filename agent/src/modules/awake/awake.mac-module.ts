@@ -6,7 +6,6 @@ import type { MacModule, ModuleContext } from '../types/mac-module';
 import { AWAKE_BOT, awakeStatus } from './bot/awake-bot';
 import { AWAKE_SETTINGS } from './constants/awake-settings';
 import { DURATION_PATTERN } from './constants/duration-pattern';
-import { SLEEP_TIMER_MAX_MINUTES } from './constants/sleep-timer-options';
 import { LOG_QUERY_LIMIT, TRACKING_QUERY_LIMIT } from './constants/session-limits';
 import { plannedDuration } from './helpers/session-plan';
 import { buildLogPage } from './pages/log-page';
@@ -43,12 +42,6 @@ export class AwakeMacModule implements MacModule {
       ctx.sendToMac({ action: 'setting', key: 'awake.restoreSleep', value: true }, source),
     lock: (_params, ctx, source) => ctx.sendToMac({ action: 'lock' }, source),
     displayOff: (_params, ctx, source) => ctx.sendToMac({ action: 'displayOff' }, source),
-    /** `value` — хвилини до сну, 0 скасовує. «running» з вибору (поточний таймер) нічого не міняє. */
-    sleepTimer: (params, ctx, source) => {
-      const minutes = Number(params.value);
-      if (!Number.isInteger(minutes) || minutes < 0 || minutes > SLEEP_TIMER_MAX_MINUTES) return;
-      ctx.sendToMac({ action: 'sleepTimer', value: minutes }, source);
-    },
   };
 
   constructor(

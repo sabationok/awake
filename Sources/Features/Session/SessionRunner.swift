@@ -41,7 +41,9 @@ final class SessionRunner {
         process = proc
     }
 
-    func stop() {
+    func stop(reason: String? = nil) {
+        let file = AwakeScript.stopReasonFile
+        if let reason { try? reason.write(to: file, atomically: true, encoding: .utf8) } else { try? FileManager.default.removeItem(at: file) }
         process?.terminate()
     }
 

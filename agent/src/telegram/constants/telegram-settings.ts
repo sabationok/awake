@@ -28,6 +28,22 @@ export const TELEGRAM_SETTINGS: SettingDefinition[] = [
   },
   {
     type: 'switch',
+    key: 'events.sleep.start',
+    label: 'Таймер поставлено',
+    icon: { symbol: 'moon.zzz.fill', tone: 'accent' },
+    page: 'telegram',
+    default: true,
+  },
+  {
+    type: 'switch',
+    key: 'events.sleep.stop',
+    label: 'Mac заснув або таймер скасовано',
+    icon: { symbol: 'moon.fill', tone: 'accent' },
+    page: 'telegram',
+    default: true,
+  },
+  {
+    type: 'switch',
     key: 'events.system.power',
     label: 'Живлення увімкнено або вимкнено',
     icon: { symbol: 'powerplug.fill', tone: 'accent' },

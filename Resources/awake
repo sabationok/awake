@@ -150,7 +150,11 @@ cleanup() {
   fi
 }
 trap cleanup EXIT
-trap 'REASON="зупинено вручну"; exit' INT TERM HUP
+# Аппка кладе причину у файл перед SIGTERM (напр. «таймер сну»); без файлу — вручну.
+STOP_REASON_FILE="$(dirname "$PIDFILE")/stop.reason"
+rm -f "$STOP_REASON_FILE"
+stop_reason() { local r; r=$(cat "$STOP_REASON_FILE" 2>/dev/null); rm -f "$STOP_REASON_FILE"; echo "${r:-зупинено вручну}"; }
+trap 'REASON="$(stop_reason)"; exit' INT TERM HUP
 trap 'REASON="перезапуск"; QUIET=1; exit' USR1
 
 set_sleep_disabled 1 || exit 1

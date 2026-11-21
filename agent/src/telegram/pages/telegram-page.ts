@@ -14,7 +14,7 @@ export function buildTelegramPage(ctx: ModuleContext): UiPage {
         type: 'section',
         title: 'Бот',
         footer:
-          'Кожен модуль має одну команду, далі все кнопками вглиб: /awake → «Таймер сну», /media → гучність і яскравість. /status — спільний стан Mac і модулів, /start — усі модулі.',
+          'Кожен модуль має одну команду, далі все кнопками вглиб: /awake — сесія, /sleep → час або історія таймерів, /media → гучність і яскравість. /status — спільний стан Mac і модулів, /start — усі модулі.',
         children: [ctx.settingNode('bot')],
       },
       {
@@ -27,6 +27,11 @@ export function buildTelegramPage(ctx: ModuleContext): UiPage {
             type: 'tabs',
             tabs: [
               { id: 'awake', label: 'Awake', children: [ctx.settingNode('events.awake.start'), ctx.settingNode('events.awake.stop')] },
+              {
+                id: 'sleep',
+                label: 'Таймер сну',
+                children: [ctx.settingNode('events.sleep.start'), ctx.settingNode('events.sleep.stop')],
+              },
               {
                 id: 'system',
                 label: 'Стан Mac',

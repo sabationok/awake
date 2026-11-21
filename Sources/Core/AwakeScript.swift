@@ -19,6 +19,10 @@ enum AwakeScript {
         Shell.run("/bin/bash", [url.path, command] + args, environment: environment)
     }
 
+    /// Причина зупинки для наступного SIGTERM: сигнал не несе даних, тож скрипт читає її з файлу.
+    static let stopReasonFile = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent(".config/awake/stop.reason")
+
     static let pidFile = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent(".config/awake/session.pid")
 

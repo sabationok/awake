@@ -29,6 +29,7 @@ type BotModule = MacModule & { bot: ModuleBot };
 export class TelegramBotService {
   private readonly _logger = new Logger(TelegramBotService.name);
   private _bot: Telegraf | null = null;
+  private _env: TelegramEnv | null = null;
 
   constructor(private readonly _modules: ModulesService) {}
 
@@ -44,6 +45,7 @@ export class TelegramBotService {
     const bot = new Telegraf(env.token, { telegram: { agent: new Agent({ keepAlive: true, family: 4 }) } });
     this._register(bot, env);
     this._bot = bot;
+    this._env = env;
     void this._launch(bot, env);
   }
 
@@ -51,7 +53,20 @@ export class TelegramBotService {
     const bot = this._bot;
     if (!bot) return;
     this._bot = null;
+    this._env = null;
     this._stopPolling(bot);
+  }
+
+  /** Сповіщення в чат власника (HTML). Бот вимкнено — мовчки нічого; збій лише в лог, бо подію вже записано. */
+  async notify(html: string): Promise<void> {
+    const bot = this._bot;
+    const env = this._env;
+    if (!bot || !env) return;
+    try {
+      await bot.telegram.sendMessage(env.chatId, html, { parse_mode: 'HTML' });
+    } catch (error) {
+      this._logger.error(`Сповіщення в Telegram не надіслано: ${describeError(error, env.token)}`);
+    }
   }
 
   private async _launch(bot: Telegraf, env: TelegramEnv) {

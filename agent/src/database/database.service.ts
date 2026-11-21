@@ -25,6 +25,16 @@ export class DatabaseService implements OnModuleDestroy {
         battery_end INTEGER
       );
       CREATE INDEX IF NOT EXISTS sessions_started_at ON sessions(started_at);
+      CREATE TABLE IF NOT EXISTS sleep_timers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        started_at TEXT NOT NULL,
+        sleep_at TEXT NOT NULL,
+        minutes INTEGER NOT NULL,
+        ended_at TEXT,
+        source TEXT NOT NULL,
+        end_reason TEXT
+      );
+      CREATE INDEX IF NOT EXISTS sleep_timers_started_at ON sleep_timers(started_at);
       CREATE TABLE IF NOT EXISTS logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         at TEXT NOT NULL,

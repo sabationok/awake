@@ -15,10 +15,10 @@ final class AwakeModel: ObservableObject {
     @Published private(set) var startDate: Date?
     @Published private(set) var endDate: Date?
     @Published private(set) var now = Date()
-    /// Коли таймер сну присипить Mac. Змінюють лише методи в SleepTimer.swift.
-    @Published var sleepAt: Date?
-    /// Таймер сну зупинив сесію: щойно скрипт поверне сон, Mac засинає.
-    var sleepAfterStop = false
+    /// Сесія таймера сну. Змінюють лише методи в SleepTimer.swift.
+    @Published var sleepTimer = SleepTimerSession.saved {
+        didSet { SleepTimerSession.saved = sleepTimer }
+    }
 
     // MARK: стан системи
     @Published private(set) var power = PowerStatus.unknown
@@ -83,6 +83,7 @@ final class AwakeModel: ObservableObject {
         refresh()
         restoreAfterCrash()
         setUpAgent()
+        restoreSleepTimer()
         ticker = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in AwakeModel.shared.tick() }
         }
@@ -143,6 +144,8 @@ final class AwakeModel: ObservableObject {
             return
         }
         guard !isRunning else { return }
+        // Одна сесія за раз: Awake закриває таймер сну.
+        stopSleepTimer(reason: "сесія Awake", source: sessionSource)
         // Явна тривалість (меню-бар, /start 2h) діє лише на цю сесію.
         let chosen = preset ?? self.preset
         do {
@@ -163,10 +166,11 @@ final class AwakeModel: ObservableObject {
         }
     }
 
-    func stop(source: SessionSource = .mac) {
+    /// `reason` потрапляє в журнал і Telegram замість «зупинено вручну».
+    func stop(source: SessionSource = .mac, reason: String? = nil) {
         sessionSource = source
         pendingRestart = nil
-        runner.stop()
+        runner.stop(reason: reason)
     }
 
     /// Нова сесія з новим часом. Якщо сесія вже працює, зупиняє її і стартує знову,
@@ -209,12 +213,6 @@ final class AwakeModel: ObservableObject {
         sessionDuration = nil
         refresh()
         pushAgentState()
-        if sleepAfterStop {
-            sleepAfterStop = false
-            pendingRestart = nil
-            sleepSoon()
-            return
-        }
         if let next = pendingRestart {
             pendingRestart = nil
             start(next.preset, previousSeconds: next.previousSeconds)

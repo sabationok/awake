@@ -15,6 +15,8 @@ struct AgentMacState: Encodable, Equatable {
     var ssid: String?
     var trusted: Bool
     var appVersion: String
+    /// Сесія таймера сну: коли поставили і коли Mac засне.
+    var sleepStartedAt: Date?
     var sleepAt: Date?
     var volume: Int?
     var muted: Bool
@@ -62,6 +64,18 @@ enum AgentProtocol {
         let duration: String?
         let battery: Int?
         let reason: String?
+    }
+
+    /// Подія сесії таймера сну: start або stop з причиною. `silent` — агент не шле її в Telegram.
+    struct SleepTimerEvent: Encodable {
+        let event: String
+        let at: Date
+        let startedAt: Date
+        let sleepAt: Date
+        let minutes: Int
+        let source: String
+        let reason: String?
+        let silent: Bool
     }
 
     /// Рядок від агента. Типи, які аппка не обробляє, дає як `.other`.

@@ -101,7 +101,8 @@ extension AwakeModel {
             ssid: currentSSID,
             trusted: currentNetworkTrusted,
             appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?",
-            sleepAt: sleepAt,
+            sleepStartedAt: sleepTimer?.startedAt,
+            sleepAt: sleepTimer?.sleepAt,
             volume: SoundService.volume(),
             muted: SoundService.isMuted() ?? false,
             brightness: BrightnessService.brightness()
@@ -199,7 +200,7 @@ extension AwakeModel {
             turnDisplayOff()
         case .sleepTimer:
             guard let minutes = command.value.flatMap(Self.number) else { return }
-            setSleepTimer(minutes: Int(minutes))
+            startSleepTimer(minutes: Int(minutes), source: source)
         case .volume:
             guard let percent = command.value.flatMap(Self.percent) else { return }
             SoundService.setVolume(percent)

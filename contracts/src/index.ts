@@ -27,6 +27,8 @@ export interface MacState {
   /** Мережа в списку довірених на Mac: лише тоді агент публікує локальну адресу. */
   trusted: boolean;
   appVersion: string;
+  /** ISO, коли поставили таймер сну; null — таймера немає. */
+  sleepStartedAt: string | null;
   /** ISO, коли таймер сну присипить Mac; null — таймера немає. */
   sleepAt: string | null;
   /** Гучність виходу 0…100; null — пристрій не дає її змінювати. */
@@ -46,6 +48,29 @@ export interface SessionRecord {
   endReason: string | null;
   batteryStart: number | null;
   batteryEnd: number | null;
+}
+
+/** Сесія таймера сну: поставили → Mac заснув, скасували або замінили сесією Awake. */
+export interface SleepTimerRecord {
+  id: number;
+  startedAt: string;
+  sleepAt: string;
+  minutes: number;
+  endedAt: string | null;
+  source: SessionSource;
+  endReason: string | null;
+}
+
+/** Подія таймера сну від Mac-аппки. `silent` — записати в історію, але не слати в Telegram (перезапуск). */
+export interface SleepTimerEvent {
+  event: 'start' | 'stop';
+  at: string;
+  startedAt: string;
+  sleepAt: string;
+  minutes: number;
+  source: SessionSource;
+  reason?: string | null;
+  silent: boolean;
 }
 
 export interface LogRecord {
@@ -88,6 +113,7 @@ export type MacToAgentMessage =
         reason?: string;
       };
     }
+  | { type: 'sleepTimer'; data: SleepTimerEvent }
   /** Натискання в SwiftUI-рендерері: агент виконує його так само, як з вебу. */
   | { type: 'event'; data: import('./ui').UiEvent }
   /** Сторінка «Пристрої» в Mac-аппці: попросити свіжий знімок або відкликати пристрій. */

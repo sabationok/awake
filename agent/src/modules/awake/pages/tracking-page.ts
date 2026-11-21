@@ -1,5 +1,5 @@
 import type { SessionRecord, UiPage, UiRow } from '@awake/contracts';
-import { formatDuration } from '../helpers/format-duration';
+import { formatDuration } from '../../helpers/format-duration';
 import { sessionListItem } from '../helpers/session-list-item';
 import { summarizeSessions } from '../helpers/summarize-sessions';
 import { TRACKING_HISTORY_LIMIT } from '../constants/session-limits';

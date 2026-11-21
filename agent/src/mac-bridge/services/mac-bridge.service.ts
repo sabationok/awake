@@ -11,6 +11,7 @@ import type {
   MacState,
   MacToAgentMessage,
   SessionSource,
+  SleepTimerEvent,
   DevicesSnapshot,
 } from '@awake/contracts';
 import { writeProtocolLine } from './protocol-stdout';
@@ -31,6 +32,7 @@ export class MacBridgeService implements OnModuleInit {
   private readonly _logger = new Logger(MacBridgeService.name);
   readonly state$ = new BehaviorSubject<MacState | null>(null);
   readonly sessions$ = new Subject<SessionMessage>();
+  readonly sleepTimers$ = new Subject<SleepTimerEvent>();
   readonly logs$ = new Subject<LogMessage>();
   /** Натискання в SwiftUI-рендерері Mac-аппки. */
   readonly events$ = new Subject<UiEvent>();
@@ -94,6 +96,9 @@ export class MacBridgeService implements OnModuleInit {
         return;
       case 'session':
         this.sessions$.next(message.data);
+        return;
+      case 'sleepTimer':
+        this.sleepTimers$.next(message.data);
         return;
       case 'log':
         this.logs$.next(message.data);

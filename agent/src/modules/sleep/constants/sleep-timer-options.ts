@@ -1,8 +1,7 @@
 import type { UiOption } from '@awake/contracts';
 
-/** Через скільки хвилин заснути. `0` — таймера немає. */
+/** Через скільки хвилин заснути. */
 export const SLEEP_TIMER_OPTIONS: UiOption[] = [
-  { value: '0', label: 'Вимкнено' },
   { value: '15', label: '15 хв' },
   { value: '30', label: '30 хв' },
   { value: '45', label: '45 хв' },
