@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
+import { BOT_CONTEXT_TYPE } from '../bot';
 import { API_ERROR_CODES, AppException } from '../common/app-exception';
 import { PairingService } from '../devices/services/pairing.service';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
@@ -28,8 +29,10 @@ export class AgentTokenGuard implements CanActivate {
   }
 
   canActivate(context: ExecutionContext): boolean {
-    // Дії `@Bot` (тип 'bot') вже пройшли перевірку свого транспорту: HTTP — цей guard, Telegram — чат власника, Mac — stdin.
-    if (context.getType() !== 'http') return true;
+    // Дії `@Bot` вже пройшли перевірку свого транспорту: HTTP — цей guard, Telegram — чат власника, Mac — stdin.
+    if (context.getType<string>() === BOT_CONTEXT_TYPE) return true;
+    // Інші типи (ws, rpc) тут ще не мають своєї перевірки: закрито, доки її не додадуть.
+    if (context.getType() !== 'http') return false;
     const req = context.switchToHttp().getRequest<Request>();
     const remote = req.socket.remoteAddress ?? '';
     if (!LOOPBACK.has(remote) && !this._bridge.state?.trusted) {
