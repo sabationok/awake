@@ -22,10 +22,12 @@
 - **Присутність:** `relay:peer { statusCode: 200, message: 'Success', data: { host: 'online' | 'offline' } }` приходить одразу після connect і при кожній зміні. Коли один host витісняє іншого, `offline` не надсилається.
 - **Relay JWT** (замінив REST-квитки і host-токен 2026-11-21; `POST /api/relay/tickets/create` і `issueTicket` прибрано):
   - Кожен клієнт підписує токен сам, до webhooxy по нього не звертається.
-  - Ключ — сирий HMAC `WEBHOOXY_JWT_TICKET_KEY`, той самий на обох сторонах, живе в Envify. Якщо в webhooxy ключа немає, він відхиляє всі viewer-підключення.
-  - Header: `{ alg: 'HS256', typ: 'JWT' }`. `kid` зарезервовано під окремий ключ для кожного воркспейсу, зараз webhooxy його ігнорує.
+  - **Ключ воркспейсу, ES256 (P-256).** webhooxy зберігає лише публічну половину в налаштуваннях воркспейсу. Проєкт тримає приватну в env `WEBHOOXY_JWT_TICKET_KEY` (Envify проєкту MaControl) як приватний JWK одним рядком JSON: `{"kty":"EC","crv":"P-256","x","y","d","kid":"rk_…","alg":"ES256"}`.
+  - Header: `{ alg: 'ES256', kid: jwk.kid }`. Підпис: `new SignJWT(claims).setProtectedHeader({ alg: 'ES256', kid: jwk.kid }).sign(await importJWK(jwk, 'ES256'))` (jose). На Mac можна CryptoKit P256.
+  - Видача: `POST /api/workspaces/relay-keys/generate | rotate | revoke` (admin). Приватний JWK повертається лише раз у відповіді generate/rotate; якщо втрачено — rotate. Кнопки в дашборді й MCP з'являться пізніше.
+  - Після rotate старий ключ діє ще 1 годину, revoke діє одразу. Без ключа у воркспейсу будь-яке підключення до `/relay` отримує `UNAUTHORIZED`.
   - Claims:
-    - `iss` — slug воркспейсу, = `mt_workspace` у host-а;
+    - `iss` — slug воркспейсу, за ним webhooxy шукає ключ;
     - `aud: 'webhooxy-relay'`;
     - `sub` — `'macontrol-agent'` або id користувача дашборду, лише для логів;
     - `room` — roomId DEST-а;
@@ -33,10 +35,10 @@
     - `iat`, `exp` — exp = iat + 60, максимум 300;
     - `jti` — uuid, одноразовий, тому на кожне (пере)підключення потрібен новий токен.
   - Помилка будь-якої перевірки (підпис, aud, exp, role, room у воркспейсі `iss`, використаний jti) дає `connect_error` з message `UNAUTHORIZED`.
-  - Обмеження: поки ключ один на все розгортання, прив'язку до воркспейсу тримають чесний `iss` і перевірка, що room належить цьому воркспейсу. Хто має ключ, може підключитися як host і захопити room. Згодом ключі розділять за ролями чи воркспейсами через `kid`.
+  - Компроміс: хто має приватний ключ проєкту, може підключитися і як host, тобто захопити room. Розділення за ролями — пізніше.
 - **`data`:** webhooxy його не розбирає, формат визначає MaControl:
   - `{ type: 'action', action }` — від viewer;
   - `{ type: 'ping' }` — від viewer;
   - `{ type: 'tree', tree }` — від host;
   - `{ type: 'state', … }` — від host.
-- **Локальний тест:** seed-скрипт relay-сесії створює workspace, DEST з roomId, `WEBHOOXY_JWT_TICKET_KEY`.
+- **Локальний тест:** seed-скрипт relay-сесії створює workspace, DEST з roomId і relay-ключ воркспейсу.
