@@ -24,7 +24,11 @@
   - Кожен клієнт підписує токен сам, до webhooxy по нього не звертається.
   - **Ключ воркспейсу, ES256 (P-256).** webhooxy зберігає лише публічну половину в налаштуваннях воркспейсу. Проєкт тримає приватну в env `WEBHOOXY_JWT_TICKET_KEY` (Envify проєкту MaControl) як приватний JWK одним рядком JSON: `{"kty":"EC","crv":"P-256","x","y","d","kid":"rk_…","alg":"ES256"}`.
   - Header: `{ alg: 'ES256', kid: jwk.kid }`. Підпис: `new SignJWT(claims).setProtectedHeader({ alg: 'ES256', kid: jwk.kid }).sign(await importJWK(jwk, 'ES256'))` (jose). На Mac можна CryptoKit P256.
-  - Видача: `POST /api/workspaces/relay-keys/generate | rotate | revoke` (admin). Приватний JWK повертається лише раз у відповіді generate/rotate; якщо втрачено — rotate. Кнопки в дашборді й MCP з'являться пізніше.
+  - Ключ — облікові дані воркспейсу з `type: 'relay'` у `config.keyring` (поруч із `api`). Admin-ендпоінти, SDK `WorkspaceCredentialsSdk`:
+    - `POST /api/workspaces/credentials/create { workspaceId, type: 'relay' }` → `{ kid, type, privateJwk }`, приватний JWK показується лише раз;
+    - `POST /api/workspaces/credentials/rotate { workspaceId, type: 'relay' }`;
+    - `POST /api/workspaces/credentials/revoke { workspaceId, kid }`;
+    - `GET /api/workspaces/credentials/many?workspaceId=&type=` — лише метадані.
   - Після rotate старий ключ діє ще 1 годину, revoke діє одразу. Без ключа у воркспейсу будь-яке підключення до `/relay` отримує `UNAUTHORIZED`.
   - Claims:
     - `iss` — slug воркспейсу, за ним webhooxy шукає ключ;
