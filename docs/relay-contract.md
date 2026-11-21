@@ -6,7 +6,7 @@
 
 ## Середовища
 
-Поки є тільки dev, і середовища не змішуються: MaControl dev UI (Vercel, гілка `dev`) → webhooxy API dev (`webhooks-proxy-dev.up.railway.app`) → агент на Mac. Агент і дашборд беруть URL webhooxy з env (`WEBHOOXY_URL` / `NEXT_PUBLIC_WEBHOOXY_URL`), а ключ `WEBHOOXY_JWT_TICKET_KEY` — з dev-середовища Envify. Прод (`main` ↔ production) з'явиться окремо.
+Поки є тільки dev, і середовища не змішуються: MaControl dev UI (Vercel, гілка `dev`) → webhooxy API dev (`webhooks-proxy-dev.up.railway.app`) → агент на Mac. Кожен сервіс знає свій stage (агент `MACONTROL_STAGE`, дашборд `STAGE`, за замовчуванням `dev`) і бере URL webhooxy того самого stage з мапи в конфігу (`agent/src/config/agent-config.ts`, `web/src/server/stage-config.ts`); `WEBHOOXY_URL` лише перекриває його. Ключ `WEBHOOXY_JWT_TICKET_KEY` — з dev-середовища Envify. Прод (`main` ↔ production) з'явиться окремо.
 
 ## Підключення
 

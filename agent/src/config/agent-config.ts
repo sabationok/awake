@@ -4,8 +4,25 @@ import { join } from 'node:path';
 /** Дашборд на Vercel, який може викликати агент напряму по HTTPS. */
 const DEFAULT_DASHBOARD_ORIGINS = ['https://awake-lemon.vercel.app'];
 
+export type Stage = 'dev' | 'production';
+
+/** Залежності кожного stage: агент ходить лише в сервіси свого stage. */
+const STAGE_DEPS: Record<Stage, { webhooxyUrl: string | null }> = {
+  dev: { webhooxyUrl: 'https://webhooks-proxy-dev.up.railway.app' },
+  production: { webhooxyUrl: null },
+};
+
+function readStage(value: string | undefined): Stage {
+  const stage = value ?? 'dev';
+  if (stage !== 'dev' && stage !== 'production') throw new Error(`MACONTROL_STAGE must be dev or production, got ${stage}`);
+  return stage;
+}
+
 /** Налаштування агента з env, які задає Mac-аппка при запуску підпроцесу. */
 export interface AgentConfig {
+  stage: Stage;
+  /** webhooxy того самого stage; null, поки для stage його немає. */
+  webhooxyUrl: string | null;
   port: number;
   token: string;
   dbPath: string;
@@ -26,7 +43,10 @@ export function readAgentConfig(env: NodeJS.ProcessEnv = process.env): AgentConf
   const token = env.MACONTROL_AGENT_TOKEN ?? '';
   if (token.length < 16) throw new Error('MACONTROL_AGENT_TOKEN missing or shorter than 16 characters');
   const listedOrigins = (env.MACONTROL_DASHBOARD_ORIGINS ?? '').split(',').map((origin) => origin.trim()).filter(Boolean);
+  const stage = readStage(env.MACONTROL_STAGE);
   return {
+    stage,
+    webhooxyUrl: env.WEBHOOXY_URL || STAGE_DEPS[stage].webhooxyUrl,
     port: Number(env.MACONTROL_AGENT_PORT ?? 47800),
     token,
     dbPath: env.MACONTROL_DB ?? join(homedir(), '.config/awake/awake.db'),
