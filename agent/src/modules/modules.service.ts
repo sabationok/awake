@@ -16,6 +16,7 @@ import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
 import { SettingsService } from '../settings/settings.service';
 import { buildSettingNode } from './helpers/build-setting-node';
 import { filterNodesByScope } from './helpers/filter-nodes-by-scope';
+import { isVisibleInScope } from './helpers/is-visible-in-scope';
 import { isValidSettingValue } from './helpers/is-valid-setting-value';
 import { resolveSettingValue } from './helpers/resolve-setting-value';
 import { MACONTROL_BOT } from './constants/macontrol-bot';
@@ -26,6 +27,8 @@ import type { ModuleSource } from './types/module-source';
 @Injectable()
 export class ModulesService {
   readonly settingChanged$ = new Subject<{ module: string; key: string; value: SettingValue }>();
+  /** Стан модуля змінився поза Mac і налаштуваннями (напр. viewer relay): дерево треба перебудувати. */
+  readonly treeChanged$ = new Subject<void>();
   private readonly _byId: Map<string, MacModule>;
 
   constructor(
@@ -78,7 +81,7 @@ export class ModulesService {
     pages.push(this._settingsPage());
 
     const visible = pages
-      .filter((page) => scope === 'local' || page.scope !== 'local')
+      .filter((page) => isVisibleInScope(page, scope))
       .map((page) => ({ ...page, children: filterNodesByScope(page.children, scope) }));
 
     return {
@@ -143,6 +146,10 @@ export class ModulesService {
     const definition = module.settings.find((setting) => setting.key === key);
     if (!definition || !isValidSettingValue(definition, value)) {
       throw new AppException(API_ERROR_CODES.invalidCommand, `Invalid setting ${moduleId}.${key}`);
+    }
+    // Налаштування SwiftUI міняють лише Mac і Telegram, не вебдашборд чи relay.
+    if (definition.scope === 'mac' && source === 'web') {
+      throw new AppException(API_ERROR_CODES.invalidCommand, `Setting ${moduleId}.${key} is Mac-only`);
     }
     this._settings.set(moduleId, key, value);
     this.settingChanged$.next({ module: moduleId, key, value });

@@ -66,4 +66,12 @@ export const TELEGRAM_SETTINGS: SettingDefinition[] = [
     page: 'telegram',
     default: true,
   },
+  {
+    type: 'switch',
+    key: 'events.relay.status',
+    label: 'Relay активний або ні',
+    icon: { symbol: 'antenna.radiowaves.left.and.right', tone: 'accent' },
+    page: 'telegram',
+    default: true,
+  },
 ];

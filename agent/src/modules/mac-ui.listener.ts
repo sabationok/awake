@@ -4,7 +4,7 @@ import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
 import { ModulesService } from './modules.service';
 
 /**
- * SwiftUI-рендерер Mac-аппки: дерево (scope local) і знімок налаштувань ідуть у stdout,
+ * SwiftUI-рендерер Mac-аппки: дерево (scope mac) і знімок налаштувань ідуть у stdout,
  * натискання приходять зі stdin і виконуються як дії з джерелом mac.
  */
 @Injectable()
@@ -24,7 +24,7 @@ export class MacUiListener implements OnModuleInit, OnModuleDestroy {
       this._bridge.events$.subscribe((event) => void this._apply(event)),
       this._modules.settingChanged$.subscribe(() => this._bridge.sendSettings(this._modules.settingsSnapshot())),
       // Стан, журнал і сесії міняють дерево; збираємо сплеск змін в одне оновлення.
-      merge(this._bridge.state$, this._bridge.logs$, this._bridge.sessions$, this._modules.settingChanged$)
+      merge(this._bridge.state$, this._bridge.logs$, this._bridge.sessions$, this._modules.settingChanged$, this._modules.treeChanged$)
         .pipe(debounceTime(150))
         .subscribe(() => void this._pushTree()),
     );
@@ -49,7 +49,7 @@ export class MacUiListener implements OnModuleInit, OnModuleDestroy {
       this._bridge.sendSettings(this._modules.settingsSnapshot());
       this._settingsSent = true;
     }
-    const tree = await this._modules.buildTree('local');
+    const tree = await this._modules.buildTree('mac');
     const fingerprint = JSON.stringify({ ...tree, app: { ...tree.app, updatedAt: '' } });
     if (fingerprint === this._lastTree) return;
     this._lastTree = fingerprint;

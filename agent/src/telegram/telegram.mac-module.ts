@@ -19,9 +19,9 @@ export class TelegramMacModule implements MacModule {
   }
 
   onSettingChanged(key: string, value: SettingValue, ctx: ModuleContext) {
-    // bot обробляє сам TelegramBotListener, на Mac його не шлемо. Події sleep шле агент (SleepTimerEventsListener),
+    // bot обробляє сам TelegramBotListener, на Mac його не шлемо. Події sleep і relay шле агент (SleepTimerEventsListener, RelayEventsListener),
     // скрипт про них не знає: у telegram.env ідуть лише awake.* і system.*.
-    if (!key.startsWith('events.') || key.startsWith('events.sleep.')) return;
+    if (!key.startsWith('events.') || key.startsWith('events.sleep.') || key.startsWith('events.relay.')) return;
     ctx.sendToMac({ action: 'setting', key: `telegram.${key}`, value }, 'web');
   }
 }

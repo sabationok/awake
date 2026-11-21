@@ -41,6 +41,7 @@ export function buildTelegramPage(ctx: ModuleContext): UiPage {
                   ctx.settingNode('events.system.thermal'),
                 ],
               },
+              { id: 'relay', label: 'Relay', children: [ctx.settingNode('events.relay.status')] },
             ],
           },
         ],

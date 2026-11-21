@@ -9,6 +9,8 @@ import { LogsModule } from './logs/logs.module';
 import { MacBridgeModule } from './mac-bridge/mac-bridge.module';
 import { ModulesModule } from './modules/modules.module';
 import { PresenceModule } from './presence/presence.module';
+import { RelayModule } from './relay/relay.module';
+import { RelayStateModule } from './relay/state/relay-state.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { TlsModule } from './tls/tls.module';
@@ -23,7 +25,9 @@ import { TlsModule } from './tls/tls.module';
     LogsModule,
     TlsModule,
     PresenceModule,
+    RelayStateModule,
     ModulesModule,
+    RelayModule,
     TelegramModule,
   ],
   providers: [

@@ -123,10 +123,26 @@
 
 ## `data` (формат MaControl, webhooxy його не розбирає)
 
-- `{ type: 'action', action }` — від viewer;
-- `{ type: 'ping' }` — від viewer;
-- `{ type: 'tree', tree }` — від host;
-- `{ type: 'state', … }` — від host.
+Типи в `contracts/src/relay.ts`.
+
+- viewer → host (`relay:send`), відповідь в ack:
+  - `{ type: 'ping' }` → `{ type: 'pong' }`;
+  - `{ type: 'tree' }` → `{ type: 'tree', tree }` (scope `all`);
+  - `{ type: 'event', event: UiEvent }` → `{ type: 'accepted' }`. Налаштування зі scope `mac` з relay змінити не можна.
+  - Помилка: `{ type: 'error', message }`.
+- host → viewers (`relay:broadcast`): `{ type: 'tree', tree }` після кожної зміни стану Mac, налаштування чи події.
+
+## Модуль Relay в агенті
+
+- Код: `agent/src/relay/`. Перемикач `relay.enabled` (за замовчуванням вимкнено) і сторінка Relay видно лише в SwiftUI (scope `mac`). Вмикати й вимикати можна ще з Telegram: `/relay`.
+- Ключі host-а: `~/.config/awake/relay.env` (шлях — `MACONTROL_RELAY_ENV`) або process.env: `WEBHOOXY_WORKSPACE_TOKEN`, `WEBHOOXY_DEST_ID`, `WEBHOOXY_WORKSPACE`, `WEBHOOXY_ROOM`, `WEBHOOXY_JWT_TICKET_KEY`.
+- Стан host-а: `off`, `unconfigured`, `connecting`, `online`, `offline`, `evicted`, `refused`. Перехід активний ↔ неактивний (після 10 с без змін) іде в Telegram, перемикач `telegram.events.relay.status`.
+- Сесії: останні 20 viewer-ів, яких агент пустив, з поміткою «через проксі webhooxy». Подія виходу viewer-а (`relay:viewer:left`) ще не погоджена з webhooxy.
+- Дашборд: server action `getRelayAccess` (`web/src/server/relay-actions.ts`) підписує квиток для дійсної сесії; env Vercel: `WEBHOOXY_JWT_TICKET_KEY`, `WEBHOOXY_ROOM`, `WEBHOOXY_WORKSPACE`, а URL — зі stage. Пріоритет режимів дашборду: напряму → relay → лише перегляд.
+
+## Реєстрація пристрою за QR (план, не погоджено)
+
+Дашборд не має підписувати квиток будь-якому браузеру з паролем. План: Mac показує на сторінці Relay QR з посиланням на дашборд і одноразовим кодом; браузер робить пару ключів P-256 (WebCrypto, приватний не експортується); Next шле `{ type: 'pair', code, publicKey, userAgent, sub }` через HTTPS → webhooxy → WSS → агент; Mac питає «Це ви?»; агент зберігає публічний ключ. Далі токен viewer-а — квиток плюс підпис його `jti` ключем пристрою. Для цього webhooxy має дати `POST /api/relay/rooms/:roomId/request` з DEST-ключем і подією `relay:request` для host-а (пропозиція webhooxy, чекає рішення). Відповідь: `pending`, далі Next опитує `pair:status`.
 
 ## Обмеження й секрети
 

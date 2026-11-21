@@ -8,7 +8,7 @@ interface SettingBase {
   label: string;
   hint?: string;
   icon?: { symbol: string; tone: import('./ui').UiTone };
-  /** local — налаштування видно лише на Mac (напр. довірені мережі), не на Vercel. */
+  /** local — налаштування видно лише на Mac і в локальному пульті (напр. довірені мережі), не на Vercel; mac — лише в SwiftUI, змінити можна з Mac або Telegram. */
   scope?: import('./ui').UiScope;
   /**
    * Id сторінки модуля, де модуль сам показує це налаштування (через ctx.settingNode).

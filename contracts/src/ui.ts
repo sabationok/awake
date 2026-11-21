@@ -9,8 +9,11 @@ export interface UiIcon {
   tone: UiTone;
 }
 
-/** Де показувати вузол або сторінку: all — і на Mac, і на Vercel/WebApp; local — лише на Mac і в локальному пульті. */
-export type UiScope = 'all' | 'local';
+/**
+ * Де показувати вузол або сторінку: all — і на Mac, і на Vercel/WebApp; local — лише на Mac і в локальному пульті;
+ * mac — лише в SwiftUI Mac-аппки.
+ */
+export type UiScope = 'all' | 'local' | 'mac';
 
 /** Дія модуля, яку викликає кнопка. Рендерер шле її як є і нічого не знає про її зміст. */
 export interface UiAction {

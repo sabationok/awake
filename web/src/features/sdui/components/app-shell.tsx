@@ -17,8 +17,8 @@ import type { SduiEventHandler, SduiMode } from '../sdui.types';
 const SEPARATED_CLASS = 'mt-4 border-t border-separator pt-4';
 const OFFLINE_NOTICE = 'Mac офлайн або ще не надіслав інтерфейс';
 const NO_SEND: SduiEventHandler = async () => {};
-const CONNECTION_LABEL: Record<SduiMode, string> = { direct: 'Напряму з Mac', readonly: 'Лише перегляд' };
-const CONNECTION_CLASS: Record<SduiMode, string> = { direct: 'text-green', readonly: '' };
+const CONNECTION_LABEL: Record<SduiMode, string> = { direct: 'Напряму з Mac', relay: 'Через relay', readonly: 'Лише перегляд' };
+const CONNECTION_CLASS: Record<SduiMode, string> = { direct: 'text-green', relay: 'text-green', readonly: '' };
 const OFFLINE_LABEL = "Немає з'єднання з Mac";
 const CERT_HINT = 'Встанови сертифікат на цьому пристрої і довір йому, тоді керування запрацює.';
 

@@ -1,6 +1,7 @@
 // Спільні типи агента, Mac-аппки і дашборду. Лише типи і константи без залежностей.
 export * from './ui';
 export * from './modules';
+export * from './relay';
 
 export type PowerSource = 'AC' | 'BAT' | 'unknown';
 export type ThermalLevel = 'nominal' | 'fair' | 'serious' | 'critical';
