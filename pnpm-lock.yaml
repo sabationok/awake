@@ -52,6 +52,9 @@ importers:
       '@awake/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@envify/sdk':
+        specifier: file:vendor/envify-sdk-0.1.0.tgz
+        version: file:web/vendor/envify-sdk-0.1.0.tgz(@nestjs/common@11.2.11(reflect-metadata@0.2.2)(rxjs@7.8.2))
       clsx:
         specifier: 2.1.1
         version: 2.1.1
@@ -101,6 +104,17 @@ packages:
 
   '@emnapi/runtime@1.11.3':
     resolution: {integrity: sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==}
+
+  '@envify/sdk@file:web/vendor/envify-sdk-0.1.0.tgz':
+    resolution: {integrity: sha512-Kz91hM2fUkHSTLTKpvAs7bVO4gmX7peS0PzwcxA0sX5SXLXWGQ1EQ+/bxyHQjYHDpzzkB8C8JDl0xMk5yp0usQ==, tarball: file:web/vendor/envify-sdk-0.1.0.tgz}
+    version: 0.1.0
+    engines: {node: '>=18'}
+    hasBin: true
+    peerDependencies:
+      '@nestjs/common': '>=9'
+    peerDependenciesMeta:
+      '@nestjs/common':
+        optional: true
 
   '@esbuild/aix-ppc64@0.25.10':
     resolution: {integrity: sha512-0NFWnA+7l41irNuaSVlLfgNT12caWJVLzp5eAVhZ0z1qpxbockccEt3s+149rE64VUI3Ml2zt8Nv5JVc4QXTsw==}
@@ -1299,6 +1313,10 @@ snapshots:
     dependencies:
       tslib: 2.9.1
     optional: true
+
+  '@envify/sdk@file:web/vendor/envify-sdk-0.1.0.tgz(@nestjs/common@11.2.11(reflect-metadata@0.2.2)(rxjs@7.8.2))':
+    optionalDependencies:
+      '@nestjs/common': 11.2.11(reflect-metadata@0.2.2)(rxjs@7.8.2)
 
   '@esbuild/aix-ppc64@0.25.10':
     optional: true
