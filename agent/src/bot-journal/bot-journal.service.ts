@@ -8,7 +8,8 @@ import { botCountersOf } from './helpers/bot-counters-of';
 import { BotEventsRepository } from './repositories/bot-events.repository';
 import type { BotEventCreate, BotEventRecord, BotMetrics } from './types/bot-event.types';
 
-const GRANULARITIES = [StatGranularity.HOUR, StatGranularity.DAY, StatGranularity.WEEK, StatGranularity.MONTH];
+/** Хвилини — для графіків «Година» на сторінках статистики. */
+const GRANULARITIES = [StatGranularity.MINUTE, StatGranularity.HOUR, StatGranularity.DAY, StatGranularity.WEEK, StatGranularity.MONTH];
 
 /**
  * Журнал і лічильники нашого бота (BotRouterService): кожна дія, екран і налаштування з будь-якого транспорту.

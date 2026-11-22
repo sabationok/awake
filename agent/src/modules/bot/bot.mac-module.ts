@@ -2,14 +2,16 @@ import { Inject, Injectable } from '@nestjs/common';
 import { AGENT_CONFIG, type AgentConfig } from '../../config/agent-config';
 import type { SettingDefinition, SettingValue, UiPage } from '@awake/contracts';
 import { BotRouterService } from '../../bot';
-import { BotJournalService } from '../../bot-journal';
+import { BotCallsChartsService, BotJournalService } from '../../bot-journal';
 import { BOT_EVENTS_PAGE_LIMIT } from '../../bot-journal/constants/bot-journal-limits';
 import { TelegramNotificationsService } from '../../telegram/notifications';
+import { statsPeriodSetting } from '../../stats';
 import { TransportsService } from '../../transports';
 import { MACONTROL_BOT } from '../constants/macontrol-bot';
 import type { MacModule, ModuleContext, StatusFields } from '../types/mac-module';
 import { AGENT_ENABLED_SETTING } from './constants/agent-enabled';
 import { BOT_NOTIFICATIONS } from './constants/bot-notifications';
+import { BOT_STATS_PAGE } from './constants/bot-stats-page';
 import { REMOTE_ACCESS_KEY, REMOTE_ACCESS_SETTING, type RemoteAccess } from './constants/remote-access';
 import { buildBotJournalPage } from './pages/bot-journal-page';
 import { buildBotOverviewPage } from './pages/bot-overview-page';
@@ -26,12 +28,13 @@ export class BotMacModule implements MacModule {
   readonly title = 'Агент';
   readonly icon = { symbol: 'cpu.fill', tone: 'accent' } as const;
   readonly permissions: MacModule['permissions'] = [];
-  readonly settings: SettingDefinition[] = [AGENT_ENABLED_SETTING, REMOTE_ACCESS_SETTING];
+  readonly settings: SettingDefinition[] = [AGENT_ENABLED_SETTING, REMOTE_ACCESS_SETTING, statsPeriodSetting(BOT_STATS_PAGE)];
 
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     private readonly _router: BotRouterService,
     private readonly _journal: BotJournalService,
+    private readonly _calls: BotCallsChartsService,
     private readonly _transports: TransportsService,
     notifications: TelegramNotificationsService,
   ) {
@@ -44,7 +47,7 @@ export class BotMacModule implements MacModule {
     return [
       buildBotOverviewPage(ctx, this._transports.list(), proxies, metrics, this._remoteAvailability(ctx)),
       buildBotJournalPage(this._journal.findEvents({ limit: BOT_EVENTS_PAGE_LIMIT }), proxies),
-      buildBotStatsPage(metrics, this._router.namespaces(MACONTROL_BOT), proxies),
+      buildBotStatsPage(ctx, this._calls, this._router.namespaces(MACONTROL_BOT), proxies),
     ];
   }
 
