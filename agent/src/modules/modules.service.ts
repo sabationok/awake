@@ -180,6 +180,8 @@ export class ModulesService {
     if (definition.scope === 'mac' && source === 'web') {
       throw new AppException(API_ERROR_CODES.invalidCommand, `Setting ${moduleId}.${key} is Mac-only`);
     }
+    const rejected = module.rejectSetting?.(key, value, this.context(moduleId));
+    if (rejected) throw new AppException(API_ERROR_CODES.invalidCommand, rejected);
     this._settings.set(moduleId, key, value);
     this.settingChanged$.next({ module: moduleId, key, value });
     await module.onSettingChanged?.(key, value, this.context(moduleId));

@@ -22,22 +22,35 @@ struct UiControlView: View {
             .labelsHidden()
             .disabled(disabled)
         case .select(let value, let options, let disabled, let setting, let action):
-            Picker("", selection: Binding(
-                get: { value },
-                set: { chosen in
-                    if let setting {
-                        model.sendUiEvent(.setting(module: setting.module, key: setting.key, value: .string(chosen)))
-                    } else if let action {
-                        model.sendUiEvent(.action(action.with(value: .string(chosen))))
+            let choose: (String) -> Void = { chosen in
+                // Сіра опція не вибирається, навіть якщо меню її пропустило.
+                guard options.first(where: { $0.value == chosen })?.disabled != true else { return }
+                if let setting {
+                    model.sendUiEvent(.setting(module: setting.module, key: setting.key, value: .string(chosen)))
+                } else if let action {
+                    model.sendUiEvent(.action(action.with(value: .string(chosen))))
+                }
+            }
+            if options.contains(where: { $0.disabled == true }) {
+                // Пункти Picker-меню в macOS ігнорують .disabled, а кнопки в Menu — ні.
+                Menu(options.first { $0.value == value }?.label ?? value) {
+                    ForEach(options, id: \.value) { option in
+                        Button(option.label) { choose(option.value) }
+                            .disabled(option.disabled == true)
                     }
                 }
-            )) {
-                ForEach(options, id: \.value) { Text($0.label).tag($0.value).disabled($0.disabled == true) }
+                .menuStyle(.button)
+                .fixedSize()
+                .disabled(disabled)
+            } else {
+                Picker("", selection: Binding(get: { value }, set: choose)) {
+                    ForEach(options, id: \.value) { Text($0.label).tag($0.value) }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .fixedSize()
+                .disabled(disabled)
             }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .fixedSize()
-            .disabled(disabled)
         case .slider(let value, let min, let max, let step, let disabled, let action):
             UiSliderView(value: value, range: min...max, step: step, disabled: disabled) { chosen in
                 model.sendUiEvent(.action(action.with(value: .number(chosen))))

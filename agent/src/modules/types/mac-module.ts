@@ -44,6 +44,8 @@ export interface MacModule {
   disabled?(ctx: ModuleContext): string | null;
   /** Поля модуля в /status під ключем його id. null або без значень — ключа немає. */
   status?(ctx: ModuleContext): StatusFields | null;
+  /** Перевірка перед збереженням: причина відмови (напр. вибрано вимкнений шлях) або null. */
+  rejectSetting?(key: string, value: SettingValue, ctx: ModuleContext): string | null;
   /** Налаштування змінилось (вже збережене). Напр. Awake пересилає його в Mac-аппку. */
   onSettingChanged?(key: string, value: string | number | boolean, ctx: ModuleContext): void | Promise<void>;
 }
