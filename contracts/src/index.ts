@@ -2,6 +2,7 @@
 export * from './ui';
 export * from './modules';
 export * from './relay';
+export * from './webhooks';
 
 export type PowerSource = 'AC' | 'BAT' | 'unknown';
 export type ThermalLevel = 'nominal' | 'fair' | 'serious' | 'critical';
@@ -133,7 +134,9 @@ export type MacToAgentMessage =
   /** Довірені мережі Wi-Fi: список у SQLite агента, аппка лише додає й прибирає. */
   | { type: 'trustedNetworks'; data: { action: 'add' | 'remove'; ssid: string } }
   /** Bluetooth-пристрої поруч, раз на кілька секунд, поки ввімкнено `proximity.enabled`. Рішення блокувати — за агентом. */
-  | { type: 'proximity'; data: ProximityReport };
+  | { type: 'proximity'; data: ProximityReport }
+  /** Вебхуки webhooxy: аппка зберігає форму з модалки, вмикає, вимикає, прибирає. Секрети сюди не йдуть. */
+  | { type: 'webhooks'; data: import('./webhooks').WebhookAction };
 
 /** Стан Bluetooth на Mac. `unauthorized` — macOS не дала аппці доступ. */
 export type BluetoothState = 'on' | 'off' | 'unauthorized' | 'unsupported' | 'unknown';
@@ -163,7 +166,9 @@ export type AgentToMacMessage =
   /** Звідки агент узяв ключі (Envify, relay.env, process.env) і стан Envify: лише для Mac-аппки, без секретів. */
   | { type: 'secrets'; data: SecretsSnapshot }
   /** Довірені мережі Wi-Fi з SQLite агента: шлеться на старті й після кожної зміни. */
-  | { type: 'trustedNetworks'; data: { ssids: string[] } };
+  | { type: 'trustedNetworks'; data: { ssids: string[] } }
+  /** Вебхуки з SQLite агента зі станом і лічильниками: на старті й після кожної зміни. */
+  | { type: 'webhooks'; data: { webhooks: import('./webhooks').WebhookInfo[] } };
 
 /** Звідки взявся ключ: process.env, Envify, файл у ~/.config/awake, або його немає. */
 export type SecretSource = 'env' | 'envify' | 'file' | null;
@@ -189,7 +194,8 @@ export interface SecretKeyInfo {
 
 export interface SecretsSnapshot {
   envify: EnvifyStatus;
-  relay: SecretKeyInfo[];
+  /** Глобальні секрети аппки (токен воркспейсу webhooxy, ключ JWT): лише звідки, без значень. */
+  keys: SecretKeyInfo[];
 }
 
 /** Сполучений браузер: токен лежить лише в ньому, тут опис і коли його бачили. */

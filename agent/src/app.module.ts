@@ -6,6 +6,9 @@ import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { DevicesModule } from './devices/devices.module';
 import { EnvifyModule } from './envify';
+import { MetricsModule } from './metrics';
+import { SecretsModule } from './secrets';
+import { WebhooksModule } from './webhooks';
 import { TrustedNetworksModule } from './trusted-networks';
 import { ProximityModule } from './proximity';
 import { LogsModule } from './logs/logs.module';
@@ -28,6 +31,9 @@ import { TlsModule } from './tls/tls.module';
     DatabaseModule,
     MacBridgeModule,
     EnvifyModule,
+    SecretsModule,
+    MetricsModule,
+    WebhooksModule,
     TrustedNetworksModule,
     ProximityModule,
     DevicesModule,

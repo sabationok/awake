@@ -92,7 +92,7 @@ struct MainView: View {
                         AgentSection()
                     }
                     if uiPage.id == "relay" {
-                        WebhooxySection()
+                        WebhooksSection()
                     }
                     ForEach(uiPage.children) { UiNodeView(node: $0) }
                 }
@@ -109,6 +109,7 @@ struct MainView: View {
                 }
                 RemoteSection()
                 EnvifySection()
+                AppSecretsSection()
             }
             .formStyle(.grouped)
         case .devices:

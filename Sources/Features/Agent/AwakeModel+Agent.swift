@@ -37,6 +37,9 @@ extension AwakeModel {
             self?.importLegacyTrustedNetworks(known: ssids)
             if self?.trustedNetworks != ssids { self?.trustedNetworks = ssids }
         }
+        agent.onWebhooks = { [weak self] webhooks in
+            if self?.webhooks != webhooks { self?.webhooks = webhooks }
+        }
         agent.onSecrets = { [weak self] secrets in
             if self?.secrets != secrets { self?.secrets = secrets }
         }

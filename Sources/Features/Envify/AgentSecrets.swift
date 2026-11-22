@@ -1,6 +1,6 @@
 import Foundation
 
-/// Знімок від агента: стан Envify і звідки кожен ключ relay. Поля збігаються з `SecretsSnapshot` у contracts.
+/// Знімок від агента: стан Envify і звідки кожен глобальний секрет аппки. Поля збігаються з `SecretsSnapshot` у contracts.
 struct AgentSecrets: Decodable, Equatable {
     struct Envify: Decodable, Equatable {
         /// off | loading | ok | error
@@ -20,9 +20,9 @@ struct AgentSecrets: Decodable, Equatable {
     }
 
     let envify: Envify
-    let relay: [Key]
+    let keys: [Key]
 
-    func relayKey(_ name: String) -> Key? { relay.first { $0.name == name } }
+    func key(_ name: String) -> Key? { keys.first { $0.name == name } }
 }
 
 extension AgentSecrets.Key {
@@ -30,12 +30,12 @@ extension AgentSecrets.Key {
     var sourceLabel: String? {
         switch source {
         case "envify": "Envify"
-        case "file": "relay.env"
+        case "file": "secrets.env"
         case "env": "process.env"
         default: nil
         }
     }
 
-    /// Ключ прийшов не з relay.env: зміна у файлі його не перебʼє.
+    /// Ключ прийшов не з secrets.env: зміна у файлі його не перебʼє.
     var isOverridden: Bool { source == "envify" || source == "env" }
 }

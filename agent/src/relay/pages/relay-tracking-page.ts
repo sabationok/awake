@@ -1,5 +1,5 @@
 import type { UiPage } from '@awake/contracts';
-import type { BotMetrics } from '../../bot-journal';
+import type { ScopeMetrics } from '../../metrics';
 import { RELAY_METRICS } from '../constants/relay-metrics';
 import { RELAY_PROXY_ID } from '../constants/relay-proxy';
 import { RELAY_TRACKING_PAGE } from '../constants/relay-settings';
@@ -13,8 +13,8 @@ const TRACKING: { metric: string; label: string }[] = [
   { metric: RELAY_METRICS.errors, label: 'Помилок' },
 ];
 
-/** «Трекінг»: лічильники webhooxy з журналу бота. */
-export function buildRelayTrackingPage(metrics: BotMetrics): UiPage {
+/** «Трекінг»: дії через webhooxy з журналу бота і лічильники вебхука relay. */
+export function buildRelayTrackingPage(metrics: ScopeMetrics): UiPage {
   return {
     id: RELAY_TRACKING_PAGE,
     module: 'relay',

@@ -70,6 +70,27 @@ export class DatabaseService implements OnModuleDestroy {
         ssid TEXT PRIMARY KEY,
         added_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS webhooks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        wh_id TEXT NOT NULL UNIQUE,
+        provider TEXT NOT NULL,
+        type TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        workspace TEXT NOT NULL,
+        dest_id TEXT NOT NULL,
+        config TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL,
+        updated_at TEXT,
+        disabled_at TEXT,
+        deleted_at TEXT
+      );
+      CREATE TABLE IF NOT EXISTS metrics (
+        day TEXT NOT NULL,
+        scope TEXT NOT NULL,
+        metric TEXT NOT NULL,
+        value INTEGER NOT NULL,
+        PRIMARY KEY (day, scope, metric)
+      );
       CREATE TABLE IF NOT EXISTS settings (
         module TEXT NOT NULL,
         key TEXT NOT NULL,

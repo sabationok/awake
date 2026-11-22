@@ -4,7 +4,7 @@ import { RELAY_TICKET_AUDIENCE, RELAY_TICKET_TTL_SECONDS, type RelayTicketClaims
 
 const base64url = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
 
-/** Квиток viewer-а relay: JWT HS256 з ключем WEBHOOXY_JWT_TICKET_KEY, перевіряє його агент (docs/relay-contract.md). */
+/** Квиток viewer-а relay: JWT HS256 з ключем MACONTROL_JWT_KEY, перевіряє його агент (docs/relay-contract.md). */
 export function signRelayTicket(key: string, room: string, sub: string, now = Math.floor(Date.now() / 1000)): string {
   const claims: RelayTicketClaims = {
     aud: RELAY_TICKET_AUDIENCE,

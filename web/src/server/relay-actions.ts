@@ -15,7 +15,8 @@ const DASHBOARD_SUB = 'dashboard';
 export async function getRelayAccess(): Promise<RelayViewerAccess | null> {
   if (!(await isValidSession((await cookies()).get(SESSION_COOKIE)?.value))) return null;
   const { webhooxyUrl } = readStageConfig();
-  const key = process.env.WEBHOOXY_JWT_TICKET_KEY;
+  // Ключ JWT аппки; старе ім'я — поки його не перейменували в Envify і Vercel.
+  const key = process.env.MACONTROL_JWT_KEY || process.env.WEBHOOXY_JWT_TICKET_KEY;
   const room = process.env.WEBHOOXY_ROOM;
   const workspace = process.env.WEBHOOXY_WORKSPACE;
   if (!webhooxyUrl || !key || !room || !workspace) return null;

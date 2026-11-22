@@ -10,4 +10,9 @@ extension AgentService.Status {
         case .failed(let message): "Помилка: \(message)"
         }
     }
+
+    var isRunning: Bool {
+        if case .running = self { return true }
+        return false
+    }
 }

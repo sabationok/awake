@@ -3,7 +3,9 @@ import { io, type Socket } from 'socket.io-client';
 import type { RelayHostBroadcast, RelayHostReply, UiTree } from '@awake/contracts';
 import { BotJournalService } from '../../../bot-journal';
 import { AGENT_CONFIG, type AgentConfig } from '../../../config/agent-config';
-import { EnvifyService } from '../../../envify';
+import { MetricsService } from '../../../metrics';
+import { AppSecretsService } from '../../../secrets';
+import { WebhooksService, webhookScope } from '../../../webhooks';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
 import { isUiEvent } from '../../../modules/helpers/is-ui-event';
 import { ModulesService } from '../../../modules/modules.service';
@@ -13,7 +15,6 @@ import { RELAY_MAX_PAYLOAD_BYTES, RELAY_RETRY_MS } from '../../constants/relay-l
 import { RELAY_METRICS } from '../../constants/relay-metrics';
 import { RELAY_PROXY_ID } from '../../constants/relay-proxy';
 import { buildRelayLimits, type RelayLimitsOverride } from '../../helpers/build-relay-limits';
-import { readRelayEnv } from '../../helpers/read-relay-env';
 import { RELAY_STATUS_VIEW } from '../../helpers/relay-status-label';
 import { RelayStateService } from '../../state/relay-state.service';
 import { verifyViewerTicket } from '../../helpers/verify-viewer-ticket';
@@ -49,6 +50,8 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
   /** Viewer-и, яких уже вигнали за відкликаний пристрій: список сесій зберігає й тих, хто пішов. */
   private readonly _kicked = new Set<string>();
   private _env: RelayEnv | null = null;
+  /** Вебхук relay, з якого взято DEST і room: його scope у лічильниках. */
+  private _webhookId: number | null = null;
   private _socket?: Socket;
   private _retry?: NodeJS.Timeout;
   private _lastTree = '';
@@ -60,7 +63,9 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     private readonly _state: RelayStateService,
     private readonly _journal: BotJournalService,
     private readonly _notifications: TelegramNotificationsService,
-    private readonly _envify: EnvifyService,
+    private readonly _secrets: AppSecretsService,
+    private readonly _webhooks: WebhooksService,
+    private readonly _metrics: MetricsService,
     private readonly _bridge: MacBridgeService,
     private readonly _requests: RelayRequestService,
     private readonly _pairing: PairingService,
@@ -89,7 +94,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Аппка переписала relay.env або Envify віддав нові змінні: нові ключі діють одразу. Кімната перепідключається,
+   * Змінились секрети (secrets.env, Envify) або вебхук relay: нові ключі діють одразу. Кімната перепідключається,
    * лише якщо ключі справді змінились (оновлення Envify з тими самими значеннями не рве сесії viewer-ів).
    */
   reloadEnv() {
@@ -103,12 +108,22 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     this._modules.treeChanged$.next();
   }
 
+  /** DEST, workspace і room — з увімкненого вебхука `relay`; токен воркспейсу й ключ JWT — глобальні секрети. */
   private _readEnv() {
-    const read = readRelayEnv(this._envify.variables);
-    this._env = read.env;
-    this._state.setConnection({ stage: this._config.stage, url: this._config.webhooxyUrl, envPath: read.path, keys: read.keys });
-    // Аппці — звідки кожен ключ і стан Envify; значень секретів тут немає (value: null).
-    this._bridge.sendSecrets({ envify: this._envify.status, relay: read.keys.map(({ name, source, secret, value }) => ({ name, source, secret, value })) });
+    const webhook = this._webhooks.findActive('relay');
+    const workspaceToken = this._secrets.get('workspaceToken');
+    const ticketKey = this._secrets.get('jwtKey');
+    const room = webhook?.config.room;
+    this._webhookId = webhook?.id ?? null;
+    this._env =
+      webhook && room && workspaceToken && ticketKey ? { workspaceToken, ticketKey, destId: webhook.destId, workspace: webhook.workspace, room } : null;
+    const missing = [...this._secrets.missing, ...(webhook ? [] : ['вебхук relay'])];
+    this._state.setConnection({ stage: this._config.stage, url: this._config.webhooxyUrl, missing });
+  }
+
+  /** Лічильник вебхука relay (scope `webhook:<id>`). */
+  private _track(metric: string) {
+    if (this._webhookId !== null) this._metrics.incr(metric, webhookScope(this._webhookId));
   }
 
   onModuleDestroy() {
@@ -123,7 +138,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
       return;
     }
     if (!this._env || !this._config.webhooxyUrl) {
-      this._setStatus('unconfigured', 'Немає relay.env або webhooxy для цього stage');
+      this._setStatus('unconfigured', 'Немає вебхука relay, секретів або webhooxy для цього stage');
       return;
     }
     if (this._socket) return;
@@ -141,7 +156,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     }
     const error = `${reply.statusCode} ${reply.message}`;
     this._logger.warn(`Relay limits rejected: ${error}`);
-    this._journal.count([RELAY_METRICS.errors]);
+    this._track(RELAY_METRICS.errors);
     this._state.setLimits({ error });
     this._modules.treeChanged$.next();
     this._notifications.notify({ source: 'relay', type: 'limits', title: '⚠️ webhooxy не прийняв ліміти', fields: { error } });
@@ -159,7 +174,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     if (reply.statusCode === 200) this._lastTree = fingerprint;
     else {
       this._logger.warn(`Broadcast rejected: ${reply.statusCode} ${reply.message}`);
-      this._journal.count([RELAY_METRICS.errors]);
+      this._track(RELAY_METRICS.errors);
     }
   }
 
@@ -179,7 +194,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     socket.on('connect', () => {
       this._lastTree = '';
       this._logger.log(`Relay host online (${this._config.stage})`);
-      this._journal.count([RELAY_METRICS.connects]);
+      this._track(RELAY_METRICS.connects);
       this._setStatus('online');
     });
     socket.on('connect_error', (error) => this._onConnectError(socket, error));
@@ -217,7 +232,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     });
     socket.on('relay:message', (envelope: ServerEnvelope<unknown> | undefined, ack: Ack) => {
       if (typeof ack !== 'function') return;
-      this._journal.count([RELAY_METRICS.messages]);
+      this._track(RELAY_METRICS.messages);
       void this._handle(envelope?.data)
         .catch((): RelayHostReply => ({ type: 'error', message: 'Internal error' }))
         .then((data) => ack({ data }));
@@ -248,7 +263,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     const deviceId = parseDeviceViewerSub(check.claims.sub);
     if (deviceId !== null && !this._pairing.deviceExists(deviceId)) return this._deny(data.viewerId, 'device revoked');
     this._logger.log(`Viewer ${data.viewerId} allowed (${check.claims.sub})`);
-    this._journal.count([RELAY_METRICS.viewerAllowed]);
+    this._track(RELAY_METRICS.viewerAllowed);
     this._state.addViewer({
       viewerId: data.viewerId,
       sub: check.claims.sub,
@@ -304,7 +319,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
 
   private _deny(viewerId: string, reason: string) {
     this._logger.warn(`Viewer ${viewerId} denied: ${reason}`);
-    this._journal.count([RELAY_METRICS.viewerDenied]);
+    this._track(RELAY_METRICS.viewerDenied);
     this._notifications.notify({ source: 'relay', type: 'denied', title: '🚫 Viewer-а не пущено', fields: { viewerId, reason } });
     return { allow: false };
   }

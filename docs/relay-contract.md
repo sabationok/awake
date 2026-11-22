@@ -6,7 +6,7 @@
 
 ## Середовища
 
-Поки є тільки dev, і середовища не змішуються: MaControl dev UI (Vercel, гілка `dev`) → webhooxy API dev (`webhooks-proxy-dev.up.railway.app`) → агент на Mac. Кожен сервіс знає свій stage (агент `MACONTROL_STAGE`, дашборд `STAGE`, за замовчуванням `dev`) і бере URL webhooxy того самого stage з мапи в конфігу (`agent/src/config/agent-config.ts`, `web/src/server/stage-config.ts`); `WEBHOOXY_URL` лише перекриває його. Ключ `WEBHOOXY_JWT_TICKET_KEY` — з dev-середовища Envify. Прод (`main` ↔ production) з'явиться окремо.
+Поки є тільки dev, і середовища не змішуються: MaControl dev UI (Vercel, гілка `dev`) → webhooxy API dev (`webhooks-proxy-dev.up.railway.app`) → агент на Mac. Кожен сервіс знає свій stage (агент `MACONTROL_STAGE`, дашборд `STAGE`, за замовчуванням `dev`) і бере URL webhooxy того самого stage з мапи в конфігу (`agent/src/config/agent-config.ts`, `web/src/server/stage-config.ts`); `WEBHOOXY_URL` лише перекриває його. Ключ `MACONTROL_JWT_KEY` (старе ім'я `WEBHOOXY_JWT_TICKET_KEY` ще читається) — з dev-середовища Envify. Прод (`main` ↔ production) з'явиться окремо.
 
 ## Підключення
 
@@ -48,7 +48,7 @@
 > Поточна реалізація. Її замінить схема «Авторизація пристрою: два шари» нижче.
 
 - Server action на Vercel підписує його після перевірки сесії дашборду. Агент перевіряє його в `relay:authorize`.
-- Ключ — `WEBHOOXY_JWT_TICKET_KEY`: він для квитків на webhooxy-relay, тому має префікс сервісу, а не `MACONTROL_`. Ключ спільний для Vercel і агента й лежить в Envify проєкту MaControl. Сам webhooxy його не знає і токен не перевіряє.
+- Ключ — `MACONTROL_JWT_KEY`: це ключ JWT аппки, а не webhooxy (старе ім'я `WEBHOOXY_JWT_TICKET_KEY` ще читається). Ключ спільний для Vercel і агента й лежить в Envify проєкту MaControl. Сам webhooxy його не знає і токен не перевіряє.
 - Формат: JWT HS256, claims:
   - `aud: 'macontrol-agent'`;
   - `sub` — id користувача дашборду;
@@ -137,10 +137,10 @@
 ## Модуль Relay в агенті
 
 - Код: `agent/src/relay/`. Перемикач `relay.enabled` (за замовчуванням вимкнено) і сторінка Relay видно лише в SwiftUI (scope `mac`). Вмикати й вимикати можна ще з Telegram: `/relay`.
-- Ключі host-а: `~/.config/awake/relay.env` (шлях — `MACONTROL_RELAY_ENV`) або process.env: `WEBHOOXY_WORKSPACE_TOKEN`, `WEBHOOXY_DEST_ID`, `WEBHOOXY_WORKSPACE`, `WEBHOOXY_ROOM`, `WEBHOOXY_JWT_TICKET_KEY`.
+- DEST, workspace і room host-а — з увімкненого вебхука `relay` у SQLite агента (таблиця `webhooks`; старий `relay.env` імпортується один раз). Секрети глобальні: `WEBHOOXY_WORKSPACE_TOKEN` і `MACONTROL_JWT_KEY` з process.env, Envify або `~/.config/awake/secrets.env` (старий `relay.env` ще читається).
 - Стан host-а: `off`, `unconfigured`, `connecting`, `online`, `offline`, `evicted`, `refused`. Перехід активний ↔ неактивний (після 10 с без змін) іде в Telegram, перемикач `telegram.events.relay.status`.
 - Сесії: останні 20 viewer-ів, яких агент пустив, з поміткою «через проксі webhooxy». Подія виходу viewer-а (`relay:viewer:left`) ще не погоджена з webhooxy.
-- Дашборд: server action `getRelayAccess` (`web/src/server/relay-actions.ts`) підписує квиток для дійсної сесії; env Vercel: `WEBHOOXY_JWT_TICKET_KEY`, `WEBHOOXY_ROOM`, `WEBHOOXY_WORKSPACE`, а URL — зі stage. Пріоритет режимів дашборду: напряму → relay → лише перегляд.
+- Дашборд: server action `getRelayAccess` (`web/src/server/relay-actions.ts`) підписує квиток для дійсної сесії; env Vercel: `MACONTROL_JWT_KEY`, `WEBHOOXY_ROOM`, `WEBHOOXY_WORKSPACE`, а URL — зі stage. Пріоритет режимів дашборду: напряму → relay → лише перегляд.
 
 ## Авторизація пристрою: два шари (контракт фінальний; webhooxy#12 відкритий, агент ще не реалізований)
 
@@ -160,7 +160,7 @@
 
 Коди окремі для кожного шляху: локальний (`http://<LAN IP>:<httpPort>/#p=…`, лише в довіреній Wi-Fi) через relay не приймається, і навпаки. «Новий код» на Маці скидає обидва без періоду пільги.
 
-**Connect (кожен раз).** Браузер → `POST /api/mac/connect` (з `mc_device`) → `relay:request` → Мак перевіряє пристрій і відповідає `RelayViewerAccess { url, room, workspace, token }` (те саме, що `getRelayAccess` для сесії з паролем). Квиток підписує Мак ключем `WEBHOOXY_JWT_TICKET_KEY`, `sub = device:<id>`. Браузер підключається до сокета напряму, а Мак перевіряє квиток у `relay:authorize` і відмовляє, якщо пристрій уже відкликано. Сесія з паролем має пріоритет: квиток від Vercel, потім від Мака.
+**Connect (кожен раз).** Браузер → `POST /api/mac/connect` (з `mc_device`) → `relay:request` → Мак перевіряє пристрій і відповідає `RelayViewerAccess { url, room, workspace, token }` (те саме, що `getRelayAccess` для сесії з паролем). Квиток підписує Мак ключем `MACONTROL_JWT_KEY`, `sub = device:<id>`. Браузер підключається до сокета напряму, а Мак перевіряє квиток у `relay:authorize` і відмовляє, якщо пристрій уже відкликано. Сесія з паролем має пріоритет: квиток від Vercel, потім від Мака.
 
 **Відкликання.** На Маці або через ТГ: пристрій видаляється, а його живі сесії Мак виганяє через `relay:kick`.
 

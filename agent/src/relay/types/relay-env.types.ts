@@ -1,4 +1,4 @@
-/** Ключі relay агента: доступ host-а до webhooxy і ключ квитків viewer-а. */
+/** З чим host підключається: DEST / workspace / room з вебхука relay, токен воркспейсу й ключ JWT — глобальні секрети. */
 export interface RelayEnv {
   /** Токен воркспейсу webhooxy (лише в агента). */
   workspaceToken: string;
@@ -8,6 +8,6 @@ export interface RelayEnv {
   workspace: string;
   /** Room DEST-а: для перевірки `room` у квитку viewer-а. */
   room: string;
-  /** WEBHOOXY_JWT_TICKET_KEY: спільний з дашбордом ключ HS256. */
+  /** Ключ JWT аппки (MACONTROL_JWT_KEY): спільний з дашбордом ключ HS256. */
   ticketKey: string;
 }

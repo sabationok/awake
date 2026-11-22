@@ -15,6 +15,8 @@ import type {
   SleepTimerEvent,
   DevicesSnapshot,
   SecretsSnapshot,
+  WebhookAction,
+  WebhookInfo,
 } from '@awake/contracts';
 import { writeProtocolLine } from './protocol-stdout';
 
@@ -41,7 +43,9 @@ export class MacBridgeService implements OnModuleInit {
   readonly events$ = new Subject<UiEvent>();
   /** Запити сторінки «Пристрої» Mac-аппки. */
   readonly devices$ = new Subject<DevicesRequest>();
-  /** Аппка переписала relay.env. */
+  /** Модалка вебхука: зберегти, увімкнути, вимкнути, прибрати. */
+  readonly webhooks$ = new Subject<WebhookAction>();
+  /** Аппка переписала secrets.env (або старий relay.env). */
   readonly relayEnvReload$ = new Subject<void>();
   /** Аппка переписала envify.env або натиснула «Оновити». */
   readonly envifyReload$ = new Subject<void>();
@@ -89,6 +93,10 @@ export class MacBridgeService implements OnModuleInit {
 
   sendTrustedNetworks(ssids: string[]) {
     this._send({ type: 'trustedNetworks', data: { ssids } });
+  }
+
+  sendWebhooks(webhooks: WebhookInfo[]) {
+    this._send({ type: 'webhooks', data: { webhooks } });
   }
 
   sendSecrets(snapshot: SecretsSnapshot) {
@@ -139,6 +147,9 @@ export class MacBridgeService implements OnModuleInit {
         return;
       case 'proximity':
         this.proximity$.next(message.data);
+        return;
+      case 'webhooks':
+        this.webhooks$.next(message.data);
         return;
     }
   }

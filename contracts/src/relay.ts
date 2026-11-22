@@ -16,7 +16,7 @@ export const RELAY_TICKET_AUDIENCE = 'macontrol-agent';
 /** Квиток живе недовго: він потрібен лише на handshake. */
 export const RELAY_TICKET_TTL_SECONDS = 300;
 
-/** Claims квитка viewer-а (JWT HS256, ключ WEBHOOXY_JWT_TICKET_KEY). */
+/** Claims квитка viewer-а (JWT HS256, ключ MACONTROL_JWT_KEY). */
 export interface RelayTicketClaims {
   aud: typeof RELAY_TICKET_AUDIENCE;
   sub: string;

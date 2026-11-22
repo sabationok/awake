@@ -86,6 +86,7 @@ enum AgentProtocol {
         case devices(AgentDevices)
         case secrets(AgentSecrets)
         case trustedNetworks([String])
+        case webhooks([AgentWebhook])
         case other
     }
 
@@ -121,6 +122,11 @@ enum AgentProtocol {
             struct Wrapper: Decodable { let data: Networks }
             guard let ssids = try? JSONDecoder().decode(Wrapper.self, from: data).data.ssids else { return .other }
             return .trustedNetworks(ssids)
+        case "webhooks":
+            struct List: Decodable { let webhooks: [AgentWebhook] }
+            struct Wrapper: Decodable { let data: List }
+            guard let webhooks = try? UiTreeDecoder.decoder.decode(Wrapper.self, from: data).data.webhooks else { return .other }
+            return .webhooks(webhooks)
         case "secrets":
             struct Wrapper: Decodable { let data: AgentSecrets }
             guard let secrets = try? UiTreeDecoder.decoder.decode(Wrapper.self, from: data).data else { return .other }
