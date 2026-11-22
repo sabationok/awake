@@ -20,6 +20,7 @@ final class AgentService {
     var onSecrets: ((AgentSecrets) -> Void)?
     var onTrustedNetworks: (([String]) -> Void)?
     var onWebhooks: (([AgentWebhook]) -> Void)?
+    var onServerInfo: ((AgentServerInfo) -> Void)?
 
     private var process: Process?
     private var input: FileHandle?
@@ -132,6 +133,8 @@ final class AgentService {
                 onTrustedNetworks?(ssids)
             case .webhooks(let webhooks):
                 onWebhooks?(webhooks)
+            case .server(let info):
+                onServerInfo?(info)
             case .other:
                 break
             }

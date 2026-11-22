@@ -168,7 +168,41 @@ export type AgentToMacMessage =
   /** Довірені мережі Wi-Fi з SQLite агента: шлеться на старті й після кожної зміни. */
   | { type: 'trustedNetworks'; data: { ssids: string[] } }
   /** Вебхуки з SQLite агента зі станом і лічильниками: на старті й після кожної зміни. */
-  | { type: 'webhooks'; data: { webhooks: import('./webhooks').WebhookInfo[] } };
+  | { type: 'webhooks'; data: { webhooks: import('./webhooks').WebhookInfo[] } }
+  /** Сам інстанс сервера агента (процес, навантаження, порти, звідки віддає веб): на старті й раз на 10 с. Лише для Mac-аппки. */
+  | { type: 'server'; data: ServerInfo };
+
+/** Звідки агент роздає локальний пульт. `published` — `scripts/publish-web-local.sh`, `bundle` — збірка в аппці. */
+export interface ServerWebInfo {
+  source: 'published' | 'bundle' | null;
+  dir: string | null;
+  /** Коли зібрано (mtime index.html). */
+  builtAt: string | null;
+}
+
+/** Навантаження процесу агента за останній інтервал знімка. */
+export interface ServerUsage {
+  /** CPU процесу, % одного ядра за інтервал. */
+  cpu: number;
+  /** Пам'ять процесу (RSS), байти. */
+  rss: number;
+  /** Зайнята купа V8, байти. */
+  heapUsed: number;
+  /** loadavg Mac за 1 хв. */
+  load: number;
+}
+
+/** Інстанс сервера агента: не бізнес-логіка (вона — сторінки модуля «Агент»), а сам процес. */
+export interface ServerInfo {
+  pid: number;
+  /** Версія Node (`v26.13.1`). */
+  node: string;
+  stage: string;
+  startedAt: string;
+  usage: ServerUsage;
+  ports: { https: number; http: number; tailnet: number };
+  web: ServerWebInfo;
+}
 
 /** Звідки взявся ключ: process.env, Envify, файл у ~/.config/awake, або його немає. */
 export type SecretSource = 'env' | 'envify' | 'file' | null;

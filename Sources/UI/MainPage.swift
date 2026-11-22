@@ -4,6 +4,7 @@ enum MainPage: Hashable, Identifiable {
     case permission
     case connection
     case devices
+    case server
 
     var id: MainPage { self }
 
@@ -14,6 +15,7 @@ enum MainPage: Hashable, Identifiable {
         case .permission: "permission"
         case .connection: "connection"
         case .devices: "devices"
+        case .server: "server"
         }
     }
 
@@ -22,6 +24,7 @@ enum MainPage: Hashable, Identifiable {
         case "permission": self = .permission
         case "connection": self = .connection
         case "devices": self = .devices
+        case "server": self = .server
         default:
             guard storageKey.hasPrefix("remote:") else { return nil }
             self = .remote(id: String(storageKey.dropFirst("remote:".count)))

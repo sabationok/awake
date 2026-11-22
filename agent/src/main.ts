@@ -47,6 +47,9 @@ async function bootstrap() {
     maxAge: 600,
   });
   // Локальна збірка дашборду. Її файли публічні, дані віддає лише API з токеном.
+  // Спершу опублікований веб (express.static шукає файл на кожен запит, тож нова публікація діє без перезапуску;
+  // папки може ще не бути), потім збірка з бандла аппки як запасна.
+  app.useStaticAssets(config.webPublishedDir);
   if (config.webDir && existsSync(config.webDir)) app.useStaticAssets(config.webDir);
   app.enableShutdownHooks();
 

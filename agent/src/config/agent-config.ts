@@ -38,6 +38,11 @@ export interface AgentConfig {
   token: string;
   dbPath: string;
   webDir: string | null;
+  /**
+   * Опублікований пульт поза аппкою (`scripts/publish-web-local.sh`): має перевагу над збіркою з бандла,
+   * тож новий веб не потребує перевстановлення аппки. Папки може не бути — тоді лише `webDir`.
+   */
+  webPublishedDir: string;
   upstashUrl: string | null;
   upstashToken: string | null;
   /** Дозволений origin для CORS, лише для розробки дашборду через next dev. */
@@ -66,6 +71,7 @@ export function readAgentConfig(env: NodeJS.ProcessEnv = process.env): AgentConf
     token,
     dbPath: env.MACONTROL_DB ?? join(homedir(), '.config/awake/awake.db'),
     webDir: env.MACONTROL_WEB_DIR || null,
+    webPublishedDir: env.MACONTROL_WEB_PUBLISHED_DIR || join(homedir(), 'Library/Application Support/MaControl/web'),
     upstashUrl: env.UPSTASH_REDIS_REST_URL || null,
     upstashToken: env.UPSTASH_REDIS_REST_TOKEN || null,
     corsOrigin: env.MACONTROL_CORS_ORIGIN || null,

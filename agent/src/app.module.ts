@@ -10,6 +10,7 @@ import { MetricsModule } from './metrics';
 import { SecretsModule } from './secrets';
 import { WebhooksModule } from './webhooks';
 import { TailscaleModule } from './tailscale';
+import { ServerInfoModule } from './server-info';
 import { TrustedNetworksModule } from './trusted-networks';
 import { ProximityModule } from './proximity';
 import { LogsModule } from './logs/logs.module';
@@ -36,6 +37,7 @@ import { TlsModule } from './tls/tls.module';
     MetricsModule,
     WebhooksModule,
     TailscaleModule,
+    ServerInfoModule,
     TrustedNetworksModule,
     ProximityModule,
     DevicesModule,

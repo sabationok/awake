@@ -37,6 +37,9 @@ extension AwakeModel {
             self?.importLegacyTrustedNetworks(known: ssids)
             if self?.trustedNetworks != ssids { self?.trustedNetworks = ssids }
         }
+        agent.onServerInfo = { [weak self] info in
+            if self?.serverInfo != info { self?.serverInfo = info }
+        }
         agent.onWebhooks = { [weak self] webhooks in
             if self?.webhooks != webhooks { self?.webhooks = webhooks }
         }
@@ -63,6 +66,13 @@ extension AwakeModel {
         agentSettings = AgentSettingsStore.load()
         // Нові ключі Upstash агент читає лише при старті.
         agent.stop()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in self?.applyAgent() }
+    }
+
+    /// «Перезапустити» на сторінці «Сервер»: той самий шлях, що й після зміни налаштувань.
+    func restartAgent() {
+        agent.stop()
+        serverInfo = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in self?.applyAgent() }
     }
 

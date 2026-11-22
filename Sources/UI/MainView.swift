@@ -35,7 +35,7 @@ struct MainView: View {
     /// решта сторінок вкладені під ним. Далі системні сторінки дерева і нативні «Підключення», «Пристрої» та «Дозвіл».
     /// Без дерева (агент не запущений) лишаються лише нативні.
     private var sections: [SidebarSection<MainPage>] {
-        let native = [MainPage.connection, .devices, .permission].map { SidebarNode(item: $0) }
+        let native = [MainPage.server, .connection, .devices, .permission].map { SidebarNode(item: $0) }
         guard let tree = model.uiTree else { return [SidebarSection(nodes: native)] }
         let modules = tree.modules.compactMap { module -> SidebarNode<MainPage>? in
             let pages = tree.pages
@@ -65,6 +65,7 @@ struct MainView: View {
         case .permission: "Дозвіл"
         case .connection: "Підключення"
         case .devices: "Пристрої"
+        case .server: "Сервер"
         }
     }
 
@@ -74,6 +75,7 @@ struct MainView: View {
         case .permission: "lock.fill"
         case .connection: "antenna.radiowaves.left.and.right"
         case .devices: "laptopcomputer.and.iphone"
+        case .server: "server.rack"
         }
     }
 
@@ -88,9 +90,6 @@ struct MainView: View {
                     if uiPage.id == "telegram" {
                         TelegramSection()
                     }
-                    if uiPage.id == "bot-overview" {
-                        AgentSection()
-                    }
                     if uiPage.id == "relay" {
                         WebhooksSection()
                     }
@@ -103,13 +102,14 @@ struct MainView: View {
             }
         case .connection:
             Form {
-                // Без дерева немає вкладки Агент: вмикач лишається тут, щоб агента можна було ввімкнути.
-                if model.uiTree == nil {
-                    AgentSection()
-                }
                 RemoteSection()
                 EnvifySection()
                 AppSecretsSection()
+            }
+            .formStyle(.grouped)
+        case .server:
+            Form {
+                ServerSection()
             }
             .formStyle(.grouped)
         case .devices:

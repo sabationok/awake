@@ -52,6 +52,8 @@ final class AwakeModel: ObservableObject {
     @Published var secrets: AgentSecrets?
     /// Вебхуки webhooxy з SQLite агента, зі станом і лічильниками. Порожньо, поки агент їх не надіслав.
     @Published var webhooks: [AgentWebhook] = []
+    /// Інстанс сервера агента (pid, порти, звідки пульт). nil, поки агент його не надіслав.
+    @Published var serverInfo: AgentServerInfo?
     @Published var agentEnabled = UserDefaults.standard.object(forKey: "agent.enabled") as? Bool ?? true {
         didSet {
             UserDefaults.standard.set(agentEnabled, forKey: "agent.enabled")

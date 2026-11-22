@@ -15,6 +15,7 @@ import type {
   SleepTimerEvent,
   DevicesSnapshot,
   SecretsSnapshot,
+  ServerInfo,
   WebhookAction,
   WebhookInfo,
 } from '@awake/contracts';
@@ -93,6 +94,10 @@ export class MacBridgeService implements OnModuleInit {
 
   sendTrustedNetworks(ssids: string[]) {
     this._send({ type: 'trustedNetworks', data: { ssids } });
+  }
+
+  sendServerInfo(info: ServerInfo) {
+    this._send({ type: 'server', data: info });
   }
 
   sendWebhooks(webhooks: WebhookInfo[]) {
