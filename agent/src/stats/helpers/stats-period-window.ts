@@ -1,5 +1,5 @@
 import { StatGranularity, type StatsPeriod, type UiChart } from '@awake/contracts';
-import { statNextPeriodStart, statPeriodStart } from '../../stats';
+import { statNextPeriodStart, statPeriodStart } from './stat-period';
 
 const MIN = 60_000;
 const DAY = 24 * 60 * MIN;

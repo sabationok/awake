@@ -1,7 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import type { ServerCharts, ServerChartsTick, StatsPeriod, UiChart } from '@awake/contracts';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
-import { statNextPeriodStart, statPeriodStart, StatsService } from '../../../stats';
+import {
+  counterChartPoints,
+  gaugeChartPoints,
+  statNextPeriodStart,
+  statPeriodStart,
+  StatsService,
+  statsPeriodWindow,
+  type StatsPeriodWindow,
+} from '../../../stats';
 import {
   SERVER_CPU_STAT_NS,
   SERVER_LOAD_STAT_NS,
@@ -9,8 +17,6 @@ import {
   SERVER_REQUESTS_STAT_NS,
   SERVER_STARTS_STAT_NS,
 } from '../../constants/server-stats';
-import { counterChartPoints, gaugeChartPoints } from '../../helpers/stat-timeline-charts';
-import { statsPeriodWindow, type StatsPeriodWindow } from '../../helpers/stats-period-window';
 
 const PATHS = { loopback: 'Цей Mac', lan: 'Wi-Fi', tailnet: 'Tailscale' };
 const ERRORS = { '4xx': '4xx', '5xx': '5xx' };
