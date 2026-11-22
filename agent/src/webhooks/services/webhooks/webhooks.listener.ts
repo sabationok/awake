@@ -1,13 +1,13 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { filter, merge, Subscription } from 'rxjs';
-import type { WebhookInfo } from '@awake/contracts';
+import type { StatsPeriod, WebhookInfo } from '@awake/contracts';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
-import { flattenStatTotals, StatsService } from '../../../stats';
+import { asStatsPeriod, StatsService } from '../../../stats';
 import { RelayStateService } from '../../../relay/state/relay-state.service';
 import type { RelayStatus } from '../../../relay/types/relay-status.types';
 import { isValidWebhookInput } from '../../helpers/is-valid-webhook-input';
 import { WEBHOOK_EVENTS_STAT_NS } from '../../constants/webhook-stats';
-import { webhookStatSeries } from '../../helpers/webhook-stat-series';
+import { WebhookChartsService } from '../webhook-charts';
 import { WebhooksService } from './webhooks.service';
 
 const RELAY_STATUS: Record<RelayStatus, WebhookInfo['status']> = {
@@ -20,21 +20,29 @@ const RELAY_STATUS: Record<RelayStatus, WebhookInfo['status']> = {
   refused: 'offline',
 };
 
-/** Модалка аппки → SQLite; список, лічильники чи стан relay змінились → аппці новий знімок вебхуків. */
+/** Модалка аппки → SQLite; список, події, стан relay чи період графіків змінились → аппці новий знімок вебхуків. */
 @Injectable()
 export class WebhooksListener implements OnModuleInit, OnModuleDestroy {
   private readonly _subscription = new Subscription();
+  /** Період графіків карток, який вибрала аппка; до її запиту — «Сьогодні». */
+  private _period: StatsPeriod = 'today';
 
   constructor(
     private readonly _bridge: MacBridgeService,
     private readonly _webhooks: WebhooksService,
     private readonly _stats: StatsService,
+    private readonly _charts: WebhookChartsService,
     private readonly _relayState: RelayStateService,
   ) {}
 
   onModuleInit() {
     this._subscription.add(
       this._bridge.webhooks$.subscribe((request) => {
+        if (request?.action === 'period') {
+          this._period = asStatsPeriod(String(request.period));
+          this._push();
+          return;
+        }
         if (request?.action === 'save') {
           if (isValidWebhookInput(request.webhook)) this._webhooks.save(request.webhook);
           return;
@@ -56,7 +64,7 @@ export class WebhooksListener implements OnModuleInit, OnModuleDestroy {
     const webhooks: WebhookInfo[] = this._webhooks.findMany().map((webhook) => ({
       ...webhook,
       status: webhook.type !== 'relay' ? null : webhook.id === relay?.id ? RELAY_STATUS[this._relayState.state.status] : 'off',
-      metrics: flattenStatTotals(this._stats.totals(webhookStatSeries(webhook.id))),
+      charts: this._charts.cardCharts(webhook.id, this._period),
     }));
     this._bridge.sendWebhooks(webhooks);
   }

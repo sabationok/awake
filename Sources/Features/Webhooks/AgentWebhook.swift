@@ -40,11 +40,6 @@ struct AgentWebhook: Decodable, Equatable, Identifiable {
         var room: String?
     }
 
-    struct Metrics: Decodable, Equatable {
-        let today: [String: Int]
-        let total: [String: Int]
-    }
-
     let id: Int
     let whId: String
     let provider: Provider
@@ -58,7 +53,8 @@ struct AgentWebhook: Decodable, Equatable, Identifiable {
     let disabledAt: Date?
     /// Лише в relay: online | connecting | offline | off | unconfigured.
     let status: String?
-    let metrics: Metrics
+    /// Графіки подій за вибраний на «Вебхуках» період; вебхук без жодної події — без графіків.
+    let charts: [UiChart]
 
     var isEnabled: Bool { disabledAt == nil }
 }

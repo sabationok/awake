@@ -36,10 +36,13 @@ export interface Webhook {
   disabledAt?: string;
 }
 
-/** Вебхук для аппки: разом зі станом підключення (лише `relay`) і лічильниками сьогодні / усього. */
+/**
+ * Вебхук для аппки: разом зі станом підключення (лише `relay`) і графіками подій за період, який аппка вибрала
+ * (`{ action: 'period' }`). Вебхук без жодної події — без графіків.
+ */
 export interface WebhookInfo extends Webhook {
   status: 'online' | 'connecting' | 'offline' | 'off' | 'unconfigured' | null;
-  metrics: { today: Record<string, number>; total: Record<string, number> };
+  charts: import('./ui').UiChart[];
 }
 
 /** Форма вебхука з модалки аппки. Без `id` — новий; `whId` без значення агент згенерує сам. */
@@ -56,4 +59,6 @@ export interface WebhookInput {
 
 export type WebhookAction =
   | { action: 'save'; webhook: WebhookInput }
-  | { action: 'enable' | 'disable' | 'delete'; id: number };
+  | { action: 'enable' | 'disable' | 'delete'; id: number }
+  /** Період графіків карток: агент шле новий знімок з графіками цього періоду. */
+  | { action: 'period'; period: import('./index').StatsPeriod };

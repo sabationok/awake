@@ -81,8 +81,8 @@ extension AwakeModel {
     }
 
     /// «Сервер» відкрився, змінився період або перезапустився агент: агент шле графіки й далі тіки цього періоду.
-    func requestServerCharts(_ period: ServerChartsPeriod) {
-        struct Request: Encodable { let period: ServerChartsPeriod }
+    func requestServerCharts(_ period: StatsPeriod) {
+        struct Request: Encodable { let period: StatsPeriod }
         agent.send(type: "serverCharts", data: Request(period: period))
     }
 

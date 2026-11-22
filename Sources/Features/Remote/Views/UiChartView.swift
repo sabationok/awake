@@ -3,6 +3,8 @@ import SwiftUI
 /// Вузол `chart` агента → BarHistoryChart: точки, вісь за розміром бакета, кольори з тонів.
 struct UiChartView: View {
     let chart: UiChart
+    /// Висота стовпчиків; менша — для графіка всередині картки.
+    var height: CGFloat = 120
 
     var body: some View {
         BarHistoryChart(
@@ -12,6 +14,7 @@ struct UiChartView: View {
             colors: (chart.tones ?? [:]).mapValues(\.color),
             color: chart.tone?.color ?? .accentColor,
             limit: chart.limit,
+            height: height,
             format: Self.formatter(chart.format)
         )
         .padding(.vertical, 4)

@@ -101,7 +101,7 @@ struct ServerSection: View {
 private struct ServerStatsSections: View {
     let pid: Int
     @EnvironmentObject private var model: AwakeModel
-    @AppStorage("server.chartsPeriod") private var period: ServerChartsPeriod = .today
+    @AppStorage("server.chartsPeriod") private var period: StatsPeriod = .today
 
     private var charts: [UiChart] {
         guard let data = model.serverCharts, data.period == period else { return [] }
@@ -111,7 +111,7 @@ private struct ServerStatsSections: View {
     var body: some View {
         Section {
             Picker("Період", selection: $period) {
-                ForEach(ServerChartsPeriod.allCases) { Text($0.title).tag($0) }
+                ForEach(StatsPeriod.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
             .labelsHidden()

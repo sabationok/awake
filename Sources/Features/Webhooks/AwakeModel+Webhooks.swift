@@ -21,6 +21,15 @@ extension AwakeModel {
         agent.send(type: "webhooks", data: Change(action: enabled ? "enable" : "disable", id: id))
     }
 
+    /// Період графіків карток: агент шле новий знімок вебхуків з графіками цього періоду.
+    func requestWebhookCharts(_ period: StatsPeriod) {
+        struct Period: Encodable {
+            let action = "period"
+            let period: StatsPeriod
+        }
+        agent.send(type: "webhooks", data: Period(period: period))
+    }
+
     func deleteWebhook(_ id: Int) {
         agent.send(type: "webhooks", data: Change(action: "delete", id: id))
     }

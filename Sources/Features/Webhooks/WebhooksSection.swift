@@ -5,6 +5,8 @@ struct WebhooksSection: View {
     @EnvironmentObject private var model: AwakeModel
     /// Відкрита модалка: `.new` або наявний вебхук.
     @State private var editing: Editing?
+    /// Період графіків подій у картках (`StatsPeriod`); агент шле знімок вебхуків з графіками цього періоду.
+    @AppStorage("webhooks.chartsPeriod") private var period: StatsPeriod = .today
 
     private enum Editing: Identifiable {
         case new
@@ -23,6 +25,12 @@ struct WebhooksSection: View {
             if model.webhooks.isEmpty {
                 Text(model.agentStatus.isRunning ? "Вебхуків ще немає." : "Агент не запущений.")
                     .foregroundStyle(.secondary)
+            } else {
+                Picker("Період", selection: $period) {
+                    ForEach(StatsPeriod.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
             }
             ForEach(model.webhooks) { webhook in
                 WebhookCard(webhook: webhook) { editing = .existing(webhook) }
@@ -37,6 +45,8 @@ struct WebhooksSection: View {
         } footer: {
             Text("Webhooxy реєструє вебхук сам на першому запиті, агент лише пам'ятає свої. Токен воркспейсу й ключ JWT спільні для всіх — у «Підключення» → «Ключі аппки».")
         }
+        // Новий період або перезапущений агент (новий pid): агент шле знімок з графіками цього періоду.
+        .task(id: "\(period.rawValue)|\(model.serverInfo?.pid ?? 0)") { model.requestWebhookCharts(period) }
         .sheet(item: $editing) { editing in
             switch editing {
             case .new: WebhookFormSheet(webhook: nil)

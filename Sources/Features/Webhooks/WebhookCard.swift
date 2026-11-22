@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Картка вебхука в списку: тип, режим, DEST, стан (лише relay) і лічильники. Налаштування — у модалці.
+/// Картка вебхука в списку: тип, режим, DEST, стан (лише relay) і графіки подій за період. Налаштування — у модалці.
 struct WebhookCard: View {
     @EnvironmentObject private var model: AwakeModel
     let webhook: AgentWebhook
@@ -31,10 +31,8 @@ struct WebhookCard: View {
                 LabeledContent("Room", value: room)
             }
             LabeledContent("ID", value: webhook.whId)
-            if !metricRows.isEmpty {
-                ForEach(metricRows, id: \.key) { row in
-                    LabeledContent(row.label, value: row.value)
-                }
+            ForEach(webhook.charts, id: \.id) { chart in
+                UiChartView(chart: chart, height: 72)
             }
             HStack {
                 Spacer()
@@ -45,21 +43,6 @@ struct WebhookCard: View {
         .font(.callout)
         .padding(.vertical, 4)
     }
-
-    /// Лічильники сьогодні / усього; ключі без підпису показуються як є.
-    private var metricRows: [(key: String, label: String, value: String)] {
-        webhook.metrics.total.keys.sorted().map { key in
-            (key, Self.metricLabels[key] ?? key, "\(webhook.metrics.today[key] ?? 0) / \(webhook.metrics.total[key] ?? 0)")
-        }
-    }
-
-    private static let metricLabels = [
-        "relay.connects": "Підключень",
-        "relay.messages": "Повідомлень",
-        "relay.viewerAllowed": "Viewer-ів пущено",
-        "relay.viewerDenied": "Viewer-ів не пущено",
-        "relay.errors": "Помилок",
-    ]
 
     private func statusText(_ status: String) -> String {
         switch status {
