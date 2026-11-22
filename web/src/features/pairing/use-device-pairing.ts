@@ -1,15 +1,11 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import type { DevicePairingPoll } from '@awake/contracts';
-import { callAgent } from './agent-api';
+import { requestPairing, takePairingCode } from './request-pairing';
 
 const TOKEN_KEY = 'awake.deviceToken';
 
 /** waiting: код прийнято, чекаємо «Дозволити» на Mac; denied: на Mac відхилили. */
 export type PairingStatus = 'checking' | 'paired' | 'unpaired' | 'failed' | 'waiting' | 'denied';
-
-const POLL_MS = 1500;
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function readToken(): string | null {
   try {
@@ -34,9 +30,7 @@ export function useDevicePairing() {
   const [status, setStatus] = useState<PairingStatus>('checking');
 
   useEffect(() => {
-    const code = new URLSearchParams(location.hash.slice(1)).get('p');
-    // Код одноразовий: прибираємо його з адреси одразу, щоб не лишився в історії.
-    if (code) history.replaceState(null, '', location.pathname);
+    const code = takePairingCode();
     const saved = readToken();
     if (!code) {
       setToken(saved);
@@ -47,27 +41,18 @@ export function useDevicePairing() {
     // Код міняємо на запит, а далі чекаємо, поки на Mac натиснуть «Дозволити», як у месенджерах.
     (async () => {
       try {
-        const { requestId } = await callAgent<{ requestId: string }>('/api/devices/pair', null, {
-          method: 'POST',
-          body: JSON.stringify({ code }),
+        const poll = await requestPairing(code, '/api/devices/pair', {
+          onWaiting: () => setStatus('waiting'),
+          isCancelled: () => cancelled,
         });
-        if (cancelled) return;
-        setStatus('waiting');
-        while (!cancelled) {
-          const poll = await callAgent<DevicePairingPoll>(`/api/devices/pair/${encodeURIComponent(requestId)}`, null);
-          if (poll.status === 'pending') {
-            await sleep(POLL_MS);
-            continue;
-          }
-          if (poll.status === 'approved' && poll.token) {
-            saveToken(poll.token);
-            setToken(poll.token);
-            setStatus('paired');
-          } else {
-            setToken(saved);
-            setStatus(saved ? 'paired' : poll.status === 'denied' ? 'denied' : 'failed');
-          }
-          return;
+        if (!poll) return;
+        if (poll.status === 'approved' && poll.token) {
+          saveToken(poll.token);
+          setToken(poll.token);
+          setStatus('paired');
+        } else {
+          setToken(saved);
+          setStatus(saved ? 'paired' : poll.status === 'denied' ? 'denied' : 'failed');
         }
       } catch {
         if (cancelled) return;

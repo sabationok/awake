@@ -1,5 +1,6 @@
 import { io, type Socket } from 'socket.io-client';
-import type { RelayHostBroadcast, RelayHostReply, RelayViewerMessage, UiEvent, UiTree } from '@awake/contracts';
+import type { RelayHostBroadcast, RelayHostReply, RelayViewerAccess, RelayViewerMessage, UiEvent, UiTree } from '@awake/contracts';
+import { callAgent } from '@/features/pairing/agent-api';
 import { getRelayAccess } from '@/server/relay-actions';
 
 /**
@@ -19,6 +20,16 @@ interface ServerEnvelope<T> {
   message: string;
   data: T;
   meta?: { from?: string };
+}
+
+/**
+ * Квиток на сокет: із сесією дашборду його підписує Vercel, а сполученому пристрою — сам Mac
+ * через проксі (`/api/mac/connect` з HttpOnly-кукі `mc_device`). null — ні того, ні іншого.
+ */
+async function getViewerAccess(): Promise<RelayViewerAccess | null> {
+  const session = await getRelayAccess().catch(() => null);
+  if (session) return session;
+  return callAgent<RelayViewerAccess>('/api/mac/connect', null, { method: 'POST', body: '{}' }).catch(() => null);
 }
 
 /** Відмови handshake, після яких варто почекати, а не стукати знову одразу. */
@@ -59,7 +70,7 @@ export function createRelayConnection(onChange: (snapshot: RelaySnapshot) => voi
   };
 
   const start = async () => {
-    const first = await getRelayAccess().catch(() => null);
+    const first = await getViewerAccess();
     if (closed) return;
     if (!first) return update({ status: 'off' });
     let pendingAccess: typeof first | null = first;
@@ -72,7 +83,7 @@ export function createRelayConnection(onChange: (snapshot: RelaySnapshot) => voi
         if (pendingAccess) {
           use(pendingAccess);
           pendingAccess = null;
-        } else void getRelayAccess().then(use, () => use(null));
+        } else void getViewerAccess().then(use, () => use(null));
       },
     });
 

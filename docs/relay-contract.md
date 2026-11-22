@@ -153,13 +153,24 @@
 | Час життя | до відкликання | ≤ 300 с, одноразовий `jti` |
 | Видає / перевіряє | Мак: pairing / кожен HTTP-запит | Мак: відповідь на connect / `relay:authorize` |
 
-**Pairing (раз).** Мак показує QR → `https://<dashboard>/pair?code=…` (код одноразовий, ~2 хв). Браузер → проксі Vercel → `relay:request` → Мак перевіряє код, створює пристрій (зберігає лише хеш токена) і відповідає `cookies: [{ name: 'mc_device', … }]`.
+**Pairing (раз).** Мак показує дистанційний QR → `https://<dashboard>/pair#p=<code>` (код ~2 хв, попередній приймається ще період; `#`, щоб код не йшов у логи серверів). Сторінка `/pair` (web `features/pairing/use-remote-pairing.ts`):
+- `POST /api/mac/pair { code }` → `{ requestId }`; Мак показує «Це ви?» з позначкою дистанційного запиту;
+- `GET /api/mac/pair/<requestId>` раз на 1,5 с → `{ status: 'pending' | 'approved' | 'denied' | 'expired' }`;
+- на `approved` Мак створює пристрій (`via: 'remote'`, зберігає лише хеш токена) і відповідає `cookies: [{ name: 'mc_device', httpOnly, sameSite: 'lax', maxAge: 400 днів }]`. Токен у JS не потрапляє.
 
-**Connect (кожен раз).** Браузер → проксі (з `mc_device`) → `relay:request` → Мак перевіряє пристрій і відповідає `{ url: 'wss://…/relay?mt_workspace=…&ticket=…' }`. Квиток підписує Мак, і `sub` у ньому — id пристрою. Браузер підключається за `url` напряму, а Мак перевіряє свій квиток у `relay:authorize`.
+Коди окремі для кожного шляху: локальний (`http://<LAN IP>:<httpPort>/#p=…`, лише в довіреній Wi-Fi) через relay не приймається, і навпаки. «Новий код» на Маці скидає обидва без періоду пільги.
+
+**Connect (кожен раз).** Браузер → `POST /api/mac/connect` (з `mc_device`) → `relay:request` → Мак перевіряє пристрій і відповідає `RelayViewerAccess { url, room, workspace, token }` (те саме, що `getRelayAccess` для сесії з паролем). Квиток підписує Мак ключем `WEBHOOXY_JWT_TICKET_KEY`, `sub = device:<id>`. Браузер підключається до сокета напряму, а Мак перевіряє квиток у `relay:authorize` і відмовляє, якщо пристрій уже відкликано. Сесія з паролем має пріоритет: квиток від Vercel, потім від Мака.
 
 **Відкликання.** На Маці або через ТГ: пристрій видаляється, а його живі сесії Мак виганяє через `relay:kick`.
 
-**Проксі Vercel.** Легкий middleware: прокидає запит і відповідь як є, але в upstream пропускає лише кукі `mc_*`, бо сесія дашборду не повинна йти в webhooxy. URL upstream береться зі stage, ніколи від клієнта.
+**Проксі Vercel** (`web/src/app/api/mac/[...path]/route.vercel.ts`). Прокидає запит і відповідь як є, але:
+- в upstream іде лише кукі `mc_*`, сесія дашборду в webhooxy не потрапляє;
+- URL upstream — зі stage (`readStageConfig`), кімната й workspace — `WEBHOOXY_ROOM` / `WEBHOOXY_WORKSPACE`, ключ — `WEBHOOXY_RELAY_REQUEST_KEY` (credential `relay-request`, `rq_…`), ніколи від клієнта;
+- шлях лише з сегментів `[A-Za-z0-9_-]`, до 4; не-GET з чужим `Origin` — 403;
+- помилки webhooxy (`{ message, statusCode, innerCode }`) перекладаються в `AppResponse`.
+
+Middleware пускає `/pair` і `/api/mac/*` без сесії, а решту — із сесією або з кукі `mc_device` (лише наявність: перевіряє її Мак на connect). Upstash пристрою без пароля не видається.
 
 **webhooxy: `relay:request` (контракт хоста фінальний; [webhooxy#12](https://github.com/sabationok/webhooxy/pull/12) поверх #9 → dev, не змерджений; порядок merge #5 → #9 → #12 після «так» Віталія).** Поки PR не змерджений, ендпоінта на dev немає.
 
