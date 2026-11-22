@@ -23,6 +23,7 @@ final class AgentService {
     var onServerInfo: ((AgentServerInfo) -> Void)?
     var onServerCharts: ((AgentServerCharts) -> Void)?
     var onServerChartsTick: ((AgentServerChartsTick) -> Void)?
+    var onChartTick: ((UiChartTick) -> Void)?
 
     private var process: Process?
     private var input: FileHandle?
@@ -141,6 +142,8 @@ final class AgentService {
                 onServerCharts?(charts)
             case .serverChartsTick(let tick):
                 onServerChartsTick?(tick)
+            case .chartTick(let tick):
+                onChartTick?(tick)
             case .other:
                 break
             }

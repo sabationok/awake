@@ -1,4 +1,5 @@
-import type { CommandRequest, MacPermission, MacState, SettingDefinition, SettingValue, UiNode, UiPage } from '@awake/contracts';
+import type { CommandRequest, MacPermission, MacState, SettingDefinition, SettingValue, UiChart, UiNode, UiPage } from '@awake/contracts';
+import type { LiveChartSpec } from './live-chart.types';
 import type { ModuleSource } from './module-source';
 
 /**
@@ -15,6 +16,11 @@ export interface ModuleContext {
    * `ofModule` — налаштування іншого модуля (напр. перемикач webhooxy на сторінці Агента); зміна йде власнику.
    */
   settingNode(key: string, ofModule?: string): UiNode;
+  /**
+   * Вузол графіка статистики за період: точки всього вікна зараз, а в дереві Mac далі — live-тіки поточного бакета
+   * (LiveChartsService). id вузла має бути унікальним у всьому дереві.
+   */
+  liveChart(spec: LiveChartSpec): UiChart;
   /** Команда для Mac-аппки (сон, блокування, екран). */
   sendToMac(command: CommandRequest, source: ModuleSource): void;
   /** Спільний стан для /status: кожен модуль під своїм id, у порядку модулів. */

@@ -26,12 +26,7 @@ struct AgentServerCharts: Decodable, Equatable {
     /// Live-тік: поточний бакет замінює бакет з тим самим початком або дописується; усе раніше `from` відпадає.
     mutating func apply(_ tick: AgentServerChartsTick) {
         guard tick.period == period else { return }
-        charts = charts.map { chart in
-            guard let fresh = tick.points[chart.id], let start = fresh.first?.start else { return chart }
-            var updated = chart
-            updated.points = chart.points.filter { $0.start != start && $0.start >= tick.from } + fresh
-            return updated
-        }
+        charts = charts.map { chart in tick.points[chart.id].map { chart.merging($0, from: tick.from) } ?? chart }
     }
 }
 

@@ -22,6 +22,8 @@ import { isValidSettingValue } from './helpers/is-valid-setting-value';
 import { resolveSettingValue } from './helpers/resolve-setting-value';
 import { MACONTROL_BOT } from './constants/macontrol-bot';
 import { AGENT_ENABLED_KEY, AGENT_MODULE } from './bot/constants/agent-enabled';
+import { LiveChartsService } from './live-charts.service';
+import type { LiveChartRegistry } from './types/live-chart.types';
 import { MAC_MODULES, type MacModule, type ModuleContext, type ModulesStatus, type StatusFields } from './types/mac-module';
 import type { ModuleSource } from './types/module-source';
 
@@ -39,6 +41,7 @@ export class ModulesService {
     private readonly _settings: SettingsService,
     private readonly _router: BotRouterService,
     private readonly _journal: BotJournalService,
+    private readonly _liveCharts: LiveChartsService,
   ) {
     this._byId = new Map(modules.map((module) => [module.id, module]));
   }
@@ -47,7 +50,8 @@ export class ModulesService {
     return [...this._byId.values()];
   }
 
-  context(moduleId: string): ModuleContext {
+  /** `charts` — реєстр графіків збирання дерева; без нього графіки будуються, але тіків не отримують. */
+  context(moduleId: string, charts?: LiveChartRegistry): ModuleContext {
     const module = this._find(moduleId);
     // Звичайний get-аксесор у літералі бачить сам літерал, тож сервіс беремо в змінну.
     const bridge = this._bridge;
@@ -60,6 +64,7 @@ export class ModulesService {
         const owner = ofModule ? this._find(ofModule) : module;
         return buildSettingNode(owner.id, this._definition(owner, key), this._readSetting(owner, key));
       },
+      liveChart: (spec) => this._liveCharts.build(spec, charts),
       sendToMac: (command, source) => {
         bridge.sendCommand(command, source);
       },
@@ -80,12 +85,15 @@ export class ModulesService {
   async buildTree(scope: UiScope): Promise<UiTree> {
     const mac = this._bridge.state;
     const pages: UiPage[] = [];
+    const charts: LiveChartRegistry = new Map();
     for (const module of this._byId.values()) {
-      const ctx = this.context(module.id);
+      const ctx = this.context(module.id, charts);
       if (module.disabled?.(ctx)) continue;
       pages.push(...(await module.pages(ctx)));
     }
     pages.push(this._settingsPage());
+    // Тіки — лише графікам дерева Mac; новий реєстр цілком замінює попередній.
+    if (scope === 'mac') this._liveCharts.replace(charts);
 
     const visible = pages
       .filter((page) => isVisibleInScope(page, scope))

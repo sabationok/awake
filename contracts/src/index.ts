@@ -175,7 +175,18 @@ export type AgentToMacMessage =
   /** Сам інстанс сервера агента (процес, навантаження, порти, звідки віддає веб): на старті й раз на 10 с. Лише для Mac-аппки. */
   | { type: 'server'; data: ServerInfo }
   | { type: 'serverCharts'; data: ServerCharts }
-  | { type: 'serverChartsTick'; data: ServerChartsTick };
+  | { type: 'serverChartsTick'; data: ServerChartsTick }
+  /** Live-тік графіків SDUI-дерева Mac (сторінки статистики): поточний бакет кожного графіка, раз на 10 с. */
+  | { type: 'chartTick'; data: ChartTick };
+
+/**
+ * Поточний бакет графіків дерева одного вікна періоду: id вузла `chart` → точки серій. Аппка замінює точки з тим
+ * самим `start` і серією або дописує їх і відкидає все раніше `from`. Веб тіків не отримує: він опитує дерево.
+ */
+export interface ChartTick {
+  from: string;
+  points: Record<string, import('./ui').UiChartPoint[]>;
+}
 
 /** Період графіків статистики: Година (хвилинні бакети), Сьогодні (години), 7 і 30 днів (дні). */
 export type StatsPeriod = 'hour' | 'today' | 'week' | 'month';

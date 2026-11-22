@@ -23,6 +23,7 @@ import { BotEventsListener } from './bot/listeners/bot-events.listener';
 import { BotJournalListener } from './bot/listeners/bot-journal.listener';
 import { SleepTimerEventsListener } from './sleep/listeners/sleep-timer-events.listener';
 import { ModulesService } from './modules.service';
+import { LiveChartsService } from './live-charts.service';
 import { MacUiListener } from './mac-ui.listener';
 import { UiController } from './ui.controller';
 import { MAC_MODULES, type MacModule } from './types/mac-module';
@@ -33,6 +34,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
   controllers: [UiController],
   providers: [
     ModulesService,
+    LiveChartsService,
     MacUiListener,
     AwakeSessionListener,
     AwakeMacModule,

@@ -42,6 +42,8 @@ extension AwakeModel {
         }
         agent.onServerCharts = { [weak self] charts in self?.serverCharts = charts }
         agent.onServerChartsTick = { [weak self] tick in self?.serverCharts?.apply(tick) }
+        // Поточний бакет графіків сторінок статистики: дерево не перешивається, лише ці точки.
+        agent.onChartTick = { [weak self] tick in self?.uiTree?.apply(tick) }
         agent.onWebhooks = { [weak self] webhooks in
             if self?.webhooks != webhooks { self?.webhooks = webhooks }
         }

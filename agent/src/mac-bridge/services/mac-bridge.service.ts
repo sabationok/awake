@@ -5,6 +5,7 @@ import { BehaviorSubject, Subject } from 'rxjs';
 import type {
   ProximityReport,
   AgentToMacMessage,
+  ChartTick,
   SettingValue,
   UiEvent,
   UiTree,
@@ -112,6 +113,10 @@ export class MacBridgeService implements OnModuleInit {
 
   sendServerChartsTick(tick: ServerChartsTick) {
     this._send({ type: 'serverChartsTick', data: tick });
+  }
+
+  sendChartTick(tick: ChartTick) {
+    this._send({ type: 'chartTick', data: tick });
   }
 
   sendWebhooks(webhooks: WebhookInfo[]) {
