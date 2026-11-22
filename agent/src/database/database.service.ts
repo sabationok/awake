@@ -100,6 +100,7 @@ export class DatabaseService implements OnModuleDestroy {
     `);
     this._migrateRelaySource();
     this._addColumn('devices', 'via', "TEXT NOT NULL DEFAULT 'local'");
+    this._migrateProxyIds();
   }
 
   /** Додає колонку в існуючу таблицю, якщо її ще немає. */
@@ -122,6 +123,17 @@ export class DatabaseService implements OnModuleDestroy {
         WHERE bot_metrics.metric = 'src.relay'
         ON CONFLICT (day, metric) DO UPDATE SET value = bot_metrics.value + excluded.value;
       DELETE FROM bot_metrics WHERE metric = 'src.relay';
+    `);
+  }
+
+  /** Проксі тепер `<protocol>:<provider>`: старий `webhooxy` — це сокет relay, `ws:webhooxy`. Ідемпотентно. */
+  private _migrateProxyIds() {
+    this.db.exec(`
+      UPDATE bot_events SET proxy = 'ws:webhooxy' WHERE proxy = 'webhooxy';
+      INSERT INTO bot_metrics (day, metric, value)
+        SELECT day, 'proxy.ws:webhooxy', value FROM bot_metrics WHERE metric = 'proxy.webhooxy'
+        ON CONFLICT (day, metric) DO UPDATE SET value = bot_metrics.value + excluded.value;
+      DELETE FROM bot_metrics WHERE metric = 'proxy.webhooxy';
     `);
   }
 

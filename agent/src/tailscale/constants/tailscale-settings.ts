@@ -2,7 +2,7 @@ import type { SettingDefinition } from '@awake/contracts';
 
 export const TAILSCALE_MODULE = 'tailscale';
 /** Id проксі на сторінці Агента і в журналі бота. */
-export const TAILSCALE_PROXY_ID = 'tailscale';
+export const TAILSCALE_PROXY_ID = 'http:tailscale';
 /** Як часто перечитувати `tailscale status`: мережа змінюється (хотспот, мобільний), а подій CLI не дає. */
 export const TAILSCALE_POLL_MS = 30_000;
 /** Скільки чекати на CLI. */

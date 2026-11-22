@@ -72,17 +72,17 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     transports: TransportsService,
   ) {
     // Webhooxy вимкнено в агенті: проксі на сторінці Агента не показуємо.
-    if (_config.webhooxy) transports.registerProxy({
-      id: RELAY_PROXY_ID,
-      via: 'web',
-      title: 'Webhooxy',
-      icon: { symbol: 'antenna.radiowaves.left.and.right', tone: 'accent' },
-      status: () => {
+    // Webhooxy вимкнено в агенті: проксі на сторінці Агента не показуємо.
+    if (_config.webhooxy) {
+      const status = () => {
         const { status, reason, viewers } = _state.state;
         const label = RELAY_STATUS_VIEW[status].label;
         return { online: status === 'online', hint: status === 'online' ? `${label}, сесій: ${viewers.length}` : (reason ?? label) };
-      },
-    });
+      };
+      const icon = { symbol: 'antenna.radiowaves.left.and.right', tone: 'accent' } as const;
+      transports.registerProxy({ protocol: 'ws', provider: 'webhooxy', via: 'web', title: 'Webhooxy WS', icon, status });
+      transports.registerProxy({ protocol: 'http', provider: 'webhooxy', via: 'web', title: 'Webhooxy HTTP', icon, status });
+    }
   }
 
   get isOnline(): boolean {
@@ -271,7 +271,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
       origin: origin ?? null,
       userAgent: data.headers?.['user-agent'] ?? null,
       // Кожен viewer relay приходить через webhooxy; заголовок від viewer-а підробний, тож не читаємо його.
-      proxy: 'webhooxy',
+      proxy: RELAY_PROXY_ID,
       authorizedAt: new Date().toISOString(),
     });
     this._modules.treeChanged$.next();

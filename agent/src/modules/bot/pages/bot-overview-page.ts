@@ -17,7 +17,7 @@ function transportNodes(transport: AgentTransport, proxies: AgentProxy[], metric
     ...proxies
       .filter((proxy) => proxy.via === transport.id)
       .map((proxy) =>
-        statusNode(`proxy-${proxy.id}`, `↳ ${proxy.title} (проксі) · сьогодні ${metrics.today[`proxy.${proxy.id}`] ?? 0}`, proxy.status()),
+        statusNode(`proxy-${proxy.id}`, `↳ ${proxy.id} (проксі) · сьогодні ${metrics.today[`proxy.${proxy.id}`] ?? 0}`, proxy.status()),
       ),
   ];
 }

@@ -2,7 +2,6 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { BehaviorSubject } from 'rxjs';
 import { AGENT_CONFIG, type AgentConfig } from '../../../config/agent-config';
 import { TransportsService } from '../../../transports';
-import { TAILSCALE_PROXY_ID } from '../../constants/tailscale-settings';
 import { isServingPort } from '../../helpers/is-serving-port';
 import { parseTailscaleStatus } from '../../helpers/parse-tailscale-status';
 import { findTailscaleCli, runTailscale } from '../../helpers/run-tailscale';
@@ -24,7 +23,8 @@ export class TailscaleService {
     transports: TransportsService,
   ) {
     transports.registerProxy({
-      id: TAILSCALE_PROXY_ID,
+      protocol: 'http',
+      provider: 'tailscale',
       via: 'web',
       title: 'Tailscale',
       icon: { symbol: 'point.3.connected.trianglepath.dotted', tone: 'accent' },

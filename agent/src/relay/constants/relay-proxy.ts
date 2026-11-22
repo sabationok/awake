@@ -1,2 +1,4 @@
-/** Id webhooxy у реєстрі проксі Агента і в журналі бота (`proxy.webhooxy`). */
-export const RELAY_PROXY_ID = 'webhooxy';
+/** Сокет relay webhooxy: дії viewer-ів дашборду (журнал бота: `proxy.ws:webhooxy`). */
+export const RELAY_PROXY_ID = 'ws:webhooxy';
+/** HTTP-тунель webhooxy `relay:request`: сполучення пристрою і квиток на сокет. */
+export const RELAY_HTTP_PROXY_ID = 'http:webhooxy';

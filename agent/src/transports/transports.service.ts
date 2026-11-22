@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { AgentProxy } from './types/agent-proxy.types';
+import { proxyId, type AgentProxy } from './types/agent-proxy.types';
 import type { AgentTransport } from './types/agent-transport.types';
 
 /**
@@ -15,8 +15,9 @@ export class TransportsService {
     this._byId.set(transport.id, transport);
   }
 
-  registerProxy(proxy: AgentProxy) {
-    this._proxies.set(proxy.id, proxy);
+  registerProxy(proxy: Omit<AgentProxy, 'id'>) {
+    const id = proxyId(proxy.protocol, proxy.provider);
+    this._proxies.set(id, { ...proxy, id });
   }
 
   list(): AgentTransport[] {
