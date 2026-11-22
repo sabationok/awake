@@ -11,11 +11,13 @@ struct PermissionSection: View {
             ForEach(AppPermission.allCases) { permission in
                 SystemPermissionRow(permission: permission)
             }
+            LocationPermissionRow()
         } header: {
             Text("Система")
         } footer: {
-            Text("Кожен дозвіл — окреме правило sudoers із фіксованими командами без пароля. macOS попросить пароль при видачі й відкликанні. Модулі не можуть отримати більше, ніж видано тут.")
+            Text("Керування сном і температура — окремі правила sudoers із фіксованими командами без пароля, macOS попросить пароль при видачі й відкликанні. Геолокація потрібна лише щоб бачити назву мережі Wi-Fi. Модулі не можуть отримати більше, ніж видано тут.")
         }
+        .onAppear { model.refreshWifi() }
 
         // Лише модулі, що просять хоч один системний дозвіл: решті тут нічого видавати.
         if let modules = model.uiTree?.modules.filter({ !($0.permissions ?? []).isEmpty }) {
@@ -53,6 +55,31 @@ private struct SystemPermissionRow: View {
             }
         }
         .help("\(permission.purpose)\n\n" + permission.commands.joined(separator: "\n"))
+    }
+}
+
+/// Геолокація: macOS віддає назву мережі Wi-Fi лише з нею, а за назвою агент знає, чи мережа довірена.
+private struct LocationPermissionRow: View {
+    @EnvironmentObject private var model: AwakeModel
+
+    var body: some View {
+        let granted = model.wifiAuthorized
+        SettingsRow(title: "Назва мережі Wi-Fi", symbol: "location.fill", color: granted ? .green : .gray) {
+            HStack(spacing: 8) {
+                StatusDot(color: granted ? .green : .gray)
+                Text(granted ? "Видано" : "Не видано").foregroundStyle(.secondary)
+                if !granted {
+                    if model.wifiDenied {
+                        Button("Відкрити налаштування…") {
+                            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices")!)
+                        }
+                    } else {
+                        Button("Надати…") { model.wifi.requestAccess() }
+                    }
+                }
+            }
+        }
+        .help("Дозвіл геолокації macOS. Без нього аппка не бачить назву мережі, тож агент не знає, чи Mac у довіреній Wi-Fi, і відповідає тільки цьому Mac.")
     }
 }
 

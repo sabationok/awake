@@ -9,36 +9,31 @@ struct RemoteSection: View {
 
     var body: some View {
         Section {
-            if model.wifiAuthorized {
-                SettingsRow(title: model.currentSSID ?? "Не підключено", symbol: "wifi", color: .blue) {
-                    if let ssid = model.currentSSID {
-                        Toggle("Довірена", isOn: Binding(
-                            get: { model.trustedNetworks.contains(ssid) },
-                            set: { model.setTrusted(ssid, $0) }
-                        ))
-                        .toggleStyle(.switch)
-                    }
-                }
-            } else {
-                SettingsRow(title: "Назва мережі недоступна", symbol: "wifi.exclamationmark", color: .orange) {
-                    if model.wifiDenied {
-                        Button("Відкрити налаштування…") {
-                            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices")!)
-                        }
-                    } else {
-                        Button("Дозволити") { model.wifi.requestAccess() }
+            if let ssid = model.currentSSID, !model.trustedNetworks.contains(ssid) {
+                SettingsRow(title: ssid, symbol: "wifi", color: .blue) {
+                    HStack(spacing: 8) {
+                        Text("зараз тут").foregroundStyle(.secondary)
+                        Button("Додати") { model.setTrusted(ssid, true) }
                     }
                 }
             }
-            ForEach(model.trustedNetworks.filter { $0 != model.currentSSID }, id: \.self) { ssid in
+            ForEach(model.trustedNetworks, id: \.self) { ssid in
                 SettingsRow(title: ssid, symbol: "checkmark.shield.fill", color: .green) {
-                    Button("Прибрати") { model.setTrusted(ssid, false) }
+                    HStack(spacing: 8) {
+                        if ssid == model.currentSSID { Text("зараз тут").foregroundStyle(.secondary) }
+                        Button("Прибрати") { model.setTrusted(ssid, false) }
+                    }
                 }
+            }
+            if model.trustedNetworks.isEmpty && model.currentSSID == nil {
+                Text("Довірених мереж немає").foregroundStyle(.secondary)
             }
         } header: {
             Text("Довірені мережі Wi-Fi")
         } footer: {
-            Text("macOS показує назву мережі лише застосункам з дозволом геолокації. Поза довіреними мережами агент відповідає тільки цьому Mac. Список зберігає агент у своїй базі, тож змінювати його можна, коли агент запущений.")
+            Text(model.wifiAuthorized
+                 ? "Поза довіреними мережами агент відповідає тільки цьому Mac. Список зберігає агент у своїй базі."
+                 : "Поточну мережу не видно: потрібен дозвіл геолокації на сторінці «Дозвіл». Поза довіреними мережами агент відповідає тільки цьому Mac.")
         }
 
         Section {
