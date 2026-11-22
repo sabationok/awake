@@ -3,9 +3,10 @@ import { io, type Socket } from 'socket.io-client';
 import type { RelayHostBroadcast, RelayHostReply, UiTree } from '@awake/contracts';
 import { BotJournalService } from '../../../bot-journal';
 import { AGENT_CONFIG, type AgentConfig } from '../../../config/agent-config';
-import { MetricsService } from '../../../metrics';
+import { StatGranularity } from '@awake/contracts';
+import { StatsService } from '../../../stats';
 import { AppSecretsService } from '../../../secrets';
-import { WebhooksService, webhookScope } from '../../../webhooks';
+import { WebhooksService, webhookStatSeries } from '../../../webhooks';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
 import { isUiEvent } from '../../../modules/helpers/is-ui-event';
 import { ModulesService } from '../../../modules/modules.service';
@@ -65,7 +66,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     private readonly _notifications: TelegramNotificationsService,
     private readonly _secrets: AppSecretsService,
     private readonly _webhooks: WebhooksService,
-    private readonly _metrics: MetricsService,
+    private readonly _stats: StatsService,
     private readonly _bridge: MacBridgeService,
     private readonly _requests: RelayRequestService,
     private readonly _pairing: PairingService,
@@ -122,9 +123,14 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     this._state.setConnection({ stage: this._config.stage, url: this._config.webhooxyUrl, missing });
   }
 
-  /** Лічильник вебхука relay (scope `webhook:<id>`). */
+  /** Подія вебхука relay: картки читають день, графіки — годину й хвилину. */
   private _track(metric: string) {
-    if (this._webhookId !== null) this._metrics.incr(metric, webhookScope(this._webhookId));
+    if (this._webhookId === null) return;
+    this._stats.increment({
+      ...webhookStatSeries(this._webhookId),
+      granularities: [StatGranularity.MINUTE, StatGranularity.HOUR, StatGranularity.DAY],
+      metrics: { [metric]: { count: 1 } },
+    });
   }
 
   onModuleDestroy() {

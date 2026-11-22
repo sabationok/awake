@@ -6,7 +6,7 @@ import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { DevicesModule } from './devices/devices.module';
 import { EnvifyModule } from './envify';
-import { MetricsModule } from './metrics';
+import { StatsModule } from './stats';
 import { SecretsModule } from './secrets';
 import { WebhooksModule } from './webhooks';
 import { TailscaleModule } from './tailscale';
@@ -34,7 +34,7 @@ import { TlsModule } from './tls/tls.module';
     MacBridgeModule,
     EnvifyModule,
     SecretsModule,
-    MetricsModule,
+    StatsModule,
     WebhooksModule,
     TailscaleModule,
     ServerInfoModule,

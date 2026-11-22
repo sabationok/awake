@@ -59,10 +59,11 @@ export class MacBridgeService implements OnModuleInit {
   onModuleInit() {
     const lines = createInterface({ input: process.stdin });
     lines.on('line', (line) => this._handleLine(line));
-    // Mac-аппка закрилась: агенту більше нема кому служити.
+    // Mac-аппка закрилась: агенту більше нема кому служити. SIGTERM, а не process.exit: так спрацюють
+    // shutdown-хуки (enableShutdownHooks), зокрема останній flush статистики.
     lines.on('close', () => {
       this._logger.log('stdin closed, exiting');
-      process.exit(0);
+      process.kill(process.pid, 'SIGTERM');
     });
   }
 

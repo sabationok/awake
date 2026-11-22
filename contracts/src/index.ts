@@ -3,6 +3,7 @@ export * from './ui';
 export * from './modules';
 export * from './relay';
 export * from './webhooks';
+export * from './stats';
 
 export type PowerSource = 'AC' | 'BAT' | 'unknown';
 export type ThermalLevel = 'nominal' | 'fair' | 'serious' | 'critical';
@@ -202,6 +203,14 @@ export interface ServerInfo {
   usage: ServerUsage;
   ports: { https: number; http: number; tailnet: number };
   web: ServerWebInfo;
+  stats: ServerStats;
+}
+
+/** Лічильники сервера зі stats-рушія (UTC-день). */
+export interface ServerStats {
+  /** Шлях (`loopback` | `lan` | `tailnet`) → клас відповіді (`2xx`…) → запити. */
+  requests: import('./stats').StatTotals;
+  starts: { today: number; total: number };
 }
 
 /** Звідки взявся ключ: process.env, Envify, файл у ~/.config/awake, або його немає. */

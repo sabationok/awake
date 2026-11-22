@@ -1,5 +1,5 @@
 import type { UiPage } from '@awake/contracts';
-import type { ScopeMetrics } from '../../metrics';
+import type { StatCounters } from '@awake/contracts';
 import { RELAY_METRICS } from '../constants/relay-metrics';
 import { RELAY_PROXY_ID } from '../constants/relay-proxy';
 import { RELAY_TRACKING_PAGE } from '../constants/relay-settings';
@@ -14,7 +14,7 @@ const TRACKING: { metric: string; label: string }[] = [
 ];
 
 /** «Трекінг»: дії через webhooxy з журналу бота і лічильники вебхука relay. */
-export function buildRelayTrackingPage(metrics: ScopeMetrics): UiPage {
+export function buildRelayTrackingPage(metrics: StatCounters): UiPage {
   return {
     id: RELAY_TRACKING_PAGE,
     module: 'relay',

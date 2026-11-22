@@ -1,8 +1,10 @@
 import { Inject, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { loadavg } from 'node:os';
-import type { ServerInfo, ServerUsage } from '@awake/contracts';
+import { StatGranularity, type ServerInfo, type ServerStats, type ServerUsage } from '@awake/contracts';
 import { AGENT_CONFIG, type AgentConfig } from '../../../config/agent-config';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
+import { flattenStatTotals, StatsService } from '../../../stats';
+import { SERVER_REQUESTS_STAT_NS, SERVER_STARTS_STAT_NS } from '../../constants/server-stats';
 import { readWebInfo } from '../../helpers/read-web-info';
 
 /** Як часто слати знімок: навантаження і нова публікація вебу змінюються без подій. */
@@ -19,9 +21,15 @@ export class ServerInfoService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     private readonly _bridge: MacBridgeService,
+    private readonly _stats: StatsService,
   ) {}
 
   onModuleInit() {
+    this._stats.increment({
+      namespace: SERVER_STARTS_STAT_NS,
+      granularities: [StatGranularity.DAY, StatGranularity.MONTH],
+      metrics: { start: { count: 1 } },
+    });
     this._push();
     this._timer = setInterval(() => this._push(), SERVER_INFO_INTERVAL_MS);
   }
@@ -40,6 +48,16 @@ export class ServerInfoService implements OnModuleInit, OnModuleDestroy {
       usage: this._usage(),
       ports: { https: port, http: httpPort, tailnet: tailnetPort },
       web: readWebInfo(webPublishedDir, webDir),
+      stats: this._serverStats(),
+    };
+  }
+
+  /** Запити за шляхом і класом відповіді, старти: сьогодні (UTC) / за весь час. */
+  private _serverStats(): ServerStats {
+    const starts = flattenStatTotals(this._stats.totals({ namespace: SERVER_STARTS_STAT_NS }));
+    return {
+      requests: this._stats.totals({ namespace: SERVER_REQUESTS_STAT_NS }),
+      starts: { today: starts.today.start ?? 0, total: starts.total.start ?? 0 },
     };
   }
 

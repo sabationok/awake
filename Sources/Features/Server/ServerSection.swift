@@ -55,6 +55,10 @@ struct ServerSection: View {
                 Text("CPU — відсоток одного ядра за останні 10 с. Оновлюється раз на 10 с.")
             }
 
+            if let stats = info.stats {
+                ServerRequestsSection(stats: stats)
+            }
+
             Section("Порти") {
                 SettingsRow(title: "HTTPS", symbol: "lock.fill", color: .blue, text: "\(info.ports.https) · дашборд напряму")
                 SettingsRow(title: "HTTP", symbol: "network", color: .blue,
@@ -101,5 +105,41 @@ struct ServerSection: View {
         if minutes < 60 { return "\(minutes) хв" }
         let hours = minutes / 60
         return hours < 24 ? "\(hours) год \(minutes % 60) хв" : "\(hours / 24) д \(hours % 24) год"
+    }
+}
+
+/// Запити до API за шляхом: сьогодні / за весь час, помилки окремо. З stats-рушія агента (UTC-день, flush щохвилини).
+private struct ServerRequestsSection: View {
+    let stats: AgentServerInfo.Stats
+
+    private static let paths: [(key: String, title: String, symbol: String)] = [
+        ("loopback", "Цей Mac", "desktopcomputer"),
+        ("lan", "Wi-Fi", "wifi"),
+        ("tailnet", "Tailscale", "point.3.connected.trianglepath.dotted"),
+    ]
+
+    var body: some View {
+        Section {
+            ForEach(Self.paths, id: \.key) { path in
+                SettingsRow(title: path.title, symbol: path.symbol, color: .purple,
+                            text: "\(Self.line(stats.requests.today[path.key])) · всього \(Self.line(stats.requests.total[path.key]))")
+            }
+            SettingsRow(title: "Старти", symbol: "arrow.clockwise", color: .gray,
+                        text: "\(stats.starts.today) · всього \(stats.starts.total)")
+        } header: {
+            Text("Запити сьогодні")
+        } footer: {
+            Text("День — за UTC. Помилки: 4xx — відмова (токен, мережа), 5xx — збій агента.")
+        }
+    }
+
+    /// «12» або «12 (4xx 2, 5xx 1)».
+    private static func line(_ statuses: [String: Int]?) -> String {
+        guard let statuses else { return "0" }
+        let total = statuses.values.reduce(0, +)
+        let errors = statuses.filter { $0.key != "2xx" && $0.key != "3xx" && $0.value != 0 }
+            .sorted { $0.key < $1.key }
+            .map { "\($0.key) \($0.value)" }
+        return errors.isEmpty ? "\(total)" : "\(total) (\(errors.joined(separator: ", ")))"
     }
 }

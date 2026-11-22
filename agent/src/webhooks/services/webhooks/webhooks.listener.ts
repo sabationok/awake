@@ -1,12 +1,13 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { merge, Subscription } from 'rxjs';
+import { filter, merge, Subscription } from 'rxjs';
 import type { WebhookInfo } from '@awake/contracts';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
-import { MetricsService } from '../../../metrics';
+import { flattenStatTotals, StatsService } from '../../../stats';
 import { RelayStateService } from '../../../relay/state/relay-state.service';
 import type { RelayStatus } from '../../../relay/types/relay-status.types';
 import { isValidWebhookInput } from '../../helpers/is-valid-webhook-input';
-import { webhookScope } from '../../helpers/webhook-scope';
+import { WEBHOOK_EVENTS_STAT_NS } from '../../constants/webhook-stats';
+import { webhookStatSeries } from '../../helpers/webhook-stat-series';
 import { WebhooksService } from './webhooks.service';
 
 const RELAY_STATUS: Record<RelayStatus, WebhookInfo['status']> = {
@@ -27,7 +28,7 @@ export class WebhooksListener implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly _bridge: MacBridgeService,
     private readonly _webhooks: WebhooksService,
-    private readonly _metrics: MetricsService,
+    private readonly _stats: StatsService,
     private readonly _relayState: RelayStateService,
   ) {}
 
@@ -43,7 +44,7 @@ export class WebhooksListener implements OnModuleInit, OnModuleDestroy {
         if (request.action === 'delete') this._webhooks.delete(request.id);
       }),
     );
-    this._subscription.add(merge(this._webhooks.changed$, this._metrics.changed$, this._relayState.state$).subscribe(() => this._push()));
+    this._subscription.add(merge(this._webhooks.changed$, this._stats.changed$.pipe(filter((ns) => ns === WEBHOOK_EVENTS_STAT_NS)), this._relayState.state$).subscribe(() => this._push()));
   }
 
   onModuleDestroy() {
@@ -55,7 +56,7 @@ export class WebhooksListener implements OnModuleInit, OnModuleDestroy {
     const webhooks: WebhookInfo[] = this._webhooks.findMany().map((webhook) => ({
       ...webhook,
       status: webhook.type !== 'relay' ? null : webhook.id === relay?.id ? RELAY_STATUS[this._relayState.state.status] : 'off',
-      metrics: this._metrics.get(webhookScope(webhook.id)),
+      metrics: flattenStatTotals(this._stats.totals(webhookStatSeries(webhook.id))),
     }));
     this._bridge.sendWebhooks(webhooks);
   }

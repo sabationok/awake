@@ -2,8 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { AGENT_CONFIG, type AgentConfig } from '../config/agent-config';
 import type { UiPage } from '@awake/contracts';
 import { BotJournalService } from '../bot-journal';
-import { MetricsService } from '../metrics';
-import { WebhooksService, webhookScope } from '../webhooks';
+import { flattenStatTotals, StatsService } from '../stats';
+import { WebhooksService, webhookStatSeries } from '../webhooks';
 import type { MacModule, ModuleContext, StatusFields } from '../modules/types/mac-module';
 import { RELAY_SETTINGS } from './constants/relay-settings';
 import { buildRelayLimitsPage } from './pages/relay-limits-page';
@@ -29,7 +29,7 @@ export class RelayMacModule implements MacModule {
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     private readonly _state: RelayStateService,
     private readonly _journal: BotJournalService,
-    private readonly _metrics: MetricsService,
+    private readonly _stats: StatsService,
     private readonly _webhooks: WebhooksService,
   ) {}
 
@@ -48,7 +48,7 @@ export class RelayMacModule implements MacModule {
   private _trackingMetrics() {
     const journal = this._journal.metrics();
     const relay = this._webhooks.findActive('relay');
-    const webhook = relay ? this._metrics.get(webhookScope(relay.id)) : { today: {}, total: {} };
+    const webhook = relay ? flattenStatTotals(this._stats.totals(webhookStatSeries(relay.id))) : { today: {}, total: {} };
     return { today: { ...journal.today, ...webhook.today }, total: { ...journal.total, ...webhook.total } };
   }
 

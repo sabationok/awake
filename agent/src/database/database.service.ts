@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -6,7 +6,7 @@ import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 
 /** Одне з'єднання SQLite на весь агент. Схема створюється при старті. */
 @Injectable()
-export class DatabaseService implements OnModuleDestroy {
+export class DatabaseService implements OnApplicationShutdown {
   readonly db: DatabaseSync;
 
   constructor(@Inject(AGENT_CONFIG) config: AgentConfig) {
@@ -84,13 +84,18 @@ export class DatabaseService implements OnModuleDestroy {
         disabled_at TEXT,
         deleted_at TEXT
       );
-      CREATE TABLE IF NOT EXISTS metrics (
-        day TEXT NOT NULL,
-        scope TEXT NOT NULL,
-        metric TEXT NOT NULL,
-        value INTEGER NOT NULL,
-        PRIMARY KEY (day, scope, metric)
+      CREATE TABLE IF NOT EXISTS metric_snapshots (
+        namespace TEXT NOT NULL,
+        subject_type TEXT NOT NULL,
+        subject_id TEXT NOT NULL DEFAULT '',
+        series_key TEXT NOT NULL DEFAULT '',
+        granularity TEXT NOT NULL,
+        period_start TEXT NOT NULL,
+        metrics TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (namespace, subject_type, subject_id, series_key, granularity, period_start)
       );
+      CREATE INDEX IF NOT EXISTS metric_snapshots_period ON metric_snapshots (granularity, period_start);
       CREATE TABLE IF NOT EXISTS settings (
         module TEXT NOT NULL,
         key TEXT NOT NULL,
@@ -101,6 +106,26 @@ export class DatabaseService implements OnModuleDestroy {
     this._migrateRelaySource();
     this._addColumn('devices', 'via', "TEXT NOT NULL DEFAULT 'local'");
     this._migrateProxyIds();
+    this._migrateWebhookMetrics();
+  }
+
+  /**
+   * Старі денні лічильники вебхуків (таблиця metrics, scope `webhook:<id>`) → денні бакети metric_snapshots,
+   * namespace `webhook.events`. Лише day: тижні й місяці з історії не відновлюються. Після цього таблиця metrics зникає.
+   */
+  private _migrateWebhookMetrics() {
+    const exists = this.db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'metrics'").get();
+    if (!exists) return;
+    this.db.exec(`
+      BEGIN;
+      INSERT INTO metric_snapshots (namespace, subject_type, subject_id, series_key, granularity, period_start, metrics, updated_at)
+        SELECT 'webhook.events', 'webhook', substr(scope, 9), '', 'day', day || 'T00:00:00.000Z',
+               json_group_object(metric, json_object('count', value)), strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        FROM metrics WHERE scope LIKE 'webhook:%' GROUP BY scope, day
+        ON CONFLICT DO NOTHING;
+      DROP TABLE metrics;
+      COMMIT;
+    `);
   }
 
   /** Додає колонку в існуючу таблицю, якщо її ще немає. */
@@ -137,7 +162,8 @@ export class DatabaseService implements OnModuleDestroy {
     `);
   }
 
-  onModuleDestroy() {
+  /** Остання фаза зупинки: до неї (beforeApplicationShutdown) інші ще пишуть, зокрема flush статистики. */
+  onApplicationShutdown() {
     this.db.close();
   }
 }

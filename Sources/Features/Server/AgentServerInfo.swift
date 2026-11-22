@@ -24,6 +24,23 @@ struct AgentServerInfo: Decodable, Equatable {
         let load: Double
     }
 
+    /// Лічильники stats-рушія агента, UTC-день.
+    struct Stats: Decodable, Equatable {
+        struct Totals: Decodable, Equatable {
+            /// шлях → клас відповіді (`2xx`…) → запити.
+            let today: [String: [String: Int]]
+            let total: [String: [String: Int]]
+        }
+
+        struct Starts: Decodable, Equatable {
+            let today: Int
+            let total: Int
+        }
+
+        let requests: Totals
+        let starts: Starts
+    }
+
     let pid: Int
     let node: String
     let stage: String
@@ -31,4 +48,6 @@ struct AgentServerInfo: Decodable, Equatable {
     let usage: Usage
     let ports: Ports
     let web: Web
+    /// nil — старіший агент без stats.
+    let stats: Stats?
 }
