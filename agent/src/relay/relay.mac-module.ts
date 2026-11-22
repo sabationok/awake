@@ -1,15 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AGENT_CONFIG, type AgentConfig } from '../config/agent-config';
 import type { UiPage } from '@awake/contracts';
-import { BotJournalService } from '../bot-journal';
-import { flattenStatTotals, StatsService } from '../stats';
-import { WebhooksService, webhookStatSeries } from '../webhooks';
+import { BotCallsChartsService } from '../bot-journal';
+import { statsPeriodSetting } from '../stats';
+import { WebhookChartsService, WebhooksService } from '../webhooks';
 import type { MacModule, ModuleContext, StatusFields } from '../modules/types/mac-module';
-import { RELAY_SETTINGS } from './constants/relay-settings';
+import { RELAY_PROXY_ID } from './constants/relay-proxy';
+import { RELAY_SETTINGS, RELAY_TRACKING_PAGE } from './constants/relay-settings';
 import { buildRelayLimitsPage } from './pages/relay-limits-page';
 import { buildRelayPage } from './pages/relay-page';
 import { buildRelaySessionsPage } from './pages/relay-sessions-page';
-import { buildRelayTrackingPage } from './pages/relay-tracking-page';
+import { buildRelayTrackingPage, type RelayTrackingPoints } from './pages/relay-tracking-page';
 import { RelayStateService } from './state/relay-state.service';
 
 /**
@@ -23,14 +24,14 @@ export class RelayMacModule implements MacModule {
   readonly icon = { symbol: 'antenna.radiowaves.left.and.right', tone: 'accent' } as const;
   readonly permissions: MacModule['permissions'] = [];
   /** Лишаються й тоді, коли webhooxy вимкнено в агенті (їх читає host): пункт меню тоді сірий. */
-  readonly settings = RELAY_SETTINGS;
+  readonly settings = [...RELAY_SETTINGS, statsPeriodSetting(RELAY_TRACKING_PAGE)];
 
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     private readonly _state: RelayStateService,
-    private readonly _journal: BotJournalService,
-    private readonly _stats: StatsService,
+    private readonly _calls: BotCallsChartsService,
     private readonly _webhooks: WebhooksService,
+    private readonly _webhookCharts: WebhookChartsService,
   ) {}
 
   /** Жорстко вимкнено в агенті: без `MACONTROL_WEBHOOXY=on` пункт меню сірий і не відкривається. */
@@ -43,17 +44,18 @@ export class RelayMacModule implements MacModule {
     return [
       buildRelayPage(state, ctx.settingNode('enabled')),
       buildRelayLimitsPage(ctx, state),
-      buildRelayTrackingPage(this._trackingMetrics()),
+      buildRelayTrackingPage(ctx, this._trackingPoints()),
       buildRelaySessionsPage(state),
     ];
   }
 
-  /** Дії через проксі — з журналу бота; решта — лічильники увімкненого вебхука relay. */
-  private _trackingMetrics() {
-    const journal = this._journal.metrics();
-    const relay = this._webhooks.findActive('relay');
-    const webhook = relay ? flattenStatTotals(this._stats.totals(webhookStatSeries(relay.id))) : { today: {}, total: {} };
-    return { today: { ...journal.today, ...webhook.today }, total: { ...journal.total, ...webhook.total } };
+  /** Дії через проксі — з журналу бота; решта — події увімкненого вебхука relay. */
+  private _trackingPoints(): RelayTrackingPoints {
+    return {
+      actions: (window) => this._calls.byProxy(window, { [RELAY_PROXY_ID]: '' }),
+      // Вебхук шукаємо на кожен тік: його могли замінити, не перебудувавши дерево.
+      events: (window, labels) => this._webhookCharts.eventPoints(this._webhooks.findActive('relay')?.id ?? null, window, labels),
+    };
   }
 
   status(): StatusFields | null {
