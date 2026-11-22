@@ -21,7 +21,7 @@ export function SelectNode({ node, onEvent }: NodeProps<UiSelect>) {
           onChange={(e) => send({ type: 'setting', change: { module: node.module, key: node.key, value: e.target.value } })}
         >
           {node.options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} disabled={option.disabled}>
               {option.label}
             </option>
           ))}

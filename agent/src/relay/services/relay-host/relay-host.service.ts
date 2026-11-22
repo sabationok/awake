@@ -11,6 +11,7 @@ import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.servic
 import { isUiEvent } from '../../../modules/helpers/is-ui-event';
 import { ModulesService } from '../../../modules/modules.service';
 import { TelegramNotificationsService } from '../../../telegram/notifications';
+import { REMOTE_ACCESS_KEY, REMOTE_ACCESS_MODULE } from '../../../modules/bot/constants/remote-access';
 import { TransportsService } from '../../../transports';
 import { RELAY_MAX_PAYLOAD_BYTES, RELAY_RETRY_MS } from '../../constants/relay-limits';
 import { RELAY_METRICS } from '../../constants/relay-metrics';
@@ -92,7 +93,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     this._readEnv();
-    this.setEnabled(this._modules.context('relay').setting<boolean>('enabled'));
+    this.syncEnabled();
   }
 
   /**
@@ -104,7 +105,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     this._readEnv();
     if (JSON.stringify(this._env) !== before) {
       this._stop();
-      this.setEnabled(this._modules.context('relay').setting<boolean>('enabled'));
+      this.syncEnabled();
     }
     // Статус міг не змінитись (off → off), а «Підключення» змінилось.
     this._modules.treeChanged$.next();
@@ -137,7 +138,13 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     this._stop();
   }
 
-  /** Перемикач `relay.enabled` (Mac або Telegram): підключає або відпускає кімнату. */
+  /** Кімната потрібна, лише коли модуль увімкнено (`relay.enabled`, Mac або Telegram) і на Огляді Агента вибрано «Webhooxy». */
+  syncEnabled() {
+    const ctx = this._modules.context('relay');
+    this.setEnabled(ctx.setting<boolean>('enabled') && ctx.setting<string>(REMOTE_ACCESS_KEY, REMOTE_ACCESS_MODULE) === 'webhooxy');
+  }
+
+  /** Підключає або відпускає кімнату. */
   setEnabled(enabled: boolean) {
     if (!enabled || !this._config.webhooxy) {
       this._stop();

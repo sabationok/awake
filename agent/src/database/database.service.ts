@@ -102,6 +102,22 @@ export class DatabaseService implements OnApplicationShutdown {
     this._migrateProxyIds();
     this._migrateWebhookMetrics();
     this._migrateBotMetrics();
+    this._migrateRemoteAccess();
+  }
+
+  /**
+   * «Віддалений доступ» на Огляді Агента замість двох перемикачів-«через»: перший раз вибір береться з того, що було
+   * ввімкнено (Tailscale, потім webhooxy), щоб serve чи кімната не впали після оновлення. Далі нічого не робить.
+   */
+  private _migrateRemoteAccess() {
+    this.db.exec(`
+      INSERT INTO settings (module, key, value)
+        SELECT 'bot', 'remote', CASE
+          WHEN EXISTS (SELECT 1 FROM settings WHERE module = 'tailscale' AND key = 'enabled' AND value = 'true') THEN '"tailscale"'
+          WHEN EXISTS (SELECT 1 FROM settings WHERE module = 'relay' AND key = 'enabled' AND value = 'true') THEN '"webhooxy"'
+          ELSE '"off"' END
+        WHERE NOT EXISTS (SELECT 1 FROM settings WHERE module = 'bot' AND key = 'remote');
+    `);
   }
 
   private _hasTable(name: string): boolean {

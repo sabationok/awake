@@ -8,8 +8,8 @@ import type { ModuleSource } from './module-source';
 export interface ModuleContext {
   /** Останній стан від Mac-аппки або null, якщо Mac мовчить. */
   mac: MacState | null;
-  /** Значення налаштування цього модуля (вже з default). */
-  setting<T extends SettingValue>(key: string): T;
+  /** Значення налаштування цього модуля (вже з default); `ofModule` — іншого (напр. вибір шляху на Огляді Агента). */
+  setting<T extends SettingValue>(key: string, ofModule?: string): T;
   /**
    * Готовий вузол switch/select з поточним значенням, щоб поставити налаштування на свою сторінку.
    * `ofModule` — налаштування іншого модуля (напр. перемикач webhooxy на сторінці Агента); зміна йде власнику.
@@ -40,6 +40,8 @@ export interface MacModule {
   settings: SettingDefinition[];
   /** Вкладки модуля в бічному меню. Будуються з поточного стану щоразу. */
   pages(ctx: ModuleContext): UiPage[] | Promise<UiPage[]>;
+  /** Модуль вимкнений (жорстко в агенті чи у своїй вкладці): причина для сірого пункту меню; null — працює. Сторінок тоді немає. */
+  disabled?(ctx: ModuleContext): string | null;
   /** Поля модуля в /status під ключем його id. null або без значень — ключа немає. */
   status?(ctx: ModuleContext): StatusFields | null;
   /** Налаштування змінилось (вже збережене). Напр. Awake пересилає його в Mac-аппку. */

@@ -37,11 +37,16 @@ export class DevicesRepository {
     return Number(this._database.db.prepare('DELETE FROM devices WHERE id = ?').run(id).changes) > 0;
   }
 
-  /** Позначає пристрій як щойно бачений. Повертає його id або null, якщо такого токена немає. */
-  touch(tokenHash: string, via: DevicePairingMode, at: string): number | null {
+  /**
+   * Позначає пристрій як щойно бачений. Повертає його id, user agent і коли його бачили перед цим,
+   * або null, якщо такого токена на цьому шляху немає.
+   */
+  touch(tokenHash: string, via: DevicePairingMode, at: string): { id: number; userAgent: string | null; previousSeenAt: string | null } | null {
     const row = this._database.db
-      .prepare('UPDATE devices SET last_seen_at = ? WHERE token_hash = ? AND via = ? RETURNING id')
-      .get(at, tokenHash, via) as { id: number } | undefined;
-    return row?.id ?? null;
+      .prepare('SELECT id, user_agent AS userAgent, last_seen_at AS previousSeenAt FROM devices WHERE token_hash = ? AND via = ?')
+      .get(tokenHash, via) as { id: number; userAgent: string | null; previousSeenAt: string | null } | undefined;
+    if (!row) return null;
+    this._database.db.prepare('UPDATE devices SET last_seen_at = ? WHERE id = ?').run(at, row.id);
+    return row;
   }
 }

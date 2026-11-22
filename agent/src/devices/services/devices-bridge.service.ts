@@ -4,7 +4,7 @@ import type { DevicePairing, DevicePairingMode, DevicesSnapshot } from '@awake/c
 import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';
 import { MacBridgeService } from '../../mac-bridge/services/mac-bridge.service';
 import { RelayStateService } from '../../relay/state/relay-state.service';
-import { TailscaleService } from '../../tailscale';
+import { TailscaleService } from '../../tailscale/services/tailscale';
 import { TrustedNetworksService } from '../../trusted-networks';
 import { findLanAddress } from '../../presence/helpers/find-lan-address';
 import { describeUserAgent } from '../helpers/describe-user-agent';

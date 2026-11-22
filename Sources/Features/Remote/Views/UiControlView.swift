@@ -32,7 +32,7 @@ struct UiControlView: View {
                     }
                 }
             )) {
-                ForEach(options, id: \.value) { Text($0.label).tag($0.value) }
+                ForEach(options, id: \.value) { Text($0.label).tag($0.value).disabled($0.disabled == true) }
             }
             .pickerStyle(.menu)
             .labelsHidden()

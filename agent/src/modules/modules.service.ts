@@ -54,7 +54,7 @@ export class ModulesService {
       get mac() {
         return bridge.state;
       },
-      setting: <T extends SettingValue>(key: string) => this._readSetting(module, key) as T,
+      setting: <T extends SettingValue>(key: string, ofModule?: string) => this._readSetting(ofModule ? this._find(ofModule) : module, key) as T,
       settingNode: (key: string, ofModule?: string): UiNode => {
         const owner = ofModule ? this._find(ofModule) : module;
         return buildSettingNode(owner.id, this._definition(owner, key), this._readSetting(owner, key));
@@ -80,7 +80,9 @@ export class ModulesService {
     const mac = this._bridge.state;
     const pages: UiPage[] = [];
     for (const module of this._byId.values()) {
-      pages.push(...(await module.pages(this.context(module.id))));
+      const ctx = this.context(module.id);
+      if (module.disabled?.(ctx)) continue;
+      pages.push(...(await module.pages(ctx)));
     }
     pages.push(this._settingsPage());
 
@@ -89,12 +91,10 @@ export class ModulesService {
       .map((page) => ({ ...page, children: filterNodesByScope(page.children, scope) }));
 
     return {
-      modules: this.list().map((module) => ({
-        id: module.id,
-        title: module.title,
-        icon: module.icon,
-        permissions: module.permissions,
-      })),
+      modules: this.list().map((module) => {
+        const disabled = module.disabled?.(this.context(module.id));
+        return { id: module.id, title: module.title, icon: module.icon, permissions: module.permissions, ...(disabled ? { disabled } : {}) };
+      }),
       app: {
         title: 'MaControl',
         host: mac?.host ?? 'Mac',

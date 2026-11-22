@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 
-const STORAGE_KEY = 'sidebar.folded';
+const STORAGE_KEY = 'sidebar.expanded';
 
 function read(): string[] {
   try {
@@ -12,13 +12,13 @@ function read(): string[] {
   }
 }
 
-/** Згорнуті модулі меню (за id сторінки), як `adaptiveSidebar.folded` в аппці. За замовчуванням усе розгорнуто. */
+/** Розгорнуті модулі меню (за id сторінки), як `adaptiveSidebar.expanded` в аппці. За замовчуванням усе згорнуто. */
 export function useFoldedNodes() {
-  const [folded, setFolded] = useState<string[]>([]);
-  useEffect(() => setFolded(read()), []);
+  const [expanded, setExpanded] = useState<string[]>([]);
+  useEffect(() => setExpanded(read()), []);
 
   const toggle = useCallback((id: string) => {
-    setFolded((current) => {
+    setExpanded((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -29,5 +29,5 @@ export function useFoldedNodes() {
     });
   }, []);
 
-  return { isFolded: (id: string) => folded.includes(id), toggle };
+  return { isFolded: (id: string) => !expanded.includes(id), toggle };
 }

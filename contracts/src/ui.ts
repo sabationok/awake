@@ -35,6 +35,8 @@ export interface UiButton {
 export interface UiOption {
   value: string;
   label: string;
+  /** Опцію видно, але вибрати не можна (напр. транспорт, вимкнений у своєму модулі). */
+  disabled?: boolean;
 }
 
 interface UiNodeBase {
@@ -212,6 +214,8 @@ export interface UiModuleInfo {
   icon: UiIcon;
   /** Системні дозволи Mac, які модуль просить. Mac дає їх лише тоді, коли дозвіл видано системі і користувач лишив його модулю. */
   permissions: MacPermission[];
+  /** Модуль вимкнений: пункт меню видно сірим, він не розгортається і не відкривається. Текст — чому. */
+  disabled?: string;
 }
 
 /**

@@ -9,14 +9,15 @@ import { TransportsService } from '../../transports';
 import { MACONTROL_BOT } from '../constants/macontrol-bot';
 import type { MacModule, ModuleContext, StatusFields } from '../types/mac-module';
 import { BOT_NOTIFICATIONS } from './constants/bot-notifications';
+import { REMOTE_ACCESS_SETTING } from './constants/remote-access';
 import { buildBotJournalPage } from './pages/bot-journal-page';
 import { buildBotOverviewPage } from './pages/bot-overview-page';
 import { buildBotStatsPage } from './pages/bot-stats-page';
 
 /**
  * Модуль Агент у MaControl: наш бот (BotRouterService) і транспорти, через які в нього приходять дії
- * (Mac, веб, Telegram), з проксі до них (webhooxy → веб). Власних налаштувань немає: перемикач webhooxy належить модулю relay,
- * команди Telegram — модулю Telegram. Сповіщення Агента реєструє в Telegram.
+ * (Mac, веб, Telegram), з проксі до них (webhooxy, Tailscale → веб). Своє налаштування — «Віддалений доступ» (який шлях);
+ * перемикачі самих шляхів — у модулях tailscale і relay, команди Telegram — у модулі Telegram. Сповіщення Агента реєструє в Telegram.
  */
 @Injectable()
 export class BotMacModule implements MacModule {
@@ -24,7 +25,7 @@ export class BotMacModule implements MacModule {
   readonly title = 'Агент';
   readonly icon = { symbol: 'cpu.fill', tone: 'accent' } as const;
   readonly permissions: MacModule['permissions'] = [];
-  readonly settings: SettingDefinition[] = [];
+  readonly settings: SettingDefinition[] = [REMOTE_ACCESS_SETTING];
 
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
@@ -40,7 +41,11 @@ export class BotMacModule implements MacModule {
     const metrics = this._journal.metrics();
     const proxies = this._transports.proxies();
     return [
-      buildBotOverviewPage(ctx, this._transports.list(), proxies, metrics, { webhooxy: this._config.webhooxy }),
+      buildBotOverviewPage(ctx, this._transports.list(), proxies, metrics, {
+        off: true,
+        tailscale: ctx.setting<boolean>('enabled', 'tailscale'),
+        webhooxy: this._config.webhooxy && ctx.setting<boolean>('enabled', 'relay'),
+      }),
       buildBotJournalPage(this._journal.findEvents({ limit: BOT_EVENTS_PAGE_LIMIT }), proxies),
       buildBotStatsPage(metrics, this._router.namespaces(MACONTROL_BOT), proxies),
     ];

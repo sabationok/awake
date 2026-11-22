@@ -15,6 +15,7 @@ struct MainView: View {
             sections: sections,
             title: { title(of: $0) },
             symbol: { symbol(of: $0) },
+            disabledReason: { disabledReason(of: $0) },
             footer: { UpdateBanner(status: updates) }
         ) { page in
             content(for: page)
@@ -25,7 +26,7 @@ struct MainView: View {
 
     /// Вибір у цьому запуску, далі збережений з минулого (якщо така сторінка ще є), далі перша.
     private var selection: MainPage {
-        let all = sections.flatMap(\.items)
+        let all = sections.flatMap(\.items).filter { disabledReason(of: $0) == nil }
         if let picked, all.contains(picked) { return picked }
         if let saved = MainPage(storageKey: savedPage), all.contains(saved) { return saved }
         return all.first ?? .connection
@@ -38,6 +39,8 @@ struct MainView: View {
         let native = [MainPage.server, .connection, .devices, .permission].map { SidebarNode(item: $0) }
         guard let tree = model.uiTree else { return [SidebarSection(nodes: native)] }
         let modules = tree.modules.compactMap { module -> SidebarNode<MainPage>? in
+            // Вимкнений модуль: сірий пункт без дітей і без сторінки.
+            if module.disabled != nil { return SidebarNode(item: .disabledModule(id: module.id)) }
             let pages = tree.pages
                 .filter { $0.module == module.id && $0.group == .modules }
                 .map { MainPage.remote(id: $0.id) }
@@ -59,9 +62,19 @@ struct MainView: View {
         model.uiTree?.pages.first { $0.id == id }
     }
 
+    private func treeModule(_ id: String) -> UiModuleInfo? {
+        model.uiTree?.modules.first { $0.id == id }
+    }
+
+    private func disabledReason(of page: MainPage) -> String? {
+        guard case .disabledModule(let id) = page else { return nil }
+        return treeModule(id)?.disabled ?? "Вимкнено"
+    }
+
     private func title(of page: MainPage) -> String {
         switch page {
         case .remote(let id): moduleOwning(id)?.title ?? treePage(id)?.title ?? ""
+        case .disabledModule(let id): treeModule(id)?.title ?? id
         case .permission: "Дозвіл"
         case .connection: "Підключення"
         case .devices: "Пристрої"
@@ -72,6 +85,7 @@ struct MainView: View {
     private func symbol(of page: MainPage) -> String {
         switch page {
         case .remote(let id): moduleOwning(id)?.icon.symbol ?? treePage(id)?.icon.symbol ?? "questionmark.circle"
+        case .disabledModule(let id): treeModule(id)?.icon.symbol ?? "questionmark.circle"
         case .permission: "lock.fill"
         case .connection: "antenna.radiowaves.left.and.right"
         case .devices: "laptopcomputer.and.iphone"
@@ -117,6 +131,8 @@ struct MainView: View {
                 DevicesSection()
             }
             .formStyle(.grouped)
+        case .disabledModule:
+            EmptyView()
         case .permission:
             Form {
                 PermissionSection()

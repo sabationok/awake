@@ -24,6 +24,8 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
     let sections: [SidebarSection<Item>]
     let title: (Item) -> String
     let symbol: (Item) -> String
+    /// Вимкнений пункт: сірий, без вибору; текст — підказка, чому. nil — звичайний.
+    var disabledReason: (Item) -> String? = { _ in nil }
     @ViewBuilder let footer: () -> Footer
     @ViewBuilder let content: (Item) -> Content
 
@@ -83,21 +85,30 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
         .scrollContentBackground(.hidden)
     }
 
+    @ViewBuilder
     private func label(_ item: Item) -> some View {
-        Label(title(item), systemImage: symbol(item)).tag(item)
+        if let reason = disabledReason(item) {
+            Label(title(item), systemImage: symbol(item))
+                .foregroundStyle(.tertiary)
+                .selectionDisabled()
+                .help(reason)
+                .tag(item)
+        } else {
+            Label(title(item), systemImage: symbol(item)).tag(item)
+        }
     }
 
-    /// Згорнуті батьківські пункти (за назвою, щоб пам'ятати між запусками). За замовчуванням розгорнуто.
-    @AppStorage("adaptiveSidebar.folded") private var folded = ""
+    /// Розгорнуті батьківські пункти (за назвою, щоб пам'ятати між запусками). За замовчуванням усе згорнуто.
+    @AppStorage("adaptiveSidebar.expanded") private var expanded = ""
 
     private func expansion(of item: Item) -> Binding<Bool> {
         let key = title(item)
         return Binding(
-            get: { !folded.split(separator: "\n").contains(Substring(key)) },
+            get: { expanded.split(separator: "\n").contains(Substring(key)) },
             set: { open in
-                var keys = folded.split(separator: "\n").map(String.init).filter { $0 != key }
-                if !open { keys.append(key) }
-                folded = keys.joined(separator: "\n")
+                var keys = expanded.split(separator: "\n").map(String.init).filter { $0 != key }
+                if open { keys.append(key) }
+                expanded = keys.joined(separator: "\n")
             }
         )
     }
@@ -120,6 +131,7 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
 
     private func railButton(_ item: Item) -> some View {
         let selected = item == selection
+        let reason = disabledReason(item)
         return Button {
             selection = item
         } label: {
@@ -130,7 +142,8 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
                 .background(selected ? Color.accentColor : Color.clear, in: RoundedRectangle(cornerRadius: 7))
         }
         .buttonStyle(.plain)
-        .help(title(item))
+        .disabled(reason != nil)
+        .help(reason.map { "\(title(item)): \($0)" } ?? title(item))
         .accessibilityLabel(title(item))
     }
 }

@@ -3,6 +3,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Subject } from 'rxjs';
 import type { DevicePairingMode } from '@awake/contracts';
 import { DevicesRepository } from '../repositories/devices.repository';
+import type { PairingEvent } from '../types/pairing-event.types';
 
 /** Код живе стільки, а попередній ще приймається один період, щоб не зламати щойно відкрите посилання. */
 const CODE_TTL_MS = 2 * 60 * 1000;
@@ -10,6 +11,8 @@ const CODE_TTL_MS = 2 * 60 * 1000;
 const REQUEST_TTL_MS = 2 * 60 * 1000;
 /** Відповідь (дозволено / відхилено) пристрій має забрати за цей час. */
 const ANSWER_TTL_MS = 60 * 1000;
+/** Сполучений пристрій, якого не бачили довше, — знову «під'єднався» (подія `connected`). */
+const RECONNECT_GAP_MS = 30 * 60 * 1000;
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 
@@ -44,6 +47,8 @@ export class PairingService {
   private _requests: PairingRequest[] = [];
   /** Змінився список пристроїв або запитів: Mac-аппці треба новий знімок. */
   readonly changed$ = new Subject<void>();
+  /** Запити, відповіді й повторні входи пристроїв, з шляхом: з них модулі шляхів шлють сповіщення. */
+  readonly events$ = new Subject<PairingEvent>();
 
   constructor(private readonly _devices: DevicesRepository) {}
 
@@ -80,6 +85,7 @@ export class PairingService {
     const request: PairingRequest = { id: randomBytes(16).toString('base64url'), via, userAgent, createdAt: now, status: 'pending' };
     this._requests.push(request);
     this.changed$.next();
+    this.events$.next({ type: 'requested', via, userAgent });
     return request.id;
   }
 
@@ -112,6 +118,7 @@ export class PairingService {
       request.status = 'denied';
     }
     this.changed$.next();
+    this.events$.next({ type: approve ? 'approved' : 'denied', via: request.via, userAgent: request.userAgent });
   }
 
   /** Стан запиту для пристрою, що чекає. Токен віддається лише раз, далі запит зникає. */
@@ -140,7 +147,12 @@ export class PairingService {
    * або він з іншого шляху: локальний токен, перехоплений у LAN по HTTP, не стає квитком через relay, і навпаки.
    */
   findDeviceId(token: string, via: DevicePairingMode): number | null {
-    return this._devices.touch(sha256(token), via, new Date().toISOString());
+    const now = new Date();
+    const device = this._devices.touch(sha256(token), via, now.toISOString());
+    if (!device) return null;
+    const away = device.previousSeenAt ? now.getTime() - Date.parse(device.previousSeenAt) : Infinity;
+    if (away > RECONNECT_GAP_MS) this.events$.next({ type: 'connected', via, userAgent: device.userAgent });
+    return device.id;
   }
 
   deviceExists(id: number): boolean {

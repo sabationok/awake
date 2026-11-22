@@ -22,7 +22,7 @@ export class RelayMacModule implements MacModule {
   readonly title = 'Webhooxy';
   readonly icon = { symbol: 'antenna.radiowaves.left.and.right', tone: 'accent' } as const;
   readonly permissions: MacModule['permissions'] = [];
-  /** Лишаються й тоді, коли webhooxy вимкнено в агенті (їх читає host): ховаються вкладки і секція на Огляді. */
+  /** Лишаються й тоді, коли webhooxy вимкнено в агенті (їх читає host): пункт меню тоді сірий. */
   readonly settings = RELAY_SETTINGS;
 
   constructor(
@@ -33,11 +33,15 @@ export class RelayMacModule implements MacModule {
     private readonly _webhooks: WebhooksService,
   ) {}
 
+  /** Жорстко вимкнено в агенті: без `MACONTROL_WEBHOOXY=on` пункт меню сірий і не відкривається. */
+  disabled(): string | null {
+    return this._config.webhooxy ? null : 'Вимкнено в агенті (MACONTROL_WEBHOOXY)';
+  }
+
   pages(ctx: ModuleContext): UiPage[] {
-    if (!this._config.webhooxy) return [];
     const { state } = this._state;
     return [
-      buildRelayPage(state),
+      buildRelayPage(state, ctx.settingNode('enabled')),
       buildRelayLimitsPage(ctx, state),
       buildRelayTrackingPage(this._trackingMetrics()),
       buildRelaySessionsPage(state),

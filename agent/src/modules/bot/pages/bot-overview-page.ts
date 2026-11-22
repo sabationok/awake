@@ -1,7 +1,8 @@
-import type { UiNode, UiPage } from '@awake/contracts';
+import type { UiNode, UiPage, UiSelect } from '@awake/contracts';
 import type { BotMetrics } from '../../../bot-journal';
 import type { AgentProxy, AgentTransport } from '../../../transports';
 import type { ModuleContext } from '../../types/mac-module';
+import { REMOTE_ACCESS_KEY, type RemoteAccess } from '../constants/remote-access';
 
 export const BOT_OVERVIEW_PAGE = 'bot-overview';
 
@@ -22,16 +23,22 @@ function transportNodes(transport: AgentTransport, proxies: AgentProxy[], metric
   ];
 }
 
+/** Опція шляху сіра, коли його модуль вимкнено (у своїй вкладці чи жорстко в агенті). */
+function remoteAccessNode(ctx: ModuleContext, available: Record<RemoteAccess, boolean>): UiNode {
+  const node = ctx.settingNode(REMOTE_ACCESS_KEY) as UiSelect;
+  return { ...node, options: node.options.map((option) => ({ ...option, disabled: !available[option.value as RemoteAccess] })) };
+}
+
 /**
- * «Огляд» Агента. Підключення агента (вмикач, адреса) малює SwiftUI над цією сторінкою; тут — перемикачі проксі
- * (Tailscale — модуль tailscale, webhooxy — модуль relay, лише коли його ввімкнено в агенті) і транспорти з проксі. Сповіщення Агента — у Telegram → Сповіщення.
+ * «Огляд» Агента: «Віддалений доступ» (через що дашборд працює поза домашньою Wi-Fi — Tailscale чи webhooxy;
+ * опція сіра, коли її модуль вимкнено) і транспорти з проксі. Сповіщення Агента — у Telegram → Сповіщення.
  */
 export function buildBotOverviewPage(
   ctx: ModuleContext,
   transports: AgentTransport[],
   proxies: AgentProxy[],
   metrics: BotMetrics,
-  options: { webhooxy: boolean },
+  available: Record<RemoteAccess, boolean>,
 ): UiPage {
   return {
     id: BOT_OVERVIEW_PAGE,
@@ -41,22 +48,13 @@ export function buildBotOverviewPage(
     group: 'modules',
     children: [
       {
-        id: 'tailscale',
+        id: 'remote',
         type: 'section',
-        title: 'Tailscale',
+        title: 'Віддалений доступ',
         scope: 'mac',
-        footer: 'Дашборд і сполучення з твоїх пристроїв у tailnet з будь-якої мережі: https на *.ts.net через tailscale serve.',
-        children: [ctx.settingNode('enabled', 'tailscale')],
+        footer: 'Один шлях до дашборду поза домашньою Wi-Fi. Сіра опція — її модуль вимкнено: увімкнути у вкладці Tailscale чи Webhooxy.',
+        children: [remoteAccessNode(ctx, available)],
       },
-      ...(options.webhooxy ? [{
-        id: 'webhooxy',
-        type: 'section',
-        title: 'Webhooxy',
-        // Перемикач лише в SwiftUI: у вебі секція була б порожня.
-        scope: 'mac',
-        footer: 'Проксі до вебдашборду, коли Mac поза домашньою мережею. Хост, ліміти й сесії — вкладки Webhooxy.',
-        children: [ctx.settingNode('enabled', 'relay')],
-      } satisfies UiNode] : []),
       {
         id: 'transports',
         type: 'section',

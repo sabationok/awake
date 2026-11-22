@@ -57,6 +57,8 @@ struct UiButton: Codable, Hashable, Identifiable {
 struct UiOption: Codable, Hashable {
     var value: String
     var label: String
+    /// Опцію видно, але вибрати не можна (транспорт, вимкнений у своєму модулі).
+    var disabled: Bool?
 }
 
 struct UiSettingRef: Codable, Hashable {
@@ -248,6 +250,8 @@ struct UiModuleInfo: Decodable, Hashable, Identifiable {
     var icon: UiIcon
     /// Системні дозволи, які модуль просить (`MacPermission`). Невідомі Mac-аппці імена він ігнорує.
     var permissions: [String]?
+    /// Модуль вимкнений: пункт меню сірий, не розгортається і не відкривається. Текст — чому.
+    var disabled: String?
 }
 
 struct UiTree: Decodable, Hashable {

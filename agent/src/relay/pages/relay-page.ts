@@ -1,4 +1,4 @@
-import type { UiPage } from '@awake/contracts';
+import type { UiNode, UiPage } from '@awake/contracts';
 import { RELAY_PAGE } from '../constants/relay-settings';
 import { relayConnectionNodes } from '../helpers/relay-connection-nodes';
 import { RELAY_STATUS_VIEW } from '../helpers/relay-status-label';
@@ -6,9 +6,9 @@ import type { RelayStateSnapshot } from '../types/relay-status.types';
 
 /**
  * Головна вкладка Webhooxy: стан host-а, URL і зауваги про ключі. Самі ключі — нативна форма SwiftUI над цією сторінкою. Ліміти, трекінг і сесії — дочірні вкладки; сповіщення — Telegram → Сповіщення.
- * Чи пускати дашборд через webhooxy, вирішує Агент: перемикач на його Огляді.
+ * Перемикач модуля — тут; через що з нього йде дашборд (Tailscale чи webhooxy), вибирають на Огляді Агента.
  */
-export function buildRelayPage(state: RelayStateSnapshot): UiPage {
+export function buildRelayPage(state: RelayStateSnapshot, enabledNode: UiNode): UiPage {
   const view = RELAY_STATUS_VIEW[state.status];
   return {
     id: RELAY_PAGE,
@@ -23,8 +23,9 @@ export function buildRelayPage(state: RelayStateSnapshot): UiPage {
         id: 'host',
         type: 'section',
         title: 'Host',
-        footer: 'Проксі до вебдашборду: агент тримає кімнату в webhooxy, дашборд підключається до неї за квитком. Увімкнути — Агент → Огляд або /relay у Telegram.',
+        footer: 'Проксі до вебдашборду: агент тримає кімнату в webhooxy, дашборд підключається до неї за квитком. Працює, коли модуль увімкнено і на Огляді Агента вибрано «Webhooxy».',
         children: [
+          enabledNode,
           { id: 'status', type: 'status', label: view.label, tone: view.tone, pulse: state.status === 'connecting', hint: state.reason ?? undefined },
           { id: 'viewers', type: 'row', label: 'Сесій зараз', value: String(state.viewers.length) },
           ...(state.connection ? relayConnectionNodes(state.connection) : []),
