@@ -35,7 +35,8 @@ enum AgentCache {
         guard kind == .devices else { return line }
         guard var envelope = (try? JSONSerialization.jsonObject(with: Data(line.utf8))) as? [String: Any],
               var data = envelope["data"] as? [String: Any] else { return nil }
-        data["pairing"] = ["url": NSNull(), "reason": "loading"]
+        let loading: [String: Any] = ["url": NSNull(), "reason": "loading"]
+        data["pairing"] = ["local": loading, "remote": loading]
         data["requests"] = [Any]()
         envelope["data"] = data
         guard let json = try? JSONSerialization.data(withJSONObject: envelope) else { return nil }

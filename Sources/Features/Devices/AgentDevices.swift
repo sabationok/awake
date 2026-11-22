@@ -8,6 +8,7 @@ struct AgentDevices: Decodable, Equatable {
         let userAgent: String?
         let createdAt: Date
         let lastSeenAt: Date?
+        let via: Mode
     }
 
     /// Пристрій відкрив посилання з QR і чекає «Дозволити».
@@ -17,9 +18,17 @@ struct AgentDevices: Decodable, Equatable {
         let userAgent: String?
         let createdAt: Date
         let expiresAt: Date
+        let via: Mode
     }
 
-    /// Посилання з одноразовим кодом або причина, чому його зараз немає.
+    /// Шлях сполучення: `local` — напряму в довіреній Wi-Fi, `remote` — через дашборд на Vercel і relay.
+    enum Mode: String, Decodable, CaseIterable, Identifiable {
+        case local, remote
+        var id: String { rawValue }
+    }
+
+    /// Посилання з одноразовим кодом або причина, чому його зараз немає
+    /// (`untrusted`, `noNetwork` — для local; `relayOff` — для remote; `loading` — аппка ще чекає агента).
     struct Pairing: Decodable, Equatable {
         let url: String?
         let expiresAt: Date?
@@ -28,5 +37,13 @@ struct AgentDevices: Decodable, Equatable {
 
     let devices: [Device]
     let requests: [Request]
-    let pairing: Pairing
+    /// По посиланню на кожен шлях, код у них спільний.
+    let pairing: Pairings
+
+    struct Pairings: Decodable, Equatable {
+        let local: Pairing
+        let remote: Pairing
+
+        subscript(mode: Mode) -> Pairing { mode == .local ? local : remote }
+    }
 }

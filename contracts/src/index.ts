@@ -122,7 +122,9 @@ export type MacToAgentMessage =
         | { action: 'refresh' }
         | { action: 'revoke'; id: number }
         /** Відповідь на «Це ви?» для пристрою, що відкрив посилання з QR. */
-        | { action: 'answer'; requestId: string; approve: boolean };
+        | { action: 'answer'; requestId: string; approve: boolean }
+        /** «Новий код»: старий код перестає діяти, обидва посилання (локальне й дистанційне) отримують новий. */
+        | { action: 'newCode' };
     }
   /** Аппка переписала ~/.config/awake/relay.env: агент перечитує ключі й перепідключає webhooxy. Значень тут немає. */
   | { type: 'relayEnv'; data: { action: 'reload' } }
@@ -198,12 +200,23 @@ export interface DeviceInfo {
   userAgent: string | null;
   createdAt: string;
   lastSeenAt: string | null;
+  /** Яким шляхом сполучили. */
+  via: DevicePairingMode;
 }
 
-/** Посилання для сполучення нового пристрою або чому його зараз немає. */
+/**
+ * Як пристрій заходить на Mac. `local` — напряму по http у тій самій довіреній Wi-Fi;
+ * `remote` — через дашборд на Vercel і relay webhooxy, з будь-якої мережі.
+ */
+export type DevicePairingMode = 'local' | 'remote';
+
+/**
+ * Посилання для сполучення нового пристрою або чому його зараз немає.
+ * `untrusted` / `noNetwork` — для local; `relayOff` — relay вимкнений або не налаштований, для remote.
+ */
 export type DevicePairing =
   | { url: string; expiresAt: string }
-  | { url: null; reason: 'untrusted' | 'noNetwork' };
+  | { url: null; reason: 'untrusted' | 'noNetwork' | 'relayOff' };
 
 /** Пристрій відкрив посилання з QR і чекає, поки на Mac підтвердять, що це ти. */
 export interface DevicePairingRequest {
@@ -213,12 +226,14 @@ export interface DevicePairingRequest {
   createdAt: string;
   /** Після цього запит без відповіді протухає. */
   expiresAt: string;
+  via: DevicePairingMode;
 }
 
 export interface DevicesSnapshot {
   devices: DeviceInfo[];
   requests: DevicePairingRequest[];
-  pairing: DevicePairing;
+  /** Одне посилання на кожен шлях; код у них спільний. */
+  pairing: Record<DevicePairingMode, DevicePairing>;
 }
 
 /** Відповідь агента пристрою, що чекає підтвердження. Токен приходить лише раз, разом з approved. */

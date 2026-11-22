@@ -14,6 +14,11 @@ extension AwakeModel {
         agent.send(type: "devices", data: DevicesRequest(action: "refresh"))
     }
 
+    /// «Новий код»: старий перестає діяти, обидва посилання отримують новий.
+    func newPairingCode() {
+        agent.send(type: "devices", data: DevicesRequest(action: "newCode"))
+    }
+
     /// Найстаріший запит «Це ви?», що ще не протух. Його показує діалог у головному вікні.
     var pendingPairingRequest: AgentDevices.Request? {
         devices?.requests.first { $0.expiresAt > Date() }

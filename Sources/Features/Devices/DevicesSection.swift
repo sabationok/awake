@@ -8,7 +8,7 @@ struct DevicesSection: View {
     var body: some View {
         Group {
             if let devices = model.devices {
-                PairingSection(pairing: devices.pairing)
+                PairingSection(pairing: devices.pairing.local)
                 DeviceListSection(devices: devices.devices)
             } else {
                 Section {
@@ -54,7 +54,7 @@ private struct PairingSection: View {
                             .textSelection(.enabled)
                         HStack {
                             Button(copied ? "Скопійовано" : "Копіювати посилання") { copy(url) }
-                            Button("Новий код") { model.refreshDevices() }
+                            Button("Новий код") { model.newPairingCode() }
                         }
                         TimelineView(.periodic(from: .now, by: 1)) { context in
                             let left = max(0, Int(expiresAt.timeIntervalSince(context.date)))
