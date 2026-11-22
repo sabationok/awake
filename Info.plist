@@ -24,6 +24,10 @@
 	<string>1.3</string>
 	<key>CFBundleVersion</key>
 	<string>4</string>
+	<key>NSLocationUsageDescription</key>
+	<string>macOS показує назву мережі Wi-Fi лише з дозволом геолокації. За нею Awake знає, чи Mac у довіреній мережі. Координати не зберігаються.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>macOS показує назву мережі Wi-Fi лише з дозволом геолокації. За нею Awake знає, чи Mac у довіреній мережі. Координати не зберігаються.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Awake стежить за сигналом вашого iPhone чи Apple Watch і блокує Mac, коли ви відходите.</string>
 	<key>LSMinimumSystemVersion</key>

@@ -73,7 +73,11 @@ extension AwakeModel {
     func refreshWifi() {
         wifiAuthorized = wifi.isAuthorized
         wifiDenied = wifi.isDenied
-        currentSSID = wifi.currentSSID()
+        let ssid = wifi.currentSSID()
+        guard ssid != currentSSID else { return }
+        currentSSID = ssid
+        // Агент вирішує, чи мережа довірена, лише за назвою з цього стану.
+        pushAgentState()
     }
 
     var currentNetworkTrusted: Bool {
