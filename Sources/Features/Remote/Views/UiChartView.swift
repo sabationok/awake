@@ -12,17 +12,28 @@ struct UiChartView: View {
             colors: (chart.tones ?? [:]).mapValues(\.color),
             color: chart.tone?.color ?? .accentColor,
             limit: chart.limit,
-            format: chart.format == .duration ? Self.duration : Self.count
+            format: Self.formatter(chart.format)
         )
         .padding(.vertical, 4)
     }
 
     private static func unit(_ unit: UiChart.Unit) -> Calendar.Component {
         switch unit {
+        case .minute: .minute
         case .hour: .hour
         case .day: .day
         case .week: .weekOfYear
         case .month: .month
+        }
+    }
+
+    private static func formatter(_ format: UiChart.Format?) -> (Double) -> String {
+        switch format {
+        case .duration: duration
+        case .bytes: { ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .memory) }
+        case .percent: { "\($0.formatted(.number.precision(.fractionLength(0...1)))) %" }
+        case .number: { $0.formatted(.number.precision(.fractionLength(0...2))) }
+        case .count, nil: count
         }
     }
 

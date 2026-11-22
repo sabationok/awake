@@ -220,13 +220,13 @@ struct UiRow: Decodable, Hashable {
 /// Великий таймер: відлік до `until` або `value`, коли відліку немає.
 /// Стовпчиковий графік по часу; рендер — BarHistoryChart.
 struct UiChart: Decodable, Hashable {
-    struct Point: Decodable, Hashable {
+    struct Point: Decodable, Hashable, Equatable {
         var start: Date
         var value: Double
         var series: String?
     }
-    enum Unit: String, Decodable { case hour, day, week, month }
-    enum Format: String, Decodable { case count, duration }
+    enum Unit: String, Decodable { case minute, hour, day, week, month }
+    enum Format: String, Decodable { case count, duration, bytes, percent, number }
 
     var id: String
     var title: String

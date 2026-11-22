@@ -40,6 +40,8 @@ extension AwakeModel {
         agent.onServerInfo = { [weak self] info in
             if self?.serverInfo != info { self?.serverInfo = info }
         }
+        agent.onServerCharts = { [weak self] charts in self?.serverCharts = charts }
+        agent.onServerChartsTick = { [weak self] tick in self?.serverCharts?.apply(tick) }
         agent.onWebhooks = { [weak self] webhooks in
             if self?.webhooks != webhooks { self?.webhooks = webhooks }
         }
@@ -74,6 +76,12 @@ extension AwakeModel {
         agent.stop()
         serverInfo = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in self?.applyAgent() }
+    }
+
+    /// «Сервер» відкрився, змінився період або перезапустився агент: агент шле графіки й далі тіки цього періоду.
+    func requestServerCharts(_ period: ServerChartsPeriod) {
+        struct Request: Encodable { let period: ServerChartsPeriod }
+        agent.send(type: "serverCharts", data: Request(period: period))
     }
 
     /// Натискання в SwiftUI-рендерері йде агентові, який виконує його як дію з вебу.

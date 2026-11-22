@@ -194,14 +194,14 @@ export interface UiChart extends UiNodeBase {
   type: 'chart';
   title: string;
   /** Розмір бакета: від нього підписи осі X. */
-  unit: 'hour' | 'day' | 'week' | 'month';
+  unit: 'minute' | 'hour' | 'day' | 'week' | 'month';
   points: UiChartPoint[];
   /** Колір однієї серії. */
   tone?: UiTone;
   /** Колір кожної серії stacked-графіка. */
   tones?: Record<string, UiTone>;
-  /** Як підписати шкалу: кількість чи тривалість (value — секунди). */
-  format?: 'count' | 'duration';
+  /** Як підписати шкалу: кількість, тривалість (секунди), байти, відсотки чи дробове число. */
+  format?: 'count' | 'duration' | 'bytes' | 'percent' | 'number';
   /** Пунктирна лінія ліміту. */
   limit?: number;
 }

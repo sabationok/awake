@@ -4,11 +4,14 @@ import { StatGranularity, type ServerInfo, type ServerStats, type ServerUsage } 
 import { AGENT_CONFIG, type AgentConfig } from '../../../config/agent-config';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
 import { flattenStatTotals, StatsService } from '../../../stats';
-import { SERVER_REQUESTS_STAT_NS, SERVER_STARTS_STAT_NS } from '../../constants/server-stats';
+import { SERVER_CPU_STAT_NS, SERVER_LOAD_STAT_NS, SERVER_MEMORY_STAT_NS, SERVER_REQUESTS_STAT_NS, SERVER_STARTS_STAT_NS } from '../../constants/server-stats';
+import { ServerChartsService } from '../server-charts';
 import { readWebInfo } from '../../helpers/read-web-info';
 
-/** Як часто слати знімок: навантаження і нова публікація вебу змінюються без подій. */
+/** Як часто слати знімок і писати заміри: навантаження і нова публікація вебу змінюються без подій. */
 const SERVER_INFO_INTERVAL_MS = 10_000;
+/** Заміри читають графіки «Година» (хвилини), «Сьогодні» (години), 7 і 30 днів (дні). */
+const GAUGE_GRANULARITIES = [StatGranularity.MINUTE, StatGranularity.HOUR, StatGranularity.DAY];
 
 /** Сторінка «Сервер» у Mac-аппці: стан самого процесу агента, окремо від його бізнес-логіки. */
 @Injectable()
@@ -17,17 +20,20 @@ export class ServerInfoService implements OnModuleInit, OnModuleDestroy {
   private _timer?: NodeJS.Timeout;
   /** Точка відліку CPU: споживання рахуємо між знімками. */
   private _cpu = { usage: process.cpuUsage(), at: process.hrtime.bigint() };
+  /** Перший замір CPU рахує сам запуск (сотні %): у статистику він не йде. */
+  private _cpuWarm = false;
 
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     private readonly _bridge: MacBridgeService,
     private readonly _stats: StatsService,
+    private readonly _charts: ServerChartsService,
   ) {}
 
   onModuleInit() {
     this._stats.increment({
       namespace: SERVER_STARTS_STAT_NS,
-      granularities: [StatGranularity.DAY, StatGranularity.MONTH],
+      granularities: [StatGranularity.MINUTE, StatGranularity.HOUR, StatGranularity.DAY, StatGranularity.MONTH],
       metrics: { start: { count: 1 } },
     });
     this._push();
@@ -71,7 +77,15 @@ export class ServerInfoService implements OnModuleInit, OnModuleDestroy {
     return { cpu, rss, heapUsed, load: Math.round(loadavg()[0] * 100) / 100 };
   }
 
+  /** Знімок у Mac-аппку, заміри в stats-рушій, поточний бакет графіків — тіком. */
   private _push() {
-    this._bridge.sendServerInfo(this.snapshot());
+    const snapshot = this.snapshot();
+    this._bridge.sendServerInfo(snapshot);
+    const { cpu, rss, heapUsed, load } = snapshot.usage;
+    if (this._cpuWarm) this._stats.recordGauge({ namespace: SERVER_CPU_STAT_NS, granularities: GAUGE_GRANULARITIES, values: { cpu } });
+    this._cpuWarm = true;
+    this._stats.recordGauge({ namespace: SERVER_MEMORY_STAT_NS, granularities: GAUGE_GRANULARITIES, values: { rss, heap: heapUsed } });
+    this._stats.recordGauge({ namespace: SERVER_LOAD_STAT_NS, granularities: GAUGE_GRANULARITIES, values: { load } });
+    this._charts.tick();
   }
 }

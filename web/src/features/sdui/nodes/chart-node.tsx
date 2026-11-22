@@ -5,16 +5,26 @@ import { cn } from '@/lib/cn';
 import type { NodeProps } from '../sdui.types';
 
 const LABEL: Record<UiChart['unit'], Intl.DateTimeFormatOptions> = {
+  minute: { hour: '2-digit', minute: '2-digit' },
   hour: { hour: 'numeric' },
   day: { weekday: 'narrow' },
   week: { day: 'numeric', month: '2-digit' },
   month: { month: 'short' },
 };
 
-/** Секунди → «3 год» / «40 хв»; кількість — як є. */
+const round = (value: number, digits: number) => String(Math.round(value * 10 ** digits) / 10 ** digits);
+
+/** Підпис значення за форматом шкали: секунди → «3 год», байти → «117 МБ», відсотки, дробове число. */
+const FORMAT: Record<NonNullable<UiChart['format']>, (value: number) => string> = {
+  count: (value) => round(value, 1),
+  duration: (value) => (value >= 3600 ? `${round(value / 3600, 1)} год` : `${Math.round(value / 60)} хв`),
+  bytes: (value) => (value >= 1024 ** 3 ? `${round(value / 1024 ** 3, 1)} ГБ` : `${round(value / 1024 ** 2, 1)} МБ`),
+  percent: (value) => `${round(value, 1)} %`,
+  number: (value) => round(value, 2),
+};
+
 function formatValue(value: number, format: UiChart['format']): string {
-  if (format !== 'duration') return String(Math.round(value * 10) / 10);
-  return value >= 3600 ? `${Math.round((value / 3600) * 10) / 10} год` : `${Math.round(value / 60)} хв`;
+  return FORMAT[format ?? 'count'](value);
 }
 
 /** Точки → стовпчики за початком бакета, сегменти в порядку серій. */

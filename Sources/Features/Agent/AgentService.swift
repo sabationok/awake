@@ -21,6 +21,8 @@ final class AgentService {
     var onTrustedNetworks: (([String]) -> Void)?
     var onWebhooks: (([AgentWebhook]) -> Void)?
     var onServerInfo: ((AgentServerInfo) -> Void)?
+    var onServerCharts: ((AgentServerCharts) -> Void)?
+    var onServerChartsTick: ((AgentServerChartsTick) -> Void)?
 
     private var process: Process?
     private var input: FileHandle?
@@ -135,6 +137,10 @@ final class AgentService {
                 onWebhooks?(webhooks)
             case .server(let info):
                 onServerInfo?(info)
+            case .serverCharts(let charts):
+                onServerCharts?(charts)
+            case .serverChartsTick(let tick):
+                onServerChartsTick?(tick)
             case .other:
                 break
             }

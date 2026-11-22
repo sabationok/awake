@@ -45,21 +45,7 @@ struct ServerSection: View {
         }
 
         if let info = running {
-            Section {
-                SettingsRow(title: "CPU", symbol: "cpu", color: .orange, text: String(format: "%.1f %%", info.usage.cpu))
-                SettingsRow(title: "Пам'ять", symbol: "memorychip", color: .orange,
-                            text: "\(Self.bytes(info.usage.rss)) · купа \(Self.bytes(info.usage.heapUsed))")
-                SettingsRow(title: "Навантаження Mac", symbol: "gauge.with.dots.needle.33percent", color: .orange,
-                            text: String(format: "%.2f за 1 хв", info.usage.load))
-            } header: {
-                Text("Навантаження")
-            } footer: {
-                Text("CPU — відсоток одного ядра за останні 10 с. Оновлюється раз на 10 с.")
-            }
-
-            if let stats = info.stats {
-                ServerRequestsSection(stats: stats)
-            }
+            ServerStatsSections(pid: info.pid)
 
             Section("Порти") {
                 SettingsRow(title: "HTTPS", symbol: "lock.fill", color: .blue, text: "\(info.ports.https) · дашборд напряму")
@@ -94,10 +80,6 @@ struct ServerSection: View {
         return model.agentStatus.isRunning ? .green : .secondary
     }
 
-    private static func bytes(_ value: Int) -> String {
-        ByteCountFormatter.string(fromByteCount: Int64(value), countStyle: .memory)
-    }
-
     private static func webSource(_ web: AgentServerInfo.Web) -> String {
         switch web.source {
         case "published": "опублікований"
@@ -114,38 +96,50 @@ struct ServerSection: View {
     }
 }
 
-/// Запити до API за шляхом: сьогодні / за весь час, помилки окремо. З stats-рушія агента (UTC-день, flush щохвилини).
-private struct ServerRequestsSection: View {
-    let stats: AgentServerInfo.Stats
+/// Статистика сервера з stats-рушія агента: фільтр періоду, навантаження (середнє за бакет) і запити графіками.
+/// Агент шле все вікно періоду, далі після кожного заміру (10 с) лише поточний бакет — графік дописується сам.
+private struct ServerStatsSections: View {
+    let pid: Int
+    @EnvironmentObject private var model: AwakeModel
+    @AppStorage("server.chartsPeriod") private var period: ServerChartsPeriod = .today
 
-    private static let paths: [(key: String, title: String, symbol: String)] = [
-        ("loopback", "Цей Mac", "desktopcomputer"),
-        ("lan", "Wi-Fi", "wifi"),
-        ("tailnet", "Tailscale", "point.3.connected.trianglepath.dotted"),
-    ]
+    private var charts: [UiChart] {
+        guard let data = model.serverCharts, data.period == period else { return [] }
+        return data.charts
+    }
 
     var body: some View {
         Section {
-            ForEach(Self.paths, id: \.key) { path in
-                SettingsRow(title: path.title, symbol: path.symbol, color: .purple,
-                            text: "\(Self.line(stats.requests.today[path.key])) · всього \(Self.line(stats.requests.total[path.key]))")
+            Picker("Період", selection: $period) {
+                ForEach(ServerChartsPeriod.allCases) { Text($0.title).tag($0) }
             }
-            SettingsRow(title: "Старти", symbol: "arrow.clockwise", color: .gray,
-                        text: "\(stats.starts.today) · всього \(stats.starts.total)")
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            chartsOf(["cpu", "rss", "heap", "load"])
         } header: {
-            Text("Запити сьогодні")
+            Text("Навантаження")
         } footer: {
-            Text("День — за UTC. Помилки: 4xx — відмова (токен, мережа), 5xx — збій агента.")
+            Text("Середнє за бакет із замірів раз на 10 с. CPU — відсоток одного ядра. Поточний бакет оновлюється наживо.")
+        }
+        // Новий період або перезапущений агент (новий pid): агент шле графіки заново і далі тіки цього періоду.
+        .task(id: "\(period.rawValue)|\(pid)") { model.requestServerCharts(period) }
+
+        Section {
+            chartsOf(["requests", "errors", "starts"])
+        } header: {
+            Text("Запити")
+        } footer: {
+            Text("Запити до API за шляхом; помилки: 4xx — відмова (токен, мережа), 5xx — збій агента. Дні — за UTC.")
         }
     }
 
-    /// «12» або «12 (4xx 2, 5xx 1)».
-    private static func line(_ statuses: [String: Int]?) -> String {
-        guard let statuses else { return "0" }
-        let total = statuses.values.reduce(0, +)
-        let errors = statuses.filter { $0.key != "2xx" && $0.key != "3xx" && $0.value != 0 }
-            .sorted { $0.key < $1.key }
-            .map { "\($0.key) \($0.value)" }
-        return errors.isEmpty ? "\(total)" : "\(total) (\(errors.joined(separator: ", ")))"
+    @ViewBuilder
+    private func chartsOf(_ ids: [String]) -> some View {
+        let shown = ids.compactMap { id in charts.first { $0.id == id } }
+        if shown.isEmpty {
+            Text("Завантаження…").foregroundStyle(.secondary)
+        } else {
+            ForEach(shown, id: \.id) { UiChartView(chart: $0) }
+        }
     }
 }

@@ -137,7 +137,9 @@ export type MacToAgentMessage =
   /** Bluetooth-пристрої поруч, раз на кілька секунд, поки ввімкнено `proximity.enabled`. Рішення блокувати — за агентом. */
   | { type: 'proximity'; data: ProximityReport }
   /** Вебхуки webhooxy: аппка зберігає форму з модалки, вмикає, вимикає, прибирає. Секрети сюди не йдуть. */
-  | { type: 'webhooks'; data: import('./webhooks').WebhookAction };
+  | { type: 'webhooks'; data: import('./webhooks').WebhookAction }
+  /** Сторінка «Сервер» відкрилась або змінився період: агент шле графіки й далі live-тіки цього періоду. */
+  | { type: 'serverCharts'; data: { period: StatsPeriod } };
 
 /** Стан Bluetooth на Mac. `unauthorized` — macOS не дала аппці доступ. */
 export type BluetoothState = 'on' | 'off' | 'unauthorized' | 'unsupported' | 'unknown';
@@ -171,7 +173,31 @@ export type AgentToMacMessage =
   /** Вебхуки з SQLite агента зі станом і лічильниками: на старті й після кожної зміни. */
   | { type: 'webhooks'; data: { webhooks: import('./webhooks').WebhookInfo[] } }
   /** Сам інстанс сервера агента (процес, навантаження, порти, звідки віддає веб): на старті й раз на 10 с. Лише для Mac-аппки. */
-  | { type: 'server'; data: ServerInfo };
+  | { type: 'server'; data: ServerInfo }
+  | { type: 'serverCharts'; data: ServerCharts }
+  | { type: 'serverChartsTick'; data: ServerChartsTick };
+
+/** Період графіків статистики: Година (хвилинні бакети), Сьогодні (години), 7 і 30 днів (дні). */
+export type StatsPeriod = 'hour' | 'today' | 'week' | 'month';
+
+/** Графіки сторінки «Сервер» за період: навантаження (середнє за бакет), запити, помилки, старти. */
+export interface ServerCharts {
+  period: StatsPeriod;
+  /** Вікно [from, to): усі бакети, порожні теж. */
+  from: string;
+  to: string;
+  charts: import('./ui').UiChart[];
+}
+
+/**
+ * Live-тік: лише поточний бакет кожного графіка (id графіка → точки серій). Аппка замінює ним бакет з тим самим
+ * початком або дописує новий і відкидає все раніше `from` (вікно «Година» зсувається).
+ */
+export interface ServerChartsTick {
+  period: StatsPeriod;
+  from: string;
+  points: Record<string, import('./ui').UiChartPoint[]>;
+}
 
 /** Звідки агент роздає локальний пульт. `published` — `scripts/publish-web-local.sh`, `bundle` — збірка в аппці. */
 export interface ServerWebInfo {

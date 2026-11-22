@@ -2,13 +2,13 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Subject } from 'rxjs';
 import { STAT_SUBJECT_NONE, StatGranularity, type StatMetrics, type StatSeriesRef, type StatTimeline, type StatTotals } from '@awake/contracts';
 import { API_ERROR_CODES, AppException } from '../../../common/app-exception';
-import { STAT_DEFAULT_VALUE_LIMIT, STAT_LIMITS, STAT_MAX_TIMELINE_POINTS, STAT_RETENTION_MS } from '../../constants/stat-limits';
+import { STAT_DEFAULT_VALUE_LIMIT, STAT_GAUGE_COUNT, STAT_GAUGE_SUM, STAT_LIMITS, STAT_MAX_TIMELINE_POINTS, STAT_RETENTION_MS } from '../../constants/stat-limits';
 import { addStatMetrics } from '../../helpers/add-stat-metrics';
 import { normalizeStatKey } from '../../helpers/normalize-stat-key';
 import { statBucketKey } from '../../helpers/stat-bucket-key';
 import { statNextPeriodStart, statPeriodRange, statPeriodStart } from '../../helpers/stat-period';
 import { MetricSnapshotsRepository, type StatCellRow, type StatSeriesCellRow } from '../../repositories/metric-snapshots.repository';
-import type { StatBucket, StatDurationIncrement, StatFilter, StatIncrement, StatLocalDay } from '../../types/stat-bucket.types';
+import type { StatBucket, StatDurationIncrement, StatFilter, StatGaugeSample, StatIncrement, StatLocalDay } from '../../types/stat-bucket.types';
 import { splitStatSpan } from '../../helpers/split-stat-span';
 
 const ALL_GRANULARITIES = Object.values(StatGranularity);
@@ -52,6 +52,15 @@ export class StatsService {
     } catch (error) {
       this._logger.warn(`stats increment dropped: ${(error as Error).message}`);
     }
+  }
+
+  /** Замір миттєвої величини: `{ sum, n }` у кожен бакет; середнє рахує `statGaugeAverage`. Ніколи не кидає. */
+  recordGauge({ values, ...rest }: StatGaugeSample) {
+    const metrics: StatIncrement['metrics'] = {};
+    for (const [name, value] of Object.entries(values)) {
+      if (Number.isFinite(value)) metrics[name] = { [STAT_GAUGE_SUM]: value, [STAT_GAUGE_COUNT]: 1 };
+    }
+    this.increment({ ...rest, metrics });
   }
 
   /**

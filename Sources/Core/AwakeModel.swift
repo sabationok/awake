@@ -54,6 +54,8 @@ final class AwakeModel: ObservableObject {
     @Published var webhooks: [AgentWebhook] = []
     /// Інстанс сервера агента (pid, порти, звідки пульт). nil, поки агент його не надіслав.
     @Published var serverInfo: AgentServerInfo?
+    /// Графіки «Сервера» за вибраний період; live-тіки агента дописують у них поточний бакет.
+    @Published var serverCharts: AgentServerCharts?
     @Published var agentEnabled = UserDefaults.standard.object(forKey: "agent.enabled") as? Bool ?? true {
         didSet {
             UserDefaults.standard.set(agentEnabled, forKey: "agent.enabled")

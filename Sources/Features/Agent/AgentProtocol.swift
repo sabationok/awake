@@ -88,6 +88,8 @@ enum AgentProtocol {
         case trustedNetworks([String])
         case webhooks([AgentWebhook])
         case server(AgentServerInfo)
+        case serverCharts(AgentServerCharts)
+        case serverChartsTick(AgentServerChartsTick)
         case other
     }
 
@@ -127,6 +129,14 @@ enum AgentProtocol {
             struct Wrapper: Decodable { let data: AgentServerInfo }
             guard let info = try? UiTreeDecoder.decoder.decode(Wrapper.self, from: data).data else { return .other }
             return .server(info)
+        case "serverCharts":
+            struct Wrapper: Decodable { let data: AgentServerCharts }
+            guard let charts = try? UiTreeDecoder.decoder.decode(Wrapper.self, from: data).data else { return .other }
+            return .serverCharts(charts)
+        case "serverChartsTick":
+            struct Wrapper: Decodable { let data: AgentServerChartsTick }
+            guard let tick = try? UiTreeDecoder.decoder.decode(Wrapper.self, from: data).data else { return .other }
+            return .serverChartsTick(tick)
         case "webhooks":
             struct List: Decodable { let webhooks: [AgentWebhook] }
             struct Wrapper: Decodable { let data: List }

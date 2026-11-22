@@ -17,3 +17,7 @@ export const STAT_PRUNE_MS = 60 * 60_000;
 /** Найбільше точок у timeline. */
 export const STAT_MAX_TIMELINE_POINTS = 5_000;
 export const STAT_DEFAULT_VALUE_LIMIT = 50;
+
+/** Статуси заміру (`recordGauge`): сума значень і кількість замірів у бакеті. */
+export const STAT_GAUGE_SUM = 'sum';
+export const STAT_GAUGE_COUNT = 'n';

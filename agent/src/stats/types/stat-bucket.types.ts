@@ -29,6 +29,15 @@ export interface StatIncrement extends Partial<Pick<StatSeriesRef, 'subjectType'
   at?: Date;
 }
 
+/**
+ * Замір миттєвої величини (CPU, пам'ять, навантаження): рушій лише сумує, тож у бакет іде `{ sum, n }`,
+ * а середнє за бакет — `statGaugeAverage`. Одна одиниця на namespace, як і для лічильників.
+ */
+export interface StatGaugeSample extends Omit<StatIncrement, 'metrics'> {
+  /** Назва величини → значення заміру. */
+  values: Record<string, number>;
+}
+
 /** Тривалість, що тягнеться через кілька бакетів: рушій розкладає її по найдрібнішій гранулярності, status — секунди. */
 export interface StatDurationIncrement extends Omit<StatIncrement, 'metrics' | 'at'> {
   value: string;

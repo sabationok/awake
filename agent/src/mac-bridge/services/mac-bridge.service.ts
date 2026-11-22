@@ -15,7 +15,10 @@ import type {
   SleepTimerEvent,
   DevicesSnapshot,
   SecretsSnapshot,
+  ServerCharts,
+  ServerChartsTick,
   ServerInfo,
+  StatsPeriod,
   WebhookAction,
   WebhookInfo,
 } from '@awake/contracts';
@@ -54,6 +57,8 @@ export class MacBridgeService implements OnModuleInit {
   readonly trustedNetworks$ = new Subject<TrustedNetworksRequest>();
   /** Bluetooth-пристрої поруч від аппки (кожні кілька секунд, поки ввімкнено «Поруч»). */
   readonly proximity$ = new Subject<ProximityReport>();
+  /** Сторінка «Сервер» відкрилась або змінився період графіків. */
+  readonly serverCharts$ = new Subject<{ period: StatsPeriod }>();
   private _stateAt = 0;
 
   onModuleInit() {
@@ -99,6 +104,14 @@ export class MacBridgeService implements OnModuleInit {
 
   sendServerInfo(info: ServerInfo) {
     this._send({ type: 'server', data: info });
+  }
+
+  sendServerCharts(charts: ServerCharts) {
+    this._send({ type: 'serverCharts', data: charts });
+  }
+
+  sendServerChartsTick(tick: ServerChartsTick) {
+    this._send({ type: 'serverChartsTick', data: tick });
   }
 
   sendWebhooks(webhooks: WebhookInfo[]) {
@@ -156,6 +169,9 @@ export class MacBridgeService implements OnModuleInit {
         return;
       case 'webhooks':
         this.webhooks$.next(message.data);
+        return;
+      case 'serverCharts':
+        this.serverCharts$.next(message.data);
         return;
     }
   }
