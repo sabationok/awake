@@ -58,7 +58,7 @@ export class RelayRequestService {
   /** Кукі пристрою → свіжий квиток viewer-а (≤ 300 с, одноразовий) з `sub = device:<id>`. */
   private _connect(request: RelayHttpRequest, env: RelayEnv): RelayHttpResponse {
     const token = readCookie(header(request, 'cookie') ?? undefined, RELAY_DEVICE_COOKIE);
-    const deviceId = token ? this._pairing.findDeviceId(token) : null;
+    const deviceId = token ? this._pairing.findDeviceId(token, 'remote') : null;
     if (deviceId === null) return fail(401, 'UNAUTHORIZED', 'Device is not paired');
     if (!this._config.webhooxyUrl) return fail(503, 'RELAY_UNCONFIGURED');
     this._logger.log(`Relay ticket for device ${deviceId}`);

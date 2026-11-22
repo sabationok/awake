@@ -38,10 +38,10 @@ export class DevicesRepository {
   }
 
   /** Позначає пристрій як щойно бачений. Повертає його id або null, якщо такого токена немає. */
-  touch(tokenHash: string, at: string): number | null {
+  touch(tokenHash: string, via: DevicePairingMode, at: string): number | null {
     const row = this._database.db
-      .prepare('UPDATE devices SET last_seen_at = ? WHERE token_hash = ? RETURNING id')
-      .get(at, tokenHash) as { id: number } | undefined;
+      .prepare('UPDATE devices SET last_seen_at = ? WHERE token_hash = ? AND via = ? RETURNING id')
+      .get(at, tokenHash, via) as { id: number } | undefined;
     return row?.id ?? null;
   }
 }

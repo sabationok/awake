@@ -130,13 +130,17 @@ export class PairingService {
     return removed;
   }
 
+  /** Токен пристрою, сполученого локально: лише він відкриває API Mac у мережі. */
   isDeviceToken(token: string): boolean {
-    return this.findDeviceId(token) !== null;
+    return this.findDeviceId(token, 'local') !== null;
   }
 
-  /** id пристрою за його токеном (і позначка «щойно бачений»); null — токена немає або його відкликали. */
-  findDeviceId(token: string): number | null {
-    return this._devices.touch(sha256(token), new Date().toISOString());
+  /**
+   * id пристрою за його токеном і шляхом сполучення (і позначка «щойно бачений»); null — токена немає, його відкликали
+   * або він з іншого шляху: локальний токен, перехоплений у LAN по HTTP, не стає квитком через relay, і навпаки.
+   */
+  findDeviceId(token: string, via: DevicePairingMode): number | null {
+    return this._devices.touch(sha256(token), via, new Date().toISOString());
   }
 
   deviceExists(id: number): boolean {
