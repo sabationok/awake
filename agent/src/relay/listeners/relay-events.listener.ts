@@ -1,4 +1,5 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { AGENT_CONFIG, type AgentConfig } from '../../config/agent-config';
 import { debounceTime, distinctUntilChanged, skip, type Subscription } from 'rxjs';
 import { TelegramNotificationsService } from '../../telegram/notifications';
 import { RELAY_NOTIFICATIONS } from '../constants/relay-notifications';
@@ -15,10 +16,12 @@ export class RelayEventsListener implements OnModuleInit, OnModuleDestroy {
   private _subscription: Subscription | null = null;
 
   constructor(
+    @Inject(AGENT_CONFIG) config: AgentConfig,
     private readonly _relay: RelayStateService,
     private readonly _notifications: TelegramNotificationsService,
   ) {
-    _notifications.register(RELAY_NOTIFICATIONS);
+    // Webhooxy вимкнено в агенті: його сповіщень у Telegram немає.
+    if (config.webhooxy) _notifications.register(RELAY_NOTIFICATIONS);
   }
 
   onModuleInit() {

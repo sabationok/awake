@@ -9,6 +9,7 @@ import { EnvifyModule } from './envify';
 import { MetricsModule } from './metrics';
 import { SecretsModule } from './secrets';
 import { WebhooksModule } from './webhooks';
+import { TailscaleModule } from './tailscale';
 import { TrustedNetworksModule } from './trusted-networks';
 import { ProximityModule } from './proximity';
 import { LogsModule } from './logs/logs.module';
@@ -34,6 +35,7 @@ import { TlsModule } from './tls/tls.module';
     SecretsModule,
     MetricsModule,
     WebhooksModule,
+    TailscaleModule,
     TrustedNetworksModule,
     ProximityModule,
     DevicesModule,

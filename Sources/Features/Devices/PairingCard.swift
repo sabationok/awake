@@ -1,31 +1,33 @@
 import AppKit
 import SwiftUI
 
-/// Картка «Сполучити пристрій»: вибір шляху (локально або дистанційно), QR з таймером і посилання з копіюванням.
-/// Коди окремі для кожного шляху: локальний QR не діє через relay і навпаки.
+/// Картка «Сполучити пристрій»: вибір шляху (локально, Tailscale, дистанційно), QR з таймером і посилання з копіюванням.
+/// Коди окремі для кожного шляху: QR одного шляху не діє через інший.
 struct PairingCard: View {
     @EnvironmentObject private var model: AwakeModel
     let pairings: AgentDevices.Pairings
-    /// nil — вибору ще не було: локальний, якщо в нього є посилання, інакше дистанційний.
+    /// nil — вибору ще не було: перший шлях, у якого є посилання.
     @State private var chosen: AgentDevices.Mode?
 
     private var mode: AgentDevices.Mode {
-        chosen ?? (pairings.local.url != nil ? .local : .remote)
+        let modes = pairings.modes
+        if let chosen, modes.contains(chosen) { return chosen }
+        return modes.first { pairings[$0].url != nil } ?? modes.first ?? .local
     }
 
     private var selection: Binding<AgentDevices.Mode> {
         Binding(get: { mode }, set: { chosen = $0 })
     }
 
-    /// Таймер живе на всій картці, а не в QR: так код оновлюється і тоді, коли видно інший шлях. Найближчий з двох.
-    private var expiry: Date? { [pairings.local.expiresAt, pairings.remote.expiresAt].compactMap { $0 }.min() }
+    /// Таймер живе на всій картці, а не в QR: так код оновлюється і тоді, коли видно інший шлях. Найближчий з усіх.
+    private var expiry: Date? { pairings.modes.compactMap { pairings[$0].expiresAt }.min() }
 
     var body: some View {
         let pairing = pairings[mode]
         Section {
             Group {
                 Picker("Шлях", selection: selection) {
-                    ForEach(AgentDevices.Mode.allCases) { Text($0.title).tag($0) }
+                    ForEach(pairings.modes) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
@@ -61,11 +63,20 @@ struct PairingCard: View {
 }
 
 private extension AgentDevices.Mode {
-    var title: String { self == .local ? "Локально" : "Дистанційно" }
+    var title: String {
+        switch self {
+        case .local: "Локально"
+        case .tailnet: "Tailscale"
+        case .remote: "Дистанційно"
+        }
+    }
+
     var hint: String {
-        self == .local
-            ? "Відкрий на телефоні або ноуті в тій самій Wi-Fi"
-            : "Відкрий з будь-якої мережі: вхід іде через дашборд"
+        switch self {
+        case .local: "Відкрий на телефоні або ноуті в тій самій Wi-Fi"
+        case .tailnet: "Відкрий з будь-якої мережі на своєму пристрої з Tailscale"
+        case .remote: "Відкрий з будь-якої мережі: вхід іде через дашборд"
+        }
     }
 }
 
@@ -167,7 +178,9 @@ private struct PairingUnavailable: View {
 
     private static func text(for reason: String?) -> String {
         switch reason {
-        case "untrusted": return "Mac не в довіреній Wi-Fi. Додай мережу в «Підключенні» або обери «Дистанційно»."
+        case "untrusted": return "Mac не в довіреній Wi-Fi. Додай мережу в «Підключенні» або обери «Tailscale»."
+        case "tailnetOff": return "Tailscale не запущений на Mac або вимкнений: увімкни «Через Tailscale» в Агент → Огляд."
+        case "disabled": return "Webhooxy вимкнено в агенті."
         case "noNetwork": return "Mac не в мережі: немає адреси, за якою пристрій міг би його знайти."
         case "relayOff": return "Webhooxy вимкнений або не налаштований: увімкни його в Агент → Огляд."
         case "loading": return "Завантаження…"

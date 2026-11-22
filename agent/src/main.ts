@@ -56,6 +56,10 @@ async function bootstrap() {
   createServer(app.getHttpAdapter().getInstance())
     .on('error', (error) => process.stderr.write(`[agent] http :${config.httpPort} failed: ${error.message}\n`))
     .listen(config.httpPort, '0.0.0.0');
+  // Лише для `tailscale serve`: на loopback, тож з LAN сюди не дістатись. Усе, що прийшло сюди, — з tailnet.
+  createServer(app.getHttpAdapter().getInstance())
+    .on('error', (error) => process.stderr.write(`[agent] tailnet :${config.tailnetPort} failed: ${error.message}\n`))
+    .listen(config.tailnetPort, '127.0.0.1');
   app.get(MacBridgeService).sendReady(config.port);
 }
 

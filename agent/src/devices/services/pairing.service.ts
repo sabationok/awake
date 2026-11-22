@@ -130,9 +130,9 @@ export class PairingService {
     return removed;
   }
 
-  /** Токен пристрою, сполученого локально: лише він відкриває API Mac у мережі. */
-  isDeviceToken(token: string): boolean {
-    return this.findDeviceId(token, 'local') !== null;
+  /** Токен пристрою, сполученого саме цим шляхом: локальний не відкриває API через tailnet, і навпаки. */
+  isDeviceToken(token: string, via: DevicePairingMode): boolean {
+    return this.findDeviceId(token, via) !== null;
   }
 
   /**

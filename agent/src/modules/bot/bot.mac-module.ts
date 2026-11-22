@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { AGENT_CONFIG, type AgentConfig } from '../../config/agent-config';
 import type { SettingDefinition, UiPage } from '@awake/contracts';
 import { BotRouterService } from '../../bot';
 import { BotJournalService } from '../../bot-journal';
@@ -26,6 +27,7 @@ export class BotMacModule implements MacModule {
   readonly settings: SettingDefinition[] = [];
 
   constructor(
+    @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     private readonly _router: BotRouterService,
     private readonly _journal: BotJournalService,
     private readonly _transports: TransportsService,
@@ -38,7 +40,7 @@ export class BotMacModule implements MacModule {
     const metrics = this._journal.metrics();
     const proxies = this._transports.proxies();
     return [
-      buildBotOverviewPage(ctx, this._transports.list(), proxies, metrics),
+      buildBotOverviewPage(ctx, this._transports.list(), proxies, metrics, { webhooxy: this._config.webhooxy }),
       buildBotJournalPage(this._journal.findEvents({ limit: BOT_EVENTS_PAGE_LIMIT }), proxies),
       buildBotStatsPage(metrics, this._router.namespaces(MACONTROL_BOT), proxies),
     ];

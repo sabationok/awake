@@ -4,6 +4,7 @@ import type { DevicePairing, DevicePairingMode, DevicesSnapshot } from '@awake/c
 import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';
 import { MacBridgeService } from '../../mac-bridge/services/mac-bridge.service';
 import { RelayStateService } from '../../relay/state/relay-state.service';
+import { TailscaleService } from '../../tailscale';
 import { TrustedNetworksService } from '../../trusted-networks';
 import { findLanAddress } from '../../presence/helpers/find-lan-address';
 import { describeUserAgent } from '../helpers/describe-user-agent';
@@ -25,6 +26,7 @@ export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
     private readonly _pairing: PairingService,
     private readonly _networks: TrustedNetworksService,
     private readonly _relay: RelayStateService,
+    private readonly _tailscale: TailscaleService,
   ) {}
 
   onModuleInit() {
@@ -36,7 +38,11 @@ export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
       map((state) => state.status === 'online'),
       distinctUntilChanged(),
     );
-    this._subscription = merge(trustedChanged, relayOnlineChanged, this._pairing.changed$).subscribe(() => this._push());
+    const tailnetChanged = this._tailscale.state$.pipe(
+      map((state) => `${state.running && state.serving}:${state.dnsName}`),
+      distinctUntilChanged(),
+    );
+    this._subscription = merge(trustedChanged, relayOnlineChanged, tailnetChanged, this._pairing.changed$).subscribe(() => this._push());
     this._subscription.add(
       this._bridge.devices$.subscribe((request) => {
         if (request.action === 'revoke') this._pairing.revoke(request.id);
@@ -59,7 +65,7 @@ export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
   private _snapshot(): DevicesSnapshot {
     const devices = this._devices.list().map((device) => ({ ...device, name: describeUserAgent(device.userAgent) }));
     const requests = this._pairing.pendingRequests().map((request) => ({ ...request, name: describeUserAgent(request.userAgent) }));
-    return { devices, requests, pairing: { local: this._localLink(), remote: this._remoteLink() } };
+    return { devices, requests, pairing: { local: this._localLink(), tailnet: this._tailnetLink(), remote: this._remoteLink() } };
   }
 
   /**
@@ -73,8 +79,16 @@ export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
     return this._link('local', `http://${address}:${this._config.httpPort}/`);
   }
 
+  /** Tailscale: https://<mac>.ts.net через serve, з будь-якої мережі; пускає лише пристрої власника tailnet. */
+  private _tailnetLink(): DevicePairing {
+    const { dnsName } = this._tailscale.state;
+    if (!this._tailscale.isServing || !dnsName) return { url: null, reason: 'tailnetOff' };
+    return this._link('tailnet', `https://${dnsName}/`);
+  }
+
   /** Дистанційне: сторінка /pair дашборду на Vercel, яка йде до Mac через relay. Без relay онлайн до Mac не достукатись. */
   private _remoteLink(): DevicePairing {
+    if (!this._config.webhooxy) return { url: null, reason: 'disabled' };
     const dashboard = this._config.dashboardOrigins[0];
     if (!dashboard || this._relay.state.status !== 'online') return { url: null, reason: 'relayOff' };
     return this._link('remote', `${dashboard}/pair`);

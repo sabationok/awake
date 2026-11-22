@@ -212,17 +212,19 @@ export interface DeviceInfo {
 
 /**
  * Як пристрій заходить на Mac. `local` — напряму по http у тій самій довіреній Wi-Fi;
- * `remote` — через дашборд на Vercel і relay webhooxy, з будь-якої мережі.
+ * `tailnet` — через Tailscale (`tailscale serve`, https на `*.ts.net`) з будь-якої мережі, лише пристрої власника;
+ * `remote` — через дашборд на Vercel і relay webhooxy (вимкнений, поки webhooxy вимкнено в агенті).
  */
-export type DevicePairingMode = 'local' | 'remote';
+export type DevicePairingMode = 'local' | 'tailnet' | 'remote';
 
 /**
  * Посилання для сполучення нового пристрою або чому його зараз немає.
- * `untrusted` / `noNetwork` — для local; `relayOff` — relay вимкнений або не налаштований, для remote.
+ * `untrusted` / `noNetwork` — для local; `tailnetOff` — Tailscale не запущений або serve вимкнений, для tailnet;
+ * `relayOff` — relay вимкнений або не налаштований, `disabled` — webhooxy вимкнено в агенті зовсім, для remote.
  */
 export type DevicePairing =
   | { url: string; expiresAt: string }
-  | { url: null; reason: 'untrusted' | 'noNetwork' | 'relayOff' };
+  | { url: null; reason: 'untrusted' | 'noNetwork' | 'tailnetOff' | 'relayOff' | 'disabled' };
 
 /** Пристрій відкрив посилання з QR і чекає, поки на Mac підтвердять, що це ти. */
 export interface DevicePairingRequest {

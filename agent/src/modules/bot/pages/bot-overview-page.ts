@@ -23,10 +23,16 @@ function transportNodes(transport: AgentTransport, proxies: AgentProxy[], metric
 }
 
 /**
- * «Огляд» Агента. Підключення агента (вмикач, адреса) малює SwiftUI над цією сторінкою; тут — перемикач webhooxy
- * (налаштування модуля relay) і транспорти з проксі. Сповіщення Агента — у Telegram → Сповіщення.
+ * «Огляд» Агента. Підключення агента (вмикач, адреса) малює SwiftUI над цією сторінкою; тут — перемикачі проксі
+ * (Tailscale — модуль tailscale, webhooxy — модуль relay, лише коли його ввімкнено в агенті) і транспорти з проксі. Сповіщення Агента — у Telegram → Сповіщення.
  */
-export function buildBotOverviewPage(ctx: ModuleContext, transports: AgentTransport[], proxies: AgentProxy[], metrics: BotMetrics): UiPage {
+export function buildBotOverviewPage(
+  ctx: ModuleContext,
+  transports: AgentTransport[],
+  proxies: AgentProxy[],
+  metrics: BotMetrics,
+  options: { webhooxy: boolean },
+): UiPage {
   return {
     id: BOT_OVERVIEW_PAGE,
     module: 'bot',
@@ -35,6 +41,14 @@ export function buildBotOverviewPage(ctx: ModuleContext, transports: AgentTransp
     group: 'modules',
     children: [
       {
+        id: 'tailscale',
+        type: 'section',
+        title: 'Tailscale',
+        scope: 'mac',
+        footer: 'Дашборд і сполучення з твоїх пристроїв у tailnet з будь-якої мережі: https на *.ts.net через tailscale serve.',
+        children: [ctx.settingNode('enabled', 'tailscale')],
+      },
+      ...(options.webhooxy ? [{
         id: 'webhooxy',
         type: 'section',
         title: 'Webhooxy',
@@ -42,7 +56,7 @@ export function buildBotOverviewPage(ctx: ModuleContext, transports: AgentTransp
         scope: 'mac',
         footer: 'Проксі до вебдашборду, коли Mac поза домашньою мережею. Хост, ліміти й сесії — вкладки Webhooxy.',
         children: [ctx.settingNode('enabled', 'relay')],
-      },
+      } satisfies UiNode] : []),
       {
         id: 'transports',
         type: 'section',

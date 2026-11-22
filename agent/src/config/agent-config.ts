@@ -21,6 +21,8 @@ function readStage(value: string | undefined): Stage {
 /** Налаштування агента з env, які задає Mac-аппка при запуску підпроцесу. */
 export interface AgentConfig {
   stage: Stage;
+  /** Webhooxy (relay, вебхуки, дистанційне сполучення) взагалі ввімкнено: `MACONTROL_WEBHOOXY=on`. Без нього — ні сокета, ні пункту меню. */
+  webhooxy: boolean;
   /** webhooxy того самого stage; null, поки для stage його немає. */
   webhooxyUrl: string | null;
   /** Envify того самого stage; токен сервісу лежить у ~/.config/awake/envify.env. */
@@ -31,6 +33,8 @@ export interface AgentConfig {
    * HTTPS на `port` лишається для дашборду на Vercel: https-сторінка не може звертатися до http-адреси.
    */
   httpPort: number;
+  /** Порт для `tailscale serve`, лише на 127.0.0.1: запит сюди — завжди з tailnet. */
+  tailnetPort: number;
   token: string;
   dbPath: string;
   webDir: string | null;
@@ -53,10 +57,12 @@ export function readAgentConfig(env: NodeJS.ProcessEnv = process.env): AgentConf
   const stage = readStage(env.MACONTROL_STAGE);
   return {
     stage,
+    webhooxy: env.MACONTROL_WEBHOOXY === 'on',
     webhooxyUrl: env.WEBHOOXY_URL || STAGE_DEPS[stage].webhooxyUrl,
     envifyUrl: env.ENVIFY_URL || STAGE_DEPS[stage].envifyUrl,
     port: Number(env.MACONTROL_AGENT_PORT ?? 47800),
     httpPort: Number(env.MACONTROL_AGENT_HTTP_PORT ?? Number(env.MACONTROL_AGENT_PORT ?? 47800) + 1),
+    tailnetPort: Number(env.MACONTROL_AGENT_TAILNET_PORT ?? Number(env.MACONTROL_AGENT_PORT ?? 47800) + 2),
     token,
     dbPath: env.MACONTROL_DB ?? join(homedir(), '.config/awake/awake.db'),
     webDir: env.MACONTROL_WEB_DIR || null,

@@ -71,7 +71,8 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     private readonly _pairing: PairingService,
     transports: TransportsService,
   ) {
-    transports.registerProxy({
+    // Webhooxy вимкнено в агенті: проксі на сторінці Агента не показуємо.
+    if (_config.webhooxy) transports.registerProxy({
       id: RELAY_PROXY_ID,
       via: 'web',
       title: 'Webhooxy',
@@ -132,7 +133,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
 
   /** Перемикач `relay.enabled` (Mac або Telegram): підключає або відпускає кімнату. */
   setEnabled(enabled: boolean) {
-    if (!enabled) {
+    if (!enabled || !this._config.webhooxy) {
       this._stop();
       this._setStatus('off');
       return;
