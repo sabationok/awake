@@ -35,13 +35,13 @@ struct ServerSection: View {
                         .buttonStyle(.borderedProminent)
                 }
                 Spacer()
-                // TODO: live-логи (observability): потік подій сервера в аппці з фільтрами, а не відкриття файлу.
+                // TODO(observability): живий потік логів, подій і помилок сервера в аппці з фільтрами, а не відкриття файлу.
                 Button("Відкрити лог") { NSWorkspace.shared.open(AgentService.logURL) }
             }
         } header: {
             Text("Керування")
         } footer: {
-            Text("Лог — поки просто файл. Зупинка й перезапуск — у «Небезпечній зоні» внизу.")
+            Text("Observability — TODO: живі логи, події й помилки сервера в аппці. Поки що лог — просто файл. Зупинка й перезапуск — у «Небезпечній зоні» внизу.")
         }
 
         if let info = running {
