@@ -82,6 +82,10 @@ export class MetricSnapshotsRepository {
     return rows.map((row) => ({ ...row, count: Number(row.count) }));
   }
 
+  hasNamespace(namespace: string): boolean {
+    return !!this._database.db.prepare('SELECT 1 FROM metric_snapshots WHERE namespace = ? LIMIT 1').get(namespace);
+  }
+
   deleteOlderThan(granularity: StatGranularity, before: Date): number {
     const result = this._database.db
       .prepare('DELETE FROM metric_snapshots WHERE granularity = ? AND period_start < ?')

@@ -28,3 +28,19 @@ export interface StatIncrement extends Partial<Pick<StatSeriesRef, 'subjectType'
   granularities?: StatGranularity[];
   at?: Date;
 }
+
+/** Тривалість, що тягнеться через кілька бакетів: рушій розкладає її по найдрібнішій гранулярності, status — секунди. */
+export interface StatDurationIncrement extends Omit<StatIncrement, 'metrics' | 'at'> {
+  value: string;
+  /** За замовчуванням `seconds`. */
+  status?: string;
+  start: Date;
+  end: Date;
+}
+
+/** Бакет таймлайну за локальним днем Mac (з годинних бакетів). */
+export interface StatLocalDay {
+  /** Локальна північ. */
+  start: Date;
+  metrics: import('@awake/contracts').StatMetrics;
+}

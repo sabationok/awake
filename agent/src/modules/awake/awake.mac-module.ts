@@ -40,7 +40,7 @@ export class AwakeMacModule implements MacModule {
     return [
       buildSessionPage(ctx),
       buildSessionSettingsPage(ctx),
-      buildTrackingPage(sessions, new Date()),
+      buildTrackingPage(sessions, this._sessions.history(), new Date()),
       buildLogPage(this._logs.findMany({ limit: LOG_QUERY_LIMIT }), new Date()),
     ];
   }

@@ -8,7 +8,8 @@ import { normalizeStatKey } from '../../helpers/normalize-stat-key';
 import { statBucketKey } from '../../helpers/stat-bucket-key';
 import { statNextPeriodStart, statPeriodRange, statPeriodStart } from '../../helpers/stat-period';
 import { MetricSnapshotsRepository, type StatCellRow } from '../../repositories/metric-snapshots.repository';
-import type { StatBucket, StatFilter, StatIncrement } from '../../types/stat-bucket.types';
+import type { StatBucket, StatDurationIncrement, StatFilter, StatIncrement, StatLocalDay } from '../../types/stat-bucket.types';
+import { splitStatSpan } from '../../helpers/split-stat-span';
 
 const ALL_GRANULARITIES = Object.values(StatGranularity);
 
@@ -51,6 +52,36 @@ export class StatsService {
     } catch (error) {
       this._logger.warn(`stats increment dropped: ${(error as Error).message}`);
     }
+  }
+
+  /**
+   * Тривалість через кілька періодів (сесія з 23:40 до 01:10): шматок на кожен бакет найдрібнішої гранулярності,
+   * тож день, тиждень і місяць отримують лише свій час. Найдрібніша — щонайменше година, хвилини тут не потрібні.
+   */
+  incrementDuration(params: StatDurationIncrement) {
+    const granularities = params.granularities ?? ALL_GRANULARITIES.filter((g) => g !== StatGranularity.MINUTE);
+    const finest = ALL_GRANULARITIES.find((g) => granularities.includes(g)) ?? StatGranularity.HOUR;
+    const { value, status = 'seconds', start, end, ...series } = params;
+    for (const piece of splitStatSpan(start, end, finest)) {
+      const seconds = Math.round(piece.ms / 1000);
+      if (seconds > 0) this.increment({ ...series, granularities, at: piece.at, metrics: { [value]: { [status]: seconds } } });
+    }
+  }
+
+  /**
+   * Останні `days` локальних днів Mac (поточний включно) з годинних бакетів: UTC-дні зсунуті на пояс (правило 17).
+   * Серія має писати HOUR.
+   */
+  localDays(filter: Omit<StatFilter, 'granularity' | 'from' | 'to'>, days: number, now = new Date()): StatLocalDay[] {
+    const out: StatLocalDay[] = [];
+    for (let i = days - 1; i >= 0; i--) out.push({ start: new Date(now.getFullYear(), now.getMonth(), now.getDate() - i), metrics: {} });
+    const to = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    for (const point of this.timeline({ ...filter, granularity: StatGranularity.HOUR, from: out[0].start, to }).points) {
+      const t = new Date(point.periodStart);
+      const day = out.find((d) => d.start.getFullYear() === t.getFullYear() && d.start.getMonth() === t.getMonth() && d.start.getDate() === t.getDate());
+      if (day) addStatMetrics(day.metrics, point.metrics);
+    }
+    return out;
   }
 
   /** Дельти в SQLite. Збій — дельти повертаються в пам'ять до наступної спроби (правило 3). */
@@ -124,6 +155,11 @@ export class StatsService {
       truncated: ranked.length > values.length,
       points: buckets.map((bucket) => ({ periodStart: bucket.toISOString(), metrics: byPeriod.get(bucket.getTime()) ?? {} })),
     };
+  }
+
+  /** Чи є в серії хоч щось (у базі чи ще в пам'яті): для одноразового перенесення історії. */
+  hasNamespace(namespace: string): boolean {
+    return [...this._pending.values()].some((bucket) => bucket.namespace === namespace) || this._snapshots.hasNamespace(namespace);
   }
 
   /** Правило 12: старі min / hour геть. */

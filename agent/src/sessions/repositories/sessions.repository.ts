@@ -41,6 +41,16 @@ export class SessionsRepository {
       .run(data.endedAt, data.endReason, data.batteryEnd);
   }
 
+  findOpen(): SessionRecord | null {
+    const row = this._database.db.prepare('SELECT * FROM sessions WHERE ended_at IS NULL ORDER BY started_at DESC LIMIT 1').get() as SessionRow | undefined;
+    return row ? toRecord(row) : null;
+  }
+
+  /** Усі сесії від найстарішої: для одноразового перенесення історії в статистику. */
+  findAll(): SessionRecord[] {
+    return (this._database.db.prepare('SELECT * FROM sessions ORDER BY started_at').all() as unknown as SessionRow[]).map(toRecord);
+  }
+
   findMany(query: { limit: number }): SessionRecord[] {
     const rows = this._database.db
       .prepare('SELECT * FROM sessions ORDER BY started_at DESC LIMIT ?')
