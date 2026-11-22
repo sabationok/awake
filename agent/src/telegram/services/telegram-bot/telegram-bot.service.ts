@@ -3,11 +3,11 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { Injectable, Logger } from '@nestjs/common';
 import { Context, Telegraf, TelegramError } from 'telegraf';
 import type { BotMenu, BotNamespace } from '../../../bot';
-import { BotJournalService } from '../../../bot-journal';
 import { AppException } from '../../../common/app-exception';
 import { ModulesService } from '../../../modules/modules.service';
 import { TransportsService } from '../../../transports';
-import { TELEGRAM_METRICS } from '../../constants/telegram-metrics';
+import { TELEGRAM_EVENTS_STAT_NS, TELEGRAM_METRICS } from '../../constants/telegram-metrics';
+import { StatsService } from '../../../stats';
 import { describeError } from '../../helpers/describe-error';
 import { readTelegramEnv } from '../../helpers/read-telegram-env';
 import { telegramCommandSettingKey } from '../../helpers/telegram-command-setting-key';
@@ -36,8 +36,8 @@ export class TelegramBotService {
 
   constructor(
     private readonly _modules: ModulesService,
-    private readonly _journal: BotJournalService,
     private readonly _state: TelegramStateService,
+    private readonly _stats: StatsService,
     transports: TransportsService,
   ) {
     transports.register({
@@ -92,10 +92,10 @@ export class TelegramBotService {
     if (!bot || !env) return;
     try {
       await bot.telegram.sendMessage(env.chatId, html, { parse_mode: 'HTML' });
-      this._journal.count([TELEGRAM_METRICS.notify]);
+      this._count(TELEGRAM_METRICS.notify);
     } catch (error) {
       this._logger.error(`Сповіщення в Telegram не надіслано: ${describeError(error, env.token)}`);
-      this._journal.count([TELEGRAM_METRICS.notifyFailed]);
+      this._count(TELEGRAM_METRICS.notifyFailed);
     }
   }
 
@@ -190,9 +190,13 @@ export class TelegramBotService {
     return this._modules.context('telegram').setting<boolean>(telegramCommandSettingKey(namespace));
   }
 
+  private _count(event: string) {
+    this._stats.increment({ namespace: TELEGRAM_EVENTS_STAT_NS, metrics: { [event]: { count: 1 } } });
+  }
+
   /** Модуль вимкнено для Telegram: відповідаємо коротко й рахуємо відмову. У журнал бота не йде, бо до бота виклик не дійшов. */
   private async _deny(answer: () => Promise<unknown>) {
-    this._journal.count([TELEGRAM_METRICS.denied]);
+    this._count(TELEGRAM_METRICS.denied);
     try {
       await answer();
     } catch {

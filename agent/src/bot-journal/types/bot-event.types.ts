@@ -25,7 +25,7 @@ export type BotEventCreate = Omit<BotEventRecord, 'id' | 'at' | 'ok' | 'error' |
   proxy?: string | null;
 };
 
-/** Лічильники за день і за весь час: `total`, `src.<source>`, `proxy.<id>`, `type.<type>`, `ns.<namespace>`, `error`, плюс довільні від транспортів. */
+/** Лічильники за UTC-день і за весь час: `total`, `src.<source>`, `proxy.<id>`, `type.<type>`, `ns.<namespace>`, `error`, плюс історія bot_metrics. */
 export interface BotMetrics {
   today: Record<string, number>;
   total: Record<string, number>;

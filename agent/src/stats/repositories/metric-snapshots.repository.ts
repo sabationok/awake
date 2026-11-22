@@ -12,6 +12,16 @@ export interface StatCellRow {
   count: number;
 }
 
+/** Сума клітинки за діапазон в одній серії. */
+export interface StatSeriesCellRow {
+  subjectType: string;
+  subjectId: string | null;
+  seriesKey: string;
+  value: string;
+  status: string;
+  count: number;
+}
+
 /** metric_snapshots у SQLite. Глобальна серія зберігається з subject_id '' (NULL у первинному ключі SQLite не конфліктує). */
 @Injectable()
 export class MetricSnapshotsRepository {
@@ -49,8 +59,44 @@ export class MetricSnapshotsRepository {
 
   /** Сума клітинок за бакетами (дві розгортки JSON → SUM). */
   sumCells(filter: StatFilter): StatCellRow[] {
+    const { where, params } = this._where(filter);
+    const rows = this._database.db
+      .prepare(
+        `SELECT m.period_start AS periodStart, v.key AS value, s.key AS status, SUM(s.value) AS count
+         FROM metric_snapshots m, json_each(m.metrics) v, json_each(v.value) s
+         WHERE ${where} GROUP BY m.period_start, v.key, s.key`,
+      )
+      .all(...params) as unknown as StatCellRow[];
+    return rows.map((row) => ({ ...row, count: Number(row.count) }));
+  }
+
+  /** Сума за весь діапазон з розрізом по серіях (subject, seriesKey): для лічильників з кількома вимірами. */
+  sumSeries(filter: StatFilter): StatSeriesCellRow[] {
+    const { where, params } = this._where(filter);
+    const rows = this._database.db
+      .prepare(
+        `SELECT m.subject_type AS subjectType, m.subject_id AS subjectId, m.series_key AS seriesKey, v.key AS value, s.key AS status, SUM(s.value) AS count
+         FROM metric_snapshots m, json_each(m.metrics) v, json_each(v.value) s
+         WHERE ${where} GROUP BY m.subject_type, m.subject_id, m.series_key, v.key, s.key`,
+      )
+      .all(...params) as unknown as StatSeriesCellRow[];
+    return rows.map((row) => ({ ...row, subjectId: row.subjectId === '' ? null : row.subjectId, count: Number(row.count) }));
+  }
+
+  hasNamespace(namespace: string): boolean {
+    return !!this._database.db.prepare('SELECT 1 FROM metric_snapshots WHERE namespace = ? LIMIT 1').get(namespace);
+  }
+
+  deleteOlderThan(granularity: StatGranularity, before: Date): number {
+    const result = this._database.db
+      .prepare('DELETE FROM metric_snapshots WHERE granularity = ? AND period_start < ?')
+      .run(granularity, before.toISOString());
+    return Number(result.changes);
+  }
+
+  private _where(filter: StatFilter): { where: string; params: string[] } {
     const where = ['m.namespace = ?', 'm.granularity = ?'];
-    const params: (string | number)[] = [filter.namespace, filter.granularity];
+    const params: string[] = [filter.namespace, filter.granularity];
     if (filter.subjectType !== undefined) {
       where.push('m.subject_type = ?');
       params.push(filter.subjectType);
@@ -71,25 +117,6 @@ export class MetricSnapshotsRepository {
       where.push('m.period_start < ?');
       params.push(filter.to.toISOString());
     }
-    const rows = this._database.db
-      .prepare(
-        `SELECT m.period_start AS periodStart, v.key AS value, s.key AS status, SUM(s.value) AS count
-         FROM metric_snapshots m, json_each(m.metrics) v, json_each(v.value) s
-         WHERE ${where.join(' AND ')}
-         GROUP BY m.period_start, v.key, s.key`,
-      )
-      .all(...params) as unknown as StatCellRow[];
-    return rows.map((row) => ({ ...row, count: Number(row.count) }));
-  }
-
-  hasNamespace(namespace: string): boolean {
-    return !!this._database.db.prepare('SELECT 1 FROM metric_snapshots WHERE namespace = ? LIMIT 1').get(namespace);
-  }
-
-  deleteOlderThan(granularity: StatGranularity, before: Date): number {
-    const result = this._database.db
-      .prepare('DELETE FROM metric_snapshots WHERE granularity = ? AND period_start < ?')
-      .run(granularity, before.toISOString());
-    return Number(result.changes);
+    return { where: where.join(' AND '), params };
   }
 }

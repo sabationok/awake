@@ -7,7 +7,7 @@ import { addStatMetrics } from '../../helpers/add-stat-metrics';
 import { normalizeStatKey } from '../../helpers/normalize-stat-key';
 import { statBucketKey } from '../../helpers/stat-bucket-key';
 import { statNextPeriodStart, statPeriodRange, statPeriodStart } from '../../helpers/stat-period';
-import { MetricSnapshotsRepository, type StatCellRow } from '../../repositories/metric-snapshots.repository';
+import { MetricSnapshotsRepository, type StatCellRow, type StatSeriesCellRow } from '../../repositories/metric-snapshots.repository';
 import type { StatBucket, StatDurationIncrement, StatFilter, StatIncrement, StatLocalDay } from '../../types/stat-bucket.types';
 import { splitStatSpan } from '../../helpers/split-stat-span';
 
@@ -114,6 +114,17 @@ export class StatsService {
     };
   }
 
+  /**
+   * Як totals, але з розрізом по серіях: subject і seriesKey лишаються в рядку. Для лічильників, де вимірів більше,
+   * ніж value × status (транспорт × проксі × модуль × тип).
+   */
+  seriesTotals(series: Omit<StatFilter, 'granularity' | 'from' | 'to'>, now = new Date()): { today: StatSeriesCellRow[]; total: StatSeriesCellRow[] } {
+    const from = statPeriodStart(now, StatGranularity.DAY);
+    const to = statNextPeriodStart(from, StatGranularity.DAY);
+    const filter = { ...series, granularity: StatGranularity.DAY };
+    return { today: this._seriesCells({ ...filter, from, to }), total: this._seriesCells(filter) };
+  }
+
   /** Правило 10: проєкція з SQL, top-N значень, точка на кожен бакет. */
   timeline(filter: StatFilter & { from: Date; to: Date; limit?: number }): StatTimeline {
     if (filter.subjectId !== undefined && filter.subjectType === undefined) {
@@ -185,6 +196,23 @@ export class StatsService {
       const periodStart = bucket.periodStart.toISOString();
       for (const [value, statuses] of Object.entries(bucket.metrics)) {
         for (const [status, count] of Object.entries(statuses)) rows.push({ periodStart, value, status, count });
+      }
+    }
+    return rows;
+  }
+
+  private _seriesCells(filter: StatFilter): StatSeriesCellRow[] {
+    const rows = this._snapshots.sumSeries(filter);
+    for (const bucket of this._pending.values()) {
+      if (!this._matches(bucket, filter)) continue;
+      for (const [value, statuses] of Object.entries(bucket.metrics)) {
+        for (const [status, count] of Object.entries(statuses)) {
+          const row = rows.find(
+            (r) => r.subjectType === bucket.subjectType && r.subjectId === (bucket.subjectId ?? null) && r.seriesKey === bucket.seriesKey && r.value === value && r.status === status,
+          );
+          if (row) row.count += count;
+          else rows.push({ subjectType: bucket.subjectType, subjectId: bucket.subjectId ?? null, seriesKey: bucket.seriesKey, value, status, count });
+        }
       }
     }
     return rows;

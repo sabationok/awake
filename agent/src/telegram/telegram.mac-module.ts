@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type { SettingDefinition, SettingValue, UiPage } from '@awake/contracts';
 import { BotRouterService } from '../bot';
 import { BotJournalService } from '../bot-journal';
+import { flattenStatTotals, mergeStatCounters, StatsService } from '../stats';
+import { TELEGRAM_EVENTS_STAT_NS } from './constants/telegram-metrics';
 import { MACONTROL_BOT } from '../modules/constants/macontrol-bot';
 import type { MacModule, ModuleContext } from '../modules/types/mac-module';
 import { TELEGRAM_SETTINGS } from './constants/telegram-settings';
@@ -30,6 +32,7 @@ export class TelegramMacModule implements MacModule {
     private readonly _journal: BotJournalService,
     private readonly _state: TelegramStateService,
     private readonly _notifications: TelegramNotificationsService,
+    private readonly _stats: StatsService,
   ) {}
 
   /** Перемикачі команд — з реєстру `@Bot`, сповіщень — з реєстру джерел: новий модуль одразу з'являється тут. */
@@ -46,7 +49,7 @@ export class TelegramMacModule implements MacModule {
       buildTelegramPage(ctx, this._state.state),
       buildTelegramCommandsPage(ctx, this._router.namespaces(MACONTROL_BOT)),
       buildTelegramNotificationsPage(ctx, this._notifications.sources()),
-      buildTelegramStatsPage(this._journal.metrics()),
+      buildTelegramStatsPage(mergeStatCounters(this._journal.metrics(), flattenStatTotals(this._stats.totals({ namespace: TELEGRAM_EVENTS_STAT_NS })))),
     ];
   }
 

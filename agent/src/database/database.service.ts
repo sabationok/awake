@@ -60,12 +60,6 @@ export class DatabaseService implements OnApplicationShutdown {
         error TEXT,
         proxy TEXT
       );
-      CREATE TABLE IF NOT EXISTS bot_metrics (
-        day TEXT NOT NULL,
-        metric TEXT NOT NULL,
-        value INTEGER NOT NULL,
-        PRIMARY KEY (day, metric)
-      );
       CREATE TABLE IF NOT EXISTS trusted_networks (
         ssid TEXT PRIMARY KEY,
         added_at TEXT NOT NULL
@@ -107,6 +101,29 @@ export class DatabaseService implements OnApplicationShutdown {
     this._addColumn('devices', 'via', "TEXT NOT NULL DEFAULT 'local'");
     this._migrateProxyIds();
     this._migrateWebhookMetrics();
+    this._migrateBotMetrics();
+  }
+
+  private _hasTable(name: string): boolean {
+    return !!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name);
+  }
+
+  /**
+   * Старі денні лічильники бота (bot_metrics, плаский ключ на день) → денні бакети `bot.legacy`. Розрізів між вимірами
+   * (модуль × тип × джерело) у них немає, тож вони лишаються окремим namespace, а BotJournalService додає їх до сум.
+   */
+  private _migrateBotMetrics() {
+    if (!this._hasTable('bot_metrics')) return;
+    this.db.exec(`
+      BEGIN;
+      INSERT INTO metric_snapshots (namespace, subject_type, subject_id, series_key, granularity, period_start, metrics, updated_at)
+        SELECT 'bot.legacy', 'none', '', '', 'day', day || 'T00:00:00.000Z',
+               json_group_object(metric, json_object('count', value)), strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        FROM bot_metrics GROUP BY day
+        ON CONFLICT DO NOTHING;
+      DROP TABLE bot_metrics;
+      COMMIT;
+    `);
   }
 
   /**
@@ -141,8 +158,9 @@ export class DatabaseService implements OnApplicationShutdown {
   private _migrateRelaySource() {
     const columns = this.db.prepare('PRAGMA table_info(bot_events)').all() as { name: string }[];
     if (!columns.some((column) => column.name === 'proxy')) this.db.exec('ALTER TABLE bot_events ADD COLUMN proxy TEXT');
+    this.db.exec("UPDATE bot_events SET source = 'web', proxy = 'webhooxy' WHERE source = 'relay'");
+    if (!this._hasTable('bot_metrics')) return;
     this.db.exec(`
-      UPDATE bot_events SET source = 'web', proxy = 'webhooxy' WHERE source = 'relay';
       INSERT INTO bot_metrics (day, metric, value)
         SELECT day, m.metric, value FROM bot_metrics, (SELECT 'src.web' AS metric UNION ALL SELECT 'proxy.webhooxy') AS m
         WHERE bot_metrics.metric = 'src.relay'
@@ -153,6 +171,7 @@ export class DatabaseService implements OnApplicationShutdown {
 
   /** Проксі тепер `<protocol>:<provider>`: старий `webhooxy` — це сокет relay, `ws:webhooxy`. Ідемпотентно. */
   private _migrateProxyIds() {
+    if (!this._hasTable('bot_metrics')) return;
     this.db.exec(`
       UPDATE bot_events SET proxy = 'ws:webhooxy' WHERE proxy = 'webhooxy';
       INSERT INTO bot_metrics (day, metric, value)
