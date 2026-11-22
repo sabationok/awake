@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import type { SettingDefinition, SettingValue, UiPage } from '@awake/contracts';
+import type { SettingDefinition, SettingValue, UiChartPoint, UiPage } from '@awake/contracts';
 import { BotRouterService } from '../bot';
-import { BotJournalService } from '../bot-journal';
-import { flattenStatTotals, mergeStatCounters, StatsService } from '../stats';
-import { TELEGRAM_EVENTS_STAT_NS } from './constants/telegram-metrics';
+import { BotCallsChartsService } from '../bot-journal';
+import { counterChartPoints, StatsService, statsPeriodSetting, sumChartPoints, type StatsPeriodWindow } from '../stats';
+import { TELEGRAM_COMMANDS_METRIC, TELEGRAM_EVENTS_STAT_NS, TELEGRAM_STATS_PAGE } from './constants/telegram-metrics';
 import { MACONTROL_BOT } from '../modules/constants/macontrol-bot';
 import type { MacModule, ModuleContext } from '../modules/types/mac-module';
 import { TELEGRAM_SETTINGS } from './constants/telegram-settings';
@@ -29,7 +29,7 @@ export class TelegramMacModule implements MacModule {
 
   constructor(
     private readonly _router: BotRouterService,
-    private readonly _journal: BotJournalService,
+    private readonly _calls: BotCallsChartsService,
     private readonly _state: TelegramStateService,
     private readonly _notifications: TelegramNotificationsService,
     private readonly _stats: StatsService,
@@ -39,6 +39,7 @@ export class TelegramMacModule implements MacModule {
   get settings(): SettingDefinition[] {
     return [
       ...TELEGRAM_SETTINGS,
+      statsPeriodSetting(TELEGRAM_STATS_PAGE),
       ...telegramCommandSettings(this._router.namespaces(MACONTROL_BOT)),
       ...this._notifications.settings(),
     ];
@@ -49,8 +50,19 @@ export class TelegramMacModule implements MacModule {
       buildTelegramPage(ctx, this._state.state),
       buildTelegramCommandsPage(ctx, this._router.namespaces(MACONTROL_BOT)),
       buildTelegramNotificationsPage(ctx, this._notifications.sources()),
-      buildTelegramStatsPage(mergeStatCounters(this._journal.metrics(), flattenStatTotals(this._stats.totals({ namespace: TELEGRAM_EVENTS_STAT_NS })))),
+      buildTelegramStatsPage(ctx, (metric, window) => this._statPoints(metric, window)),
     ];
+  }
+
+  /**
+   * Лічильник Telegram за вікно: команди — виклики бота з джерелом telegram, решта — telegram.events; обидва разом
+   * зі старими денними лічильниками журналу бота (bot.legacy), де жили ті самі ключі.
+   */
+  private _statPoints(metric: string, window: StatsPeriodWindow): UiChartPoint[] {
+    if (metric === TELEGRAM_COMMANDS_METRIC) return this._calls.bySource(window, { telegram: '' });
+    const { granularity, from, to } = window;
+    const events = this._stats.timeline({ namespace: TELEGRAM_EVENTS_STAT_NS, granularity, from, to });
+    return sumChartPoints(counterChartPoints(events, 'value', { [metric]: '' }), this._calls.legacy(window, { [metric]: '' }));
   }
 
   onSettingChanged(key: string, value: SettingValue, ctx: ModuleContext) {
