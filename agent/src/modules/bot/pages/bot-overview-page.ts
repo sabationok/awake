@@ -2,6 +2,7 @@ import type { UiNode, UiPage, UiSelect } from '@awake/contracts';
 import type { BotMetrics } from '../../../bot-journal';
 import type { AgentProxy, AgentTransport } from '../../../transports';
 import type { ModuleContext } from '../../types/mac-module';
+import { AGENT_ENABLED_KEY } from '../constants/agent-enabled';
 import { REMOTE_ACCESS_KEY, type RemoteAccess } from '../constants/remote-access';
 
 export const BOT_OVERVIEW_PAGE = 'bot-overview';
@@ -30,7 +31,7 @@ function remoteAccessNode(ctx: ModuleContext, available: Record<RemoteAccess, bo
 }
 
 /**
- * «Огляд» Агента: «Віддалений доступ» (через що дашборд працює поза домашньою Wi-Fi — Tailscale чи webhooxy;
+ * «Огляд» Агента: вмикач агента, «Віддалений доступ» (через що дашборд працює поза домашньою Wi-Fi — Tailscale чи webhooxy;
  * опція сіра, коли її модуль вимкнено) і транспорти з проксі. Сповіщення Агента — у Telegram → Сповіщення.
  */
 export function buildBotOverviewPage(
@@ -47,6 +48,14 @@ export function buildBotOverviewPage(
     icon: { symbol: 'gauge.with.dots.needle.67percent', tone: 'accent' },
     group: 'modules',
     children: [
+      {
+        id: 'agent',
+        type: 'section',
+        title: 'Агент',
+        scope: 'mac',
+        footer: 'Вимкнений агент не приймає дій і команд з Telegram і вебу. Сервер, фонові задачі й ця аппка працюють далі.',
+        children: [ctx.settingNode(AGENT_ENABLED_KEY)],
+      },
       {
         id: 'remote',
         type: 'section',

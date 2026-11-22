@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { Subject } from 'rxjs';
 import type {
   SettingDefinition,
@@ -21,6 +21,7 @@ import { isVisibleInScope } from './helpers/is-visible-in-scope';
 import { isValidSettingValue } from './helpers/is-valid-setting-value';
 import { resolveSettingValue } from './helpers/resolve-setting-value';
 import { MACONTROL_BOT } from './constants/macontrol-bot';
+import { AGENT_ENABLED_KEY, AGENT_MODULE } from './bot/constants/agent-enabled';
 import { MAC_MODULES, type MacModule, type ModuleContext, type ModulesStatus, type StatusFields } from './types/mac-module';
 import type { ModuleSource } from './types/module-source';
 
@@ -140,7 +141,16 @@ export class ModulesService {
     }
   }
 
+  /** Вимкнений агент відмовляє Telegram і вебу; Mac-аппка (власник, і вмикач теж там) проходить завжди. */
+  private _assertAgentOn(source: ModuleSource) {
+    if (source === 'mac') return;
+    if (this._readSetting(this._find(AGENT_MODULE), AGENT_ENABLED_KEY) === false) {
+      throw new AppException(API_ERROR_CODES.agentDisabled, 'Агент вимкнено на Mac', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+  }
+
   private async _screen(moduleId: string, screen: string, source: ModuleSource): Promise<BotMenu | null> {
+    this._assertAgentOn(source);
     this._find(moduleId);
     return this._router.screen({
       bot: MACONTROL_BOT,
@@ -153,6 +163,7 @@ export class ModulesService {
   }
 
   private async _dispatch(event: UiEvent, source: ModuleSource): Promise<void> {
+    this._assertAgentOn(source);
     if (event.type === 'action') {
       const { module: moduleId, name, params } = event.action;
       this._find(moduleId);

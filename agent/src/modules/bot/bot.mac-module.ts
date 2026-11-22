@@ -8,6 +8,7 @@ import { TelegramNotificationsService } from '../../telegram/notifications';
 import { TransportsService } from '../../transports';
 import { MACONTROL_BOT } from '../constants/macontrol-bot';
 import type { MacModule, ModuleContext, StatusFields } from '../types/mac-module';
+import { AGENT_ENABLED_SETTING } from './constants/agent-enabled';
 import { BOT_NOTIFICATIONS } from './constants/bot-notifications';
 import { REMOTE_ACCESS_KEY, REMOTE_ACCESS_SETTING, type RemoteAccess } from './constants/remote-access';
 import { buildBotJournalPage } from './pages/bot-journal-page';
@@ -25,7 +26,7 @@ export class BotMacModule implements MacModule {
   readonly title = 'Агент';
   readonly icon = { symbol: 'cpu.fill', tone: 'accent' } as const;
   readonly permissions: MacModule['permissions'] = [];
-  readonly settings: SettingDefinition[] = [REMOTE_ACCESS_SETTING];
+  readonly settings: SettingDefinition[] = [AGENT_ENABLED_SETTING, REMOTE_ACCESS_SETTING];
 
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,

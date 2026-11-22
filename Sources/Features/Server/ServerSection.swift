@@ -28,18 +28,20 @@ struct ServerSection: View {
             Text("Сервер — процес, який аппка запускає сама: API, пульт і з'єднання. Що він робить (модулі, транспорти, журнал) — у «Агент».")
         }
 
-        Section("Керування") {
+        Section {
             HStack {
-                if model.agentEnabled {
-                    Button("Стоп") { model.agentEnabled = false }
-                    Button("Перезапустити") { model.restartAgent() }
-                } else {
+                if !model.agentEnabled {
                     Button("Старт") { model.agentEnabled = true }
                         .buttonStyle(.borderedProminent)
                 }
                 Spacer()
+                // TODO: live-логи (observability): потік подій сервера в аппці з фільтрами, а не відкриття файлу.
                 Button("Відкрити лог") { NSWorkspace.shared.open(AgentService.logURL) }
             }
+        } header: {
+            Text("Керування")
+        } footer: {
+            Text("Лог — поки просто файл. Зупинка й перезапуск — у «Небезпечній зоні» внизу.")
         }
 
         if let info = running {
@@ -80,6 +82,10 @@ struct ServerSection: View {
             } footer: {
                 Text("Новий пульт публікує scripts/publish-web-local.sh: сервер віддає його одразу, без перевстановлення аппки. Без публікації — збірка з аппки.")
             }
+        }
+
+        if model.agentEnabled {
+            ServerDangerZone()
         }
     }
 

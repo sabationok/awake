@@ -5,6 +5,8 @@ export const API_ERROR_CODES = {
   untrustedNetwork: 'UNTRUSTED_NETWORK',
   invalidCommand: 'INVALID_COMMAND',
   macOffline: 'MAC_OFFLINE',
+  /** Агента вимкнено на Mac: Telegram і веб не керують, сервер працює. */
+  agentDisabled: 'AGENT_DISABLED',
   internal: 'INTERNAL',
 } as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[keyof typeof API_ERROR_CODES];
