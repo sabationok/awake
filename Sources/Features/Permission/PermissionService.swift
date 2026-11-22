@@ -30,14 +30,33 @@ enum PermissionService {
         }
     }
 
-    /// Чи sudo пустить першу команду дозволу без пароля. Працює і зі старим спільним правилом.
+    /// Видано, якщо в sudo є правило NOPASSWD на всі команди дозволу (наше окреме чи старе спільне).
+    /// `sudo -n -l <команда>` тут не годиться: для адміна з `(ALL) ALL` і свіжим паролем він «дозволяє» будь-що.
     static func isGranted(_ permission: AppPermission) -> Bool {
-        guard let command = sudoCommands(permission).first else { return false }
-        return Shell.run("/usr/bin/sudo", ["-n", "-l"] + command.split(separator: " ").map(String.init)).succeeded
+        isGranted(permission, in: passwordlessCommands())
     }
 
     static func granted() -> Set<AppPermission> {
-        Set(AppPermission.allCases.filter(isGranted))
+        let commands = passwordlessCommands()
+        return Set(AppPermission.allCases.filter { isGranted($0, in: commands) })
+    }
+
+    private static func isGranted(_ permission: AppPermission, in commands: Set<String>) -> Bool {
+        sudoCommands(permission).allSatisfy(commands.contains)
+    }
+
+    /// Команди з правил NOPASSWD з `sudo -n -l`. Без жодного такого правила sudo просить пароль і список порожній.
+    private static func passwordlessCommands() -> Set<String> {
+        let result = Shell.run("/usr/bin/sudo", ["-n", "-l"])
+        guard result.succeeded else { return [] }
+        var commands = Set<String>()
+        for line in result.output.split(separator: "\n") {
+            guard let range = line.range(of: "NOPASSWD:") else { continue }
+            for command in line[range.upperBound...].split(separator: ",") {
+                commands.insert(command.trimmingCharacters(in: .whitespaces))
+            }
+        }
+        return commands
     }
 
     @MainActor
