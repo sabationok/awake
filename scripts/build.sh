@@ -7,7 +7,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 swiftc -swift-version 5 -O -parse-as-library \
   -target arm64-apple-macos14 \
-  -framework SwiftUI -framework IOKit -framework CoreAudio -framework AudioToolbox -framework CoreWLAN -framework CoreLocation -framework Sparkle -F Vendor/Sparkle \
+  -framework SwiftUI -framework IOKit -framework CoreAudio -framework AudioToolbox -framework CoreWLAN -framework CoreLocation -framework CoreBluetooth -framework Sparkle -F Vendor/Sparkle \
   -Xlinker -rpath -Xlinker @executable_path/../Frameworks \
   $(find Sources -name "*.swift" | sort) -o "$APP/Contents/MacOS/Awake"
 cp Info.plist "$APP/Contents/Info.plist"

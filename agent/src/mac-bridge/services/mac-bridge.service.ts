@@ -3,6 +3,7 @@ import { createInterface } from 'node:readline';
 import { randomUUID } from 'node:crypto';
 import { BehaviorSubject, Subject } from 'rxjs';
 import type {
+  ProximityReport,
   AgentToMacMessage,
   SettingValue,
   UiEvent,
@@ -46,6 +47,8 @@ export class MacBridgeService implements OnModuleInit {
   readonly envifyReload$ = new Subject<void>();
   /** Аппка додала або прибрала довірену мережу. */
   readonly trustedNetworks$ = new Subject<TrustedNetworksRequest>();
+  /** Bluetooth-пристрої поруч від аппки (кожні кілька секунд, поки ввімкнено «Поруч»). */
+  readonly proximity$ = new Subject<ProximityReport>();
   private _stateAt = 0;
 
   onModuleInit() {
@@ -133,6 +136,9 @@ export class MacBridgeService implements OnModuleInit {
         return;
       case 'trustedNetworks':
         this.trustedNetworks$.next(message.data);
+        return;
+      case 'proximity':
+        this.proximity$.next(message.data);
         return;
     }
   }

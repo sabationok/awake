@@ -42,6 +42,7 @@ extension AwakeModel {
         }
         wifi.onAuthorizationChange = { [weak self] in self?.refreshWifi() }
         refreshWifi()
+        setupProximity()
         applyAgent()
     }
 
@@ -158,6 +159,7 @@ extension AwakeModel {
     /// Одне налаштування: зі знімка або з команди. false для невідомого ключа, поганого значення або збою запису.
     @discardableResult
     func applyAgentSetting(key: String, value: UiScalar) -> Bool {
+        if key.hasPrefix("proximity.") { return applyProximitySetting(key: key, value: value) }
         if let event = Self.telegramEventKeys[key] {
             guard let enabled = value.boolValue else { return false }
             return setTelegramEvent(event, enabled: enabled)

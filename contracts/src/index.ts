@@ -129,7 +129,25 @@ export type MacToAgentMessage =
   /** Аппка переписала ~/.config/awake/envify.env або просить оновити: агент заново тягне змінні з Envify. */
   | { type: 'envify'; data: { action: 'reload' } }
   /** Довірені мережі Wi-Fi: список у SQLite агента, аппка лише додає й прибирає. */
-  | { type: 'trustedNetworks'; data: { action: 'add' | 'remove'; ssid: string } };
+  | { type: 'trustedNetworks'; data: { action: 'add' | 'remove'; ssid: string } }
+  /** Bluetooth-пристрої поруч, раз на кілька секунд, поки ввімкнено `proximity.enabled`. Рішення блокувати — за агентом. */
+  | { type: 'proximity'; data: ProximityReport };
+
+/** Стан Bluetooth на Mac. `unauthorized` — macOS не дала аппці доступ. */
+export type BluetoothState = 'on' | 'off' | 'unauthorized' | 'unsupported' | 'unknown';
+
+/** Пристрій, який Mac бачив за останні секунди. `id` — ідентифікатор CoreBluetooth, стабільний для цього Mac. */
+export interface NearbyDevice {
+  id: string;
+  name: string;
+  /** Згладжений сигнал, dBm (−40 поруч, −90 ледь видно). */
+  rssi: number;
+}
+
+export interface ProximityReport {
+  bluetooth: BluetoothState;
+  devices: NearbyDevice[];
+}
 
 export type AgentToMacMessage =
   | { type: 'ready'; data: { port: number } }

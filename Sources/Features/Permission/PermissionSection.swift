@@ -12,12 +12,16 @@ struct PermissionSection: View {
                 SystemPermissionRow(permission: permission)
             }
             LocationPermissionRow()
+            BluetoothPermissionRow()
         } header: {
             Text("Система")
         } footer: {
-            Text("Керування сном і температура — окремі правила sudoers із фіксованими командами без пароля, macOS попросить пароль при видачі й відкликанні. Геолокація потрібна лише щоб бачити назву мережі Wi-Fi. Модулі не можуть отримати більше, ніж видано тут.")
+            Text("Керування сном і температура — окремі правила sudoers із фіксованими командами без пароля, macOS попросить пароль при видачі й відкликанні. Геолокація потрібна лише щоб бачити назву мережі Wi-Fi, Bluetooth — щоб модуль «Поруч» бачив ваш iPhone чи Apple Watch. Модулі не можуть отримати більше, ніж видано тут.")
         }
-        .onAppear { model.refreshWifi() }
+        .onAppear {
+            model.refreshWifi()
+            model.refreshBluetooth()
+        }
 
         // Лише модулі, що просять хоч один системний дозвіл: решті тут нічого видавати.
         if let modules = model.uiTree?.modules.filter({ !($0.permissions ?? []).isEmpty }) {
@@ -80,6 +84,25 @@ private struct LocationPermissionRow: View {
             }
         }
         .help("Дозвіл геолокації macOS. Без нього аппка не бачить назву мережі, тож агент не знає, чи Mac у довіреній Wi-Fi, і відповідає тільки цьому Mac.")
+    }
+}
+
+/// Bluetooth: модуль «Поруч» за сигналом iPhone чи Apple Watch блокує Mac, коли ви відходите.
+private struct BluetoothPermissionRow: View {
+    @EnvironmentObject private var model: AwakeModel
+
+    var body: some View {
+        let granted = model.bluetoothAuthorized
+        SettingsRow(title: "Bluetooth", symbol: "dot.radiowaves.left.and.right", color: granted ? .green : .gray) {
+            HStack(spacing: 8) {
+                StatusDot(color: granted ? .green : .gray)
+                Text(granted ? "Видано" : "Не видано").foregroundStyle(.secondary)
+                if !granted {
+                    Button(model.bluetoothDenied ? "Відкрити налаштування…" : "Надати…") { model.requestBluetoothAccess() }
+                }
+            }
+        }
+        .help("Дозвіл Bluetooth macOS. Потрібен модулю «Поруч»: без нього Mac не бачить ваш iPhone чи Apple Watch і не блокується, коли ви відходите.")
     }
 }
 

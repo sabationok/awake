@@ -7,6 +7,7 @@ import { DatabaseModule } from './database/database.module';
 import { DevicesModule } from './devices/devices.module';
 import { EnvifyModule } from './envify';
 import { TrustedNetworksModule } from './trusted-networks';
+import { ProximityModule } from './proximity';
 import { LogsModule } from './logs/logs.module';
 import { MacBridgeModule } from './mac-bridge/mac-bridge.module';
 import { ModulesModule } from './modules/modules.module';
@@ -28,6 +29,7 @@ import { TlsModule } from './tls/tls.module';
     MacBridgeModule,
     EnvifyModule,
     TrustedNetworksModule,
+    ProximityModule,
     DevicesModule,
     SessionsModule,
     LogsModule,

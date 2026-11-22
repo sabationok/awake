@@ -63,8 +63,11 @@ final class AwakeModel: ObservableObject {
     @Published var currentSSID: String?
     @Published var wifiAuthorized = false
     @Published var wifiDenied = false
+    @Published var bluetoothAuthorized = false
+    @Published var bluetoothDenied = false
     let agent = AgentService()
     let wifi = WifiService()
+    let bluetooth = BluetoothScanner()
     /// Хто почав або зупинив поточну сесію: потрапляє в історію агента.
     var sessionSource = SessionSource.mac
     /// Тривалість поточної сесії, як її передали скрипту: 2h, 30m.
