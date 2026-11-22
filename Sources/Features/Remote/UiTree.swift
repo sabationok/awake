@@ -130,6 +130,7 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
     case text(id: String, text: String, tone: UiTone?)
     case tabs(id: String, tabs: [UiTab], value: String?, setting: UiSettingRef?)
     case timer(UiTimer)
+    case chart(UiChart)
     case unknown(id: String)
 
     var id: String {
@@ -140,6 +141,7 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
         case .row(let row): row.id
         case .status(let status): status.id
         case .timer(let timer): timer.id
+        case .chart(let chart): chart.id
         }
     }
 
@@ -187,6 +189,8 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
                          setting: try c.decodeIfPresent(UiSettingRef.self, forKey: .setting))
         case "timer":
             self = .timer(try UiTimer(from: decoder))
+        case "chart":
+            self = .chart(try UiChart(from: decoder))
         default:
             self = .unknown(id: id)
         }
@@ -214,6 +218,26 @@ struct UiRow: Decodable, Hashable {
 }
 
 /// Великий таймер: відлік до `until` або `value`, коли відліку немає.
+/// Стовпчиковий графік по часу; рендер — BarHistoryChart.
+struct UiChart: Decodable, Hashable {
+    struct Point: Decodable, Hashable {
+        var start: Date
+        var value: Double
+        var series: String?
+    }
+    enum Unit: String, Decodable { case hour, day, week, month }
+    enum Format: String, Decodable { case count, duration }
+
+    var id: String
+    var title: String
+    var unit: Unit
+    var points: [Point]
+    var tone: UiTone?
+    var tones: [String: UiTone]?
+    var format: Format?
+    var limit: Double?
+}
+
 struct UiTimer: Decodable, Hashable {
     var id: String
     var until: Date?

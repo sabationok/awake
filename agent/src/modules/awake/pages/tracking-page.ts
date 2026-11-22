@@ -2,6 +2,7 @@ import type { SessionRecord, UiPage, UiRow } from '@awake/contracts';
 import { formatDuration } from '../../helpers/format-duration';
 import type { SessionsHistory } from '../../../sessions/types/sessions-history.types';
 import { sessionListItem } from '../helpers/session-list-item';
+import { sessionsPeriodCharts } from '../helpers/sessions-period-charts';
 import { sessionsPeriodRow } from '../helpers/sessions-period-row';
 import { summarizeSessions } from '../helpers/summarize-sessions';
 import { TRACKING_HISTORY_LIMIT } from '../constants/session-limits';
@@ -33,15 +34,20 @@ export function buildTrackingPage(sessions: SessionRecord[], history: SessionsHi
         type: 'section',
         title: 'По днях',
         footer: 'Сесій · час. Час закритих сесій, розкладений по годинах, у які Mac справді не спав.',
-        children: [...history.days].reverse().map((period) => sessionsPeriodRow(period, 'day')),
+        children: [...sessionsPeriodCharts(history.days, 'day'), ...[...history.days].reverse().map((period) => sessionsPeriodRow(period, 'day'))],
       },
-      { id: 'weeks', type: 'section', title: 'По тижнях', children: [...history.weeks].reverse().map((period) => sessionsPeriodRow(period, 'week')) },
+      {
+        id: 'weeks',
+        type: 'section',
+        title: 'По тижнях',
+        children: [...sessionsPeriodCharts(history.weeks, 'week'), ...[...history.weeks].reverse().map((period) => sessionsPeriodRow(period, 'week'))],
+      },
       {
         id: 'months',
         type: 'section',
         title: 'По місяцях',
         footer: 'Тижні й місяці — за UTC.',
-        children: [...history.months].reverse().map((period) => sessionsPeriodRow(period, 'month')),
+        children: [...sessionsPeriodCharts(history.months, 'month'), ...[...history.months].reverse().map((period) => sessionsPeriodRow(period, 'month'))],
       },
       {
         id: 'history',

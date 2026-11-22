@@ -180,7 +180,33 @@ export interface UiTimer extends UiNodeBase {
   tone?: UiTone;
 }
 
-export type UiNode = UiSection | UiRow | UiStatus | UiSwitch | UiSelect | UiButtons | UiList | UiText | UiTabs | UiTimer;
+/** Стовпчик (або сегмент stacked-стовпчика) графіка: початок бакета і значення. */
+export interface UiChartPoint {
+  /** ISO-час початку бакета. */
+  start: string;
+  value: number;
+  /** Серія stacked-графіка; точки з тим самим start складаються в один стовпчик. */
+  series?: string;
+}
+
+/** Стовпчиковий графік по часу: Mac-аппка — як «Акумулятор» у Системних параметрах, веб — простіші стовпчики. */
+export interface UiChart extends UiNodeBase {
+  type: 'chart';
+  title: string;
+  /** Розмір бакета: від нього підписи осі X. */
+  unit: 'hour' | 'day' | 'week' | 'month';
+  points: UiChartPoint[];
+  /** Колір однієї серії. */
+  tone?: UiTone;
+  /** Колір кожної серії stacked-графіка. */
+  tones?: Record<string, UiTone>;
+  /** Як підписати шкалу: кількість чи тривалість (value — секунди). */
+  format?: 'count' | 'duration';
+  /** Пунктирна лінія ліміту. */
+  limit?: number;
+}
+
+export type UiNode = UiSection | UiRow | UiStatus | UiSwitch | UiSelect | UiButtons | UiList | UiText | UiTabs | UiTimer | UiChart;
 
 /** Вкладка бічного меню. */
 export interface UiPage {

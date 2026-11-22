@@ -35,6 +35,8 @@ struct UiNodeView: View {
             UiTabsView(tabs: tabs, value: value, setting: setting)
         case .timer(let timer):
             UiTimerView(timer: timer)
+        case .chart(let chart):
+            UiChartView(chart: chart)
         case .unknown:
             EmptyView()
         }

@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import type { UiNode } from '@awake/contracts';
 import type { NodeProps } from '../sdui.types';
 import { ButtonsNode } from './buttons-node';
+import { ChartNode } from './chart-node';
 import { ListNode } from './list-node';
 import { RowNode } from './row-node';
 import { SectionNode } from './section-node';
@@ -25,6 +26,7 @@ const NODE_COMPONENTS: NodeComponents = {
   text: TextNode,
   tabs: TabsNode,
   timer: TimerNode,
+  chart: ChartNode,
 };
 
 /** Вибирає компонент за типом вузла; рендерер не знає, звідки вузол узявся. */
