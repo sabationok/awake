@@ -26,7 +26,7 @@ export class PresenceService {
     if (!address) return null;
     return {
       url: `https://${address}:${this._config.port}`,
-      code: this._pairing.currentCode(),
+      code: this._pairing.currentCodeInfo('local').value,
       ca: this._tls.caPem(),
     };
   }

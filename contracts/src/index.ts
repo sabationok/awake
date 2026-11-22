@@ -123,7 +123,7 @@ export type MacToAgentMessage =
         | { action: 'revoke'; id: number }
         /** Відповідь на «Це ви?» для пристрою, що відкрив посилання з QR. */
         | { action: 'answer'; requestId: string; approve: boolean }
-        /** «Новий код»: старий код перестає діяти, обидва посилання (локальне й дистанційне) отримують новий. */
+        /** «Новий код»: старі коди перестають діяти, обидва посилання (локальне й дистанційне) отримують нові. */
         | { action: 'newCode' };
     }
   /** Аппка переписала ~/.config/awake/relay.env: агент перечитує ключі й перепідключає webhooxy. Значень тут немає. */
@@ -232,7 +232,7 @@ export interface DevicePairingRequest {
 export interface DevicesSnapshot {
   devices: DeviceInfo[];
   requests: DevicePairingRequest[];
-  /** Одне посилання на кожен шлях; код у них спільний. */
+  /** Одне посилання на кожен шлях. Коди окремі: локальний код не приймається через relay і навпаки. */
   pairing: Record<DevicePairingMode, DevicePairing>;
 }
 

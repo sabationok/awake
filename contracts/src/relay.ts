@@ -33,3 +33,16 @@ export interface RelayViewerAccess {
   workspace: string;
   token: string;
 }
+
+/**
+ * Кукі пристрою, сполученого дистанційно: HttpOnly на домені дашборду, значення — токен пристрою.
+ * Проксі дашборду пропускає в webhooxy лише кукі з префіксом `mc_`.
+ */
+export const RELAY_DEVICE_COOKIE = 'mc_device';
+/** Префікс кукі, які проксі дашборду передає агенту; решта (сесія дашборду) у webhooxy не йде. */
+export const RELAY_COOKIE_PREFIX = 'mc_';
+
+/** Відповідь агента на опитування дистанційного сполучення: токен не в тілі, а в кукі `mc_device`. */
+export interface RelayPairPoll {
+  status: 'pending' | 'approved' | 'denied' | 'expired';
+}

@@ -78,6 +78,13 @@ export class DatabaseService implements OnModuleDestroy {
       );
     `);
     this._migrateRelaySource();
+    this._addColumn('devices', 'via', "TEXT NOT NULL DEFAULT 'local'");
+  }
+
+  /** Додає колонку в існуючу таблицю, якщо її ще немає. */
+  private _addColumn(table: string, column: string, definition: string) {
+    const columns = this.db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (!columns.some((existing) => existing.name === column)) this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
 
   /**

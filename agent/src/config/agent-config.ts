@@ -26,6 +26,11 @@ export interface AgentConfig {
   /** Envify того самого stage; токен сервісу лежить у ~/.config/awake/envify.env. */
   envifyUrl: string | null;
   port: number;
+  /**
+   * Порт простого http для локального сполучення в довіреній Wi-Fi (без сертифіката, тож без попереджень браузера).
+   * HTTPS на `port` лишається для дашборду на Vercel: https-сторінка не може звертатися до http-адреси.
+   */
+  httpPort: number;
   token: string;
   dbPath: string;
   webDir: string | null;
@@ -51,6 +56,7 @@ export function readAgentConfig(env: NodeJS.ProcessEnv = process.env): AgentConf
     webhooxyUrl: env.WEBHOOXY_URL || STAGE_DEPS[stage].webhooxyUrl,
     envifyUrl: env.ENVIFY_URL || STAGE_DEPS[stage].envifyUrl,
     port: Number(env.MACONTROL_AGENT_PORT ?? 47800),
+    httpPort: Number(env.MACONTROL_AGENT_HTTP_PORT ?? Number(env.MACONTROL_AGENT_PORT ?? 47800) + 1),
     token,
     dbPath: env.MACONTROL_DB ?? join(homedir(), '.config/awake/awake.db'),
     webDir: env.MACONTROL_WEB_DIR || null,

@@ -8,7 +8,7 @@ struct DevicesSection: View {
     var body: some View {
         Group {
             if let devices = model.devices {
-                PairingSection(pairing: devices.pairing.local)
+                PairingCard(pairings: devices.pairing)
                 DeviceListSection(devices: devices.devices)
             } else {
                 Section {
@@ -24,79 +24,6 @@ struct DevicesSection: View {
 
     private var agentRunning: Bool {
         if case .running = model.agentStatus { true } else { false }
-    }
-}
-
-/// QR і посилання. Код діє 2 хвилини і лише раз; коли спливає, просимо в агента новий.
-private struct PairingSection: View {
-    @EnvironmentObject private var model: AwakeModel
-    let pairing: AgentDevices.Pairing
-    @State private var copied = false
-
-    var body: some View {
-        Section {
-            if let url = pairing.url, let expiresAt = pairing.expiresAt {
-                HStack(alignment: .top, spacing: 16) {
-                    // Код з кешу міг протухнути: QR лишається на місці (без стрибка), але тьмяний, поки агент дасть новий.
-                    let stale = expiresAt <= Date()
-                    QrCodeImage(text: url)
-                        .frame(width: 148, height: 148)
-                        .opacity(stale ? 0.15 : 1)
-                        .overlay { if stale { ProgressView() } }
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Наведи камеру телефона або відкрий посилання на ноуті. Пристрій має бути в тій самій Wi-Fi, а тут з'явиться питання «Це ви?».")
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text(url)
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                            .truncationMode(.middle)
-                            .textSelection(.enabled)
-                        HStack {
-                            Button(copied ? "Скопійовано" : "Копіювати посилання") { copy(url) }
-                            Button("Новий код") { model.newPairingCode() }
-                        }
-                        TimelineView(.periodic(from: .now, by: 1)) { context in
-                            let left = max(0, Int(expiresAt.timeIntervalSince(context.date)))
-                            Text(left > 0 ? "Код діє ще \(left / 60):\(String(format: "%02d", left % 60))" : "Оновлюю код…")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .onChange(of: left == 0) { _, expired in
-                                    if expired { model.refreshDevices() }
-                                }
-                        }
-                    }
-                }
-                .padding(.vertical, 4)
-            } else if pairing.reason == "loading" {
-                // Кеш без коду: місце під QR тримаємо, щоб сторінка не стрибнула, коли код прийде.
-                HStack(alignment: .top, spacing: 16) {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.quaternary)
-                        .frame(width: 148, height: 148)
-                        .overlay { ProgressView() }
-                    Text("Отримую код сполучення від агента…")
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 4)
-            } else {
-                Text(pairing.reason == "noNetwork"
-                     ? "Mac не в мережі: немає адреси, за якою пристрій міг би його знайти."
-                     : "Сполучати можна лише в довіреній Wi-Fi. Познач цю мережу як довірену в «Підключенні».")
-                    .foregroundStyle(.secondary)
-            }
-        } header: {
-            Text("Сполучити пристрій")
-        } footer: {
-            Text("Код одноразовий. Пристрій отримає свій токен лише після «Дозволити» тут; токен лишається тільки в його браузері.")
-        }
-    }
-
-    private func copy(_ url: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(url, forType: .string)
-        copied = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copied = false }
     }
 }
 

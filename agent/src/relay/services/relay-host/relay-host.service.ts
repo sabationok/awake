@@ -19,6 +19,9 @@ import { RelayStateService } from '../../state/relay-state.service';
 import { verifyViewerTicket } from '../../helpers/verify-viewer-ticket';
 import type { RelayEnv } from '../../types/relay-env.types';
 import { UsedTickets } from './used-tickets';
+import { PairingService } from '../../../devices/services/pairing.service';
+import { parseDeviceViewerSub } from '../../helpers/device-viewer-sub';
+import { RelayRequestService, type RelayHttpRequest } from '../relay-request';
 
 /** Конверт webhooxy: від сервера `{ statusCode, message, data, meta? }`, від клієнта `{ data }`. */
 interface ServerEnvelope<T> {
@@ -43,6 +46,8 @@ interface AuthorizeData {
 export class RelayHostService implements OnModuleInit, OnModuleDestroy {
   private readonly _logger = new Logger(RelayHostService.name);
   private readonly _used = new UsedTickets();
+  /** Viewer-и, яких уже вигнали за відкликаний пристрій: список сесій зберігає й тих, хто пішов. */
+  private readonly _kicked = new Set<string>();
   private _env: RelayEnv | null = null;
   private _socket?: Socket;
   private _retry?: NodeJS.Timeout;
@@ -57,6 +62,8 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     private readonly _notifications: TelegramNotificationsService,
     private readonly _envify: EnvifyService,
     private readonly _bridge: MacBridgeService,
+    private readonly _requests: RelayRequestService,
+    private readonly _pairing: PairingService,
     transports: TransportsService,
   ) {
     transports.registerProxy({
@@ -198,6 +205,16 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
         ack({ data: { allow: false } });
       }
     });
+    // HTTP-тунель від проксі дашборду: сполучення пристрою і квиток на сокет.
+    socket.on('relay:request', (envelope: ServerEnvelope<RelayHttpRequest> | undefined, ack: Ack) => {
+      if (typeof ack !== 'function') return;
+      try {
+        ack({ data: this._requests.handle(envelope?.data, env) });
+      } catch (error) {
+        this._logger.warn(`Relay request failed: ${(error as Error).message}`);
+        ack({ data: { statusCode: 500, body: { ok: false, error: { code: 'INTERNAL', message: 'Internal error' } } } });
+      }
+    });
     socket.on('relay:message', (envelope: ServerEnvelope<unknown> | undefined, ack: Ack) => {
       if (typeof ack !== 'function') return;
       this._journal.count([RELAY_METRICS.messages]);
@@ -228,6 +245,8 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     const check = verifyViewerTicket(data.token, env.ticketKey, env.room);
     if (!check.ok) return this._deny(data.viewerId, check.reason);
     if (!this._used.claim(check.claims.jti, check.claims.exp)) return this._deny(data.viewerId, 'ticket reused');
+    const deviceId = parseDeviceViewerSub(check.claims.sub);
+    if (deviceId !== null && !this._pairing.deviceExists(deviceId)) return this._deny(data.viewerId, 'device revoked');
     this._logger.log(`Viewer ${data.viewerId} allowed (${check.claims.sub})`);
     this._journal.count([RELAY_METRICS.viewerAllowed]);
     this._state.addViewer({
@@ -241,6 +260,18 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     });
     this._modules.treeChanged$.next();
     return { allow: true, sub: check.claims.sub };
+  }
+
+  /** Пристрій відкликали на Mac: його живі сесії relay виганяємо одразу, не чекаючи кінця квитка. */
+  async kickRevokedDevices() {
+    if (!this.isOnline) return;
+    for (const viewer of this._state.state.viewers) {
+      const deviceId = parseDeviceViewerSub(viewer.sub);
+      if (deviceId === null || this._kicked.has(viewer.viewerId) || this._pairing.deviceExists(deviceId)) continue;
+      this._kicked.add(viewer.viewerId);
+      const reply = (await this._socket!.emitWithAck('relay:kick', { data: { viewerId: viewer.viewerId } })) as ServerEnvelope<unknown>;
+      this._logger.log(`Kick viewer ${viewer.viewerId} (device ${deviceId} revoked): ${reply.statusCode}`);
+    }
   }
 
   private _stop() {

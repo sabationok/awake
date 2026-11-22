@@ -14,7 +14,7 @@ export class DevicesController {
   @PublicRoute()
   @Post('pair')
   pair(@Body() body: { code?: string }, @Headers('user-agent') userAgent?: string): AppResponse<{ requestId: string }> {
-    const requestId = body?.code ? this._pairing.request(body.code, userAgent ?? null) : null;
+    const requestId = body?.code ? this._pairing.request(body.code, userAgent ?? null, 'local') : null;
     if (!requestId) throw new AppException(API_ERROR_CODES.unauthorized, 'Pairing code expired or invalid', HttpStatus.UNAUTHORIZED);
     return AppResponse.ok({ requestId });
   }

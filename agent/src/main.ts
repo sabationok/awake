@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { NextFunction, Request, Response } from 'express';
 import { existsSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { AppModule } from './app.module';
 import { AGENT_CONFIG, AgentConfig, readAgentConfig } from './config/agent-config';
 import { StderrLogger } from './common/stderr-logger';
@@ -50,6 +51,11 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   await app.listen(config.port, '0.0.0.0');
+  // Той самий express-застосунок ще й на простому http: локальне сполучення в довіреній Wi-Fi без попереджень про сертифікат.
+  // Гард пускає не-loopback запити лише в довіреній мережі, тож поза нею цей порт нічого не віддає, крім статики.
+  createServer(app.getHttpAdapter().getInstance())
+    .on('error', (error) => process.stderr.write(`[agent] http :${config.httpPort} failed: ${error.message}\n`))
+    .listen(config.httpPort, '0.0.0.0');
   app.get(MacBridgeService).sendReady(config.port);
 }
 

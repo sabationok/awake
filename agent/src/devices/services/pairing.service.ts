@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Subject } from 'rxjs';
+import type { DevicePairingMode } from '@awake/contracts';
 import { DevicesRepository } from '../repositories/devices.repository';
 
 /** Код живе стільки, а попередній ще приймається один період, щоб не зламати щойно відкрите посилання. */
@@ -14,8 +15,16 @@ const sha256 = (value: string) => createHash('sha256').update(value).digest('hex
 
 export type PairingRequestStatus = 'pending' | 'approved' | 'denied' | 'expired';
 
+interface PairingCode {
+  value: string;
+  issuedAt: number;
+  /** Код приймається лише тим шляхом, для якого його видали. */
+  mode: DevicePairingMode;
+}
+
 interface PairingRequest {
   id: string;
+  via: DevicePairingMode;
   userAgent: string | null;
   createdAt: number;
   status: 'pending' | 'approved' | 'denied';
@@ -31,53 +40,57 @@ interface PairingRequest {
  */
 @Injectable()
 export class PairingService {
-  private _codes: { value: string; issuedAt: number }[] = [];
+  private _codes: PairingCode[] = [];
   private _requests: PairingRequest[] = [];
   /** Змінився список пристроїв або запитів: Mac-аппці треба новий знімок. */
   readonly changed$ = new Subject<void>();
 
   constructor(private readonly _devices: DevicesRepository) {}
 
-  currentCode(): string {
-    return this.currentCodeInfo().value;
-  }
-
-  /** Поточний код і коли його перестануть видавати (ще один період його приймають). */
-  currentCodeInfo(): { value: string; expiresAt: number } {
+  /** Поточний код шляху і коли його перестануть видавати (ще один період його приймають). */
+  currentCodeInfo(mode: DevicePairingMode): { value: string; expiresAt: number } {
     const now = Date.now();
     this._codes = this._codes.filter((code) => now - code.issuedAt < CODE_TTL_MS * 2);
-    const latest = this._codes.at(-1);
+    const latest = this._codes.filter((code) => code.mode === mode).at(-1);
     if (latest && now - latest.issuedAt < CODE_TTL_MS) return { value: latest.value, expiresAt: latest.issuedAt + CODE_TTL_MS };
-    const code = { value: randomBytes(16).toString('base64url'), issuedAt: now };
+    const code: PairingCode = { value: randomBytes(16).toString('base64url'), issuedAt: now, mode };
     this._codes.push(code);
     return { value: code.value, expiresAt: now + CODE_TTL_MS };
   }
 
-  /** Міняє код на запит, що чекає підтвердження на Mac. Код після цього недійсний. */
-  request(code: string, userAgent: string | null): string | null {
+  /** «Новий код» на Mac: усі видані коди перестають діяти, наступний знімок отримає нові. */
+  resetCodes(): void {
+    this._codes = [];
+    this.changed$.next();
+  }
+
+  /** Міняє код на запит, що чекає підтвердження на Mac. Код після цього недійсний; чужого шляху код не приймається. */
+  request(code: string, userAgent: string | null, via: DevicePairingMode): string | null {
     const now = Date.now();
     const given = Buffer.from(code);
     const match = this._codes.find(
       (candidate) =>
+        candidate.mode === via &&
         now - candidate.issuedAt < CODE_TTL_MS * 2 &&
         candidate.value.length === code.length &&
         timingSafeEqual(Buffer.from(candidate.value), given),
     );
     if (!match) return null;
     this._codes = this._codes.filter((candidate) => candidate !== match);
-    const request: PairingRequest = { id: randomBytes(16).toString('base64url'), userAgent, createdAt: now, status: 'pending' };
+    const request: PairingRequest = { id: randomBytes(16).toString('base64url'), via, userAgent, createdAt: now, status: 'pending' };
     this._requests.push(request);
     this.changed$.next();
     return request.id;
   }
 
   /** Запити, на які Mac ще не відповів. */
-  pendingRequests(): { id: string; userAgent: string | null; createdAt: string; expiresAt: string }[] {
+  pendingRequests(): { id: string; via: DevicePairingMode; userAgent: string | null; createdAt: string; expiresAt: string }[] {
     this._prune();
     return this._requests
       .filter((request) => request.status === 'pending')
-      .map(({ id, userAgent, createdAt }) => ({
+      .map(({ id, via, userAgent, createdAt }) => ({
         id,
+        via,
         userAgent,
         createdAt: new Date(createdAt).toISOString(),
         expiresAt: new Date(createdAt + REQUEST_TTL_MS).toISOString(),
@@ -92,7 +105,7 @@ export class PairingService {
     request.answeredAt = Date.now();
     if (approve) {
       const token = randomBytes(32).toString('base64url');
-      this._devices.create({ tokenHash: sha256(token), userAgent: request.userAgent, createdAt: new Date().toISOString() });
+      this._devices.create({ tokenHash: sha256(token), userAgent: request.userAgent, createdAt: new Date().toISOString(), via: request.via });
       request.status = 'approved';
       request.token = token;
     } else {
@@ -118,7 +131,16 @@ export class PairingService {
   }
 
   isDeviceToken(token: string): boolean {
+    return this.findDeviceId(token) !== null;
+  }
+
+  /** id пристрою за його токеном (і позначка «щойно бачений»); null — токена немає або його відкликали. */
+  findDeviceId(token: string): number | null {
     return this._devices.touch(sha256(token), new Date().toISOString());
+  }
+
+  deviceExists(id: number): boolean {
+    return this._devices.exists(id);
   }
 
   /** Протухлі запити: без відповіді або з відповіддю, яку пристрій так і не забрав. Mac ховає їх сам за `expiresAt`. */

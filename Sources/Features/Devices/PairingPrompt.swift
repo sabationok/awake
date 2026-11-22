@@ -11,11 +11,24 @@ private struct PairingPrompt: ViewModifier {
             isPresented: Binding(get: { request != nil }, set: { _ in }),
             presenting: request
         ) { request in
+            // Дистанційний запит може прийти звідки завгодно: Enter не має дозволяти його мимохідь.
             Button("Дозволити") { model.answerPairing(request, approve: true) }
-                .keyboardShortcut(.defaultAction)
+                .keyboardShortcut(request.via == .local ? .defaultAction : nil)
             Button("Відхилити", role: .cancel) { model.answerPairing(request, approve: false) }
         } message: { request in
-            Text("Хтось у твоїй Wi-Fi щойно відкрив посилання з QR о \(request.createdAt.formatted(date: .omitted, time: .shortened)). Якщо це не ти — відхили: без дозволу пристрій не отримає доступу до пульта.")
+            Text(Self.message(request))
+        }
+    }
+}
+
+private extension PairingPrompt {
+    static func message(_ request: AgentDevices.Request) -> String {
+        let time = request.createdAt.formatted(date: .omitted, time: .shortened)
+        switch request.via {
+        case .local:
+            return "Хтось у твоїй Wi-Fi щойно відкрив локальне посилання з QR о \(time). Якщо це не ти — відхили: без дозволу пристрій не отримає доступу до пульта."
+        case .remote:
+            return "Дистанційний запит через інтернет (дашборд і relay) о \(time): пристрій може бути в будь-якій мережі. Дозволяй, лише якщо щойно сам сканував дистанційний QR. Після дозволу він керуватиме Mac звідусіль, доки його не відкличеш."
         }
     }
 }
