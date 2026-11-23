@@ -14,10 +14,12 @@ export interface DeviceRow {
 export class DevicesRepository {
   constructor(private readonly _database: DatabaseService) {}
 
-  create(data: { tokenHash: string; userAgent: string | null; createdAt: string; via: DevicePairingMode }) {
-    this._database.db
+  /** Новий пристрій; повертає його id. */
+  create(data: { tokenHash: string; userAgent: string | null; createdAt: string; via: DevicePairingMode }): number {
+    const result = this._database.db
       .prepare('INSERT INTO devices (token_hash, user_agent, created_at, via) VALUES (?, ?, ?, ?)')
       .run(data.tokenHash, data.userAgent, data.createdAt, data.via);
+    return Number(result.lastInsertRowid);
   }
 
   list(): DeviceRow[] {
@@ -32,7 +34,7 @@ export class DevicesRepository {
     return this._database.db.prepare('SELECT 1 FROM devices WHERE id = ?').get(id) !== undefined;
   }
 
-  /** Видаляє пристрій: його токен одразу перестає діяти. */
+  /** Видаляє пристрій: його токен одразу перестає діяти, його вебсесії видаляє каскад. */
   remove(id: number): boolean {
     return Number(this._database.db.prepare('DELETE FROM devices WHERE id = ?').run(id).changes) > 0;
   }

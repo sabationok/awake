@@ -1,11 +1,14 @@
-import { Body, Controller, Get, Headers, HttpStatus, Inject, Param, Post, Req } from '@nestjs/common';
-import type { Request } from 'express';
+import { Body, Controller, Get, Headers, HttpStatus, Inject, Param, Post, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import type { DevicePairingPoll } from '@awake/contracts';
 import { AppResponse } from '../common/app-response';
 import { API_ERROR_CODES, AppException } from '../common/app-exception';
 import { PublicRoute } from '../auth/decorators/public-route.decorator';
 import { requestPath } from '../auth/helpers/request-path';
 import { AGENT_CONFIG, type AgentConfig } from '../config/agent-config';
+import { DEFAULT_IDLE_MINUTES } from '../web-auth/constants/web-auth';
+import { setDeviceCookie, setSessionCookie } from '../web-auth/helpers/web-auth-cookies';
+import { WebSessionsService } from '../web-auth/services/web-sessions.service';
 import { PairingService } from './services/pairing.service';
 
 /** Без токена, але гард усе одно пускає лише з довіреної мережі або від власника tailnet. */
@@ -14,6 +17,7 @@ export class DevicesController {
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     private readonly _pairing: PairingService,
+    private readonly _sessions: WebSessionsService,
   ) {}
 
   /** Код з QR міняється на запит, який чекає «Дозволити» на Mac. */
@@ -27,10 +31,19 @@ export class DevicesController {
     return AppResponse.ok({ requestId });
   }
 
-  /** Пристрій питає, чи його вже дозволили. id запиту випадковий і відомий лише йому. */
+  /**
+   * Пристрій питає, чи його вже дозволили. id запиту випадковий і відомий лише йому.
+   * LAN: токен пристрою в тілі (Bearer). Tailscale: токен не в тілі, а в HttpOnly `mc_device` плюс перша
+   * сесія `mc_session`, тож одразу після «Дозволити» дашборд відкривається без пароля.
+   */
   @PublicRoute()
   @Get('pair/:requestId')
-  poll(@Param('requestId') requestId: string): AppResponse<DevicePairingPoll> {
-    return AppResponse.ok(this._pairing.poll(requestId));
+  poll(@Param('requestId') requestId: string, @Res({ passthrough: true }) res: Response): AppResponse<DevicePairingPoll> {
+    const result = this._pairing.poll(requestId);
+    if (result.status !== 'approved') return AppResponse.ok({ status: result.status });
+    if (result.via !== 'tailnet') return AppResponse.ok({ status: 'approved', token: result.token });
+    setDeviceCookie(res, result.token);
+    setSessionCookie(res, this._sessions.create(result.deviceId, DEFAULT_IDLE_MINUTES).token);
+    return AppResponse.ok({ status: 'approved' });
   }
 }

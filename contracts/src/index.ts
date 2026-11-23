@@ -92,11 +92,37 @@ export interface CommandRequest {
   value?: string | number | boolean;
 }
 
+/**
+ * Наступний крок для клієнта: дія, а не сторінка. Яку сторінку відкрити, вирішує клієнт (мапа кроків у вебі).
+ * `auth/login` — потрібен вхід паролем; `pair/scan` — пристрій не сполучений, треба відсканувати QR на Mac.
+ */
+export type AppNextStep = { type: 'auth'; action: 'login' } | { type: 'pair'; action: 'scan' };
+
 /** Відповідь API агента. */
 export interface AppResponse<T> {
   ok: boolean;
   data?: T;
   error?: { code: string; message: string };
+  next?: AppNextStep;
+}
+
+/** Таймаути бездіяльності вебсесії, хвилини (вибирається при вході). */
+export const WEB_SESSION_IDLE_OPTIONS = [2, 5, 10] as const;
+export type WebSessionIdleMinutes = (typeof WEB_SESSION_IDLE_OPTIONS)[number];
+
+/** Кука вебсесії: HttpOnly, opaque-токен; сесію веде агент у SQLite. */
+export const WEB_SESSION_COOKIE = 'mc_session';
+
+/** `GET /api/auth/session`. Для agent / device (Bearer) сесії немає: обидва поля null. */
+export interface WebSessionInfo {
+  idleMinutes: WebSessionIdleMinutes | null;
+  expiresAt: string | null;
+}
+
+/** `POST /api/auth/login`. */
+export interface WebLoginBody {
+  password: string;
+  idleMinutes: WebSessionIdleMinutes;
 }
 
 /** Рядки протоколу Mac-аппка ↔ агент (JSON lines через stdin/stdout). */
@@ -327,6 +353,7 @@ export interface DevicesSnapshot {
 /** Відповідь агента пристрою, що чекає підтвердження. Токен приходить лише раз, разом з approved. */
 export interface DevicePairingPoll {
   status: 'pending' | 'approved' | 'denied' | 'expired';
+  /** Лише для LAN (Bearer). Через Tailscale токен не віддається: агент ставить кукі `mc_device` і `mc_session`. */
   token?: string;
 }
 

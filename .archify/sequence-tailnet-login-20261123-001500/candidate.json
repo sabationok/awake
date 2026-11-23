@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Вхід на дашборд через Tailscale",
+    "output": ".archify/sequence-tailnet-login-20261123-001500/tailnet-login.html",
+    "viewBox": [1080, 1080],
+    "column_fit": "spread",
+    "quality_profile": "standard"
+  },
+  "participants": [
+    { "id": "mac", "type": "frontend", "label": "Mac-аппка", "sublabel": "Swift, QR, «Дозволити?»" },
+    { "id": "phone", "type": "frontend", "label": "Браузер", "sublabel": "телефон у tailnet" },
+    { "id": "ts", "type": "cloud", "label": "tailscale serve", "sublabel": "https://<mac>.ts.net" },
+    { "id": "guard", "type": "security", "label": "Guard Nest", "sublabel": "tailnet-порт 47802" },
+    { "id": "api", "type": "backend", "label": "Роути Nest", "sublabel": "агент MaControl" },
+    { "id": "db", "type": "database", "label": "SQLite", "sublabel": "devices, web_sessions" }
+  ],
+  "segments": [
+    { "from": 150, "to": 480, "label": "1. Пейринг (QR один раз)" },
+    { "from": 495, "to": 690, "label": "2. Вхід паролем" },
+    { "from": 705, "to": 845, "label": "3. Звичайний запит" },
+    { "from": 860, "to": 945, "label": "4. Бездіяльність" }
+  ],
+  "messages": [
+    { "id": "qr-url", "from": "api", "to": "mac", "y": 165, "label": "URL для QR: /redirects?type=pair&code=…", "variant": "default", "note": "Nest будує URL, аппка лише малює QR" },
+    { "id": "scan", "from": "mac", "to": "phone", "y": 195, "label": "скан QR", "variant": "dashed" },
+    { "id": "static", "from": "phone", "to": "ts", "y": 220, "label": "GET /redirects → /pair?code", "variant": "default", "note": "статика web/out, кук ще немає" },
+    { "id": "pair-post", "from": "phone", "to": "ts", "y": 250, "label": "POST /api/devices/pair {code}", "variant": "emphasis" },
+    { "id": "ts-login", "from": "ts", "to": "guard", "y": 278, "label": "+ Tailscale-User-Login, − TLS", "variant": "security", "note": "serve сам ставить хедер і вирізає копії клієнта" },
+    { "id": "owner-ok", "from": "guard", "to": "api", "y": 306, "label": "власник tailnet ✓, роут без сесії", "variant": "security" },
+    { "id": "ask", "from": "api", "to": "mac", "y": 334, "label": "«Дозволити?»", "variant": "emphasis" },
+    { "id": "allow", "from": "mac", "to": "api", "y": 362, "label": "Дозволити", "variant": "return" },
+    { "id": "poll", "from": "phone", "to": "guard", "y": 392, "label": "GET /api/devices/pair/:id (poll)", "variant": "default" },
+    { "id": "store-device", "from": "api", "to": "db", "y": 420, "label": "INSERT device + web_session (sha256)", "variant": "default" },
+    { "id": "set-both", "from": "api", "to": "phone", "y": 450, "label": "Set-Cookie: mc_device, mc_session", "variant": "return", "note": "HttpOnly, Secure, Lax; токен у body більше не йде" },
+
+    { "id": "session-check", "from": "phone", "to": "guard", "y": 510, "label": "GET /api/auth/session · Cookie: mc_device", "variant": "default", "note": "shell gate перед рендером" },
+    { "id": "session-miss", "from": "guard", "to": "db", "y": 538, "label": "sha256(mc_session) → немає", "variant": "default" },
+    { "id": "need-login", "from": "guard", "to": "phone", "y": 566, "label": "401 next: auth/login → /login", "variant": "return" },
+    { "id": "login", "from": "phone", "to": "guard", "y": 596, "label": "POST /api/auth/login {password, idleMinutes}", "variant": "emphasis" },
+    { "id": "web-device", "from": "guard", "to": "api", "y": 624, "label": "principal web-device (лише mc_device)", "variant": "security" },
+    { "id": "scrypt", "from": "api", "to": "db", "y": 652, "label": "scrypt ✓, ліміт 5/15 хв, INSERT session", "variant": "default" },
+    { "id": "set-session", "from": "api", "to": "phone", "y": 680, "label": "Set-Cookie: mc_session", "variant": "return" },
+
+    { "id": "call", "from": "phone", "to": "ts", "y": 720, "label": "POST /api/… · Cookie: mc_device; mc_session", "variant": "emphasis" },
+    { "id": "ts-login-2", "from": "ts", "to": "guard", "y": 748, "label": "+ Tailscale-User-Login", "variant": "security" },
+    { "id": "touch", "from": "guard", "to": "db", "y": 776, "label": "сесія жива? last_active_at = now", "variant": "default" },
+    { "id": "principal-web", "from": "guard", "to": "api", "y": 804, "label": "principal web", "variant": "security" },
+    { "id": "ok", "from": "api", "to": "phone", "y": 832, "label": "200 AppResponse", "variant": "return" },
+
+    { "id": "logout", "from": "phone", "to": "guard", "y": 875, "label": "POST /api/auth/logout (тиша > idleMinutes)", "variant": "dashed" },
+    { "id": "revoke", "from": "guard", "to": "db", "y": 905, "label": "revoked_at = now", "variant": "dashed" },
+    { "id": "clear", "from": "api", "to": "phone", "y": 935, "label": "Set-Cookie: mc_session=; Max-Age=0", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "guard", "from": 272, "to": 312, "type": "security" },
+    { "participant": "api", "from": 300, "to": 456, "type": "backend" },
+    { "participant": "mac", "from": 328, "to": 368, "type": "frontend" },
+    { "participant": "guard", "from": 505, "to": 630, "type": "security" },
+    { "participant": "api", "from": 618, "to": 686, "type": "backend" },
+    { "participant": "guard", "from": 742, "to": 810, "type": "security" },
+    { "participant": "api", "from": 798, "to": 838, "type": "backend" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Що причіплюється",
+      "items": [
+        "Браузер: Cookie mc_device + mc_session (same-origin, сам)",
+        "tailscale serve: Tailscale-User-Login, TLS знімає він",
+        "Порт 47802 на 127.0.0.1 — ознака «прийшло з tailnet»"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Що відліплюється",
+      "items": [
+        "serve вирізає підроблені клієнтом Tailscale-* хедери",
+        "Bearer-токен і localStorage більше не потрібні",
+        "logout: mc_session гасне, mc_device лишається"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Що вирішує guard",
+      "items": [
+        "не власник tailnet → 403",
+        "лише mc_device → пейринг і auth/login",
+        "mc_device + жива сесія → усі роути"
+      ]
+    }
+  ]
+}

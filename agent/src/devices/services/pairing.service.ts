@@ -18,6 +18,11 @@ const sha256 = (value: string) => createHash('sha256').update(value).digest('hex
 
 export type PairingRequestStatus = 'pending' | 'approved' | 'denied' | 'expired';
 
+/** Відповідь опитування; токен і пристрій — лише раз, при схваленні. */
+export type PairingPollResult =
+  | { status: Exclude<PairingRequestStatus, 'approved'> }
+  | { status: 'approved'; token: string; deviceId: number; via: DevicePairingMode };
+
 interface PairingCode {
   value: string;
   issuedAt: number;
@@ -34,6 +39,8 @@ interface PairingRequest {
   answeredAt?: number;
   /** Видається пристрою один раз, коли він забирає дозвіл. */
   token?: string;
+  /** Пристрій, заведений при «Дозволити»: для першої вебсесії. */
+  deviceId?: number;
 }
 
 /**
@@ -111,7 +118,7 @@ export class PairingService {
     request.answeredAt = Date.now();
     if (approve) {
       const token = randomBytes(32).toString('base64url');
-      this._devices.create({ tokenHash: sha256(token), userAgent: request.userAgent, createdAt: new Date().toISOString(), via: request.via });
+      request.deviceId = this._devices.create({ tokenHash: sha256(token), userAgent: request.userAgent, createdAt: new Date().toISOString(), via: request.via });
       request.status = 'approved';
       request.token = token;
     } else {
@@ -122,13 +129,15 @@ export class PairingService {
   }
 
   /** Стан запиту для пристрою, що чекає. Токен віддається лише раз, далі запит зникає. */
-  poll(id: string): { status: PairingRequestStatus; token?: string } {
+  poll(id: string): PairingPollResult {
     this._prune();
     const request = this._requests.find((candidate) => candidate.id === id);
     if (!request) return { status: 'expired' };
     if (request.status === 'pending') return { status: 'pending' };
     this._requests = this._requests.filter((candidate) => candidate !== request);
-    return request.status === 'approved' ? { status: 'approved', token: request.token } : { status: 'denied' };
+    return request.status === 'approved' && request.token && request.deviceId !== undefined
+      ? { status: 'approved', token: request.token, deviceId: request.deviceId, via: request.via }
+      : { status: 'denied' };
   }
 
   revoke(id: number): boolean {

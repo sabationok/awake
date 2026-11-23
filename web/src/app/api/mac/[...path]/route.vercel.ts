@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { RELAY_COOKIE_PREFIX } from '@awake/contracts';
 import { readStageConfig } from '@/server/stage-config';
+import { SESSION_COOKIE, isValidSession } from '@/server/session-cookie';
 
 /** Сегмент шляху до Mac: лише безпечні символи, без `..` і кодованих слешів. */
 const SEGMENT = /^[A-Za-z0-9_-]{1,64}$/;
@@ -18,6 +19,9 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
   // Запит з чужого сайту: браузер шле Origin, і він має збігатися з нашим.
   const origin = req.headers.get('origin');
   if (req.method !== 'GET' && origin && origin !== req.nextUrl.origin) return error(403, 'FORBIDDEN');
+
+  // Квиток viewer-а Mac видає лише після входу: довіра пристрою сама по собі не відкриває relay.
+  if (path[0] === 'connect' && !(await isValidSession(req.cookies.get(SESSION_COOKIE)?.value))) return error(401, 'AUTH_REQUIRED');
 
   const { webhooxyUrl } = readStageConfig();
   const key = process.env.WEBHOOXY_RELAY_REQUEST_KEY;

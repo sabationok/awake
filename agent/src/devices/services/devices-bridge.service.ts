@@ -79,11 +79,16 @@ export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
     return this._link('local', `http://${address}:${this._config.httpPort}/`);
   }
 
-  /** Tailscale: https://<mac>.ts.net через serve, з будь-якої мережі; пускає лише пристрої власника tailnet. */
+  /**
+   * Tailscale: https://<mac>.ts.net через serve, з будь-якої мережі; пускає лише пристрої власника tailnet.
+   * QR несе крок (`type`/`action`), а не сторінку: яку сторінку відкрити, вирішує веб (`/app/redirects`).
+   */
   private _tailnetLink(): DevicePairing {
     const { dnsName } = this._tailscale.state;
     if (!this._tailscale.isServing || !dnsName) return { url: null, reason: 'tailnetOff' };
-    return this._link('tailnet', `https://${dnsName}/`);
+    const code = this._pairing.currentCodeInfo('tailnet');
+    const query = new URLSearchParams({ type: 'pair', action: 'request', code: code.value });
+    return { url: `https://${dnsName}/app/redirects/?${query}`, expiresAt: new Date(code.expiresAt).toISOString() };
   }
 
   /** Дистанційне: сторінка /pair дашборду на Vercel, яка йде до Mac через relay. Без relay онлайн до Mac не достукатись. */
@@ -91,7 +96,7 @@ export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
     if (!this._config.webhooxy) return { url: null, reason: 'disabled' };
     const dashboard = this._config.dashboardOrigins[0];
     if (!dashboard || this._relay.state.status !== 'online') return { url: null, reason: 'relayOff' };
-    return this._link('remote', `${dashboard}/pair`);
+    return this._link('remote', `${dashboard}/app/pair`);
   }
 
   private _link(mode: DevicePairingMode, base: string): DevicePairing {

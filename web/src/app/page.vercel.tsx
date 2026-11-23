@@ -1,33 +1,7 @@
-'use client';
-import { Suspense } from 'react';
-import { SduiPage } from '@/features/sdui/pages/sdui-page';
-import { useHybridTree } from '@/features/sdui/hooks/use-hybrid-tree';
-import { logout } from '@/server/auth-actions';
+import { redirect } from 'next/navigation';
+import { STEP_PATH } from '@/features/redirects/redirect-flows';
 
-/** Дашборд на Vercel: дерево з Upstash, а з довіреної Wi-Fi — напряму з Mac; вихід у шапці. */
-function VercelDashboard() {
-  const { tree, send, mode, directError } = useHybridTree();
-  return (
-    <SduiPage
-      tree={tree}
-      send={send}
-      mode={mode}
-      directError={directError}
-      accessory={
-        <form action={logout}>
-          <button type="submit" className="pb-1.5 text-[15px] text-accent">
-            Вийти
-          </button>
-        </form>
-      }
-    />
-  );
-}
-
+/** Корінь лише веде в застосунок: UI живе під `/app`, API — під `/api`. */
 export default function Page() {
-  return (
-    <Suspense fallback={null}>
-      <VercelDashboard />
-    </Suspense>
-  );
+  redirect(STEP_PATH.dashboard);
 }

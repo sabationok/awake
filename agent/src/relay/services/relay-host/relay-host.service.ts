@@ -120,7 +120,12 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     this._webhookId = webhook?.id ?? null;
     this._env =
       webhook && room && workspaceToken && ticketKey ? { workspaceToken, ticketKey, destId: webhook.destId, workspace: webhook.workspace, room } : null;
-    const missing = [...this._secrets.missing, ...(webhook ? [] : ['вебхук relay'])];
+    // Relay потребує лише ключ воркспейсу і JWT; пароль дашборду до нього не стосується.
+    const secrets = [
+      ...(workspaceToken ? [] : ['WEBHOOXY_WORKSPACE_TOKEN']),
+      ...(ticketKey ? [] : ['MACONTROL_JWT_KEY']),
+    ];
+    const missing = [...secrets, ...(webhook ? [] : ['вебхук relay'])];
     this._state.setConnection({ stage: this._config.stage, url: this._config.webhooxyUrl, missing });
   }
 

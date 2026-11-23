@@ -12,6 +12,8 @@ const local = process.env.BUILD_TARGET === 'local';
 const config: NextConfig = {
   pageExtensions: local ? ['local.tsx', 'tsx', 'ts'] : ['vercel.tsx', 'vercel.ts', 'tsx', 'ts'],
   output: local ? 'export' : undefined,
+  // Статику роздає express.static агента: `/app/login/` → `app/login/index.html`, без підбору `.html`.
+  trailingSlash: local,
   // Статичний експорт лягає в distDir: його копіює build-agent.sh у бандл Mac-аппки.
   distDir: local ? 'out' : '.next',
   outputFileTracingRoot: join(__dirname, '..'),

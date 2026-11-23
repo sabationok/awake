@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// «Ключі аппки» на сторінці «Підключення»: токен воркспейсу webhooxy і ключ JWT, спільні для всіх вебхуків.
+/// «Ключі аппки» на сторінці «Підключення»: токен воркспейсу webhooxy, ключ JWT і пароль дашборду, спільні для всіх вебхуків.
 /// Значення ніколи не показуються: лише звідки агент їх узяв. Ключ з Envify чи process.env у файлі не потрібен.
 struct AppSecretsSection: View {
     @EnvironmentObject private var model: AwakeModel
@@ -14,11 +14,12 @@ struct AppSecretsSection: View {
         Section {
             row("Токен воркспейсу", key: Key.workspaceToken, prompt: "privateKey воркспейсу")
             row("Ключ JWT", key: Key.jwtKey, prompt: "ключ HS256")
+            row("Пароль дашборду", key: Key.dashboardPassword, prompt: "щонайменше 12 символів")
             buttons
         } header: {
             Text("Ключі аппки")
         } footer: {
-            Text("Токен воркспейсу підписує запити до webhooxy, ключ JWT — квитки viewer-ів relay (спільний з дашбордом). Пріоритет: process.env, Envify, secrets.env на цьому Mac.")
+            Text("Токен воркспейсу підписує запити до webhooxy, ключ JWT — квитки viewer-ів relay (спільний з дашбордом). Пріоритет: process.env, Envify, secrets.env на цьому Mac. Пароль дашборду — вхід на вебі через Tailscale після розлогіну.")
         }
         .animation(.default, value: editing)
     }

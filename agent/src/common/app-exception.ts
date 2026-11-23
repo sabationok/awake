@@ -1,7 +1,16 @@
 import { HttpStatus } from '@nestjs/common';
+import type { AppNextStep } from '@awake/contracts';
 
 export const API_ERROR_CODES = {
   unauthorized: 'UNAUTHORIZED',
+  /** Потрібен вхід паролем (або сполучення): відповідь несе `next`. */
+  authRequired: 'AUTH_REQUIRED',
+  /** Пароль дашборду не задано в «Ключах аппки» на Mac. */
+  passwordNotSet: 'PASSWORD_NOT_SET',
+  invalidPassword: 'INVALID_PASSWORD',
+  tooManyAttempts: 'TOO_MANY_ATTEMPTS',
+  /** Запит із чужого сайту (Origin не наш) на роут із кукі. */
+  forbiddenOrigin: 'FORBIDDEN_ORIGIN',
   untrustedNetwork: 'UNTRUSTED_NETWORK',
   invalidCommand: 'INVALID_COMMAND',
   macOffline: 'MAC_OFFLINE',
@@ -17,6 +26,8 @@ export class AppException extends Error {
     readonly innerCode: ApiErrorCode,
     message: string,
     readonly status: HttpStatus = HttpStatus.BAD_REQUEST,
+    /** Що клієнту робити далі (крок, а не сторінка). */
+    readonly next?: AppNextStep,
   ) {
     super(message);
   }

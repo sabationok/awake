@@ -14,6 +14,7 @@ export class DatabaseService implements OnApplicationShutdown {
     this.db = new DatabaseSync(config.dbPath);
     this.db.exec(`
       PRAGMA journal_mode = WAL;
+      PRAGMA foreign_keys = ON;
       CREATE TABLE IF NOT EXISTS sessions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         started_at TEXT NOT NULL,
@@ -90,6 +91,16 @@ export class DatabaseService implements OnApplicationShutdown {
         PRIMARY KEY (namespace, subject_type, subject_id, series_key, granularity, period_start)
       );
       CREATE INDEX IF NOT EXISTS metric_snapshots_period ON metric_snapshots (granularity, period_start);
+      CREATE TABLE IF NOT EXISTS web_sessions (
+        id TEXT PRIMARY KEY,
+        token_hash TEXT NOT NULL UNIQUE,
+        device_id INTEGER NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+        idle_minutes INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        last_active_at TEXT NOT NULL,
+        revoked_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS web_sessions_device ON web_sessions(device_id);
       CREATE TABLE IF NOT EXISTS settings (
         module TEXT NOT NULL,
         key TEXT NOT NULL,

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { AgentTokenGuard } from './auth/agent-token.guard';
+import { APP_FILTER } from '@nestjs/core';
+import { AuthModule } from './auth/auth.module';
 import { GlobalExceptionFilter } from './common/global-exception.filter';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
@@ -41,6 +41,7 @@ import { TlsModule } from './tls/tls.module';
     TrustedNetworksModule,
     ProximityModule,
     DevicesModule,
+    AuthModule,
     SessionsModule,
     LogsModule,
     TlsModule,
@@ -55,7 +56,6 @@ import { TlsModule } from './tls/tls.module';
     TelegramModule,
   ],
   providers: [
-    { provide: APP_GUARD, useClass: AgentTokenGuard },
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
   ],
 })

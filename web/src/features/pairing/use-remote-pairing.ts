@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { STEP_PATH } from '@/features/redirects/redirect-flows';
 import { requestPairing, takePairingCode } from './request-pairing';
 
 /** noCode — сторінку відкрили без `#p=`; approved — кукі пристрою вже стоїть, ведемо на дашборд. */
@@ -24,7 +25,7 @@ export function useRemotePairing() {
         if (!poll) return;
         if (poll.status === 'approved') {
           setStatus('approved');
-          location.replace('/');
+          location.replace(STEP_PATH.dashboard);
         } else setStatus(poll.status === 'denied' ? 'denied' : 'failed');
       },
       () => !cancelled && setStatus('failed'),

@@ -1,10 +1,6 @@
-import { Suspense } from 'react';
-import { LocalSduiPage } from '@/features/sdui/pages/local-sdui-page';
+import { RootRedirect } from '@/features/redirects/root-redirect';
 
+/** Корінь лише веде в застосунок: UI живе під `/app`, API — під `/api`. */
 export default function Page() {
-  return (
-    <Suspense fallback={null}>
-      <LocalSduiPage />
-    </Suspense>
-  );
+  return <RootRedirect />;
 }

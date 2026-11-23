@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'MaControl',
     short_name: 'MaControl',
     description: 'Стан і керування Mac',
-    start_url: '/',
+    start_url: '/app',
     display: 'standalone',
     background_color: '#f2f2f7',
     theme_color: '#f2f2f7',

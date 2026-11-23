@@ -8,7 +8,8 @@ enum AppSecretsStore {
     enum Key {
         static let workspaceToken = "WEBHOOXY_WORKSPACE_TOKEN"
         static let jwtKey = "MACONTROL_JWT_KEY"
-        static let all = [workspaceToken, jwtKey]
+        static let dashboardPassword = "MACONTROL_DASHBOARD_PASSWORD"
+        static let all = [workspaceToken, jwtKey, dashboardPassword]
     }
 
     static func isSet(_ key: String) -> Bool { !(EnvFile.read(url)[key] ?? "").isEmpty }

@@ -1,0 +1,238 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "Вхід і запити через Tailscale",
+  "output": ".archify/sequence-tailnet-login-20261123-001500/login.html",
+  "viewBox": [
+   1080,
+   690
+  ],
+  "column_fit": "spread",
+  "quality_profile": "showcase"
+ },
+ "participants": [
+  {
+   "id": "mac",
+   "type": "frontend",
+   "label": "Mac-аппка",
+   "sublabel": "Swift, QR, «Дозволити?»"
+  },
+  {
+   "id": "phone",
+   "type": "frontend",
+   "label": "Браузер",
+   "sublabel": "телефон у tailnet"
+  },
+  {
+   "id": "ts",
+   "type": "cloud",
+   "label": "tailscale serve",
+   "sublabel": "https://<mac>.ts.net"
+  },
+  {
+   "id": "guard",
+   "type": "security",
+   "label": "Guard Nest",
+   "sublabel": "tailnet-порт 47802"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "Роути Nest",
+   "sublabel": "агент MaControl"
+  },
+  {
+   "id": "db",
+   "type": "database",
+   "label": "SQLite",
+   "sublabel": "devices, web_sessions"
+  }
+ ],
+ "segments": [
+  {
+   "from": 150,
+   "to": 345,
+   "label": "Вхід паролем"
+  },
+  {
+   "from": 355,
+   "to": 491,
+   "label": "Звичайний запит"
+  },
+  {
+   "from": 501,
+   "to": 581,
+   "label": "Бездіяльність"
+  }
+ ],
+ "messages": [
+  {
+   "id": "session-check",
+   "from": "phone",
+   "to": "guard",
+   "y": 165,
+   "label": "GET /api/auth/session · Cookie: mc_device",
+   "variant": "default",
+   "note": "shell gate перед рендером"
+  },
+  {
+   "id": "session-miss",
+   "from": "guard",
+   "to": "db",
+   "y": 193,
+   "label": "sha256(mc_session) → немає",
+   "variant": "default"
+  },
+  {
+   "id": "need-login",
+   "from": "guard",
+   "to": "phone",
+   "y": 221,
+   "label": "401 next: auth/login → /login",
+   "variant": "return"
+  },
+  {
+   "id": "login",
+   "from": "phone",
+   "to": "guard",
+   "y": 249,
+   "label": "POST /api/auth/login {password, idleMinutes}",
+   "variant": "emphasis"
+  },
+  {
+   "id": "web-device",
+   "from": "guard",
+   "to": "api",
+   "y": 277,
+   "label": "principal web-device (лише mc_device)",
+   "variant": "security"
+  },
+  {
+   "id": "scrypt",
+   "from": "api",
+   "to": "db",
+   "y": 305,
+   "label": "scrypt ✓, ліміт 5/15 хв, INSERT session",
+   "variant": "default"
+  },
+  {
+   "id": "set-session",
+   "from": "api",
+   "to": "phone",
+   "y": 333,
+   "label": "Set-Cookie: mc_session",
+   "variant": "return"
+  },
+  {
+   "id": "call",
+   "from": "phone",
+   "to": "ts",
+   "y": 367,
+   "label": "POST /api/… · Cookie: mc_device; mc_session",
+   "variant": "emphasis"
+  },
+  {
+   "id": "ts-login-2",
+   "from": "ts",
+   "to": "guard",
+   "y": 395,
+   "label": "+ Tailscale-User-Login",
+   "variant": "security"
+  },
+  {
+   "id": "touch",
+   "from": "guard",
+   "to": "db",
+   "y": 423,
+   "label": "сесія жива? last_active_at = now",
+   "variant": "default"
+  },
+  {
+   "id": "principal-web",
+   "from": "guard",
+   "to": "api",
+   "y": 451,
+   "label": "principal web",
+   "variant": "security"
+  },
+  {
+   "id": "ok",
+   "from": "api",
+   "to": "phone",
+   "y": 479,
+   "label": "200 AppResponse",
+   "variant": "return"
+  },
+  {
+   "id": "logout",
+   "from": "phone",
+   "to": "guard",
+   "y": 513,
+   "label": "POST /api/auth/logout (тиша > idleMinutes)",
+   "variant": "dashed"
+  },
+  {
+   "id": "revoke",
+   "from": "guard",
+   "to": "db",
+   "y": 541,
+   "label": "revoked_at = now",
+   "variant": "dashed"
+  },
+  {
+   "id": "clear",
+   "from": "api",
+   "to": "phone",
+   "y": 569,
+   "label": "Set-Cookie: mc_session=; Max-Age=0",
+   "variant": "return"
+  }
+ ],
+ "activations": [
+  {
+   "participant": "guard",
+   "from": 159,
+   "to": 283,
+   "type": "security"
+  },
+  {
+   "participant": "api",
+   "from": 271,
+   "to": 339,
+   "type": "backend"
+  },
+  {
+   "participant": "guard",
+   "from": 389,
+   "to": 457,
+   "type": "security"
+  },
+  {
+   "participant": "api",
+   "from": 445,
+   "to": 485,
+   "type": "backend"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "orange",
+   "title": "Що вирішує guard",
+   "items": [
+    "не власник tailnet → 403",
+    "лише mc_device → пейринг і auth/login",
+    "mc_device + жива сесія → усі роути"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Що відліплюється",
+   "items": [
+    "logout: mc_session гасне, mc_device лишається",
+    "чужі кукі й хедери клієнта до Nest не доходять",
+    "Tailscale-* від клієнта вирізає serve"
+   ]
+  }
+ ]
+}

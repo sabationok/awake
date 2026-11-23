@@ -5,7 +5,7 @@ import { PairingService } from '../../../devices/services/pairing.service';
 import { deviceViewerSub } from '../../helpers/device-viewer-sub';
 import { signViewerTicket } from '../../helpers/sign-viewer-ticket';
 import type { RelayEnv } from '../../types/relay-env.types';
-import { readCookie } from './helpers/read-cookie';
+import { readCookie } from '../../../common/read-cookie';
 import type { RelayHttpRequest, RelayHttpResponse } from './types/relay-request.types';
 
 /** Браузери не тримають кукі довше 400 днів; пристрій живе, доки його не відкличуть на Mac. */
@@ -49,10 +49,10 @@ export class RelayRequestService {
 
   /** Пристрій чекає «Дозволити». Токен іде лише в HttpOnly-кукі: JS сторінки його не бачить. */
   private _poll(requestId: string): RelayHttpResponse {
-    const { status, token } = this._pairing.poll(requestId);
-    const body = ok<RelayPairPoll>({ status });
-    if (status !== 'approved' || !token) return body;
-    return { ...body, cookies: [{ name: RELAY_DEVICE_COOKIE, value: token, maxAge: DEVICE_COOKIE_MAX_AGE_S, httpOnly: true, sameSite: 'lax' }] };
+    const result = this._pairing.poll(requestId);
+    const body = ok<RelayPairPoll>({ status: result.status });
+    if (result.status !== 'approved') return body;
+    return { ...body, cookies: [{ name: RELAY_DEVICE_COOKIE, value: result.token, maxAge: DEVICE_COOKIE_MAX_AGE_S, httpOnly: true, sameSite: 'lax' }] };
   }
 
   /** Кукі пристрою → свіжий квиток viewer-а (≤ 300 с, одноразовий) з `sub = device:<id>`. */

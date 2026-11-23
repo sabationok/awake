@@ -172,7 +172,7 @@
 
 Middleware пускає `/pair` і `/api/mac/*` без сесії, а решту — із сесією або з кукі `mc_device` (лише наявність: перевіряє її Мак на connect). Upstash пристрою без пароля не видається.
 
-**webhooxy: `relay:request` (контракт хоста фінальний; [webhooxy#12](https://github.com/sabationok/webhooxy/pull/12) поверх #9 → dev, не змерджений; порядок merge #5 → #9 → #12 після «так» Віталія).** Поки PR не змерджений, ендпоінта на dev немає.
+**webhooxy: `relay:request` (контракт хоста фінальний; #5 → #9 → [webhooxy#12](https://github.com/sabationok/webhooxy/pull/12) змерджені в dev, #12 → `f59fbcc`; режими кук і bootstrap — [webhooxy#14](https://github.com/sabationok/webhooxy/pull/14) → dev, не змерджений).**
 
 - **Ендпоінт:** `ALL /api/relay/rooms/:roomId/request[/<path>]?mt_workspace=<slug>`. Метод і суфікс `/<path>` потрапляють у `data.method` і `data.path`; без суфікса `path` = `/`.
 - **Ключ:** `X-Relay-Key: rq_<kid>.<secret>`, credential типу `relay-request`.
@@ -191,13 +191,23 @@ Middleware пускає `/pair` і `/api/mac/*` без сесії, а решту
   - `headers` приходять як є, `cookie` теж. webhooxy вирізає hop-by-hop, `host`, `content-length`, `x-relay-key` і `x-webhooxy-*`, а `x-forwarded-for` і `x-forwarded-proto` ставить сам.
 - **Ack хоста:** HTTP-відповідь лежить усередині `data`:
   ```ts
-  { data: { statusCode: number /* 200..599 */; headers?: Record<string, string>; body?: unknown;
+  { data: { statusCode: number /* 200..599 */; headers?: Record<string, string | string[]>; body?: unknown;
             bodyEncoding?: 'json' | 'text' | 'base64';   // за замовчуванням 'json'
             cookies?: Array<{ name: string; value: string; maxAge?: number; path?: string;
                               httpOnly?: boolean; sameSite?: 'lax' | 'strict' }> },
     meta?: { sensitive?: RelaySensitiveRule[] } }   // лише для частини відповіді
   ```
-  - Кожна кукі стає окремим `Set-Cookie` з такими атрибутами:
+  - **Кукі: два режими, рішення 2026-11-22 (webhooxy#14, ще не змерджений).**
+    - `headers['set-cookie']` є → хост має свій парсер. webhooxy пересилає рядки як є, кожен окремим `Set-Cookie`, і ніколи не склеює їх через кому. Один рядок замість масиву вважається однією кукою і по комах не ділиться, тож кома в `Expires` проходить без змін. У режимі `'auto'` `cookies[]` при цьому ігнорується і не перевіряється: `domain` у ньому не дає `BAD_ACK`.
+    - `set-cookie` немає → webhooxy будує `Set-Cookie` з `cookies[]` за правилами нижче.
+    - Режим — налаштування relay у DEST (`config.transports.ws.relay.cookieMode`, задається і через destination bootstrap): `'auto'` (за замовчуванням, як описано вище: є обидва — беруться лише `headers`), `'set-cookie'` (лише готові рядки з `headers`), `'cookies'` (лише `cookies[]`).
+    - Явний режим і непередбачене джерело → 502 `BAD_ACK` (рішення 2026-11-22, webhooxy `af92fed`). Мовчки не ігнорується.
+      - `'set-cookie'`: `cookies` непорожній масив або не масив → `BAD_ACK`; відсутній або `[]` — нормально.
+      - `'cookies'`: будь-який ключ `set-cookie` у `headers` (без урахування регістру), навіть `[]` чи один рядок → `BAD_ACK`.
+    - TODO (не зараз, позначено в `parse-relay-ack.ts`): перевіряти готові рядки тими самими правилами (без `Domain` і `SameSite=None`, `Secure` додається). Поки за їхній вміст відповідає хост; перевіряється лише CR/LF/NUL.
+    - Зберігання: готові рядки хоста лягають у `requests.response.headers['set-cookie']` і завжди захищені типовою дією workspace. У режимі `cookies` там нічого не зберігається.
+    - Агент MaControl відповідає першим режимом: Nest ставить кукі через `res.cookie()`, готові `Set-Cookie` ідуть у `headers`.
+  - Режим `cookies[]`: кожна кукі стає окремим `Set-Cookie` з такими атрибутами:
     - `Secure` завжди;
     - `HttpOnly`, якщо не `httpOnly: false`;
     - за замовчуванням `SameSite=Lax` і `Path=/`.
@@ -205,8 +215,9 @@ Middleware пускає `/pair` і `/api/mac/*` без сесії, а решту
     - `domain`;
     - `sameSite: 'none'`;
     - `;`, `,`, CR або LF в імені, значенні чи `path`;
-    - CR або LF у значенні заголовка.
-  - З `headers` webhooxy відкидає `set-cookie`, hop-by-hop, `content-length` і `x-webhooxy-*`.
+    - CR, LF або NUL у значенні будь-якого заголовка, готові рядки `set-cookie` теж.
+  - Масив значень дозволений для будь-якого заголовка, не лише для `set-cookie`.
+  - З `headers` webhooxy відкидає hop-by-hop, `content-length` і `x-webhooxy-*`. `set-cookie` більше не відкидається (див. режими кук вище).
   - Без `content-type` webhooxy ставить типовий для `bodyEncoding`.
   - Кожна відповідь має `x-webhooxy-request-id`.
   - Стримінгу і chunked немає.
@@ -242,6 +253,12 @@ Middleware пускає `/pair` і `/api/mac/*` без сесії, а решту
     - `relay:limits { data }`;
     - DEST `config.transports.ws.relay`;
     - ack `meta.sensitive` (лише для відповіді).
+  - **Основне джерело — destination bootstrap, рішення 2026-11-22 (webhooxy#14, ще не змерджений; агент MaControl ще не викликає bootstrap).** Хост передає мапу чутливих шляхів (заголовки, query, кукі, шляхи в тілі), які не логуються і не зберігаються відкритими, один раз у `POST /destinations/bootstrap`. Тоді правила діють і на записи, що з'явились до handshake, і після перезапуску хоста, а handshake і ack лише доповнюють їх.
+    - Тіло: `{ relay?: { sensitive?: RelaySensitiveRule[]; cookieMode?: 'auto' | 'set-cookie' | 'cookies' } }`, пишеться в DEST `config.transports.ws.relay`. SDK: `bootstrapDestination({ ..., relay })`.
+    - Необов'язкове: порожнє тіло або `relay: {}` нічого не змінює. Кожне передане поле замінює своє значення; інші ліміти і `roomId` лишаються. DEST без `ws` отримує `ws: { relay }`. Живі кімнати перечитують налаштування через подію `updated`.
+    - Ліміти через bootstrap не приймаються: поля лімітів мовчки вирізаються (whitelist), не 400.
+    - Невалідний `cookieMode`, `action` чи правило → 400, нічого не створюється і credentials не повертаються. Порядок: 401 (ключ) → 400 (query, тіло) → find-or-create WSPC/DEST.
+    - Пізніший admin-update DEST з `ws` замінює весь об'єкт `ws`, ці поля теж (PUT-семантика).
   - Невалідне значення дає `connect_error BAD_REQUEST`, а для `relay:limits` — ack 400.
   - `name` для `headers` і `cookies` без урахування регістру. Для `query` це точне ім'я параметра, і крапка в ньому — частина імені.
   - `path` записується через крапку в JSON-тілі, масиви — через `*` (`items.*.token`). Діє на тіла запиту й відповіді.

@@ -1,10 +1,16 @@
 /**
- * Підписана кука входу в дашборд: `<expiresAt>.<hmac>`. Web Crypto, тож працює і в middleware.
- * Секрет — SESSION_SECRET, пароль — DASHBOARD_PASSWORD (обидва в env Vercel).
+ * Підписана кука входу в дашборд: `<lastActiveSec>.<idleMinutes>.<hmac>`.
+ * Сесія ковзна: `lastActiveSec` оновлює middleware і дія активності, тож після `idleMinutes` без дій вхід гасне.
+ * Web Crypto, тож працює і в middleware. Секрет — SESSION_SECRET, пароль — DASHBOARD_PASSWORD (обидва в env Vercel).
  * Зміна SESSION_SECRET відкликає всі видані сесії.
  */
 export const SESSION_COOKIE = 'awake_session';
+/** Не секрет: клієнт читає її, щоб знати, коли розлогінити вкладку після бездіяльності. */
+export const IDLE_COOKIE = 'awake_idle';
 export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+export const IDLE_OPTIONS_MINUTES = [2, 5, 10] as const;
+export type IdleMinutes = (typeof IDLE_OPTIONS_MINUTES)[number];
+export const DEFAULT_IDLE_MINUTES: IdleMinutes = 5;
 
 const encoder = new TextEncoder();
 
@@ -25,16 +31,35 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export async function createSessionValue(): Promise<string> {
-  const expiresAt = String(Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS);
-  return `${expiresAt}.${await hmac(expiresAt)}`;
+export function parseIdleMinutes(value: unknown): IdleMinutes {
+  const n = Number(value);
+  return (IDLE_OPTIONS_MINUTES as readonly number[]).includes(n) ? (n as IdleMinutes) : DEFAULT_IDLE_MINUTES;
+}
+
+/** Нова сесія або продовження: позначка активності «зараз» і обрана бездіяльність. */
+export async function createSessionValue(idleMinutes: IdleMinutes = DEFAULT_IDLE_MINUTES): Promise<string> {
+  const payload = `${Math.floor(Date.now() / 1000)}.${idleMinutes}`;
+  return `${payload}.${await hmac(payload)}`;
+}
+
+/** Та сама сесія з оновленою активністю; null — сесія недійсна або вже прострочена. */
+export async function touchSessionValue(value: string | undefined): Promise<string | null> {
+  const parsed = await parseSession(value);
+  return parsed ? createSessionValue(parsed.idleMinutes) : null;
+}
+
+async function parseSession(value: string | undefined): Promise<{ idleMinutes: IdleMinutes } | null> {
+  if (!value) return null;
+  const [lastActive, idle, signature] = value.split('.');
+  if (!lastActive || !idle || !signature) return null;
+  if (!safeEqual(signature, await hmac(`${lastActive}.${idle}`))) return null;
+  const idleMinutes = parseIdleMinutes(idle);
+  const idleExpired = Date.now() - Number(lastActive) * 1000 > idleMinutes * 60 * 1000;
+  return idleExpired ? null : { idleMinutes };
 }
 
 export async function isValidSession(value: string | undefined): Promise<boolean> {
-  if (!value) return false;
-  const [expiresAt, signature] = value.split('.');
-  if (!expiresAt || !signature || Number(expiresAt) * 1000 < Date.now()) return false;
-  return safeEqual(signature, await hmac(expiresAt));
+  return (await parseSession(value)) !== null;
 }
 
 /** Короткий пароль не приймаємо зовсім, щоб перебір був безнадійним. */

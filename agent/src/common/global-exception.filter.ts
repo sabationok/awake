@@ -12,7 +12,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (host.getType() !== 'http') throw error;
     const res = host.switchToHttp().getResponse<Response>();
     if (error instanceof AppException) {
-      res.status(error.status).json(AppResponse.fail(error.innerCode, error.message));
+      res.status(error.status).json(AppResponse.fail(error.innerCode, error.message, error.next));
       return;
     }
     if (error instanceof HttpException) {

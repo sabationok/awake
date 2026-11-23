@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "8aee9dc7-71f3-4d6d-b0a5-f4cb1647b683",
+  "status": "current",
+  "command": "deliver",
+  "type": "sequence",
+  "input": "/Users/vitalii/projects/awake/.archify/sequence-tailnet-login-20261123-001500/pairing.json",
+  "output": "/Users/vitalii/projects/awake/.archify/sequence-tailnet-login-20261123-001500/pairing.html",
+  "specification": {
+    "sha256": "ba3d3040f507c32a43ff90d92e91176f4c974b05f81445b1f6e02a507f494ac3",
+    "bytes": 4086
+  },
+  "artifact": {
+    "sha256": "cf7b605cc6ed7e9378aa9021138f62cb791ef3ee6e44ec9490c87ba1290c2f11",
+    "bytes": 758953
+  }
+}

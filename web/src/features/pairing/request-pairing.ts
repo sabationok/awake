@@ -25,9 +25,11 @@ export async function requestPairing(
   return null;
 }
 
-/** Код одноразовий: читаємо його з `#p=` і одразу прибираємо з адреси, щоб не лишився в історії. */
+/** Код одноразовий: беремо з `?code=` (через `/redirects`), для старих QR ще з `#p=`; і прибираємо з адреси. */
 export function takePairingCode(): string | null {
-  const code = new URLSearchParams(location.hash.slice(1)).get('p');
+  const fromQuery = new URLSearchParams(location.search).get('code');
+  const fromHash = new URLSearchParams(location.hash.slice(1)).get('p');
+  const code = fromQuery ?? fromHash;
   if (code) history.replaceState(null, '', location.pathname);
   return code;
 }

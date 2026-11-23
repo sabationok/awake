@@ -4,6 +4,8 @@ export const APP_SECRET_KEYS = {
   workspaceToken: ['WEBHOOXY_WORKSPACE_TOKEN'],
   /** Ключ JWT аппки (HS256): квитки viewer-ів relay тощо. Спільний з дашбордом. */
   jwtKey: ['MACONTROL_JWT_KEY', 'WEBHOOXY_JWT_TICKET_KEY'],
+  /** Пароль входу на дашборд (через Tailscale), щонайменше 12 символів. Перевіряє лише агент. */
+  dashboardPassword: ['MACONTROL_DASHBOARD_PASSWORD'],
 } as const;
 
 export type AppSecretField = keyof typeof APP_SECRET_KEYS;
