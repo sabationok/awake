@@ -5,8 +5,8 @@ set -uo pipefail
 pkill -x MaControl 2>/dev/null
 pkill -x Awake 2>/dev/null
 pkill -f '(MaControl|Awake).app/Contents/Resources/awake' 2>/dev/null
-# Сон назад і правила sudoers (mc-* і старі awake*) — однією дією через системний діалог адміністратора, без sudo в терміналі.
-RULES="/etc/sudoers.d/mc-sleepControl /etc/sudoers.d/mc-thermalRead /etc/sudoers.d/awake /etc/sudoers.d/awake-sleepControl /etc/sudoers.d/awake-thermalRead"
+# Сон назад і правила sudoers mc-* — однією дією через системний діалог адміністратора, без sudo в терміналі.
+RULES="/etc/sudoers.d/mc-sleepControl /etc/sudoers.d/mc-thermalRead"
 /usr/bin/osascript -e "do shell script \"/usr/bin/pmset -a disablesleep 0; /bin/rm -f $RULES\" with prompt \"MaControl видаляє свої правила sudoers.\" with administrator privileges" ||
   echo "Скасовано: сон і правила sudoers не змінено."
 

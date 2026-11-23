@@ -16,8 +16,8 @@
 
 - `scripts/install.sh`: прибрати крок sudoers і `sudo`; правила ставить аппка в «Дозволах».
 - `scripts/uninstall.sh`: прибирати правила через `osascript … with administrator privileges` (системний діалог), не `sudo`.
-- `PermissionService.swift`: імена `mc-<rule>`, `.mc-<rule>.tmp`, `mc-sudoers-*`; при старті, якщо є `awake-*` або
-  `awake`, одна дія адміністратора замінює їх на `mc-*`.
+- `PermissionService.swift`: імена `mc-<rule>`, `.mc-<rule>.tmp`, `mc-sudoers-*`; старі `awake-*` / `awake` не
+  переносяться: видаляються вручну, дозволи видаються заново під `mc-*`.
 - Абзац про два рівні дозволів — у `PermissionSection` footer (вже близько) і `docs/SPEC.md`.
 
 ## Етап 3. Конфіг і файли `~/.config/macontrol`

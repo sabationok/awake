@@ -22,23 +22,6 @@ enum PermissionService {
         "\(directory)/.\(prefix)\(permission.rawValue).tmp"
     }
 
-    /// Старі імена: спільне правило `awake` (до 1.4) і `awake-<дозвіл>`. Прибираються при кожній зміні правил.
-    private static var legacyPaths: [String] {
-        ["\(directory)/awake"] + AppPermission.allCases.map { "\(directory)/awake-\($0.rawValue)" }
-    }
-
-    /// Є правила під старими іменами. /etc/sudoers.d читається всім, вміст файлів — ні, тож досить імені.
-    static var hasLegacyRules: Bool {
-        legacyPaths.contains { FileManager.default.fileExists(atPath: $0) }
-    }
-
-    /// Один раз переносить видані дозволи на імена `mc-*`: та сама дія адміністратора, що й видача.
-    /// Набір дозволів не змінюється; до переносу старі правила працюють далі.
-    @MainActor
-    static func migrateLegacyRules() -> Outcome {
-        apply(granted(), prompt: "MaControl перейменовує свої правила sudoers на mc-*. Дозволи не змінюються.")
-    }
-
     /// Команди правила з повними шляхами, як їх викликає аппка.
     private static func sudoCommands(_ permission: AppPermission) -> [String] {
         switch permission {
@@ -47,7 +30,7 @@ enum PermissionService {
         }
     }
 
-    /// Видано, якщо в sudo є правило NOPASSWD на всі команди дозволу (наше окреме чи старе спільне).
+    /// Видано, якщо в sudo є правило NOPASSWD на всі команди дозволу.
     /// `sudo -n -l <команда>` тут не годиться: для адміна з `(ALL) ALL` і свіжим паролем він «дозволяє» будь-що.
     static func isGranted(_ permission: AppPermission) -> Bool {
         isGranted(permission, in: passwordlessCommands())
@@ -120,7 +103,6 @@ enum PermissionService {
             steps.append("/usr/sbin/visudo -cf \(staged) >/dev/null")
             steps.append("/bin/mv -f \(staged) \(path(permission))")
         }
-        steps.append("/bin/rm -f \(legacyPaths.joined(separator: " "))")
 
         let command = steps.joined(separator: " && ") + " || { /bin/rm -f \(directory)/.\(prefix)*.tmp; exit 1; }"
         return runAsAdmin(command, prompt: prompt)

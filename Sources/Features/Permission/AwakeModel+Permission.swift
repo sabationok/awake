@@ -11,13 +11,6 @@ extension AwakeModel {
         report(PermissionService.revoke(permission), success: "Дозвіл «\(permission.title)» відкликано")
     }
 
-    /// Правила sudoers під старими іменами `awake*` → `mc-*`, один системний діалог. Лише з кнопки в «Дозволах»:
-    /// при запуску macOS показала б загальний діалог пароля без контексту.
-    func renameLegacyPermissionRules() {
-        guard PermissionService.hasLegacyRules else { return }
-        report(PermissionService.migrateLegacyRules(), success: "Правила sudoers перейменовано на mc-*")
-    }
-
     private func report(_ outcome: PermissionService.Outcome, success: String) {
         switch outcome {
         case .done: append(success)
