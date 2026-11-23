@@ -12,7 +12,7 @@ Web UI це не підходить: запит чекає відповідь о
 Приклад: Web UI просить усю статистику одним запитом:
 
 ```
-GET <webhooxyBaseUrl>/proxy/api/stats
+GET <webhooxyBaseUrl>/api/proxy/api/stats
 ```
 
 webhooxy пересилає його в destination у режимі `http` або `ws`, Mac відповідає, webhooxy повертає відповідь як є.
@@ -46,3 +46,15 @@ webhooxy пересилає його в destination у режимі `http` аб�
 
 - Формат помилок `/proxy`: HTTP-статус + тіло `{ statusCode, message, data: null }`, як у конверті relay?
 - Чи потрібен streaming відповіді (SSE з агента) через `/proxy` у режимі `ws`, чи лише повна відповідь.
+
+## Погоджено 2026-11-23
+
+webhooxy робить одним PR від `dev` після #14. URL `<base>/api/proxy/*`; ack у `ws` — поточний контракт relay
+`{ data: { statusCode, headers, body, bodyEncoding, cookies } }`; помилки — REST-форма `{ statusCode, message, innerCode }`.
+
+- `X-Relay-Auth`: JWT HS256 на privateKey workspace, `type: 'proxy'`, `sub` = workspace, `aud` = destination, TTL 24 год,
+  gateway міняє раз на 12 год. `X-Relay-Key` прибирається.
+- `X-Proxy-Sign`: підпис path+query після `/proxy`, методу, часу і sha256 тіла; хост прив'язаний ключем.
+- `ws` без room → 409; host не підключений → 503 `HOST_OFFLINE`.
+- `Set-Cookie` у `http` — як є; перевірка з #14 лише для relay з браузера.
+- SSE — потім. Rate limit — по токену (`aud`) + destination.
