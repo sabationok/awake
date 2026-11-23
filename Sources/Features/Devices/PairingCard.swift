@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Картка «Сполучити пристрій»: вибір шляху (локально, Tailscale, дистанційно), QR з таймером і посилання з копіюванням.
+/// Картка «Сполучити пристрій»: селектор шляху (локально, Tailscale, дистанційно; недоступні сірі), QR з таймером і посилання з копіюванням.
 /// Коди окремі для кожного шляху: QR одного шляху не діє через інший.
 struct PairingCard: View {
     @EnvironmentObject private var model: AwakeModel
@@ -9,15 +9,15 @@ struct PairingCard: View {
     /// nil — вибору ще не було: перший шлях, у якого є посилання.
     @State private var chosen: AgentDevices.Mode?
 
+    /// Вибраний шлях, поки в нього є посилання; інакше перший доступний. Недоступний не вибирається, як у
+    /// «Віддаленому доступі»: його видно сірим, а якщо доступного немає взагалі — причину першого.
     private var mode: AgentDevices.Mode {
         let modes = pairings.modes
-        if let chosen, modes.contains(chosen) { return chosen }
-        return modes.first { pairings[$0].url != nil } ?? modes.first ?? .local
+        if let chosen, modes.contains(chosen), isAvailable(chosen) { return chosen }
+        return modes.first(where: isAvailable) ?? modes.first ?? .local
     }
 
-    private var selection: Binding<AgentDevices.Mode> {
-        Binding(get: { mode }, set: { chosen = $0 })
-    }
+    private func isAvailable(_ mode: AgentDevices.Mode) -> Bool { pairings[mode].url != nil }
 
     /// Таймер живе на всій картці, а не в QR: так код оновлюється і тоді, коли видно інший шлях. Найближчий з усіх.
     private var expiry: Date? { pairings.modes.compactMap { pairings[$0].expiresAt }.min() }
@@ -26,11 +26,19 @@ struct PairingCard: View {
         let pairing = pairings[mode]
         Section {
             Group {
-                Picker("Шлях", selection: selection) {
-                    ForEach(pairings.modes) { Text($0.title).tag($0) }
+                // Пункти Picker-меню в macOS ігнорують .disabled, а кнопки в Menu — ні (як у select SDUI).
+                LabeledContent("Шлях") {
+                    Menu(mode.title) {
+                        ForEach(pairings.modes) { option in
+                            Button(isAvailable(option) ? option.title : "\(option.title) — недоступно") {
+                                if isAvailable(option) { chosen = option }
+                            }
+                            .disabled(!isAvailable(option))
+                        }
+                    }
+                    .menuStyle(.button)
+                    .fixedSize()
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
 
                 Text(mode.hint)
                     .foregroundStyle(.secondary)

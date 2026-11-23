@@ -54,8 +54,8 @@ struct AgentDevices: Decodable, Equatable {
             }
         }
 
-        /// Вкладки картки: дистанційної немає, поки webhooxy вимкнено в агенті.
-        var modes: [Mode] { Mode.allCases.filter { $0 != .remote || remote.reason != "disabled" } }
+        /// Пункти селектора: усі шляхи; без посилання — сірі (дистанційний сірий, поки webhooxy вимкнено в агенті).
+        var modes: [Mode] { Mode.allCases }
 
         private enum CodingKeys: String, CodingKey { case local, tailnet, remote }
 
