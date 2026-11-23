@@ -5,6 +5,11 @@ struct AwakeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var model = AwakeModel.shared
 
+    init() {
+        // До першого читання UserDefaults: AwakeModel створюється ліниво, вже після цього.
+        LegacyDefaults.migrate()
+    }
+
     var body: some Scene {
         Window("MaControl", id: WindowID.main) {
             MainView().environmentObject(model).environmentObject(delegate.updates)

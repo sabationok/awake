@@ -4,10 +4,6 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>uk</string>
-	<key>CFBundleLocalizations</key>
-	<array>
-		<string>uk</string>
-	</array>
 	<key>CFBundleDisplayName</key>
 	<string>MaControl</string>
 	<key>CFBundleExecutable</key>
@@ -15,7 +11,11 @@
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>dev.vitalii.awake</string>
+	<string>dev.vitalii.macontrol</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>uk</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>MaControl</string>
 	<key>CFBundlePackageType</key>
@@ -24,16 +24,16 @@
 	<string>1.3</string>
 	<key>CFBundleVersion</key>
 	<string>4</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Awake стежить за сигналом вашого iPhone чи Apple Watch і блокує Mac, коли ви відходите.</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
 	<key>NSLocationUsageDescription</key>
 	<string>macOS показує назву мережі Wi-Fi лише з дозволом геолокації. За нею Awake знає, чи Mac у довіреній мережі. Координати не зберігаються.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>macOS показує назву мережі Wi-Fi лише з дозволом геолокації. За нею Awake знає, чи Mac у довіреній мережі. Координати не зберігаються.</string>
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Awake стежить за сигналом вашого iPhone чи Apple Watch і блокує Mac, коли ви відходите.</string>
-	<key>LSMinimumSystemVersion</key>
-	<string>14.0</string>
-	<key>NSHighResolutionCapable</key>
-	<true/>
 	<key>SUAutomaticallyUpdate</key>
 	<true/>
 	<key>SUEnableAutomaticChecks</key>
