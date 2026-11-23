@@ -2,6 +2,8 @@
 
 Статус: шлях Tailscale реалізовано 2026-11-23 (не закомічено, live-перевірки з телефона ще не було); рішення 2026-11-22/23. Зараз робимо лише шлях **Tailscale**. Vercel і relay (webhooxy) відкладено, їхні рішення — у розділі «Потім: relay через Vercel».
 
+Канали зв'язку, адреса підключення `<networkType>:<channel>:<webUiHost>`, імена MaControl у системі Mac, дозволи і Web UI: [connection-channels-spec.md](connection-channels-spec.md).
+
 Діаграми: `.archify/sequence-tailnet-login-20261123-001500/pairing.html`, `login.html`.
 
 ## Мета
