@@ -58,3 +58,15 @@ webhooxy робить одним PR від `dev` після #14. URL `<base>/api
 - `ws` без room → 409; host не підключений → 503 `HOST_OFFLINE`.
 - `Set-Cookie` у `http` — як є; перевірка з #14 лише для relay з браузера.
 - SSE — потім. Rate limit — по токену (`aud`) + destination.
+
+## Реалізовано: webhooxy PR #16 (draft, поверх #14, не змерджено)
+
+- `ALL <base>/api/proxy/*`; режим `config.transports.proxy.mode`; без режиму → 403 `PROXY_DISABLED`; `ws` без room чи `http`
+  без url → 409 `PROXY_NOT_CONFIGURED`; немає host-а → 503; повільно → 504.
+- `X-Relay-Auth`: HS256, `type: 'proxy'`, `sub`/`aud` — slug-и, `exp` ≤ 24 год (+5 хв). SDK `signProxyToken(...)`.
+- `X-Relay-Key` і `/api/relay/rooms/:roomId/request` прибрано.
+- Ліміти, `sensitive`, `cookieMode` для обох режимів — з наявних `transports.ws.relay` (окремого `proxy.limits` немає).
+- `relay:request` `meta.caller` тепер `{ workspace, destination }` (slug-и), раніше `{ credentialId }`.
+- `http`: відповідь без `content-encoding` / `content-length` (fetch розпаковує gzip/br).
+- Рядки `requests` з `type: 'proxy'`; `x-relay-auth` ніколи не зберігається відкритим.
+- Відкрито: тіло JSON у `ws` приходить розібраним, тож `sha256(body)` у `X-Proxy-Sign` не збігається (варіанти a/b/c).
