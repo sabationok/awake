@@ -69,4 +69,7 @@ webhooxy робить одним PR від `dev` після #14. URL `<base>/api
 - `relay:request` `meta.caller` тепер `{ workspace, destination }` (slug-и), раніше `{ credentialId }`.
 - `http`: відповідь без `content-encoding` / `content-length` (fetch розпаковує gzip/br).
 - Рядки `requests` з `type: 'proxy'`; `x-relay-auth` ніколи не зберігається відкритим.
+- f7a49fe: `http` → 400 `BAD_PATH`, якщо шлях після `/proxy` виходить за базовий шлях destination (`..`, `%2e%2e`,
+  `/base` → `/basement`). Токен `type: 'proxy'` приймається лише на `/api/proxy`: handshake host-а relay, вебхуки й
+  bootstrap його відкидають. Агент MaControl для handshake host-а лишається на токені воркспейсу, не на proxy-токені.
 - Відкрито: тіло JSON у `ws` приходить розібраним, тож `sha256(body)` у `X-Proxy-Sign` не збігається (варіанти a/b/c).
