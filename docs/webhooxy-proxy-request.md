@@ -54,7 +54,7 @@ webhooxy робить одним PR від `dev` після #14. URL `<base>/api
 
 - `X-Relay-Auth`: JWT HS256 на privateKey workspace, `type: 'proxy'`, `sub` = workspace, `aud` = destination, TTL 24 год,
   gateway міняє раз на 12 год. `X-Relay-Key` прибирається.
-- `X-Proxy-Sign`: підпис path+query після `/proxy`, методу, часу і sha256 тіла; хост прив'язаний ключем.
+- `X-Proxy-Sign`: спершу погодили path+query після `/proxy` + метод, час і sha256 тіла; замінено рішенням нижче (dd3d6a8).
 - `ws` без room → 409; host не підключений → 503 `HOST_OFFLINE`.
 - `Set-Cookie` у `http` — як є; перевірка з #14 лише для relay з браузера.
 - SSE — потім. Rate limit — по токену (`aud`) + destination.
@@ -72,4 +72,6 @@ webhooxy робить одним PR від `dev` після #14. URL `<base>/api
 - f7a49fe: `http` → 400 `BAD_PATH`, якщо шлях після `/proxy` виходить за базовий шлях destination (`..`, `%2e%2e`,
   `/base` → `/basement`). Токен `type: 'proxy'` приймається лише на `/api/proxy`: handshake host-а relay, вебхуки й
   bootstrap його відкидають. Агент MaControl для handshake host-а лишається на токені воркспейсу, не на proxy-токені.
-- Відкрито: тіло JSON у `ws` приходить розібраним, тож `sha256(body)` у `X-Proxy-Sign` не збігається (варіанти a/b/c).
+- dd3d6a8: `X-Proxy-Sign` = hex HMAC-SHA256 лише від URL (path+query з префіксом `/api/proxy`), без тіла і часу. webhooxy
+  передає цей рядок хосту в `x-webhooxy-proxy-url`; агент перевіряє `verifyProxySign(secret, x-webhooxy-proxy-url, x-proxy-sign)`.
+  Питання про тіла JSON у `ws` знято: тіло в підпис не входить.

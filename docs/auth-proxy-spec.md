@@ -124,8 +124,9 @@ SQLite, таблиця `web_sessions`:
 - Інтерцептори проксі `{ match, onRequest?, onResponse? }` у route builder замість Vercel middleware. Логіки сесій у Next немає.
 - **`X-Proxy-Sign`.** Щоб агент знав, що стукає саме наш сервер Vercel, а не будь-хто, хто знає `baseUrl`:
   - Mac генерує ключ підпису і кладе в Upstash поряд із `baseUrl`; Vercel читає його звідти.
-  - Next підписує повний URL із query, метод, час і тіло: `HMAC-SHA256(key, method + "\n" + fullUrl + "\n" + timestamp + "\n" + sha256(body))`, хедер `X-Proxy-Sign: t=<unix>,v1=<hex>`.
-  - Стратегія того каналу, яким прийшов запит (зараз це був би `webhooxy`), перевіряє підпис через `timingSafeEqual` і вікно часу ±60 с; поза вікном або без підпису → 401.
+  - Рішення 2026-11-23 (webhooxy PR #16, dd3d6a8): `X-Proxy-Sign` = hex `HMAC-SHA256(key, url)` лише від URL, без тіла і часу. `url` — path+query, який Next шле у webhooxy, разом із префіксом `/api/proxy` (`/api/proxy/api/stats?x=1`). SDK: Next — `signProxyUrl(secret, fullUrl)`, агент — `verifyProxySign(secret, headers['x-webhooxy-proxy-url'], headers['x-proxy-sign'])`.
+  - webhooxy підпис не перевіряє, а передає цей самий рядок хосту в `x-webhooxy-proxy-url` (у `http` і `ws`); ззовні його не підробити. Агент перевіряє саме по ньому, а не по `path`/`query` з `relay:request`.
+  - Стратегія `webhooxy` перевіряє підпис через `timingSafeEqual`; без підпису або з невірним → 401. Вікна часу немає (часу в підписі немає).
   - Ротація: Mac пише новий секрет, деякий час приймає обидва.
 - **`X-Relay-Auth` замість `X-Relay-Key`.** Статичний `X-Relay-Key` (`rq_<kid>.<secret>`, `docs/relay-contract.md`) був зроблений за зразком proxy auth вебхуків. Для relay він не потрібен: агент після destination bootstrap має private key workspace і сам випускає токен для `relay:request`.
   - Агент підписує токен private key-єм workspace і сам кладе його в Upstash у `headers` цілі: `X-Relay-Auth: Bearer <token>`.
@@ -140,7 +141,7 @@ SQLite, таблиця `web_sessions`:
 1. ~~Де зберігати пароль~~ — вирішено: `secrets.env` поряд з іншими ключами аппки (див. «Пароль»). Хеш на диску замість відкритого значення — можна пізніше, разом з іншими ключами.
 2. **LAN на http.** `Secure`-кукі на `http://<lan>:port` не ставляться, тож стратегія `local` поки лишається на Bearer. Чи переводити LAN на кукі (тоді потрібен https) — вирішити окремо.
 3. **In-process доставка relay-запиту** в HTTP-застосунок Nest (для `webhooxy`): inject через HTTP-адаптер або loopback-запит із секретом процесу. Вибрати, коли повернемося до relay.
-4. **Що входить у підпис `X-Proxy-Sign`.** Хедери каналу вирішено: `headers` у цілі (`X-Relay-Auth`). Лишилось: агент підписує `fullUrl` так, як його бачить він: для relay це шлях після кімнати, тож що саме входить у підпис, узгодити з контрактом relay.
+4. ~~Що входить у підпис `X-Proxy-Sign`~~ — вирішено: лише URL з `x-webhooxy-proxy-url` (див. «Потім»).
 
 ## Перевірка
 
