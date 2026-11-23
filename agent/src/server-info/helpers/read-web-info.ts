@@ -10,7 +10,7 @@ function builtAt(dir: string): string | null {
   }
 }
 
-/** Яку збірку пульта зараз віддасть express.static: опубліковану, якщо в ній є index.html, інакше з бандла. */
+/** Яку збірку Web UI зараз віддасть express.static: опубліковану, якщо в ній є index.html, інакше з бандла. */
 export function readWebInfo(publishedDir: string, bundleDir: string | null): ServerWebInfo {
   const published = builtAt(publishedDir);
   if (published) return { source: 'published', dir: publishedDir, builtAt: published };

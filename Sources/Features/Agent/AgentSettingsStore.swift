@@ -50,7 +50,7 @@ enum AgentSettingsStore {
             throw TelegramSettingsStore.StoreError.invalidCharacter
         }
         let body = """
-        # Налаштування агента MaControl (пульт і Upstash)
+        # Налаштування агента MaControl (Web UI і Upstash)
         MACONTROL_AGENT_TOKEN='\(settings.token)'
         MACONTROL_AGENT_PORT='\(settings.port)'
         UPSTASH_REDIS_REST_URL='\(values[0])'

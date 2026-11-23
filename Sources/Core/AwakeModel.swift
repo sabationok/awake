@@ -43,7 +43,7 @@ final class AwakeModel: ObservableObject {
     /// Коротке «Збережено» після успішного запису.
     @Published var telegramJustSaved = false
 
-    // MARK: пульт (агент)
+    // MARK: Web UI (агент)
     /// Дерево UI від агента. nil, поки агента немає або він зупинений.
     @Published var uiTree: UiTree?
     /// Сполучені пристрої і посилання сполучення. nil, поки агент їх не надіслав.
@@ -52,7 +52,7 @@ final class AwakeModel: ObservableObject {
     @Published var secrets: AgentSecrets?
     /// Вебхуки webhooxy з SQLite агента, зі станом і лічильниками. Порожньо, поки агент їх не надіслав.
     @Published var webhooks: [AgentWebhook] = []
-    /// Інстанс сервера агента (pid, порти, звідки пульт). nil, поки агент його не надіслав.
+    /// Інстанс сервера агента (pid, порти, звідки Web UI). nil, поки агент його не надіслав.
     @Published var serverInfo: AgentServerInfo?
     /// Графіки «Сервера» за вибраний період; live-тіки агента дописують у них поточний бакет.
     @Published var serverCharts: AgentServerCharts?
@@ -94,6 +94,8 @@ final class AwakeModel: ObservableObject {
         restoreAfterCrash()
         setUpAgent()
         restoreSleepTimer()
+        // Після показу вікна: системний діалог адміністратора не має випереджати саму аппку.
+        DispatchQueue.main.async { AwakeModel.shared.migratePermissionRulesIfNeeded() }
         ticker = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in AwakeModel.shared.tick() }
         }

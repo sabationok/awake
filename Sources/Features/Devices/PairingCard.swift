@@ -78,7 +78,7 @@ private extension AgentDevices.Mode {
         switch self {
         case .local: "Відкрий на телефоні або ноуті в тій самій Wi-Fi"
         case .tailnet: "Відкрий з будь-якої мережі на своєму пристрої з Tailscale"
-        case .remote: "Відкрий з будь-якої мережі: вхід іде через дашборд"
+        case .remote: "Відкрий з будь-якої мережі: вхід іде через Web UI"
         }
     }
 }

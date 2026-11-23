@@ -1,5 +1,5 @@
 /**
- * Підписана кука входу в дашборд: `<lastActiveSec>.<idleMinutes>.<hmac>`.
+ * Підписана кука входу в Web UI: `<lastActiveSec>.<idleMinutes>.<hmac>`.
  * Сесія ковзна: `lastActiveSec` оновлює middleware і дія активності, тож після `idleMinutes` без дій вхід гасне.
  * Web Crypto, тож працює і в middleware. Секрет — SESSION_SECRET, пароль — DASHBOARD_PASSWORD (обидва в env Vercel).
  * Зміна SESSION_SECRET відкликає всі видані сесії.

@@ -2,7 +2,7 @@ import 'server-only';
 
 export type Stage = 'dev' | 'production';
 
-/** Залежності кожного stage: дашборд ходить лише в сервіси свого stage. */
+/** Залежності кожного stage: Web UI ходить лише в сервіси свого stage. */
 const STAGE_DEPS: Record<Stage, { webhooxyUrl: string | null }> = {
   dev: { webhooxyUrl: 'https://webhooks-proxy-dev.up.railway.app' },
   production: { webhooxyUrl: null },

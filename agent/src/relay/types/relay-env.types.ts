@@ -8,6 +8,6 @@ export interface RelayEnv {
   workspace: string;
   /** Room DEST-а: для перевірки `room` у квитку viewer-а. */
   room: string;
-  /** Ключ JWT аппки (MACONTROL_JWT_KEY): спільний з дашбордом ключ HS256. */
+  /** Ключ JWT аппки (MACONTROL_JWT_KEY): спільний з Web UI ключ HS256. */
   ticketKey: string;
 }

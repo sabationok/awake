@@ -1,4 +1,4 @@
-/** `sub` квитка viewer-а для сполученого пристрою: `device:<id>`. Квитки дашборду з паролем мають `dashboard`. */
+/** `sub` квитка viewer-а для сполученого пристрою: `device:<id>`. Квитки Web UI з паролем мають `dashboard`. */
 const PREFIX = 'device:';
 
 export const deviceViewerSub = (deviceId: number) => `${PREFIX}${deviceId}`;

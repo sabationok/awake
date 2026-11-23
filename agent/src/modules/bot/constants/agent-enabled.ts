@@ -12,7 +12,7 @@ export const AGENT_ENABLED_SETTING: SettingDefinition = {
   type: 'switch',
   key: AGENT_ENABLED_KEY,
   label: 'Агент',
-  hint: 'Дії й команди з Telegram і вебу',
+  hint: 'Бізнес-логіка: дії й команди з Mac, Web UI і Telegram',
   icon: { symbol: 'cpu.fill', tone: 'accent' },
   scope: 'mac',
   page: 'bot-overview',

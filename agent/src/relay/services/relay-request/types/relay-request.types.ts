@@ -17,7 +17,7 @@ export interface RelayResponseCookie {
   sameSite?: 'lax' | 'strict';
 }
 
-/** `data` в ack хоста: HTTP-відповідь, яку webhooxy віддасть проксі дашборду. */
+/** `data` в ack хоста: HTTP-відповідь, яку webhooxy віддасть проксі Web UI. */
 export interface RelayHttpResponse {
   statusCode: number;
   headers?: Record<string, string>;

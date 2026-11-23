@@ -5,7 +5,7 @@
 export type WebhookProvider = 'macontrol' | 'envify';
 
 /**
- * Для чого вебхук. `relay` — WS-кімната дашборду з Mac; `envify` — події Envify про зміну змінних;
+ * Для чого вебхук. `relay` — WS-кімната Web UI з Mac; `envify` — події Envify про зміну змінних;
  * `links` — разові посилання для фронтенду (сполучення тощо), що саме — каже `code` у payload.
  */
 export type WebhookType = 'relay' | 'envify' | 'links';

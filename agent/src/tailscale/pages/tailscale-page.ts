@@ -6,12 +6,12 @@ import type { TailscaleState } from '../types/tailscale-state.types';
 function statusNode(state: TailscaleState, active: boolean): UiNode {
   if (!state.installed) return { id: 'status', type: 'status', label: 'Tailscale не встановлено', tone: 'gray' };
   if (!state.running) return { id: 'status', type: 'status', label: 'Mac не в tailnet', tone: 'gray', hint: state.error ?? undefined };
-  if (state.serving) return { id: 'status', type: 'status', label: 'Дашборд через Tailscale працює', tone: 'green' };
+  if (state.serving) return { id: 'status', type: 'status', label: 'Web UI через Tailscale працює', tone: 'green' };
   return { id: 'status', type: 'status', label: active ? 'serve не піднявся' : 'У tailnet, serve вимкнено', tone: active ? 'orange' : 'gray', hint: state.error ?? undefined };
 }
 
 /**
- * Головна вкладка Tailscale: перемикач модуля, стан tailnet і адреса. Чи йде дашборд саме через Tailscale,
+ * Головна вкладка Tailscale: перемикач модуля, стан tailnet і адреса. Чи йде Web UI саме через Tailscale,
  * вмикають на Огляді Агента («Віддалений доступ», перемикачі); вимкнений тут модуль там сірий.
  */
 export function buildTailscalePage(state: TailscaleState, enabledNode: UiNode, active: boolean): UiPage {
@@ -27,7 +27,7 @@ export function buildTailscalePage(state: TailscaleState, enabledNode: UiNode, a
         id: 'tailscale',
         type: 'section',
         title: 'Tailscale',
-        footer: 'Дашборд і сполучення з твоїх пристроїв у tailnet з будь-якої мережі: https на *.ts.net через tailscale serve. Працює, коли модуль увімкнено і на Огляді Агента ввімкнено «Tailscale».',
+        footer: 'Web UI і сполучення з твоїх пристроїв у tailnet з будь-якої мережі: https на *.ts.net через tailscale serve. Працює, коли модуль увімкнено і на Огляді Агента ввімкнено «Tailscale».',
         children: [
           enabledNode,
           statusNode(state, active),

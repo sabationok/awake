@@ -91,7 +91,7 @@ export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
     return { url: `https://${dnsName}/app/redirects/?${query}`, expiresAt: new Date(code.expiresAt).toISOString() };
   }
 
-  /** Дистанційне: сторінка /pair дашборду на Vercel, яка йде до Mac через relay. Без relay онлайн до Mac не достукатись. */
+  /** Дистанційне: сторінка /pair Web UI на Vercel, яка йде до Mac через relay. Без relay онлайн до Mac не достукатись. */
   private _remoteLink(): DevicePairing {
     if (!this._config.webhooxy) return { url: null, reason: 'disabled' };
     const dashboard = this._config.dashboardOrigins[0];

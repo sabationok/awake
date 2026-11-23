@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Небезпечна зона «Сервера»: зупинка й перезапуск обривають API, пульт, Telegram і віддалений доступ для всіх
+/// Небезпечна зона «Сервера»: зупинка й перезапуск обривають API, Web UI, Telegram і віддалений доступ для всіх
 /// пристроїв, тож кожна дія питає підтвердження введеним словом.
 struct ServerDangerZone: View {
     @EnvironmentObject private var model: AwakeModel
@@ -16,7 +16,7 @@ struct ServerDangerZone: View {
         } header: {
             Text("Небезпечна зона")
         } footer: {
-            Text("Поки сервер зупинений, жоден пристрій не керує Mac: ні пульт, ні Telegram, ні Tailscale.")
+            Text("Поки сервер зупинений, жоден пристрій не керує Mac: ні Web UI, ні Telegram, ні Tailscale.")
         }
         .sheet(item: $pending) { action in
             ServerDangerConfirmSheet(action: action) {
@@ -65,8 +65,8 @@ enum ServerDangerAction: String, CaseIterable, Identifiable {
 
     var warning: String {
         switch self {
-        case .restart: "Сервер зупиниться і стартує знову. На кілька секунд обірвуться пульт, Telegram і віддалений доступ."
-        case .stop: "Сервер зупиниться і не стартує сам. Пульт, Telegram і віддалений доступ не працюватимуть, доки не натиснеш «Старт»."
+        case .restart: "Сервер зупиниться і стартує знову. На кілька секунд обірвуться Web UI, Telegram і віддалений доступ."
+        case .stop: "Сервер зупиниться і не стартує сам. Web UI, Telegram і віддалений доступ не працюватимуть, доки не натиснеш «Старт»."
         }
     }
 }

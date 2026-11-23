@@ -5,7 +5,7 @@ export const API_ERROR_CODES = {
   unauthorized: 'UNAUTHORIZED',
   /** Потрібен вхід паролем (або сполучення): відповідь несе `next`. */
   authRequired: 'AUTH_REQUIRED',
-  /** Пароль дашборду не задано в «Ключах аппки» на Mac. */
+  /** Пароль Web UI не задано в «Ключах аппки» на Mac. */
   passwordNotSet: 'PASSWORD_NOT_SET',
   invalidPassword: 'INVALID_PASSWORD',
   tooManyAttempts: 'TOO_MANY_ATTEMPTS',

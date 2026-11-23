@@ -20,7 +20,7 @@ export function buildRelayLimitsPage(ctx: ModuleContext, state: RelayStateSnapsh
     title: 'Ліміти',
     icon: { symbol: 'slider.horizontal.3', tone: 'accent' },
     group: 'modules',
-    // Webhooxy налаштовують лише в SwiftUI: дашборд, що йде через нього, сам його не крутить.
+    // Webhooxy налаштовують лише в SwiftUI: Web UI, що йде через нього, сам його не крутить.
     scope: 'mac',
     children: [
       {

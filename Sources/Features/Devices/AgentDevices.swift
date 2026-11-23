@@ -21,7 +21,7 @@ struct AgentDevices: Decodable, Equatable {
         let via: Mode
     }
 
-    /// Шлях сполучення: `local` — напряму в довіреній Wi-Fi, `remote` — через дашборд на Vercel і relay.
+    /// Шлях сполучення: `local` — напряму в довіреній Wi-Fi, `remote` — через Web UI на Vercel і relay.
     enum Mode: String, Decodable, CaseIterable, Identifiable {
         case local, tailnet, remote
         var id: String { rawValue }

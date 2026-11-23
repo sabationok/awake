@@ -10,16 +10,33 @@ enum PermissionService {
     }
 
     private static let directory = "/etc/sudoers.d"
-    /// Старе спільне правило на всі дозволи (до 1.4). Прибирається при першій зміні.
-    private static let legacyPath = "\(directory)/awake"
+    /// Префікс наших правил у системі: `mc-<дозвіл>`. Нічого в системі Mac не називається «awake».
+    private static let prefix = "mc-"
 
     private static func path(_ permission: AppPermission) -> String {
-        "\(directory)/awake-\(permission.rawValue)"
+        "\(directory)/\(prefix)\(permission.rawValue)"
     }
 
     /// Файли з крапкою в назві sudo ігнорує, тому чернетка лежить поруч і не діє до перейменування.
     private static func stagedPath(_ permission: AppPermission) -> String {
-        "\(directory)/.awake-\(permission.rawValue).tmp"
+        "\(directory)/.\(prefix)\(permission.rawValue).tmp"
+    }
+
+    /// Старі імена: спільне правило `awake` (до 1.4) і `awake-<дозвіл>`. Прибираються при кожній зміні правил.
+    private static var legacyPaths: [String] {
+        ["\(directory)/awake"] + AppPermission.allCases.map { "\(directory)/awake-\($0.rawValue)" }
+    }
+
+    /// Є правила під старими іменами. /etc/sudoers.d читається всім, вміст файлів — ні, тож досить імені.
+    static var hasLegacyRules: Bool {
+        legacyPaths.contains { FileManager.default.fileExists(atPath: $0) }
+    }
+
+    /// Один раз переносить видані дозволи на імена `mc-*`: та сама дія адміністратора, що й видача.
+    /// Набір дозволів не змінюється; до переносу старі правила працюють далі.
+    @MainActor
+    static func migrateLegacyRules() -> Outcome {
+        apply(granted(), prompt: "MaControl перейменовує свої правила sudoers на mc-*. Дозволи не змінюються.")
     }
 
     /// Команди правила з повними шляхами, як їх викликає аппка.
@@ -61,16 +78,16 @@ enum PermissionService {
 
     @MainActor
     static func grant(_ permission: AppPermission) -> Outcome {
-        apply(granted().union([permission]), prompt: "Awake хоче отримати дозвіл «\(permission.title)».")
+        apply(granted().union([permission]), prompt: "MaControl хоче отримати дозвіл «\(permission.title)».")
     }
 
     @MainActor
     static func revoke(_ permission: AppPermission) -> Outcome {
-        apply(granted().subtracting([permission]), prompt: "Awake хоче прибрати дозвіл «\(permission.title)».")
+        apply(granted().subtracting([permission]), prompt: "MaControl хоче прибрати дозвіл «\(permission.title)».")
     }
 
     /// Приводить /etc/sudoers.d до набору `permissions` однією дією адміністратора:
-    /// пише правило кожного дозволу з набору, видаляє решту і старе спільне правило.
+    /// пише правило кожного дозволу з набору, видаляє решту і правила під старими іменами.
     @MainActor
     private static func apply(_ permissions: Set<AppPermission>, prompt: String) -> Outcome {
         let user = NSUserName()
@@ -87,12 +104,12 @@ enum PermissionService {
                 continue
             }
             let rule = """
-            # Awake: \(permission.title)
+            # MaControl: \(permission.title)
             \(user) ALL=(root) NOPASSWD: \(sudoCommands(permission).joined(separator: ", "))
 
             """
             let tmp = FileManager.default.temporaryDirectory
-                .appendingPathComponent("awake-sudoers-\(permission.rawValue)-\(UUID().uuidString)")
+                .appendingPathComponent("mc-sudoers-\(permission.rawValue)-\(UUID().uuidString)")
             do { try rule.write(to: tmp, atomically: true, encoding: .utf8) } catch {
                 return .failed(error.localizedDescription)
             }
@@ -103,9 +120,9 @@ enum PermissionService {
             steps.append("/usr/sbin/visudo -cf \(staged) >/dev/null")
             steps.append("/bin/mv -f \(staged) \(path(permission))")
         }
-        steps.append("/bin/rm -f \(legacyPath)")
+        steps.append("/bin/rm -f \(legacyPaths.joined(separator: " "))")
 
-        let command = steps.joined(separator: " && ") + " || { /bin/rm -f \(directory)/.awake-*.tmp; exit 1; }"
+        let command = steps.joined(separator: " && ") + " || { /bin/rm -f \(directory)/.\(prefix)*.tmp; exit 1; }"
         return runAsAdmin(command, prompt: prompt)
     }
 

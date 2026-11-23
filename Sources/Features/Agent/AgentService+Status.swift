@@ -1,7 +1,7 @@
 import Foundation
 
 extension AgentService.Status {
-    /// Текст стану агента: рядок у «Пульт» і пояснення на сторінці, де агента немає.
+    /// Текст стану агента: рядок у «Web UI» і пояснення на сторінці, де агента немає.
     var statusText: String {
         switch self {
         case .stopped: "Вимкнено"

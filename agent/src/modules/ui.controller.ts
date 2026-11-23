@@ -17,7 +17,7 @@ export class UiController {
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     transports: TransportsService,
   ) {
-    // HTTP-сервер агента: дашборд у домашній мережі (LAN). Поки агент живий — він слухає.
+    // HTTP-сервер агента: Web UI у домашній мережі (LAN). Поки агент живий — він слухає.
     transports.register({
       id: 'web',
       title: 'Веб',

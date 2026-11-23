@@ -5,7 +5,7 @@ import { AppSecretsService } from '../../secrets';
 import { LOGIN_MAX_FAILURES, LOGIN_WINDOW_MS, MIN_PASSWORD_LENGTH } from '../constants/web-auth';
 
 /**
- * Пароль дашборду з «Ключів аппки» (`MACONTROL_DASHBOARD_PASSWORD`). Порівнюються scrypt-хеші з випадковою сіллю
+ * Пароль Web UI з «Ключів аппки» (`MACONTROL_DASHBOARD_PASSWORD`). Порівнюються scrypt-хеші з випадковою сіллю
  * процесу: час не залежить від довжини і збігу префікса. Ліміт спроб — у пам'яті, на пристрій.
  */
 @Injectable()

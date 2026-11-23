@@ -21,7 +21,7 @@ export const TAILSCALE_SETTINGS: SettingDefinition[] = [
     type: 'switch',
     key: 'enabled',
     label: 'Увімкнено',
-    hint: 'Дашборд з твоїх пристроїв у tailnet, з будь-якої мережі',
+    hint: 'Web UI з твоїх пристроїв у tailnet, з будь-якої мережі',
     icon: { symbol: 'point.3.connected.trianglepath.dotted', tone: 'accent' },
     scope: 'mac',
     page: TAILSCALE_PAGE,

@@ -11,7 +11,7 @@ const MAX_BODY_BYTES = 16 * 1024;
 /**
  * Тупий проксі до Mac через webhooxy `relay:request` (docs/relay-contract.md → «Авторизація пристрою»).
  * URL upstream і `X-Relay-Key` беруться з env цього stage, ніколи від клієнта. В upstream ідуть лише кукі `mc_*`:
- * сесія дашборду в webhooxy не потрапляє. Що робити із запитом, вирішує Mac.
+ * сесія Web UI в webhooxy не потрапляє. Що робити із запитом, вирішує Mac.
  */
 async function proxy(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;

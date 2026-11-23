@@ -13,7 +13,7 @@ const DEVICE_COOKIE_MAX_AGE_S = 400 * 24 * 60 * 60;
 const POLL_PATH = /^\/pair\/([A-Za-z0-9_-]{1,64})$/;
 
 /**
- * HTTP-тунель `relay:request`: дашборд на Vercel (тупий проксі `/api/mac/*`) через webhooxy питає Mac.
+ * HTTP-тунель `relay:request`: Web UI на Vercel (тупий проксі `/api/mac/*`) через webhooxy питає Mac.
  * Шар 1 — пристрій: дистанційне сполучення за кодом з QR, токен пристрою лягає в HttpOnly-кукі `mc_device`.
  * Шар 2 — квиток: `POST /connect` з цією кукі дає підписаний Mac квиток на сокет relay (docs/relay-contract.md).
  * Усе, крім `meta`, прийшло від браузера без перевірки: відповідаємо лише кодами, винятків назовні не кидаємо.

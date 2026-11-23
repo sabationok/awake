@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// «Сервер»: сам процес агента — стан, керування, порти і звідки він віддає пульт. Навантаження й запити — у «Сервер → Статистика».
+/// «Сервер»: сам процес агента — стан, керування, порти і звідки він віддає Web UI. Навантаження й запити — у «Сервер → Статистика».
 /// Що він робить (модулі, транспорти, журнал) — окремо, у «Агент».
 struct ServerSection: View {
     @EnvironmentObject private var model: AwakeModel
@@ -25,7 +25,7 @@ struct ServerSection: View {
         } header: {
             Text("Стан")
         } footer: {
-            Text("Сервер — процес, який аппка запускає сама: API, пульт і з'єднання. Що він робить (модулі, транспорти, журнал) — у «Агент».")
+            Text("Сервер — процес, який аппка запускає сама: API, Web UI і з'єднання. Що він робить (модулі, транспорти, журнал) — у «Агент».")
         }
 
         Section {
@@ -46,7 +46,7 @@ struct ServerSection: View {
 
         if let info = running {
             Section("Порти") {
-                SettingsRow(title: "HTTPS", symbol: "lock.fill", color: .blue, text: "\(info.ports.https) · дашборд напряму")
+                SettingsRow(title: "HTTPS", symbol: "lock.fill", color: .blue, text: "\(info.ports.https) · Web UI напряму")
                 SettingsRow(title: "HTTP", symbol: "network", color: .blue,
                             text: model.currentNetworkTrusted ? "\(info.ports.http) · видно в довіреній Wi-Fi" : "\(info.ports.http) · лише на цьому Mac")
                 SettingsRow(title: "Tailscale", symbol: "point.3.connected.trianglepath.dotted", color: .blue, text: "\(info.ports.tailnet) · лише 127.0.0.1, для serve")
@@ -62,9 +62,9 @@ struct ServerSection: View {
                     }
                 }
             } header: {
-                Text("Пульт")
+                Text("Web UI")
             } footer: {
-                Text("Новий пульт публікує scripts/publish-web-local.sh: сервер віддає його одразу, без перевстановлення аппки. Без публікації — збірка з аппки.")
+                Text("Нову збірку Web UI публікує scripts/publish-web-local.sh: сервер віддає його одразу, без перевстановлення аппки. Без публікації — збірка з аппки.")
             }
         }
 

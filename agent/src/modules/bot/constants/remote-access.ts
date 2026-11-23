@@ -2,7 +2,7 @@ import type { SettingDefinition } from '@awake/contracts';
 import type { ModuleContext } from '../../types/mac-module';
 
 /**
- * Шляхи до дашборду поза домашньою Wi-Fi. Три рівні:
+ * Шляхи до Web UI поза домашньою Wi-Fi. Три рівні:
  * - модуль шляху (вкладка Tailscale / Webhooxy) каже, чи шлях узагалі доступний на цьому Mac;
  * - тут, на Огляді Агента, — чи агент з ним працює (перемикачі, кілька шляхів паралельно);
  * - картка «Сполучити пристрій» у Mac-аппці — яким шляхом сполучаємось зараз (вкладки, у кожної свій QR).
@@ -18,7 +18,7 @@ export const REMOTE_ACCESS_SETTINGS: SettingDefinition[] = [
     type: 'switch',
     key: REMOTE_ACCESS_KEYS.tailscale,
     label: 'Tailscale',
-    hint: 'Дашборд на https://<mac>.ts.net для пристроїв у твоєму tailnet',
+    hint: 'Web UI на https://<mac>.ts.net для пристроїв у твоєму tailnet',
     icon: { symbol: 'point.3.connected.trianglepath.dotted', tone: 'accent' },
     scope: 'mac',
     page: 'bot-overview',
@@ -28,7 +28,7 @@ export const REMOTE_ACCESS_SETTINGS: SettingDefinition[] = [
     type: 'switch',
     key: REMOTE_ACCESS_KEYS.webhooxy,
     label: 'Webhooxy',
-    hint: 'Дашборд на Vercel через relay webhooxy',
+    hint: "Канал зв'язку через relay webhooxy",
     icon: { symbol: 'arrow.triangle.branch', tone: 'accent' },
     scope: 'mac',
     page: 'bot-overview',

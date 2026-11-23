@@ -5,11 +5,11 @@ import { SESSION_COOKIE, isValidSession } from './session-cookie';
 import { signRelayTicket } from './sign-relay-ticket';
 import { readStageConfig } from './stage-config';
 
-/** Пароль у дашборду один, тож і користувач один. */
+/** Пароль у Web UI один, тож і користувач один. */
 const DASHBOARD_SUB = 'dashboard';
 
 /**
- * Свіжий квиток viewer-а для кожного (пере)підключення до relay. Лише з дійсною сесією дашборду.
+ * Свіжий квиток viewer-а для кожного (пере)підключення до relay. Лише з дійсною сесією Web UI.
  * null — relay для цього деплою не налаштований (немає URL stage, ключа чи кімнати).
  */
 export async function getRelayAccess(): Promise<RelayViewerAccess | null> {

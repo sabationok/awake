@@ -18,7 +18,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  * `https://<mac>.ts.net` через `tailscale serve` на окремий loopback-порт. Канал: serve увімкнений і запит від
  * власника tailnet (`Tailscale-User-Login` ставить serve, копії клієнта він вирізає). Далі кукі same-origin:
  * `mc_device` (пристрій, сполучений через tailnet) і `mc_session` (жива сесія). Bearer токен пристрою тут не діє:
- * довіра пристрою сама дашборд не відкриває. Головний токен агента лишається для розробки.
+ * довіра пристрою сама Web UI не відкриває. Головний токен агента лишається для розробки.
  */
 @Injectable()
 export class TailscaleStrategy implements AuthStrategy {

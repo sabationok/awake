@@ -8,7 +8,7 @@ interface SduiPageProps {
   tree: UiTree | null;
   /** Без send дерево лише для перегляду. */
   send?: SduiEventHandler;
-  /** Дашборд на Vercel: режим зв'язку з Mac для шапки. На локальному пульті не задається. */
+  /** Web UI на Vercel: режим зв'язку з Mac для шапки. На локальному Web UI не задається. */
   mode?: SduiMode;
   directError?: boolean;
   accessory?: ReactNode;

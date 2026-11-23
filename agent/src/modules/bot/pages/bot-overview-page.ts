@@ -55,7 +55,7 @@ export function buildBotOverviewPage(
         type: 'section',
         title: 'Агент',
         scope: 'mac',
-        footer: 'Вимкнений агент не приймає дій і команд з Telegram і вебу. Сервер, фонові задачі й ця аппка працюють далі.',
+        footer: 'Вимкнений агент не приймає дій і команд з Web UI і Telegram. Сервер, фонові задачі й ця аппка працюють далі.',
         children: [ctx.settingNode(AGENT_ENABLED_KEY)],
       },
       {
@@ -63,7 +63,7 @@ export function buildBotOverviewPage(
         type: 'section',
         title: 'Віддалений доступ',
         scope: 'mac',
-        footer: 'З якими шляхами до дашборду поза домашньою Wi-Fi працює агент; можна кілька. Сірий — його модуль вимкнено: увімкнути у вкладці Tailscale чи Webhooxy. Яким шляхом сполучити пристрій — у картці «Сполучити пристрій».',
+        footer: 'З якими шляхами до Web UI поза домашньою Wi-Fi працює агент; можна кілька. Сірий — його модуль вимкнено: увімкнути у вкладці Tailscale чи Webhooxy. Яким шляхом сполучити пристрій — у картці «Сполучити пристрій».',
         children: remoteAccessNodes(ctx, available),
       },
       {

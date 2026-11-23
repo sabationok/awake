@@ -55,7 +55,7 @@ struct RemoteSection: View {
         } header: {
             Text("Upstash")
         } footer: {
-            Text("Сюди агент кладе живий стан для дашборду на Vercel. Історія і журнал лишаються на Mac.")
+            Text("Сюди агент кладе живий стан для Web UI на Vercel. Історія і журнал лишаються на Mac.")
         }
         .onAppear {
             upstashURL = model.agentSettings.upstashURL

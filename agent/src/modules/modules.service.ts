@@ -195,7 +195,7 @@ export class ModulesService {
     if (!definition || !isValidSettingValue(definition, value)) {
       throw new AppException(API_ERROR_CODES.invalidCommand, `Invalid setting ${moduleId}.${key}`);
     }
-    // Налаштування SwiftUI міняють лише Mac і Telegram, не вебдашборд — ні напряму, ні через проксі.
+    // Налаштування SwiftUI міняють лише Mac і Telegram, не Web UI — ні напряму, ні через проксі.
     if (definition.scope === 'mac' && source === 'web') {
       throw new AppException(API_ERROR_CODES.invalidCommand, `Setting ${moduleId}.${key} is Mac-only`);
     }

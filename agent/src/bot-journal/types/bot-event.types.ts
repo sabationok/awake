@@ -3,7 +3,7 @@ import type { ModuleSource } from '../../modules/types/module-source';
 /** action — дія модуля (`@BotAction`); screen — екран меню (`@BotScreen`); setting — зміна налаштування модуля. */
 export type BotEventType = 'action' | 'screen' | 'setting';
 
-/** Один виклик нашого бота, з якого б транспорту він не прийшов: SwiftUI, вебдашборд / relay чи Telegram. */
+/** Один виклик нашого бота, з якого б транспорту він не прийшов: SwiftUI, Web UI / relay чи Telegram. */
 export interface BotEventRecord {
   id: number;
   at: string;

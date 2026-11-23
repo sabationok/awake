@@ -11,7 +11,7 @@ export type RelayStatus = 'off' | 'unconfigured' | 'connecting' | 'online' | 'of
 /** Viewer, якого агент пустив у кімнату. */
 export interface RelayViewerSession {
   viewerId: string;
-  /** Користувач дашборду з квитка. */
+  /** Користувач Web UI з квитка. */
   sub: string;
   origin: string | null;
   userAgent: string | null;

@@ -11,8 +11,8 @@ const HEARTBEAT_MS = 60_000;
 const TREE_TTL_SECONDS = 150;
 
 /**
- * Upstash для дашборду на Vercel: лише дерево UI (scope all) і локальна адреса пульта.
- * Дій з Vercel немає: керування йде на пульті самого агента в довіреній Wi-Fi.
+ * Upstash для Web UI на Vercel: лише дерево UI (scope all) і локальна адреса Web UI.
+ * Дій з Vercel немає: керування йде у Web UI самого агента в довіреній Wi-Fi.
  */
 @Injectable()
 export class UiSyncService implements OnModuleInit, OnModuleDestroy {

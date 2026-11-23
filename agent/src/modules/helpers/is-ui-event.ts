@@ -8,7 +8,7 @@ const isObject = (value: unknown): value is Plain =>
 const isPrimitive = (value: unknown): value is string | number | boolean =>
   typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 
-/** Перевіряє форму події з дашборду; саме значення перевіряє модуль за описом налаштування. */
+/** Перевіряє форму події з Web UI; саме значення перевіряє модуль за описом налаштування. */
 export function isUiEvent(body: unknown): body is UiEvent {
   if (!isObject(body)) return false;
   if (body.type === 'action') {

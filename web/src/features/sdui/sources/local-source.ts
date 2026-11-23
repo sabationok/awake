@@ -2,7 +2,7 @@ import type { UiTree } from '@awake/contracts';
 import { callAgent } from '@/features/pairing/agent-api';
 import type { UiSource } from './ui-source';
 
-/** Пульт на Mac: дерево і події йдуть до API агента. LAN — з токеном пристрою, Tailscale — null (кукі). */
+/** Web UI на Mac: дерево і події йдуть до API агента. LAN — з токеном пристрою, Tailscale — null (кукі). */
 export function localSource(token: string | null): UiSource {
   return {
     async load() {

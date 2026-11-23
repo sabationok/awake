@@ -1,4 +1,4 @@
-// Спільні типи агента, Mac-аппки і дашборду. Лише типи і константи без залежностей.
+// Спільні типи агента, Mac-аппки і Web UI. Лише типи і константи без залежностей.
 export * from './ui';
 export * from './modules';
 export * from './relay';
@@ -236,7 +236,7 @@ export interface ServerChartsTick {
   points: Record<string, import('./ui').UiChartPoint[]>;
 }
 
-/** Звідки агент роздає локальний пульт. `published` — `scripts/publish-web-local.sh`, `bundle` — збірка в аппці. */
+/** Звідки агент роздає локальний Web UI. `published` — `scripts/publish-web-local.sh`, `bundle` — збірка в аппці. */
 export interface ServerWebInfo {
   source: 'published' | 'bundle' | null;
   dir: string | null;
@@ -319,7 +319,7 @@ export interface DeviceInfo {
 /**
  * Як пристрій заходить на Mac. `local` — напряму по http у тій самій довіреній Wi-Fi;
  * `tailnet` — через Tailscale (`tailscale serve`, https на `*.ts.net`) з будь-якої мережі, лише пристрої власника;
- * `remote` — через дашборд на Vercel і relay webhooxy (вимкнений, поки webhooxy вимкнено в агенті).
+ * `remote` — через Web UI на Vercel і relay webhooxy (вимкнений, поки webhooxy вимкнено в агенті).
  */
 export type DevicePairingMode = 'local' | 'tailnet' | 'remote';
 
@@ -364,5 +364,5 @@ export interface DevicePairingPoll {
  */
 export const REDIS_KEY_PREFIX = 'macontrol:';
 
-/** Дерево UI для дашборду на Vercel (лише вузли зі scope all). Vercel лише читає його: керування йде на самому агенті. */
+/** Дерево UI для Web UI на Vercel (лише вузли зі scope all). Vercel лише читає його: керування йде на самому агенті. */
 export const UI_TREE_KEY = `${REDIS_KEY_PREFIX}ui`;

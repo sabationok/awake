@@ -14,14 +14,14 @@ const TEXT: Record<Exclude<Status, 'checking'>, { label: string; footer: string 
     label: 'Потрібне сполучення',
     footer: 'Цей пристрій ще не сполучений з Mac. Відскануй QR у MaControl на Mac → «Пристрої» → Tailscale.',
   },
-  waiting: { label: 'Підтверди на Mac', footer: 'На Mac з’явилось питання «Це ви?». Натисни «Дозволити», і пульт відкриється тут сам.' },
+  waiting: { label: 'Підтверди на Mac', footer: 'На Mac з’явилось питання «Це ви?». Натисни «Дозволити», і Web UI відкриється тут сам.' },
   denied: { label: 'Сполучення відхилено', footer: 'На Mac натиснули «Відхилити». Щоб спробувати знову, відскануй QR ще раз.' },
   failed: { label: 'Посилання застаріло', footer: 'Код діє дві хвилини і лише раз. Відскануй новий QR у MaControl на Mac → «Пристрої».' },
 };
 
 /**
  * Пейринг через Tailscale: код із QR → «Дозволити?» на Mac → опитування. Після схвалення агент сам ставить
- * HttpOnly-кукі `mc_device` і `mc_session`: токена в JS немає, сторінка лише переходить на дашборд.
+ * HttpOnly-кукі `mc_device` і `mc_session`: токена в JS немає, сторінка лише переходить у Web UI.
  */
 export function TailnetPairingPage() {
   const router = useRouter();

@@ -26,7 +26,7 @@ const CERT_HINT = 'Встанови сертифікат на цьому при�
 interface AppShellProps {
   tree: UiTree | null;
   send?: SduiEventHandler;
-  /** Дашборд на Vercel: режим зв'язку з Mac у шапці. На локальному пульті не задається. */
+  /** Web UI на Vercel: режим зв'язку з Mac у шапці. На локальному Web UI не задається. */
   mode?: SduiMode;
   directError?: boolean;
   accessory?: ReactNode;
@@ -96,14 +96,14 @@ export function AppShell({ tree, send, mode, directError = false, accessory }: A
   );
 }
 
-/** Стан зв'язку з Mac, посилання на пульт і кнопка сертифіката, якщо прямий доступ не працює. */
+/** Стан зв'язку з Mac, посилання на Web UI і кнопка сертифіката, якщо прямий доступ не працює. */
 function ConnectionStatus({ mode, offline, local }: { mode: SduiMode; offline: boolean; local: UiLocalAccess | null }) {
   return (
     <>
       <span className={cn('ml-auto shrink-0', CONNECTION_CLASS[mode])}>{offline ? OFFLINE_LABEL : CONNECTION_LABEL[mode]}</span>
       {local && (
         <a href={`${local.url}/#p=${local.code}`} className="shrink-0 font-medium text-accent">
-          Пульт на Mac
+          Web UI на Mac
         </a>
       )}
       {offline && local && (

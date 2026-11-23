@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-/// Агент і пульт: запуск підпроцесу, стан кожні 5 секунд, журнал і події сесій, команди з пульта.
+/// Агент і Web UI: запуск підпроцесу, стан кожні 5 секунд, журнал і події сесій, команди з Web UI.
 extension AwakeModel {
     /// Telegram-події за ключами налаштувань `telegram.events.<domain>.<type>`.
     private static let telegramEventKeys: [String: TelegramEvent] =
@@ -227,12 +227,12 @@ extension AwakeModel {
         return Int(raw)
     }
 
-    // MARK: команди з пульта
+    // MARK: команди з Web UI
 
     private func handleAgentCommand(_ command: AgentCommand) {
         if command.action != .setting {
             let argument = command.duration ?? command.value.map(Self.settingText)
-            append("Пульт: \(command.action.rawValue)\(argument.map { " \($0)" } ?? "")")
+            append("Web UI: \(command.action.rawValue)\(argument.map { " \($0)" } ?? "")")
         }
         let source = command.source ?? .web
         switch command.action {

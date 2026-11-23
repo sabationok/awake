@@ -11,6 +11,12 @@ extension AwakeModel {
         report(PermissionService.revoke(permission), success: "Дозвіл «\(permission.title)» відкликано")
     }
 
+    /// Правила sudoers під старими іменами `awake*` → `mc-*`, один системний діалог. Скасував — спитаємо при наступному запуску.
+    func migratePermissionRulesIfNeeded() {
+        guard PermissionService.hasLegacyRules else { return }
+        report(PermissionService.migrateLegacyRules(), success: "Правила sudoers перейменовано на mc-*")
+    }
+
     private func report(_ outcome: PermissionService.Outcome, success: String) {
         switch outcome {
         case .done: append(success)

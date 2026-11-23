@@ -12,7 +12,7 @@ import { WebSessionsService } from './services/web-sessions.service';
 
 const NO_SESSION: WebSessionInfo = { idleMinutes: null, expiresAt: null };
 
-/** Вхід на дашборд. Сесію і її продовження на кожному запиті веде стратегія guard-а; тут — створення і вихід. */
+/** Вхід у Web UI. Сесію і її продовження на кожному запиті веде стратегія guard-а; тут — створення і вихід. */
 @Controller('api/auth')
 export class WebAuthController {
   constructor(

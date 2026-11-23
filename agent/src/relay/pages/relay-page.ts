@@ -16,14 +16,14 @@ export function buildRelayPage(state: RelayStateSnapshot, enabledNode: UiNode): 
     title: 'Webhooxy',
     icon: { symbol: 'antenna.radiowaves.left.and.right', tone: 'accent' },
     group: 'modules',
-    // Webhooxy налаштовують лише в SwiftUI: дашборд, що йде через нього, сам його не крутить.
+    // Webhooxy налаштовують лише в SwiftUI: Web UI, що йде через нього, сам його не крутить.
     scope: 'mac',
     children: [
       {
         id: 'host',
         type: 'section',
         title: 'Host',
-        footer: 'Проксі до вебдашборду: агент тримає кімнату в webhooxy, дашборд підключається до неї за квитком. Працює, коли модуль увімкнено і на Огляді Агента ввімкнено «Webhooxy».',
+        footer: 'Проксі до Web UI: агент тримає кімнату в webhooxy, Web UI підключається до неї за квитком. Працює, коли модуль увімкнено і на Огляді Агента ввімкнено «Webhooxy».',
         children: [
           enabledNode,
           { id: 'status', type: 'status', label: view.label, tone: view.tone, pulse: state.status === 'connecting', hint: state.reason ?? undefined },

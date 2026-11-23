@@ -19,7 +19,7 @@ const PAIRING_TEXT: Record<Exclude<PairingStatus, 'checking' | 'paired'>, { labe
   },
   waiting: {
     label: 'Підтверди на Mac',
-    footer: 'На Mac з’явилось питання «Це ви?». Натисни «Дозволити», і пульт відкриється тут сам.',
+    footer: 'На Mac з’явилось питання «Це ви?». Натисни «Дозволити», і Web UI відкриється тут сам.',
   },
   denied: {
     label: 'Сполучення відхилено',
@@ -34,7 +34,7 @@ const PAIRING_TEXT: Record<Exclude<PairingStatus, 'checking' | 'paired'>, { labe
 const TAILNET_SOURCE = localSource(null);
 
 /**
- * Локальний пульт. Через Tailscale (`*.ts.net`) — вхід кукі й паролем через агента. У LAN — як раніше:
+ * Локальний Web UI. Через Tailscale (`*.ts.net`) — вхід кукі й паролем через агента. У LAN — як раніше:
  * сполучення з Mac, далі дерево з його API з токеном пристрою.
  */
 export function LocalSduiPage() {

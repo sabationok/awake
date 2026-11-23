@@ -23,7 +23,7 @@ interface ServerEnvelope<T> {
 }
 
 /**
- * Квиток на сокет: із сесією дашборду його підписує Vercel, а сполученому пристрою — сам Mac
+ * Квиток на сокет: із сесією Web UI його підписує Vercel, а сполученому пристрою — сам Mac
  * через проксі (`/api/mac/connect` з HttpOnly-кукі `mc_device`). null — ні того, ні іншого.
  */
 async function getViewerAccess(): Promise<RelayViewerAccess | null> {

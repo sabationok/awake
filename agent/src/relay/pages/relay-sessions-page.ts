@@ -11,7 +11,7 @@ export function buildRelaySessionsPage(state: RelayStateSnapshot): UiPage {
     title: 'Сесії',
     icon: { symbol: 'person.2.fill', tone: 'accent' },
     group: 'modules',
-    // Webhooxy налаштовують лише в SwiftUI: дашборд, що йде через нього, сам його не крутить.
+    // Webhooxy налаштовують лише в SwiftUI: Web UI, що йде через нього, сам його не крутить.
     scope: 'mac',
     children: [
       {

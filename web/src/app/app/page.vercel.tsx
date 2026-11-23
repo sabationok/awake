@@ -5,7 +5,7 @@ import { useHybridTree } from '@/features/sdui/hooks/use-hybrid-tree';
 import { logout } from '@/server/auth-actions';
 import { useIdleLogout } from '@/features/auth/use-idle-logout';
 
-/** Дашборд на Vercel: дерево з Upstash, а з довіреної Wi-Fi — напряму з Mac; вихід у шапці. */
+/** Web UI на Vercel: дерево з Upstash, а з довіреної Wi-Fi — напряму з Mac; вихід у шапці. */
 function VercelDashboard() {
   const { tree, send, mode, directError } = useHybridTree();
   useIdleLogout();

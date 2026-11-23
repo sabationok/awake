@@ -42,7 +42,7 @@ interface AuthorizeData {
 }
 
 /**
- * Host кімнати relay у webhooxy (docs/relay-contract.md): пускає viewer-ів за квитком дашборду,
+ * Host кімнати relay у webhooxy (docs/relay-contract.md): пускає viewer-ів за квитком Web UI,
  * виконує їхні події через ModulesService і розсилає нове дерево після змін.
  */
 @Injectable()
@@ -120,7 +120,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     this._webhookId = webhook?.id ?? null;
     this._env =
       webhook && room && workspaceToken && ticketKey ? { workspaceToken, ticketKey, destId: webhook.destId, workspace: webhook.workspace, room } : null;
-    // Relay потребує лише ключ воркспейсу і JWT; пароль дашборду до нього не стосується.
+    // Relay потребує лише ключ воркспейсу і JWT; пароль Web UI до нього не стосується.
     const secrets = [
       ...(workspaceToken ? [] : ['WEBHOOXY_WORKSPACE_TOKEN']),
       ...(ticketKey ? [] : ['MACONTROL_JWT_KEY']),
@@ -239,7 +239,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
         ack({ data: { allow: false } });
       }
     });
-    // HTTP-тунель від проксі дашборду: сполучення пристрою і квиток на сокет.
+    // HTTP-тунель від проксі Web UI: сполучення пристрою і квиток на сокет.
     socket.on('relay:request', (envelope: ServerEnvelope<RelayHttpRequest> | undefined, ack: Ack) => {
       if (typeof ack !== 'function') return;
       try {

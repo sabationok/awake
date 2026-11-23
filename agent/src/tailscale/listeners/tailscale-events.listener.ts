@@ -40,7 +40,7 @@ export class TailscaleEventsListener implements OnModuleInit, OnModuleDestroy {
           this._notifications.notify({
             source: 'tailscale',
             type: 'status',
-            title: serving ? '🟢 Дашборд через Tailscale працює' : '⚪️ Дашборд через Tailscale вимкнено',
+            title: serving ? '🟢 Web UI через Tailscale працює' : '⚪️ Web UI через Tailscale вимкнено',
             fields: { host: this._tailscale.state.dnsName ?? '—' },
           }),
         ),

@@ -65,7 +65,7 @@ private struct DeviceListSection: View {
         ) { device in
             Button("Відкликати", role: .destructive) { model.revokeDevice(device.id) }
         } message: { _ in
-            Text("Пристрій одразу втратить доступ до пульта. Щоб повернути, його доведеться сполучити знову.")
+            Text("Пристрій одразу втратить доступ до Web UI. Щоб повернути, його доведеться сполучити знову.")
         }
     }
 

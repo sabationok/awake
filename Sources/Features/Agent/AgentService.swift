@@ -1,7 +1,7 @@
 import Foundation
 
 /// Запускає агента (Node, Resources/agent/agent.cjs) дочірнім процесом і говорить з ним
-/// JSON-рядками: стан і журнал у stdin, команди пульта зі stdout. stderr агента йде в agent.log.
+/// JSON-рядками: стан і журнал у stdin, команди Web UI зі stdout. stderr агента йде в agent.log.
 @MainActor
 final class AgentService {
     enum Status: Equatable {
@@ -34,7 +34,7 @@ final class AgentService {
 
     static let logURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".config/awake/agent.log")
 
-    /// Каталог агента в бандлі: agent.cjs і web/ зі статичним пультом.
+    /// Каталог агента в бандлі: agent.cjs і web/ зі статичним Web UI.
     static var bundleDirectory: URL? {
         guard let url = Bundle.main.resourceURL?.appendingPathComponent("agent"),
               FileManager.default.fileExists(atPath: url.appendingPathComponent("agent.cjs").path) else { return nil }

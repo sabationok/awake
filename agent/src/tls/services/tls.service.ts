@@ -11,7 +11,7 @@ import { ensureTls } from '../helpers/ensure-tls';
 import type { TlsMaterial } from '../types/tls.types';
 
 /**
- * Локальний HTTPS агента: CA, якому дашборд довіряє один раз, і серверний сертифікат під LAN-адреси Mac.
+ * Локальний HTTPS агента: CA, якому Web UI довіряє один раз, і серверний сертифікат під LAN-адреси Mac.
  * Адреси Wi-Fi змінюються, тож раз на 30 с перевіряємо їх і міняємо сертифікат без рестарту.
  */
 @Injectable()
@@ -35,7 +35,7 @@ export class TlsService implements OnModuleDestroy {
     clearInterval(this._timer);
   }
 
-  /** PEM нашого CA: дашборд зберігає його і довіряє один раз. */
+  /** PEM нашого CA: Web UI зберігає його і довіряє один раз. */
   caPem(): string {
     return this._caPem;
   }

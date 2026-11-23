@@ -34,7 +34,7 @@ export function buildRelayTrackingPage(ctx: ModuleContext, points: RelayTracking
     title: 'Трекінг',
     icon: { symbol: 'chart.bar.fill', tone: 'accent' },
     group: 'modules',
-    // Webhooxy налаштовують лише в SwiftUI: дашборд, що йде через нього, сам його не крутить.
+    // Webhooxy налаштовують лише в SwiftUI: Web UI, що йде через нього, сам його не крутить.
     scope: 'mac',
     children: [
       { id: 'period', type: 'section', children: [ctx.settingNode(STATS_PERIOD_KEY)] },

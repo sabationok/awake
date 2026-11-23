@@ -11,11 +11,11 @@ const TEXT: Record<Exclude<RemotePairingStatus, 'checking'>, { label: string; fo
   },
   waiting: {
     label: 'Підтверди на Mac',
-    footer: 'На Mac з’явилось питання про дистанційний запит. Натисни «Дозволити», і дашборд відкриється тут сам.',
+    footer: 'На Mac з’явилось питання про дистанційний запит. Натисни «Дозволити», і Web UI відкриється тут сам.',
   },
   approved: {
     label: 'Сполучено',
-    footer: 'Відкриваю дашборд…',
+    footer: 'Відкриваю Web UI…',
   },
   denied: {
     label: 'Сполучення відхилено',
@@ -27,7 +27,7 @@ const TEXT: Record<Exclude<RemotePairingStatus, 'checking'>, { label: string; fo
   },
 };
 
-/** `/pair#p=<code>`: сполучення пристрою з Mac через Vercel і webhooxy, без пароля дашборду. */
+/** `/pair#p=<code>`: сполучення пристрою з Mac через Vercel і webhooxy, без пароля Web UI. */
 export function RemotePairingPage() {
   const status = useRemotePairing();
   if (status === 'checking') return <PageFrame title="MaControl">{null}</PageFrame>;

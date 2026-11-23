@@ -4,7 +4,7 @@ import { RelayStateService } from '../../../relay/state/relay-state.service';
 import type { RelayViewerSession } from '../../../relay/types/relay-status.types';
 import { TelegramNotificationsService } from '../../../telegram/notifications';
 
-/** Той самий пристрій: користувач дашборду і браузер. Новий квиток при перезавантаженні сторінки — не новий пристрій. */
+/** Той самий пристрій: користувач Web UI і браузер. Новий квиток при перезавантаженні сторінки — не новий пристрій. */
 const deviceKey = (viewer: RelayViewerSession) => `${viewer.sub}|${viewer.userAgent ?? ''}`;
 
 /**

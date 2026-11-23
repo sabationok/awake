@@ -3,7 +3,7 @@ import { callAgent } from '@/features/pairing/agent-api';
 import type { SduiMode } from '../sdui.types';
 import { remoteSource } from './remote-source';
 
-/** Снимок для дашборду на Vercel: дерево, керування (лише в direct) і режим для шапки. */
+/** Снимок для Web UI на Vercel: дерево, керування (лише в direct) і режим для шапки. */
 export interface HybridSnapshot {
   tree: UiTree | null;
   /** Є лише в режимі direct; без нього рендерер вимикає всі керувальні елементи. */

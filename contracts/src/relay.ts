@@ -1,4 +1,4 @@
-// Relay через webhooxy (docs/relay-contract.md): типи поля `data`, якими обмінюються агент (host) і дашборд (viewer).
+// Relay через webhooxy (docs/relay-contract.md): типи поля `data`, якими обмінюються агент (host) і Web UI (viewer).
 // Конверт і події socket.io задає webhooxy; тут лише формат MaControl.
 import type { UiEvent, UiTree } from './ui';
 
@@ -26,7 +26,7 @@ export interface RelayTicketClaims {
   jti: string;
 }
 
-/** Що дашборд отримує від свого сервера для підключення viewer-а. */
+/** Що Web UI отримує від свого сервера для підключення viewer-а. */
 export interface RelayViewerAccess {
   url: string;
   room: string;
@@ -35,11 +35,11 @@ export interface RelayViewerAccess {
 }
 
 /**
- * Кукі пристрою, сполученого дистанційно: HttpOnly на домені дашборду, значення — токен пристрою.
- * Проксі дашборду пропускає в webhooxy лише кукі з префіксом `mc_`.
+ * Кукі пристрою, сполученого дистанційно: HttpOnly на домені Web UI, значення — токен пристрою.
+ * Проксі Web UI пропускає в webhooxy лише кукі з префіксом `mc_`.
  */
 export const RELAY_DEVICE_COOKIE = 'mc_device';
-/** Префікс кукі, які проксі дашборду передає агенту; решта (сесія дашборду) у webhooxy не йде. */
+/** Префікс кукі, які проксі Web UI передає агенту; решта (сесія Web UI) у webhooxy не йде. */
 export const RELAY_COOKIE_PREFIX = 'mc_';
 
 /** Відповідь агента на опитування дистанційного сполучення: токен не в тілі, а в кукі `mc_device`. */

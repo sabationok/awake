@@ -1,7 +1,7 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-/** Дашборд на Vercel, який може викликати агент напряму по HTTPS. */
+/** Web UI на Vercel, який може викликати агент напряму по HTTPS. */
 const DEFAULT_DASHBOARD_ORIGINS = ['https://awake-lemon.vercel.app'];
 
 export type Stage = 'dev' | 'production';
@@ -30,7 +30,7 @@ export interface AgentConfig {
   port: number;
   /**
    * Порт простого http для локального сполучення в довіреній Wi-Fi (без сертифіката, тож без попереджень браузера).
-   * HTTPS на `port` лишається для дашборду на Vercel: https-сторінка не може звертатися до http-адреси.
+   * HTTPS на `port` лишається для Web UI на Vercel: https-сторінка не може звертатися до http-адреси.
    */
   httpPort: number;
   /** Порт для `tailscale serve`, лише на 127.0.0.1: запит сюди — завжди з tailnet. */
@@ -39,15 +39,15 @@ export interface AgentConfig {
   dbPath: string;
   webDir: string | null;
   /**
-   * Опублікований пульт поза аппкою (`scripts/publish-web-local.sh`): має перевагу над збіркою з бандла,
+   * Опублікований Web UI поза аппкою (`scripts/publish-web-local.sh`): має перевагу над збіркою з бандла,
    * тож новий веб не потребує перевстановлення аппки. Папки може не бути — тоді лише `webDir`.
    */
   webPublishedDir: string;
   upstashUrl: string | null;
   upstashToken: string | null;
-  /** Дозволений origin для CORS, лише для розробки дашборду через next dev. */
+  /** Дозволений origin для CORS, лише для розробки Web UI через next dev. */
   corsOrigin: string | null;
-  /** Origins дашбордів, які можуть викликати агент напряму з браузера. */
+  /** Origins Web UI, які можуть викликати агент напряму з браузера. */
   dashboardOrigins: string[];
   /** Каталог локального CA і сертифікатів агента. */
   tlsDir: string;

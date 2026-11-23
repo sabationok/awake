@@ -22,7 +22,7 @@ struct AgentMacState: Encodable, Equatable {
     var brightness: Int?
 }
 
-/// Команда від агента: що натиснули на пульті або яке налаштування змінили.
+/// Команда від агента: що натиснули у Web UI або яке налаштування змінили.
 struct AgentCommand: Decodable {
     enum Action: String, Decodable { case start, stop, lock, displayOff, setting, sleepTimer, volume, mute, brightness }
     var id: String

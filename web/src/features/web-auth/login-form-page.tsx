@@ -16,7 +16,7 @@ const DEFAULT_IDLE: WebSessionIdleMinutes = 5;
 const ERROR_TEXT: Record<string, string> = {
   INVALID_PASSWORD: 'Неправильний пароль.',
   TOO_MANY_ATTEMPTS: 'Забагато спроб. Спробуй за 15 хвилин.',
-  PASSWORD_NOT_SET: 'Пароль ще не задано. Задай його на Mac: MaControl → Підключення → «Ключі аппки» → «Пароль дашборду».',
+  PASSWORD_NOT_SET: 'Пароль ще не задано. Задай його на Mac: MaControl → Підключення → «Ключі аппки» → «Пароль Web UI».',
 };
 
 /** Вхід паролем на сполученому пристрої. Пароль перевіряє агент на Mac; він же ставить `mc_session`. */

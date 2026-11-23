@@ -12,7 +12,7 @@ const BLUETOOTH: Record<BluetoothState, { label: string; tone: UiTone }> = {
   unknown: { label: 'Запускається…', tone: 'gray' },
 };
 
-/** «Поруч»: налаштування блокування і що Mac бачить зараз. Лише Mac і локальний пульт: назви пристроїв особисті. */
+/** «Поруч»: налаштування блокування і що Mac бачить зараз. Лише Mac і локальний Web UI: назви пристроїв особисті. */
 export function buildProximityPage(ctx: ModuleContext, state: ProximityState): UiPage {
   return {
     id: PROXIMITY_PAGE,

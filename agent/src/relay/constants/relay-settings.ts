@@ -13,7 +13,7 @@ export const RELAY_SESSIONS_PAGE = 'relay-sessions';
 const fromWebhooxy = (label: string): UiOption => ({ value: RELAY_LIMIT_DEFAULT, label: `Як у webhooxy (${label})` });
 
 /**
- * Перемикач модуля — на головній вкладці Webhooxy. Чи йде дашборд саме через нього, вибирають на Огляді Агента. Ліміти кімнати — select-и `limits.<поле RelayLimitsDef>` (docs/relay-contract.md),
+ * Перемикач модуля — на головній вкладці Webhooxy. Чи йде Web UI саме через нього, вибирають на Огляді Агента. Ліміти кімнати — select-и `limits.<поле RelayLimitsDef>` (docs/relay-contract.md),
  * webhooxy приймає їх у handshake і через `relay:limits` одразу, без перепідключення.
  */
 export const RELAY_SETTINGS: SettingDefinition[] = [
@@ -21,7 +21,7 @@ export const RELAY_SETTINGS: SettingDefinition[] = [
     type: 'switch',
     key: 'enabled',
     label: 'Увімкнено',
-    hint: 'Керування з дашборду поза домашньою мережею',
+    hint: 'Керування з Web UI поза домашньою мережею',
     icon: { symbol: 'antenna.radiowaves.left.and.right', tone: 'accent' },
     scope: 'mac',
     page: RELAY_PAGE,

@@ -120,7 +120,7 @@ private extension AgentDevices.Mode {
         switch self {
         case .local: "твоя Wi-Fi"
         case .tailnet: "твій tailnet, лише твій логін"
-        case .remote: "будь-яка, через дашборд"
+        case .remote: "будь-яка, через Web UI"
         }
     }
 

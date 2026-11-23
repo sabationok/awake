@@ -4,7 +4,7 @@ import { DashboardPasswordService } from './services/dashboard-password.service'
 import { WebSessionsService } from './services/web-sessions.service';
 import { WebAuthController } from './web-auth.controller';
 
-/** Вебсесії дашборду (SQLite) і пароль. Не `sessions`: `agent/src/sessions` — сесії Mac для статистики. */
+/** Вебсесії Web UI (SQLite) і пароль. Не `sessions`: `agent/src/sessions` — сесії Mac для статистики. */
 @Module({
   controllers: [WebAuthController],
   providers: [WebSessionsRepository, WebSessionsService, DashboardPasswordService],

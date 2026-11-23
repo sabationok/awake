@@ -6,7 +6,7 @@ import { TlsService } from '../../tls/services/tls.service';
 import { TrustedNetworksService } from '../../trusted-networks';
 import { findLanAddress } from '../helpers/find-lan-address';
 
-/** Прямий доступ до агента для дашборду: лише в довіреній Wi-Fi. */
+/** Прямий доступ до агента для Web UI: лише в довіреній Wi-Fi. */
 @Injectable()
 export class PresenceService {
   constructor(
@@ -17,7 +17,7 @@ export class PresenceService {
   ) {}
 
   /**
-   * HTTPS-адреса агента з одноразовим кодом сполучення і CA, якому дашборд має довіряти.
+   * HTTPS-адреса агента з одноразовим кодом сполучення і CA, якому Web UI має довіряти.
    * Головний токен з Mac не виходить: сторінка міняє код на власний токен пристрою, а код швидко протухає.
    */
   localAccess(state: MacState): UiLocalAccess | null {
