@@ -67,6 +67,18 @@ Vercel». Агент — «Бізнес-логіка: дії й команди �
 бот шле своїм API (Telegram Bot API), а не у відповідь на вебхук. Через `ws` з webhooxy вебхук приходить так само,
 окремим повідомленням, і обробляється тим самим `handleWebhookRequest`.
 
+**Диспетчер вебхуків — концепція `NodesModule` + `WebhooksModule` з nest-kit** (`@my-nestjs-kit/nodes`,
+`@my-nestjs-kit/webhooks`; зараз у `mia-erp-server/packages/nest-kit/src/{nodes,webhooks}`): registry вузлів →
+динамічний роутинг → store → guard. Кожен вузол (`bot:telegram`, `bot:discord`, вебхуки інших інтеграцій) — звичайний
+Nest provider з `handle(req)`, `validateReq`, `process(job)`, що прив'язує себе до власника `webhooks` через
+`@BindNode({ provider: 'telegram', type: 'webhooks' })`. `handleWebhookRequest` лише бере вузол за ключем і віддає йому
+запит; валідація й ідемпотентність — справа вузла.
+
+Кіт зараз не тягнемо: він ще не готовий. Коли дійде до коду — лише мінімальний локальний shim за глобальним правилом
+(`agent/src/nest-kit/{nodes,webhooks}/`, імпорт через `@nest-kit/*`, коментар `// TEMP nest-kit shim — target:
+@my-nestjs-kit/<pkg>`), з тими самими іменами й формами, щоб потім замінити імпорт на пакет. Поточний
+`agent/src/webhooks` переходить на цю схему тоді ж.
+
 Приклад. Web UI просить усю статистику одним запитом:
 `GET <webhooxyBaseUrl>/api/proxy/api/stats` → webhooxy пересилає запит на Mac по `http` або `ws` → агент отримує
 звичайний `GET /api/stats` (з `ws` його розгортає той самий HTTP-застосунок) → guard → контролер статистики → відповідь
