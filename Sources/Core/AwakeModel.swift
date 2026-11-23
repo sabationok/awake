@@ -94,8 +94,6 @@ final class AwakeModel: ObservableObject {
         restoreAfterCrash()
         setUpAgent()
         restoreSleepTimer()
-        // Після показу вікна: системний діалог адміністратора не має випереджати саму аппку.
-        DispatchQueue.main.async { AwakeModel.shared.migratePermissionRulesIfNeeded() }
         ticker = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in AwakeModel.shared.tick() }
         }

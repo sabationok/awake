@@ -13,6 +13,9 @@ struct PermissionSection: View {
             }
             LocationPermissionRow()
             BluetoothPermissionRow()
+            if PermissionService.hasLegacyRules {
+                LegacyRulesRow()
+            }
         } header: {
             Text("Система")
         } footer: {
@@ -59,6 +62,23 @@ private struct SystemPermissionRow: View {
             }
         }
         .help("\(permission.purpose)\n\n" + permission.commands.joined(separator: "\n"))
+    }
+}
+
+/// Правила sudoers під старими іменами `awake*`: працюють, але перейменування на `mc-*` — дія адміністратора,
+/// тож лише за кнопкою, коли користувач бачить, навіщо macOS питає пароль.
+private struct LegacyRulesRow: View {
+    @EnvironmentObject private var model: AwakeModel
+
+    var body: some View {
+        SettingsRow(title: "Правила під старими іменами awake-*", symbol: "arrow.triangle.2.circlepath", color: .orange) {
+            HStack(spacing: 8) {
+                StatusDot(color: .orange)
+                Text("Діють").foregroundStyle(.secondary)
+                Button("Перейменувати…") { model.renameLegacyPermissionRules() }
+            }
+        }
+        .help("Видані раніше правила sudoers лежать у /etc/sudoers.d під іменами awake*. Перейменування на mc-* не змінює дозволів; macOS попросить пароль адміністратора.")
     }
 }
 
