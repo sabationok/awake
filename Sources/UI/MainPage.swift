@@ -7,6 +7,8 @@ enum MainPage: Hashable, Identifiable {
     case connection
     case devices
     case server
+    /// «Сервер → Статистика»: навантаження й запити графіками, окремо від стану сервера.
+    case serverStats
 
     var id: MainPage { self }
 
@@ -19,6 +21,7 @@ enum MainPage: Hashable, Identifiable {
         case .connection: "connection"
         case .devices: "devices"
         case .server: "server"
+        case .serverStats: "server.stats"
         }
     }
 
@@ -28,6 +31,7 @@ enum MainPage: Hashable, Identifiable {
         case "connection": self = .connection
         case "devices": self = .devices
         case "server": self = .server
+        case "server.stats": self = .serverStats
         default:
             guard storageKey.hasPrefix("remote:") else { return nil }
             self = .remote(id: String(storageKey.dropFirst("remote:".count)))

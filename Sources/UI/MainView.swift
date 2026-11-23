@@ -36,7 +36,9 @@ struct MainView: View {
     /// решта сторінок вкладені під ним. Далі системні сторінки дерева і нативні «Підключення», «Пристрої» та «Дозвіл».
     /// Без дерева (агент не запущений) лишаються лише нативні.
     private var sections: [SidebarSection<MainPage>] {
-        let native = [MainPage.server, .connection, .devices, .permission].map { SidebarNode(item: $0) }
+        // Статистика сервера — окрема вкладена сторінка, як «Статистика» в модулів.
+        let native = [SidebarNode(item: MainPage.server, children: [.serverStats])]
+            + [MainPage.connection, .devices, .permission].map { SidebarNode(item: $0) }
         guard let tree = model.uiTree else { return [SidebarSection(nodes: native)] }
         let modules = tree.modules.compactMap { module -> SidebarNode<MainPage>? in
             // Вимкнений модуль: сірий пункт без дітей і без сторінки.
@@ -79,6 +81,7 @@ struct MainView: View {
         case .connection: "Підключення"
         case .devices: "Пристрої"
         case .server: "Сервер"
+        case .serverStats: "Статистика"
         }
     }
 
@@ -90,6 +93,7 @@ struct MainView: View {
         case .connection: "antenna.radiowaves.left.and.right"
         case .devices: "laptopcomputer.and.iphone"
         case .server: "server.rack"
+        case .serverStats: "chart.bar.xaxis"
         }
     }
 
@@ -126,6 +130,16 @@ struct MainView: View {
                 ServerSection()
             }
             .formStyle(.grouped)
+        case .serverStats:
+            if model.agentStatus.isRunning, let info = model.serverInfo {
+                Form {
+                    ServerStatsSections(pid: info.pid)
+                }
+                .formStyle(.grouped)
+            } else {
+                ContentUnavailableView("Агент не запущений", systemImage: "chart.bar.xaxis",
+                                       description: Text(model.agentStatus.statusText))
+            }
         case .devices:
             Form {
                 DevicesSection()
