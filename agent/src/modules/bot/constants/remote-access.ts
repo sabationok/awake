@@ -1,24 +1,52 @@
 import type { SettingDefinition } from '@awake/contracts';
+import type { ModuleContext } from '../../types/mac-module';
 
-/** Через що дашборд дістається до агента поза домашньою Wi-Fi. Вибір — на Огляді Агента, самі шляхи — модулі tailscale і relay. */
-export type RemoteAccess = 'off' | 'tailscale' | 'webhooxy';
+/**
+ * Шляхи до дашборду поза домашньою Wi-Fi. Три рівні:
+ * - модуль шляху (вкладка Tailscale / Webhooxy) каже, чи шлях узагалі доступний на цьому Mac;
+ * - тут, на Огляді Агента, — чи агент з ним працює (перемикачі, кілька шляхів паралельно);
+ * - картка «Сполучити пристрій» у Mac-аппці — яким шляхом сполучаємось зараз (вкладки, у кожної свій QR).
+ */
+export type RemotePath = 'tailscale' | 'webhooxy';
 
 export const REMOTE_ACCESS_MODULE = 'bot';
-export const REMOTE_ACCESS_KEY = 'remote';
+export const REMOTE_ACCESS_KEYS: Record<RemotePath, string> = { tailscale: 'remoteTailscale', webhooxy: 'remoteWebhooxy' };
+export const REMOTE_PATHS = Object.keys(REMOTE_ACCESS_KEYS) as RemotePath[];
 
-/** Шлях працює, лише коли його вибрано тут і його модуль увімкнено; вимкнений модуль — сіра опція. */
-export const REMOTE_ACCESS_SETTING: SettingDefinition = {
-  type: 'select',
-  key: REMOTE_ACCESS_KEY,
-  label: 'Віддалений доступ',
-  hint: 'Через що працює дашборд поза домашньою Wi-Fi',
-  icon: { symbol: 'globe', tone: 'accent' },
-  scope: 'mac',
-  page: 'bot-overview',
-  default: 'off',
-  options: [
-    { value: 'off', label: 'Вимкнено' },
-    { value: 'tailscale', label: 'Tailscale' },
-    { value: 'webhooxy', label: 'Webhooxy' },
-  ],
-};
+export const REMOTE_ACCESS_SETTINGS: SettingDefinition[] = [
+  {
+    type: 'switch',
+    key: REMOTE_ACCESS_KEYS.tailscale,
+    label: 'Tailscale',
+    hint: 'Дашборд на https://<mac>.ts.net для пристроїв у твоєму tailnet',
+    icon: { symbol: 'point.3.connected.trianglepath.dotted', tone: 'accent' },
+    scope: 'mac',
+    page: 'bot-overview',
+    default: false,
+  },
+  {
+    type: 'switch',
+    key: REMOTE_ACCESS_KEYS.webhooxy,
+    label: 'Webhooxy',
+    hint: 'Дашборд на Vercel через relay webhooxy',
+    icon: { symbol: 'arrow.triangle.branch', tone: 'accent' },
+    scope: 'mac',
+    page: 'bot-overview',
+    default: false,
+  },
+];
+
+/** Шлях, якому належить ключ налаштування; null — не перемикач шляху. */
+export function remotePathOf(key: string): RemotePath | null {
+  return REMOTE_PATHS.find((path) => REMOTE_ACCESS_KEYS[path] === key) ?? null;
+}
+
+/** Агент працює з цим шляхом (перемикач на Огляді). Доступність самого шляху перевіряє його модуль. */
+export function isRemoteAllowed(ctx: ModuleContext, path: RemotePath): boolean {
+  return ctx.setting<boolean>(REMOTE_ACCESS_KEYS[path], REMOTE_ACCESS_MODULE);
+}
+
+/** Зміна, після якої шлях треба перевірити: його перемикач на Огляді. */
+export function isRemoteChange(change: { module: string; key: string }, path: RemotePath): boolean {
+  return change.module === REMOTE_ACCESS_MODULE && change.key === REMOTE_ACCESS_KEYS[path];
+}

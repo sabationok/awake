@@ -14,7 +14,7 @@ export const TAILSCALE_CLI_PATHS = ['/Applications/Tailscale.app/Contents/MacOS/
 
 /**
  * Перемикач модуля на його вкладці. `tailscale serve` на tailnet-порт агента піднімається, лише коли модуль увімкнено
- * і на Огляді Агента вибрано «Tailscale»; інакше агент його прибирає.
+ * і на Огляді Агента ввімкнено перемикач «Tailscale»; інакше агент його прибирає.
  */
 export const TAILSCALE_SETTINGS: SettingDefinition[] = [
   {

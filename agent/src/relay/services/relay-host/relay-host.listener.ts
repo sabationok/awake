@@ -5,7 +5,7 @@ import { AppSecretsService } from '../../../secrets';
 import { WebhooksService } from '../../../webhooks';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
 import { ModulesService } from '../../../modules/modules.service';
-import { REMOTE_ACCESS_KEY, REMOTE_ACCESS_MODULE } from '../../../modules/bot/constants/remote-access';
+import { isRemoteChange } from '../../../modules/bot/constants/remote-access';
 import { RelayHostService } from './relay-host.service';
 
 /** Перемикач relay або вибір «Віддалений доступ» → host підключається або відпускає кімнату; нові секрети чи вебхук relay → перечитати й перепідключитись; новий стан Mac чи налаштування → дерево viewer-ам; відкликали пристрій → вигнати його сесії. */
@@ -29,7 +29,7 @@ export class RelayHostListener implements OnModuleInit, OnModuleDestroy {
           filter(
             (change) =>
               (change.module === 'relay' && change.key === 'enabled') ||
-              (change.module === REMOTE_ACCESS_MODULE && change.key === REMOTE_ACCESS_KEY),
+              isRemoteChange(change, 'webhooxy'),
           ),
         )
         .subscribe(() => this._relay.syncEnabled()),

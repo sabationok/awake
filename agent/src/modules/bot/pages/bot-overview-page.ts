@@ -1,9 +1,9 @@
-import type { UiNode, UiPage, UiSelect } from '@awake/contracts';
+import type { UiNode, UiPage, UiSwitch } from '@awake/contracts';
 import type { BotMetrics } from '../../../bot-journal';
 import type { AgentProxy, AgentTransport } from '../../../transports';
 import type { ModuleContext } from '../../types/mac-module';
 import { AGENT_ENABLED_KEY } from '../constants/agent-enabled';
-import { REMOTE_ACCESS_KEY, type RemoteAccess } from '../constants/remote-access';
+import { REMOTE_ACCESS_KEYS, REMOTE_PATHS, type RemotePath } from '../constants/remote-access';
 
 export const BOT_OVERVIEW_PAGE = 'bot-overview';
 
@@ -24,22 +24,24 @@ function transportNodes(transport: AgentTransport, proxies: AgentProxy[], metric
   ];
 }
 
-/** Опція шляху сіра, коли його модуль вимкнено (у своїй вкладці чи жорстко в агенті). */
-function remoteAccessNode(ctx: ModuleContext, available: Record<RemoteAccess, boolean>): UiNode {
-  const node = ctx.settingNode(REMOTE_ACCESS_KEY) as UiSelect;
-  return { ...node, options: node.options.map((option) => ({ ...option, disabled: !available[option.value as RemoteAccess] })) };
+/** Перемикач шляху сірий, коли його модуль вимкнено (у своїй вкладці чи жорстко в агенті); вимкнений шлях — вимкнений. */
+function remoteAccessNodes(ctx: ModuleContext, available: Record<RemotePath, boolean>): UiNode[] {
+  return REMOTE_PATHS.map((path) => {
+    const node = ctx.settingNode(REMOTE_ACCESS_KEYS[path]) as UiSwitch;
+    return available[path] ? node : { ...node, value: false, disabled: true };
+  });
 }
 
 /**
- * «Огляд» Агента: вмикач агента, «Віддалений доступ» (через що дашборд працює поза домашньою Wi-Fi — Tailscale чи webhooxy;
- * опція сіра, коли її модуль вимкнено) і транспорти з проксі. Сповіщення Агента — у Telegram → Сповіщення.
+ * «Огляд» Агента: вмикач агента, «Віддалений доступ» (перемикачі шляхів поза домашньою Wi-Fi — Tailscale, webhooxy;
+ * сірий, коли модуль шляху вимкнено) і транспорти з проксі. Сповіщення Агента — у Telegram → Сповіщення.
  */
 export function buildBotOverviewPage(
   ctx: ModuleContext,
   transports: AgentTransport[],
   proxies: AgentProxy[],
   metrics: BotMetrics,
-  available: Record<RemoteAccess, boolean>,
+  available: Record<RemotePath, boolean>,
 ): UiPage {
   return {
     id: BOT_OVERVIEW_PAGE,
@@ -61,8 +63,8 @@ export function buildBotOverviewPage(
         type: 'section',
         title: 'Віддалений доступ',
         scope: 'mac',
-        footer: 'Один шлях до дашборду поза домашньою Wi-Fi. Сіра опція — її модуль вимкнено: увімкнути у вкладці Tailscale чи Webhooxy.',
-        children: [remoteAccessNode(ctx, available)],
+        footer: 'З якими шляхами до дашборду поза домашньою Wi-Fi працює агент; можна кілька. Сірий — його модуль вимкнено: увімкнути у вкладці Tailscale чи Webhooxy. Яким шляхом сполучити пристрій — у картці «Сполучити пристрій».',
+        children: remoteAccessNodes(ctx, available),
       },
       {
         id: 'transports',

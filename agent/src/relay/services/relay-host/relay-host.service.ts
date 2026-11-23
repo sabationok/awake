@@ -11,7 +11,7 @@ import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.servic
 import { isUiEvent } from '../../../modules/helpers/is-ui-event';
 import { ModulesService } from '../../../modules/modules.service';
 import { TelegramNotificationsService } from '../../../telegram/notifications';
-import { REMOTE_ACCESS_KEY, REMOTE_ACCESS_MODULE } from '../../../modules/bot/constants/remote-access';
+import { isRemoteAllowed } from '../../../modules/bot/constants/remote-access';
 import { TransportsService } from '../../../transports';
 import { RELAY_MAX_PAYLOAD_BYTES, RELAY_RETRY_MS } from '../../constants/relay-limits';
 import { RELAY_METRICS } from '../../constants/relay-metrics';
@@ -143,10 +143,10 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     this._stop();
   }
 
-  /** Кімната потрібна, лише коли модуль увімкнено (`relay.enabled`, Mac або Telegram) і на Огляді Агента вибрано «Webhooxy». */
+  /** Кімната потрібна, лише коли модуль увімкнено (`relay.enabled`, Mac або Telegram) і на Огляді Агента ввімкнено «Webhooxy». */
   syncEnabled() {
     const ctx = this._modules.context('relay');
-    this.setEnabled(ctx.setting<boolean>('enabled') && ctx.setting<string>(REMOTE_ACCESS_KEY, REMOTE_ACCESS_MODULE) === 'webhooxy');
+    this.setEnabled(ctx.setting<boolean>('enabled') && isRemoteAllowed(ctx, 'webhooxy'));
   }
 
   /** Підключає або відпускає кімнату. */

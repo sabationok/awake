@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Картка «Сполучити пристрій»: селектор шляху (локально, Tailscale, дистанційно; недоступні сірі), QR з таймером і посилання з копіюванням.
+/// Картка «Сполучити пристрій»: вкладки шляху (локально, Tailscale, дистанційно), QR з таймером і посилання з копіюванням.
 /// Коди окремі для кожного шляху: QR одного шляху не діє через інший.
 struct PairingCard: View {
     @EnvironmentObject private var model: AwakeModel
@@ -9,15 +9,16 @@ struct PairingCard: View {
     /// nil — вибору ще не було: перший шлях, у якого є посилання.
     @State private var chosen: AgentDevices.Mode?
 
-    /// Вибраний шлях, поки в нього є посилання; інакше перший доступний. Недоступний не вибирається, як у
-    /// «Віддаленому доступі»: його видно сірим, а якщо доступного немає взагалі — причину першого.
+    /// Вибрана вкладка; до першого вибору — перший шлях, у якого є посилання.
     private var mode: AgentDevices.Mode {
         let modes = pairings.modes
-        if let chosen, modes.contains(chosen), isAvailable(chosen) { return chosen }
-        return modes.first(where: isAvailable) ?? modes.first ?? .local
+        if let chosen, modes.contains(chosen) { return chosen }
+        return modes.first { pairings[$0].url != nil } ?? modes.first ?? .local
     }
 
-    private func isAvailable(_ mode: AgentDevices.Mode) -> Bool { pairings[mode].url != nil }
+    private var selection: Binding<AgentDevices.Mode> {
+        Binding(get: { mode }, set: { chosen = $0 })
+    }
 
     /// Таймер живе на всій картці, а не в QR: так код оновлюється і тоді, коли видно інший шлях. Найближчий з усіх.
     private var expiry: Date? { pairings.modes.compactMap { pairings[$0].expiresAt }.min() }
@@ -26,19 +27,13 @@ struct PairingCard: View {
         let pairing = pairings[mode]
         Section {
             Group {
-                // Пункти Picker-меню в macOS ігнорують .disabled, а кнопки в Menu — ні (як у select SDUI).
-                LabeledContent("Шлях") {
-                    Menu(mode.title) {
-                        ForEach(pairings.modes) { option in
-                            Button(isAvailable(option) ? option.title : "\(option.title) — недоступно") {
-                                if isAvailable(option) { chosen = option }
-                            }
-                            .disabled(!isAvailable(option))
-                        }
-                    }
-                    .menuStyle(.button)
-                    .fixedSize()
+                // Вкладка = спосіб сполучення зараз: у кожної свій QR, URL і підказка. Які шляхи агент узагалі
+                // підтримує, вмикається на Огляді Агента; вкладка без посилання показує, чому його немає.
+                Picker("Шлях", selection: selection) {
+                    ForEach(pairings.modes) { Text($0.title).tag($0) }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
 
                 Text(mode.hint)
                     .foregroundStyle(.secondary)
@@ -187,10 +182,10 @@ private struct PairingUnavailable: View {
     private static func text(for reason: String?) -> String {
         switch reason {
         case "untrusted": return "Mac не в довіреній Wi-Fi. Додай мережу в «Підключенні» або обери «Tailscale»."
-        case "tailnetOff": return "Tailscale не запущений на Mac або вимкнений: увімкни «Через Tailscale» в Агент → Огляд."
+        case "tailnetOff": return "Tailscale не запущений на Mac або вимкнений: увімкни модуль у вкладці Tailscale і перемикач «Tailscale» в Агент → Огляд → Віддалений доступ."
         case "disabled": return "Webhooxy вимкнено в агенті."
         case "noNetwork": return "Mac не в мережі: немає адреси, за якою пристрій міг би його знайти."
-        case "relayOff": return "Webhooxy вимкнений або не налаштований: увімкни його в Агент → Огляд."
+        case "relayOff": return "Webhooxy вимкнений або не налаштований: увімкни перемикач «Webhooxy» в Агент → Огляд → Віддалений доступ."
         case "loading": return "Завантаження…"
         default: return "Посилання зараз недоступне."
         }

@@ -6,7 +6,7 @@ import type { RelayStateSnapshot } from '../types/relay-status.types';
 
 /**
  * Головна вкладка Webhooxy: стан host-а, URL і зауваги про ключі. Самі ключі — нативна форма SwiftUI над цією сторінкою. Ліміти, трекінг і сесії — дочірні вкладки; сповіщення — Telegram → Сповіщення.
- * Перемикач модуля — тут; через що з нього йде дашборд (Tailscale чи webhooxy), вибирають на Огляді Агента.
+ * Перемикач модуля — тут; чи агент з ним працює, вмикають на Огляді Агента (перемикач «Webhooxy»).
  */
 export function buildRelayPage(state: RelayStateSnapshot, enabledNode: UiNode): UiPage {
   const view = RELAY_STATUS_VIEW[state.status];
@@ -23,7 +23,7 @@ export function buildRelayPage(state: RelayStateSnapshot, enabledNode: UiNode): 
         id: 'host',
         type: 'section',
         title: 'Host',
-        footer: 'Проксі до вебдашборду: агент тримає кімнату в webhooxy, дашборд підключається до неї за квитком. Працює, коли модуль увімкнено і на Огляді Агента вибрано «Webhooxy».',
+        footer: 'Проксі до вебдашборду: агент тримає кімнату в webhooxy, дашборд підключається до неї за квитком. Працює, коли модуль увімкнено і на Огляді Агента ввімкнено «Webhooxy».',
         children: [
           enabledNode,
           { id: 'status', type: 'status', label: view.label, tone: view.tone, pulse: state.status === 'connecting', hint: state.reason ?? undefined },

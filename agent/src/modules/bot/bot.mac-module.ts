@@ -12,7 +12,7 @@ import type { MacModule, ModuleContext, StatusFields } from '../types/mac-module
 import { AGENT_ENABLED_SETTING } from './constants/agent-enabled';
 import { BOT_NOTIFICATIONS } from './constants/bot-notifications';
 import { BOT_STATS_PAGE } from './constants/bot-stats-page';
-import { REMOTE_ACCESS_KEY, REMOTE_ACCESS_SETTING, type RemoteAccess } from './constants/remote-access';
+import { REMOTE_ACCESS_SETTINGS, remotePathOf, type RemotePath } from './constants/remote-access';
 import { buildBotJournalPage } from './pages/bot-journal-page';
 import { buildBotOverviewPage } from './pages/bot-overview-page';
 import { buildBotStatsPage } from './pages/bot-stats-page';
@@ -28,7 +28,7 @@ export class BotMacModule implements MacModule {
   readonly title = 'Агент';
   readonly icon = { symbol: 'cpu.fill', tone: 'accent' } as const;
   readonly permissions: MacModule['permissions'] = [];
-  readonly settings: SettingDefinition[] = [AGENT_ENABLED_SETTING, REMOTE_ACCESS_SETTING, statsPeriodSetting(BOT_STATS_PAGE)];
+  readonly settings: SettingDefinition[] = [AGENT_ENABLED_SETTING, ...REMOTE_ACCESS_SETTINGS, statsPeriodSetting(BOT_STATS_PAGE)];
 
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
@@ -51,16 +51,16 @@ export class BotMacModule implements MacModule {
     ];
   }
 
-  /** Вимкнений шлях не вибирається й в обхід UI (Telegram, старий клієнт). */
+  /** Недоступний шлях не вмикається й в обхід UI (Telegram, старий клієнт); вимкнути можна завжди. */
   rejectSetting(key: string, value: SettingValue, ctx: ModuleContext): string | null {
-    if (key !== REMOTE_ACCESS_KEY) return null;
-    return this._remoteAvailability(ctx)[value as RemoteAccess] ? null : `Шлях ${String(value)} вимкнено у його модулі`;
+    const path = remotePathOf(key);
+    if (!path || value !== true) return null;
+    return this._remoteAvailability(ctx)[path] ? null : `Шлях ${path} вимкнено у його модулі`;
   }
 
-  /** Який шлях можна вибрати: модуль увімкнено у своїй вкладці (і webhooxy — в агенті). */
-  private _remoteAvailability(ctx: ModuleContext): Record<RemoteAccess, boolean> {
+  /** Чи шлях доступний: модуль увімкнено у своїй вкладці (і webhooxy — в агенті). */
+  private _remoteAvailability(ctx: ModuleContext): Record<RemotePath, boolean> {
     return {
-      off: true,
       tailscale: ctx.setting<boolean>('enabled', 'tailscale'),
       webhooxy: this._config.webhooxy && ctx.setting<boolean>('enabled', 'relay'),
     };

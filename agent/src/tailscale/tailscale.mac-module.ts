@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { UiPage } from '@awake/contracts';
-import { REMOTE_ACCESS_KEY, REMOTE_ACCESS_MODULE } from '../modules/bot/constants/remote-access';
+import { isRemoteAllowed } from '../modules/bot/constants/remote-access';
 import type { MacModule, ModuleContext, StatusFields } from '../modules/types/mac-module';
 import { TAILSCALE_MODULE, TAILSCALE_SETTINGS } from './constants/tailscale-settings';
 import { buildTailscalePage } from './pages/tailscale-page';
@@ -19,7 +19,7 @@ export class TailscaleMacModule implements MacModule {
 
   pages(ctx: ModuleContext): UiPage[] {
     const enabled = ctx.setting<boolean>('enabled');
-    const active = enabled && ctx.setting<string>(REMOTE_ACCESS_KEY, REMOTE_ACCESS_MODULE) === 'tailscale';
+    const active = enabled && isRemoteAllowed(ctx, 'tailscale');
     return [buildTailscalePage(this._tailscale.state, ctx.settingNode('enabled'), active)];
   }
 

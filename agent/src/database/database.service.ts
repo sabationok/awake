@@ -117,17 +117,16 @@ export class DatabaseService implements OnApplicationShutdown {
   }
 
   /**
-   * «Віддалений доступ» на Огляді Агента замість двох перемикачів-«через»: перший раз вибір береться з того, що було
-   * ввімкнено (Tailscale, потім webhooxy), щоб serve чи кімната не впали після оновлення. Далі нічого не робить.
+   * «Віддалений доступ» тепер перемикачі на шлях (кілька паралельно) замість select `bot.remote`.
+   * Перший раз вибраний шлях стає ввімкненим перемикачем; старий ключ зникає. Далі нічого не робить.
    */
   private _migrateRemoteAccess() {
     this.db.exec(`
-      INSERT INTO settings (module, key, value)
-        SELECT 'bot', 'remote', CASE
-          WHEN EXISTS (SELECT 1 FROM settings WHERE module = 'tailscale' AND key = 'enabled' AND value = 'true') THEN '"tailscale"'
-          WHEN EXISTS (SELECT 1 FROM settings WHERE module = 'relay' AND key = 'enabled' AND value = 'true') THEN '"webhooxy"'
-          ELSE '"off"' END
-        WHERE NOT EXISTS (SELECT 1 FROM settings WHERE module = 'bot' AND key = 'remote');
+      INSERT OR IGNORE INTO settings (module, key, value)
+        SELECT 'bot', 'remoteTailscale', CASE WHEN value = '"tailscale"' THEN 'true' ELSE 'false' END FROM settings WHERE module = 'bot' AND key = 'remote';
+      INSERT OR IGNORE INTO settings (module, key, value)
+        SELECT 'bot', 'remoteWebhooxy', CASE WHEN value = '"webhooxy"' THEN 'true' ELSE 'false' END FROM settings WHERE module = 'bot' AND key = 'remote';
+      DELETE FROM settings WHERE module = 'bot' AND key = 'remote';
     `);
   }
 
