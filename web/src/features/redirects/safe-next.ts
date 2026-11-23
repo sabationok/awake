@@ -9,7 +9,9 @@ export function safeNextPath(value: unknown): string {
   try {
     const url = new URL(value, BASE);
     if (url.origin !== BASE) return '/app';
-    return `${url.pathname}${url.search}${url.hash}`;
+    // Нормалізація може сама зібрати `//`: `/.//evil.com` → pathname `//evil.com`. Перевіряємо те, що віддаємо.
+    const out = `${url.pathname}${url.search}${url.hash}`;
+    return /^\/[\/\\]/.test(out) || new URL(out, BASE).origin !== BASE ? '/app' : out;
   } catch {
     return '/app';
   }
