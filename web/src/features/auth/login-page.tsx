@@ -11,7 +11,7 @@ export function LoginPage({ next }: { next: string }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(login, { error: null });
 
   return (
-    <PageFrame title="Awake">
+    <PageFrame title="MaControl">
       <form action={action}>
         <input type="hidden" name="next" value={next} />
         <FlexBox gap="md">

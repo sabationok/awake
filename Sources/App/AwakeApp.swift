@@ -6,7 +6,7 @@ struct AwakeApp: App {
     @StateObject private var model = AwakeModel.shared
 
     var body: some Scene {
-        Window("Awake", id: WindowID.main) {
+        Window("MaControl", id: WindowID.main) {
             MainView().environmentObject(model).environmentObject(delegate.updates)
         }
         .windowResizability(.contentMinSize)

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Реліз Awake через GitHub Releases + Sparkle.
+# Реліз MaControl через GitHub Releases + Sparkle.
 # Приватний ключ EdDSA: ~/.config/awake/sparkle_ed25519.key (base64 seed), без Keychain.
 #   scripts/release.sh 1.1
 # Що робить: ставить версію в Info.plist, збирає, пакує zip, підписує EdDSA-ключем
@@ -23,8 +23,8 @@ BUILD=$(( $(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$PLIST") + 1 ))
 mkdir -p releases
 # У releases/ лишається лише поточний архів: префікс URL прив'язаний до тегу цього релізу.
 find releases -name '*.zip' -delete
-ZIP="releases/Awake-$VERSION.zip"
-ditto -c -k --keepParent build/Awake.app "$ZIP"
+ZIP="releases/MaControl-$VERSION.zip"
+ditto -c -k --keepParent build/MaControl.app "$ZIP"
 
 # generate_appcast підписує всі архіви в releases/ і пише appcast.xml у корінь.
 "$SPARKLE/generate_appcast" \
@@ -35,5 +35,5 @@ ditto -c -k --keepParent build/Awake.app "$ZIP"
 git add Info.plist appcast.xml
 git commit -m "Release $VERSION ($BUILD)" || true
 git push
-gh release create "v$VERSION" "$ZIP" --repo "$REPO" --title "Awake $VERSION" --notes "Awake $VERSION"
+gh release create "v$VERSION" "$ZIP" --repo "$REPO" --title "MaControl $VERSION" --notes "MaControl $VERSION"
 echo "Опубліковано v$VERSION (build $BUILD)"
