@@ -1,5 +1,16 @@
 # Relay через webhooxy: контракт
 
+> **Замінено (2026-11-24).** Документ історичний і описує схему до `/api/proxy`: WS viewer з квитками, `X-Relay-Key`,
+> `/api/relay/rooms/:roomId/request`, кукі через `relay:request` і пароль + сесію на Vercel. Чинне:
+> - флоу сполучення, входу, сесії і відкликання для всіх каналів, кукі `mc_device` / `mc_session` —
+>   [auth-flow-spec.md](auth-flow-spec.md);
+> - guard, стратегії, `X-Proxy-Sign`, `X-Relay-Auth`, ціль у сховищі — [auth-proxy-spec.md](auth-proxy-spec.md);
+> - `/api/proxy` у webhooxy (режими `http` | `ws`, коди помилок) — [webhooxy-proxy-request.md](webhooxy-proxy-request.md).
+>
+> Розділ «Авторизація пристрою: два шари» більше не діє: Vercel не перевіряє сесію, пароль і сесію веде агент, а
+> пристрій через проксі проходить ті самі роути й guard, що й інші канали. Wire-форми webhooxy (`relay:request`,
+> namespace `/relay`, ліміти) тут ще правильні, поки агент на них працює.
+
 Дашборд (браузер) і агент на Mac тримають WSS до двосторонньої room у webhooxy. Агент виступає як `host`, браузери як `viewer`. webhooxy лише пересилає повідомлення: ключів relay він не зберігає й токенів viewer-а не перевіряє. Пускати viewer-а чи ні, вирішує сам host, тобто агент.
 
 Модель погоджено з webhooxy 2026-11-21. Вона замінила попередні варіанти (REST-квитки, спільний JWT-ключ, ES256-ключі воркспейсу в `credentials`, reveal). Форми подій остаточні, за PR #5 (`feat/ws-relay` → `dev`, head `bfbe742`, ще не змерджений).

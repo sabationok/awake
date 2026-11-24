@@ -1,6 +1,8 @@
 # Spec: вхід на дашборд, пейринг, стратегії guard-а
 
-Статус: шлях Tailscale реалізовано 2026-11-23 (не закомічено, live-перевірки з телефона ще не було); рішення 2026-11-22/23. Зараз робимо лише шлях **Tailscale**. Vercel і relay (webhooxy) відкладено, їхні рішення — у розділі «Потім: relay через Vercel».
+Статус: шлях Tailscale реалізовано 2026-11-23 (не закомічено, live-перевірки з телефона ще не було); рішення 2026-11-22/23. Зараз робимо лише шлях **Tailscale**. Vercel і proxy (webhooxy) відкладено, їхні рішення — у розділі «Потім: proxy через Vercel».
+
+Кроки флоу за каналами (сполучення → підключення → сесія → відкликання), активність сесії, source з principal і порядок переходу на `/api/proxy`: [auth-flow-spec.md](auth-flow-spec.md). Там, де документи розходяться, діє він. Імена: «relay» у наших іменах не вживаємо (proxy, webhooks, провайдер `webhooxy`); wire-імена webhooxy (`relay:request`, `/relay`, `X-Relay-Auth`) лишаються лише на межі протоколу.
 
 Канали зв'язку, адреса підключення `<networkType>:<channel>:<webUiHost>`, імена MaControl у системі Mac, дозволи і Web UI: [connection-channels-spec.md](connection-channels-spec.md).
 
@@ -35,7 +37,7 @@ Mac-аппка — повний виняток: ходить до Nest напр�
 
 Один guard на заміну `AgentTokenGuard`. У нього реєстр стратегій, по одній на канал. Стратегія:
 
-1. впізнає свій канал за ознакою, яку клієнт не підробить (локальний порт сокета, транспорт relay), а не за хедером;
+1. впізнає свій канал за ознакою, яку клієнт не підробить (локальний порт сокета, транспорт proxy), а не за хедером;
 2. перевіряє канал;
 3. дістає, хто прийшов, і повертає principal або «не моє».
 
@@ -45,7 +47,7 @@ Mac-аппка — повний виняток: ходить до Nest напр�
 |---|---|---|---|
 | `local` | loopback або LAN-адреса на основних портах | loopback: agent token; LAN: довірена Wi-Fi + Bearer токен пристрою (як зараз) | `agent`, `device` |
 | `tailscale` | `req.socket.localPort === tailnetPort` | serve увімкнений, `Tailscale-User-Login` — власник tailnet, Origin для не-GET; далі `mc_device` + `mc_session`. Bearer токен пристрою не діє; головний токен агента лишається для розробки | `web`, `web-device`, `agent` |
-| `webhooxy` | транспорт relay (in-process, не хедер) | `X-Proxy-Sign` (див. «Потім»), далі `mc_device` + `mc_session` | `web`, `web-device` |
+| `webhooxy` | транспорт proxy від webhooxy (in-process, не хедер) | `X-Proxy-Sign` (див. «Потім»), далі `mc_device` + `mc_session` | `web`, `web-device` |
 
 - Назви стратегій конкретні, без загальних абстракцій. Новий канал — нова стратегія; роути не змінюються.
 - Дві осі: стратегія — яким каналом прийшло; principal — хто прийшов. Роут дивиться лише на principal.
@@ -53,7 +55,7 @@ Mac-аппка — повний виняток: ходить до Nest напр�
 - Пейринг прив'язаний до стратегії: пристрій сполучається і потім ходить тим самим каналом (зараз `isDeviceToken(token, 'tailnet' | 'local')`).
 - Перевірку Origin для не-GET робить guard (Next-проксі, який це робив, у цьому режимі немає).
 - **ngrok і подібні тунелі** пересилають на localhost, тож агент побачив би їх як loopback з правами Mac-аппки. Якщо тунель з'явиться — лише на окремий loopback-порт і зі своєю стратегією, як `tailscale`.
-- relay не має свого роутера: `relay-request.service.ts` перестає розбирати шляхи і передає запит у той самий Nest HTTP-застосунок in-process (відкрите питання 3).
+- proxy не має свого роутера: `relay-request.service.ts` (стане `proxy-request.service.ts`) перестає розбирати шляхи і передає запит у той самий Nest HTTP-застосунок in-process (відкрите питання 3).
 
 ## Відповідь Nest: дані і наступний крок
 
@@ -111,36 +113,36 @@ SQLite, таблиця `web_sessions`:
 - Перевірка лише в Nest. Ліміт: 5 невдалих за 15 хв на пристрій → 429 на 15 хв.
 - Пароль не заданий → `auth/login` повертає `PASSWORD_NOT_SET`, UI підказує задати його в Mac-аппці.
 
-## Потім: relay через Vercel
+## Потім: proxy через Vercel
 
-Не робимо зараз. Relay потрібен лише для дашборду на Vercel: serverless-функція не в tailnet і до `ts.net` не дістанеться.
+Не робимо зараз. Proxy потрібен лише для Web UI на Vercel: serverless-функція не в tailnet і до `ts.net` не дістанеться.
 
 - **Проксі не знає, куди стукає.** Next-проксі `api/proxy/[...path]` (перейменування `api/mac`) не знає ні про webhooxy, ні про Tailscale, ні про інший канал. На кожен запит він дістає з Upstash ціль, яку налаштовуємо в рантаймі, без деплою:
-  - `baseUrl` — куди слати (relay-кімната webhooxy, тунель, будь-що);
+  - `baseUrl` — куди слати (`/api/proxy` webhooxy, тунель, будь-що);
   - ключ підпису;
   - `headers` — хедери каналу, які проксі додає наосліп. Для webhooxy це `X-Relay-Auth: Bearer <token>` (нижче).
 
-  Далі робить свою роботу: `${baseUrl}/${path}?query`, метод, тіло (байти), кукі `mc_*`, підпис; відповідь і всі `Set-Cookie` повертає без змін. У коді проксі немає `room`, `mt_workspace` чи `X-Relay-Key`: усе специфічне для каналу живе в налаштуваннях цілі (відкрите питання 4). Ціль у Upstash пише Mac (Upstash як «останнє опубліковане значення», бо serverless не тримає підписку).
+  Далі робить свою роботу: `${baseUrl}/${path}?query`, метод, тіло (байти), кукі `mc_*`, підпис; відповідь і всі `Set-Cookie` повертає без змін. У коді проксі немає `room`, `mt_workspace` чи `X-Relay-Key`: усе специфічне для каналу живе в налаштуваннях цілі (відкрите питання 4). Ціль у сховищі пише лише логіка Web UI агента — `WebUiListener` за подією готовності каналу; канал сам нічого туди не пише (рішення 2026-11-23). Сховище — «останнє опубліковане значення», бо serverless не тримає підписку.
 - Інтерцептори проксі `{ match, onRequest?, onResponse? }` у route builder замість Vercel middleware. Логіки сесій у Next немає.
 - **`X-Proxy-Sign`.** Щоб агент знав, що стукає саме наш сервер Vercel, а не будь-хто, хто знає `baseUrl`:
-  - Mac генерує ключ підпису і кладе в Upstash поряд із `baseUrl`; Vercel читає його звідти.
+  - Ключ підпису генерує агент; `WebUiListener` публікує його в ціль поряд із `baseUrl`; Vercel читає його звідти.
   - Рішення 2026-11-23 (webhooxy PR #16, dd3d6a8): `X-Proxy-Sign` = hex `HMAC-SHA256(key, url)` лише від URL, без тіла і часу. `url` — path+query, який Next шле у webhooxy, разом із префіксом `/api/proxy` (`/api/proxy/api/stats?x=1`). SDK: Next — `signProxyUrl(secret, fullUrl)`, агент — `verifyProxySign(secret, headers['x-webhooxy-proxy-url'], headers['x-proxy-sign'])`.
   - webhooxy підпис не перевіряє, а передає цей самий рядок хосту в `x-webhooxy-proxy-url` (у `http` і `ws`); ззовні його не підробити. Агент перевіряє саме по ньому, а не по `path`/`query` з `relay:request`.
   - Стратегія `webhooxy` перевіряє підпис через `timingSafeEqual`; без підпису або з невірним → 401. Вікна часу немає (часу в підписі немає).
-  - Ротація: Mac пише новий секрет, деякий час приймає обидва.
-- **`X-Relay-Auth` замість `X-Relay-Key`.** Статичний `X-Relay-Key` (`rq_<kid>.<secret>`, `docs/relay-contract.md`) був зроблений за зразком proxy auth вебхуків. Для relay він не потрібен: агент після destination bootstrap має private key workspace і сам випускає токен для `relay:request`.
-  - Агент підписує токен private key-єм workspace і сам кладе його в Upstash у `headers` цілі: `X-Relay-Auth: Bearer <token>`.
+  - Ротація: агент генерує новий секрет, `WebUiListener` публікує його, агент деякий час приймає обидва.
+- **`X-Relay-Auth` замість `X-Relay-Key`.** Статичний `X-Relay-Key` (`rq_<kid>.<secret>`, `docs/relay-contract.md`, замінено) був зроблений за зразком proxy auth вебхуків. Для proxy він не потрібен: агент після destination bootstrap має private key workspace і сам випускає токен для `relay:request`.
+  - Канал webhooxy в агенті підписує токен private key-єм workspace і віддає його в події готовності; `WebUiListener` кладе його в `headers` цілі: `X-Relay-Auth: Bearer <token>`.
   - Токен іде лише хедером, не в query `baseUrl`: query потрапляє в логи і в підпис URL.
   - Проксі його не розбирає і не знає, що це, просто додає хедер.
   - Перевіряє токен webhooxy (публічний ключ workspace). Тип, `sub`/`aud` і TTL токена погодити з webhooxy, як і bootstrap-токен (`type`, `sub` = workspace, `aud` = destination). Поки це тест, токен у Upstash лежить відкритим; шифрувати чи ротувати — вирішимо пізніше.
-- Кукі через relay: Nest ставить їх через `res.cookie()`, webhooxy пересилає готові `Set-Cookie` (`docs/relay-contract.md`, cookie modes).
+- Кукі через proxy: Nest ставить їх через `res.cookie()`, webhooxy пересилає готові `Set-Cookie` (режими кук webhooxy; `docs/relay-contract.md` замінено).
 - Скіл `frontend-nextjs`: правило «Middleware is the session gate only» суперечить цьому (gate у backend, інтерцептори в route builder). Правку вносить `frontend-skill-maintainer`.
 
 ## Відкриті питання
 
 1. ~~Де зберігати пароль~~ — вирішено: `secrets.env` поряд з іншими ключами аппки (див. «Пароль»). Хеш на диску замість відкритого значення — можна пізніше, разом з іншими ключами.
 2. **LAN на http.** `Secure`-кукі на `http://<lan>:port` не ставляться, тож стратегія `local` поки лишається на Bearer. Чи переводити LAN на кукі (тоді потрібен https) — вирішити окремо.
-3. **In-process доставка relay-запиту** в HTTP-застосунок Nest (для `webhooxy`): inject через HTTP-адаптер або loopback-запит із секретом процесу. Вибрати, коли повернемося до relay.
+3. **In-process доставка proxy-запиту** в HTTP-застосунок Nest (для `webhooxy`): inject через HTTP-адаптер або loopback-запит із секретом процесу. Вибрати, коли повернемося до proxy.
 4. ~~Що входить у підпис `X-Proxy-Sign`~~ — вирішено: лише URL з `x-webhooxy-proxy-url` (див. «Потім»).
 
 ## Перевірка
