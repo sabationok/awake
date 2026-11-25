@@ -1,7 +1,7 @@
 import type { GroupChatEntity } from '../entities/group-chat.entity';
 
-/** Що робити конектору після `registerAdded`: спитати власника чи вийти з чужої групи. */
+/** Що робити конектору після `registerAdded`: `listed` — бот лишається і мовчить, група у списку; `leave` — вийти (список переповнено). */
 export interface GroupAddedDecision {
-  action: 'confirm' | 'leave';
+  action: 'listed' | 'leave';
   group: GroupChatEntity;
 }

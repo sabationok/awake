@@ -21,7 +21,7 @@ export function buildGroupsStatsPage(ctx: ModuleContext, timeline: (namespace: s
         id: `${GROUPS_UI_STATS.page}-charts`,
         type: 'section',
         title: 'Статистика',
-        footer: 'Лічильники доставки в прив\'язану групу; сповіщення в приватний чат — Telegram → Статистика.',
+        footer: 'Лічильники доставки в групу з дозволом; сповіщення в приватний чат — Telegram → Статистика.',
         children: buildStatsCharts(ctx, GROUPS_UI_STATS, period, timeline),
       },
     ],

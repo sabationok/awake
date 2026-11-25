@@ -26,7 +26,7 @@ import type { GroupsPageView } from './types/groups-page-view.types';
 export class GroupsMacModule implements MacModule {
   readonly id = GROUPS_MODULE;
   readonly title = 'Групи';
-  readonly description = 'Сповіщення агента MaControl по топіках прив\'язаної групи. Зараз — Telegram.';
+  readonly description = 'Сповіщення агента MaControl по топіках групи, в яку ви дозволили публікацію. Зараз — Telegram.';
   readonly icon = { symbol: 'person.3.fill', tone: 'accent' } as const;
   // Mac модулю нічого не дає.
   readonly permissions: MacModule['permissions'] = [];

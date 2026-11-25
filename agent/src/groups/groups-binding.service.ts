@@ -30,18 +30,22 @@ export class GroupsBindingService {
     private readonly _settings: GroupsSettingsService,
   ) {}
 
-  /** Прив'язує групу, звіряє її стан із провайдером і створює топіки джерел. Власник отримує «Групу прив'язано». */
+  /**
+   * Дозволяє публікацію в групу: з попередньої дозвіл знімається (бот у ній лишається), стан нової звіряється з
+   * провайдером, створюються топіки джерел. Власник отримує «Публікацію дозволено».
+   */
   async bind(dto: BindGroupDto): Promise<GroupTopicsResult> {
-    const wasBound = this._groups.boundGroup() !== null;
+    const previous = this._groups.boundGroup();
+    if (previous && previous.id !== dto.groupId) this._groups.release();
     this._groups.bind(dto);
     await this.refresh();
     const result = await this.ensureTopics();
     const group = this._groups.boundGroup();
-    if (group && !wasBound) {
+    if (group && group.id !== previous?.id) {
       this._notifications.notify({
         source: GROUPS_MODULE,
         type: GROUPS_NOTIFICATION.bound,
-        title: '👥 Групу прив\'язано',
+        title: '👥 Публікацію в групу дозволено',
         fields: {
           group: group.title,
           topics: this._groups.topics().length,
@@ -106,7 +110,12 @@ export class GroupsBindingService {
     this._groups.markRemoved({ provider: group.provider, externalId: group.externalId });
   }
 
-  /** Відв'язує групу і виходить із неї: без прив'язки бот у групі нічого не робить, а нова — лише через нове додавання. */
+  /** Знімає дозвіл на публікацію; бот лишається в групі і мовчить. */
+  release(): GroupChatEntity | null {
+    return this._groups.release();
+  }
+
+  /** Знімає дозвіл і виходить із групи: повернути її можна лише новим додаванням бота. */
   async unbind(): Promise<GroupChatEntity | null> {
     const group = this._groups.unbind();
     if (!group || group.leftAt !== null) return group;

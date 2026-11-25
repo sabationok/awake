@@ -3,7 +3,7 @@ import type { GroupCapability, GroupProviderId, GroupProviderManifest } from '@a
 import { Subject } from 'rxjs';
 import { StatsService } from '../stats';
 import { GROUP_PROVIDERS } from './constants/group-providers';
-import { GROUPS_FOREIGN_ROWS_LIMIT } from './constants/groups-limits';
+import { GROUPS_FOREIGN_ROWS_LIMIT, GROUPS_WAITING_LIMIT } from './constants/groups-limits';
 import { GROUPS_EVENTS_STAT_NS, GROUPS_STAT, GROUPS_STAT_STATUS, type GroupsStatKey } from './constants/groups-stats';
 import type { BindGroupDto } from './dto/bind-group.dto';
 import type { CreateGroupChatDto } from './dto/create-group-chat.dto';
@@ -57,9 +57,10 @@ export class GroupsService {
   }
 
   /**
-   * Бота додали в групу. Додав власник: рядок з `requestedAt`, рішення `confirm` (спитати «Прив'язати?»).
-   * Додав хтось інший: рядок з `leftAt` для журналу, рішення `leave` (конектор виходить з групи); таких рядків
-   * тримається не більше `GROUPS_FOREIGN_ROWS_LIMIT`. Відв'язана раніше група повертається без прив'язки.
+   * Бота додали в групу. Він лишається в ній і нічого не робить: рядок з `requestedAt` (група у списку, публікацію
+   * не дозволено), рішення `listed`. Дозвіл дає лише власник (`bind`). Виняток — список переповнений
+   * (`GROUPS_WAITING_LIMIT`) і додав не власник: рядок з `leftAt` для журналу, рішення `leave` (конектор виходить);
+   * таких рядків тримається не більше `GROUPS_FOREIGN_ROWS_LIMIT`. Група, з якої бот виходив, повертається без дозволу.
    */
   registerAdded(dto: RegisterGroupAddedDto): GroupAddedDecision {
     const now = new Date().toISOString();
@@ -67,21 +68,23 @@ export class GroupsService {
     const ref: GroupRefDto = { provider: dto.provider, externalId: dto.externalId };
     // Живий рядок групи один (унікальний індекс); якщо його немає — останній відв'язаний, його й відновлюємо.
     const existing = this._chats.findOne(ref) ?? this._chats.findOne(ref, { withDeleted: true, order: { id: 'DESC' } });
+    const listed = existing !== null && existing.deletedAt === null && existing.leftAt === null;
+    const stay = dto.byOwner || listed || this.pendingGroups().length < GROUPS_WAITING_LIMIT;
     const state: UpdateGroupChatStateDto = {
       title: dto.title,
       addedBy: dto.addedBy,
       botRights: dto.botRights,
       topicsEnabledAt,
-      leftAt: dto.byOwner ? null : now,
+      leftAt: stay ? null : now,
     };
     let id: number;
     if (existing) {
       id = existing.id;
-      // Прив'язаною лишається тільки жива прив'язана група. Відв'язаний рядок відновлюється без прив'язки (і старі
-      // рядки, відв'язані ще з `boundAt`, теж): власник знову отримує «Прив'язати?».
+      // Дозвіл лишається тільки в живої групи з дозволом. Відв'язаний рядок відновлюється без нього (і старі
+      // рядки, відв'язані ще з `boundAt`, теж): власник дозволяє публікацію заново.
       const bound = existing.deletedAt === null && existing.boundAt !== null;
       if (existing.deletedAt !== null) this._chats.restore({ id });
-      this._chats.update({ id }, { ...state, boundAt: bound ? existing.boundAt : null, requestedAt: dto.byOwner && !bound ? now : null });
+      this._chats.update({ id }, { ...state, boundAt: bound ? existing.boundAt : null, requestedAt: stay && !bound ? now : null });
     } else {
       const create: CreateGroupChatDto = {
         provider: dto.provider,
@@ -90,18 +93,18 @@ export class GroupsService {
         addedBy: dto.addedBy,
         botRights: dto.botRights,
         topicsEnabledAt,
-        requestedAt: dto.byOwner ? now : null,
-        leftAt: dto.byOwner ? null : now,
+        requestedAt: stay ? now : null,
+        leftAt: stay ? null : now,
       };
       id = this._chats.create(create).id;
     }
-    if (!dto.byOwner) this._purgeForeign();
+    if (!stay) this._purgeForeign();
     this._invalidate();
-    if (!dto.byOwner) this.count(GROUPS_STAT.foreignLeft);
-    return { action: dto.byOwner ? 'confirm' : 'leave', group: this._chats.findOneOrFail({ id }) };
+    if (!stay) this.count(GROUPS_STAT.foreignLeft);
+    return { action: stay ? 'listed' : 'leave', group: this._chats.findOneOrFail({ id }) };
   }
 
-  /** Прив'язує групу для сповіщень. Лише одна: нова — після `unbind`. */
+  /** Дозволяє публікацію в групу. Така група одна: з попередньої дозвіл спершу знімають (`release`). */
   bind(dto: BindGroupDto): GroupChatEntity {
     const group = this._chats.findOne({ id: dto.groupId });
     if (!group) throw new Error(`Group ${dto.groupId} not found`);
@@ -129,11 +132,26 @@ export class GroupsService {
     return group;
   }
 
-  /** Бот вийшов із групи або його видалили. Прив'язка лишається (її знімає `unbind`), але адресатів не буде. */
+  /**
+   * Знімає дозвіл на публікацію: група повертається у список (`requestedAt`), бот лишається в ній, її топіки
+   * зберігаються для наступного дозволу. Повертає групу, якою вона була, або null.
+   */
+  release(): GroupChatEntity | null {
+    const group = this._findBound();
+    if (!group) return null;
+    this._chats.update({ id: group.id }, { boundAt: null, requestedAt: group.leftAt === null ? new Date().toISOString() : null });
+    this._invalidate();
+    return group;
+  }
+
+  /**
+   * Бот вийшов із групи або його видалили. Дозвіл лишається (його знімають `release` / `unbind`), але адресатів не
+   * буде. Група без дозволу зникає зі списку: її рядок стає журнальним.
+   */
   markRemoved(dto: GroupRefDto): void {
     const group = this._chats.findOne({ provider: dto.provider, externalId: dto.externalId });
     if (!group || group.leftAt !== null) return;
-    this._chats.update({ id: group.id }, { leftAt: new Date().toISOString() });
+    this._chats.update({ id: group.id }, { leftAt: new Date().toISOString(), ...(group.boundAt === null ? { requestedAt: null } : {}) });
     this._invalidate();
   }
 
@@ -179,7 +197,7 @@ export class GroupsService {
     return group !== null && group.leftAt !== null && group.requestedAt === null && group.boundAt === null;
   }
 
-  /** Групи, куди бота додав власник і які чекають «Прив'язати»: бот у них, прив'язки немає. */
+  /** Групи, де бот є, а публікацію не дозволено: у них він нічого не робить. */
   pendingGroups(): GroupChatEntity[] {
     return this._chats.findMany({ requested: true, bound: false, left: false }, { order: { id: 'ASC' } });
   }
@@ -187,7 +205,7 @@ export class GroupsService {
   /** Чому в прив'язаній групі зараз не можна створювати топіки; null — можна. */
   topicsBlocker(): string | null {
     const group = this._load().group;
-    if (!group) return 'Групу не прив\'язано';
+    if (!group) return 'Публікацію не дозволено в жодну групу';
     if (group.leftAt !== null) return 'Бот вийшов із групи';
     if (group.topicsEnabledAt === null) return 'У групі не ввімкнені теми';
     if (!group.botRights.canManageTopics) return 'Бот не має права керувати темами';

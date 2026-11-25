@@ -126,6 +126,9 @@ export class TelegramBotService {
     }
   }
 
+  /** Група, якій востаннє ставили меню команд: з неї його прибирають, коли дозвіл знято або він перейшов до іншої. */
+  private _menuChatId: number | string | null = null;
+
   /**
    * Меню команд: загальне (`BotCommandScopeDefault`) і те саме для прив'язаної групи (`BotCommandScopeChat`), якщо
    * команди в групі ввімкнені (`groups.commands`); вимкнені — меню групи прибирається. Кожен виклик окремо: збій
@@ -139,16 +142,19 @@ export class TelegramBotService {
       this._logger.warn(`setMyCommands не вдався: ${describeError(error, env.token)}`);
     }
     const groupChatId = this._groups.commandsChatId();
-    if (groupChatId === null) {
-      const boundChatId = this._groups.boundChatId();
-      if (boundChatId === null) return;
+    // Меню прибирається з групи, де команди вимкнули, і з групи, з якої зняли дозвіл (бот у ній лишився).
+    const stale = new Set([this._menuChatId, groupChatId === null ? this._groups.boundChatId() : null]);
+    stale.delete(groupChatId);
+    stale.delete(null);
+    for (const chatId of stale) {
       try {
-        await bot.telegram.deleteMyCommands({ scope: { type: 'chat', chat_id: boundChatId } });
+        await bot.telegram.deleteMyCommands({ scope: { type: 'chat', chat_id: chatId as number | string } });
       } catch (error) {
         this._logger.warn(`deleteMyCommands для групи не вдався: ${describeError(error, env.token)}`);
       }
-      return;
     }
+    this._menuChatId = groupChatId;
+    if (groupChatId === null) return;
     try {
       await bot.telegram.setMyCommands(commands, { scope: { type: 'chat', chat_id: groupChatId } });
     } catch (error) {

@@ -36,11 +36,11 @@ interface PendingRights {
 }
 
 /**
- * Адаптер груп Telegram: переводить `my_chat_member` і службові повідомлення тем у виклики ядра груп, питає власника
- * в приватному чаті про прив'язку, виходить із чужих груп і тримає файл топіків для скрипта Mac. У чужу групу не
- * пише нічого. Текст учасників сюди не потрапляє. Що сталося з групою (чужа, видалили, забрали права), власник
- * дізнається через реєстр сповіщень (джерело `groups`, з перемикачами); лише запит «Прив'язати?» з кнопками йде в
- * приватний чат напряму й завжди.
+ * Адаптер груп Telegram: переводить `my_chat_member` і службові повідомлення тем у виклики ядра груп і тримає файл
+ * топіків для скрипта Mac. У групі, куди бота додали, він лишається і нічого не робить, поки власник не дозволить
+ * публікацію (в аппці або в боті); власнику в приватний чат іде один рядок «бота додано» з кнопками. Виходить сам
+ * лише з каналів і коли список груп без дозволу переповнено. Текст учасників сюди не потрапляє. Що сталося з групою
+ * (видалили, забрали права), власник дізнається через реєстр сповіщень (джерело `groups`, з перемикачами).
  */
 @Injectable()
 export class TelegramGroupsListener implements OnModuleInit, OnModuleDestroy {
@@ -164,21 +164,33 @@ export class TelegramGroupsListener implements OnModuleInit, OnModuleDestroy {
     }
     this._leaveRetryAt.delete(chat.id);
     if (decision.group.boundAt !== null) {
-      // Бота повернули в уже прив'язану групу: доганяємо топіки, питати нічого.
+      // Бота повернули в групу з дозволом: доганяємо топіки, питати нічого.
       void this._binding.ensureTopics();
       return;
     }
-    // Запит із кнопками — не сповіщення з перемикачем: без нього групу не прив'язати з Telegram.
+    const title = escapeHtml(chat.title);
     const fromOwner = ownerId !== null && String(update.from.id) === ownerId;
-    // Власник лише учасник групи, а подію зробив хтось інший: це не його згода, тож кажемо прямо, хто і що.
-    const text = fromOwner
-      ? `👥 Бота додано в «${escapeHtml(chat.title)}». Прив'язати для сповіщень?`
-      : `👥 Бот є в групі «${escapeHtml(chat.title)}», де ви учасник, але додали його не ви: права йому змінив користувач <code>${update.from.id}</code>. ` +
-        'Прив\'язуйте, лише якщо це ваша група: у неї підуть сповіщення про Mac.';
-    await this._tellOwner(text, confirmKeyboard(decision.group));
+    if (fromOwner) {
+      await this._tellOwner(`👥 Бота додано в «${title}». Він там нічого не робить, поки ви не дозволите публікацію.`, listedKeyboard(decision.group));
+      return;
+    }
+    // Додав не власник: рядків про такі групи не більше, ніж пускає обмежувач; група у списку /groups є і без рядка.
+    const notice = this._foreignNotices.decide({ chatId: String(chat.id), adderId: String(update.from.id) });
+    if (notice.kind === 'skip') return;
+    if (notice.kind === 'summary') {
+      await this._tellOwner('👥 Бота й далі додають у групи. Він у них мовчить; до кінця години про це більше не пишу, список — у /groups.', { inline_keyboard: [] });
+      return;
+    }
+    // Хто і що зробив, кажемо прямо: це не згода власника, навіть якщо він учасник групи.
+    const who = `користувач <code>${update.from.id}</code>`;
+    const what = byMembership ? `Бот є в групі «${title}», права йому змінив ${who}` : `Бота додав у групу «${title}» ${who}`;
+    await this._tellOwner(
+      `👥 ${what}. Бот там нічого не робить. Дозволяйте публікацію, лише якщо це ваша група: у неї підуть сповіщення про Mac.`,
+      listedKeyboard(decision.group),
+    );
   }
 
-  /** Сповіщення про чужу групу під обмежувачем: на чат, на того, хто додав, і загалом за годину. */
+  /** Сповіщення «список переповнено, бот вийшов» під обмежувачем: на чат, на того, хто додав, і загалом за годину. */
   private _notifyForeign(chat: GroupChat, adderId: number) {
     const decision = this._foreignNotices.decide({ chatId: String(chat.id), adderId: String(adderId) });
     if (decision.kind === 'skip') return;
@@ -186,7 +198,7 @@ export class TelegramGroupsListener implements OnModuleInit, OnModuleDestroy {
       this._notify({
         source: GROUPS_MODULE,
         type: GROUPS_NOTIFICATION.foreignLeft,
-        title: '🚫 Бота й далі додають у чужі групи, бот виходить; до кінця години про це більше не пишу',
+        title: '🚫 Бота й далі додають у групи, а список переповнено: бот виходить; до кінця години про це більше не пишу',
         fields: {},
       });
       return;
@@ -194,7 +206,7 @@ export class TelegramGroupsListener implements OnModuleInit, OnModuleDestroy {
     this._notify({
       source: GROUPS_MODULE,
       type: GROUPS_NOTIFICATION.foreignLeft,
-      title: '🚫 Бота додали в чужу групу, бот вийшов',
+      title: '🚫 Бота додали в групу, але список груп без дозволу переповнено: бот вийшов',
       fields: { group: chat.title, user: adderId, ...(decision.suppressed > 0 ? { suppressedBefore: decision.suppressed } : {}) },
     });
   }
@@ -217,7 +229,7 @@ export class TelegramGroupsListener implements OnModuleInit, OnModuleDestroy {
     this._leaveRetryAt.delete(chat.id);
     const wasBound = this.isBoundChat(chat.id);
     this._groups.markRemoved(this._ref(chat));
-    // Сам вийшов (чужа група, «Вийти з групи», «Відв'язати») — власник уже знає.
+    // Сам вийшов («Вийти з групи», переповнений список) — власник уже знає.
     if (wasBound && !bySelf) {
       this._notify({
         source: GROUPS_MODULE,
@@ -323,13 +335,13 @@ function isForum(chat: GroupChat): boolean {
   return chat.type === 'supergroup' && chat.is_forum === true;
 }
 
-/** Кнопки під запитом власнику: дії `bind` / `leave` модуля «Групи», після них малюється його екран. */
-function confirmKeyboard(group: GroupChatEntity): InlineKeyboardMarkup {
+/** Кнопки під рядком «бота додано»: дії `bind` / `leave` модуля «Групи», після них малюється його екран. */
+function listedKeyboard(group: GroupChatEntity): InlineKeyboardMarkup {
   const params = { id: String(group.id) };
   return {
     inline_keyboard: [
       [
-        { text: '✅ Прив\'язати', callback_data: encodeAction(GROUPS_MODULE, '', 'bind', params) },
+        { text: '✅ Дозволити публікацію', callback_data: encodeAction(GROUPS_MODULE, '', 'bind', params) },
         { text: '🚪 Вийти з групи', callback_data: encodeAction(GROUPS_MODULE, '', 'leave', params) },
       ],
     ],

@@ -12,7 +12,7 @@ export const GROUPS_NOTIFICATION = {
 
 /**
  * Події модуля «Групи». Вони про саму групу сповіщень, тому йдуть власнику особисто (`privateOnly`) і свого топіка
- * не мають. Запиту «Прив'язати?» з кнопками тут немає: він завжди йде в приватний чат власника повз реєстр, без
+ * не мають. Рядка «бота додано в групу» з кнопками тут немає: він завжди йде в приватний чат власника повз реєстр, без
  * перемикача.
  */
 export const GROUPS_UI_NOTIFICATIONS: TelegramNotificationSource = {
@@ -20,8 +20,8 @@ export const GROUPS_UI_NOTIFICATIONS: TelegramNotificationSource = {
   label: 'Групи',
   privateOnly: true,
   events: [
-    { type: GROUPS_NOTIFICATION.bound, label: 'Групу прив\'язано', icon: { symbol: 'link', tone: 'green' } },
-    { type: GROUPS_NOTIFICATION.foreignLeft, label: 'Бот вийшов з чужої групи', icon: { symbol: 'hand.raised.fill', tone: 'orange' } },
+    { type: GROUPS_NOTIFICATION.bound, label: 'Публікацію в групу дозволено', icon: { symbol: 'link', tone: 'green' } },
+    { type: GROUPS_NOTIFICATION.foreignLeft, label: 'Бот вийшов з групи: список переповнено', icon: { symbol: 'hand.raised.fill', tone: 'orange' } },
     { type: GROUPS_NOTIFICATION.rightsLost, label: 'У бота забрали права в групі', icon: { symbol: 'lock.fill', tone: 'orange' } },
     { type: GROUPS_NOTIFICATION.removed, label: 'Бота видалили з групи', icon: { symbol: 'person.fill.xmark', tone: 'red' } },
     {

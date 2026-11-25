@@ -34,7 +34,7 @@ export function buildGroupsTopicsPage(ctx: ModuleContext, view: GroupsPageView):
           {
             id: 'groups-topics-status',
             type: 'status',
-            label: view.group ? view.group.title : 'Групу не прив\'язано',
+            label: view.group ? view.group.title : 'Публікацію не дозволено в жодну групу',
             hint: blocked ?? 'Топіки можна створювати',
             tone: blocked === null ? 'green' : view.group ? 'orange' : 'gray',
           },

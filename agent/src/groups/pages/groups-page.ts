@@ -10,7 +10,7 @@ import type { GroupsPageView } from '../types/groups-page-view.types';
 const action = (name: string, params?: Record<string, string>) => ({ module: GROUPS_MODULE, name, ...(params ? { params } : {}) });
 
 /**
- * «Групи»: стан прив'язки, права бота з тим, що дає кожне, налаштування доставки і адмін-кнопки. Те, чого конектор
+ * «Групи»: група з дозволом на публікацію, список груп без дозволу, права бота з тим, що дає кожне, налаштування доставки і адмін-кнопки. Те, чого конектор
  * не задекларував у маніфесті, видно сірим з причиною і не викликається.
  */
 export function buildGroupsPage(ctx: ModuleContext, view: GroupsPageView): UiPage {
@@ -19,19 +19,20 @@ export function buildGroupsPage(ctx: ModuleContext, view: GroupsPageView): UiPag
   const topics = view.supports('topics');
   const commands = view.supports('commands');
   // Чому кнопки групи зараз сірі; null — працюють.
-  const offline = !group ? 'Групу не прив\'язано' : !online ? 'Бот вийшов із групи' : null;
+  const offline = !group ? 'Публікацію не дозволено в жодну групу' : !online ? 'Бот вийшов із групи' : null;
   const topicsReason = offline ?? (topics ? null : capabilityReason(provider, 'topics'));
 
   const buttons: UiButton[] = [
     { id: 'groups-check-rights', label: 'Перевірити права', action: action('checkRights'), variant: 'plain', disabled: offline !== null },
     { id: 'groups-ensure-topics', label: 'Створити топіки', action: action('ensureTopics'), variant: 'filled', disabled: topicsReason !== null },
+    { id: 'groups-release', label: 'Заборонити публікацію', action: action('release'), variant: 'plain', disabled: group === null },
     {
       id: 'groups-unbind',
-      label: 'Відв\'язати',
+      label: 'Вийти з групи',
       action: action('unbind'),
       variant: 'destructive',
       disabled: group === null,
-      confirm: 'Відв\'язати групу? Бот вийде з неї, сповіщення підуть у приватний чат.',
+      confirm: 'Вийти з групи? Сповіщення підуть у приватний чат, повернути групу можна лише новим додаванням бота.',
     },
   ];
 
@@ -39,25 +40,24 @@ export function buildGroupsPage(ctx: ModuleContext, view: GroupsPageView): UiPag
     {
       id: 'groups-state',
       type: 'status',
-      label: group ? group.title : 'Групу не прив\'язано',
+      label: group ? group.title : 'Публікацію не дозволено в жодну групу',
       hint: group ? (view.topicsBlocker ?? 'Сповіщення йдуть у топіки групи') : 'Сповіщення йдуть у приватний чат',
       tone: !online ? 'gray' : view.topicsBlocker ? 'orange' : 'green',
     },
     ...view.pending.flatMap((item): UiNode[] => {
       const params = { id: String(item.id) };
       return [
-        { id: `groups-pending-${item.id}`, type: 'row', label: item.title, hint: 'Бота додано, чекає підтвердження', dot: { tone: 'orange' } },
+        { id: `groups-pending-${item.id}`, type: 'row', label: item.title, hint: `Бот у групі нічого не робить · додав ${item.addedBy}`, dot: { tone: 'orange' } },
         {
           id: `groups-pending-${item.id}-buttons`,
           type: 'buttons',
           buttons: [
             {
               id: `groups-bind-${item.id}`,
-              label: 'Прив\'язати',
+              // Група з дозволом одна: з попередньої він знімається, бот у ній лишається.
+              label: 'Дозволити публікацію',
               action: action('bind', params),
               variant: 'filled',
-              // Прив'язана група одна: нова — лише після «Відв'язати».
-              disabled: group !== null,
             },
             { id: `groups-leave-${item.id}`, label: 'Вийти з групи', action: action('leave', params), variant: 'plain' },
           ],
@@ -80,16 +80,16 @@ export function buildGroupsPage(ctx: ModuleContext, view: GroupsPageView): UiPag
       {
         id: 'groups-binding',
         type: 'section',
-        title: 'Прив\'язана група',
+        title: 'Куди публікувати',
         footer:
-          'Додайте бота адміном у супергрупу з увімкненими темами: він напише в приватний чат і запропонує прив\'язати. Те саме — командою /groups у приватному чаті з ботом.',
+          'Додайте бота адміном у супергрупу з увімкненими темами: вона з\'явиться тут. Бот у групі нічого не робить, поки ви не дозволите публікацію; дозволена група одна. Те саме — командою /groups у приватному чаті з ботом.',
         children: binding,
       },
       {
         id: 'groups-rights',
         type: 'section',
         title: 'Права бота',
-        footer: group ? 'Знімок з останньої події групи. «Перевірити права» читає його з провайдера заново.' : 'З\'являться після прив\'язки.',
+        footer: group ? 'Знімок з останньої події групи. «Перевірити права» читає його з провайдера заново.' : 'З\'являться, коли дозволите публікацію в групу.',
         children: rightsRows(view),
       },
       {

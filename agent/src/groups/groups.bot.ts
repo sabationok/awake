@@ -25,7 +25,7 @@ const mark = (ok: boolean) => (ok ? '✓' : '✗');
 const NO_THREAD = -1;
 
 /**
- * /groups: стан прив'язаної групи, її топіки і адмін-дії. Дії приймаються з приватного чату власника, з Mac і з
+ * /groups: група з дозволом на публікацію, її топіки, список груп без дозволу і адмін-дії. Дії приймаються з приватного чату власника, з Mac і з
  * локального Web UI; з групового чату і через проксі — відмова.
  */
 @Bot(MACONTROL_BOT, { namespace: GROUPS_MODULE, command: 'groups', description: '👥 Групи' })
@@ -36,17 +36,24 @@ export class GroupsBot {
     private readonly _settings: GroupsSettingsService,
   ) {}
 
-  /** «Прив'язати»: група з `id` стає групою сповіщень, далі звірка прав і топіки джерел. */
+  /**
+   * «Дозволити публікацію»: група з `id` стає групою сповіщень (з попередньої дозвіл знімається, бот у ній
+   * лишається), далі звірка прав і топіки джерел.
+   */
   @BotAction('bind')
   async bind(@BotParams('id') id: BotParamValue | undefined, @BotVia() via: BotViaInfo) {
     assertAdminPath(via);
-    const group = this._pending(id);
-    const bound = this._groups.boundGroup();
-    if (bound && bound.id !== group.id) throw refuse(`Уже прив'язано «${bound.title}»: спершу відв'яжіть її`);
-    await this._binding.bind({ groupId: group.id });
+    await this._binding.bind({ groupId: this._pending(id).id });
   }
 
-  /** «Вийти з групи»: бот виходить із групи, яка чекала підтвердження. */
+  /** «Заборонити публікацію»: дозвіл знімається, бот лишається в групі і мовчить. */
+  @BotAction('release')
+  release(@BotVia() via: BotViaInfo) {
+    assertAdminPath(via);
+    if (!this._binding.release()) throw refuse('Публікацію не дозволено в жодну групу');
+  }
+
+  /** «Вийти з групи»: бот виходить із групи без дозволу на публікацію. */
   @BotAction('leave')
   async leave(@BotParams('id') id: BotParamValue | undefined, @BotVia() via: BotViaInfo) {
     assertAdminPath(via);
@@ -76,7 +83,7 @@ export class GroupsBot {
   async checkRights(@BotVia() via: BotViaInfo) {
     assertAdminPath(via);
     const group = this._groups.boundGroup();
-    if (!group) throw refuse('Групу не прив\'язано');
+    if (!group) throw refuse('Публікацію не дозволено в жодну групу');
     if (group.leftAt !== null) throw refuse('Бот вийшов із групи');
     try {
       await this._binding.inspect();
@@ -93,7 +100,7 @@ export class GroupsBot {
   async recreateTopic(@BotParams('source') requested: BotParamValue | undefined, @BotVia() via: BotViaInfo) {
     assertAdminPath(via);
     const group = this._groups.boundGroup();
-    if (!group) throw refuse('Групу не прив\'язано');
+    if (!group) throw refuse('Публікацію не дозволено в жодну групу');
     const source = this._settings.topicSources().find((item) => item.id === String(requested));
     if (!source) throw refuse('Такого джерела сповіщень немає');
     if (!this._groups.supports(group.provider, 'topics')) throw refuse(capabilityReason(this._groups.requireProvider(group.provider).manifest, 'topics'));
@@ -132,19 +139,22 @@ export class GroupsBot {
           { label: '🔎 Перевірити права', action: 'checkRights' },
           { label: '🧵 Створити топіки', action: 'ensureTopics' },
         ],
-        [{ label: '✖️ Відв\'язати (бот вийде з групи)', action: 'unbind' }],
+        [
+          { label: '⏸ Заборонити публікацію', action: 'release' },
+          { label: '🚪 Вийти з групи', action: 'unbind' },
+        ],
       );
     } else {
       lines.push(
-        'Групу не прив\'язано: сповіщення йдуть у приватний чат.',
-        'Створіть супергрупу, увімкніть у ній теми і додайте бота адміном з правом керувати темами. Бот напише в приватний чат і запропонує прив\'язати.',
+        'Публікацію не дозволено в жодну групу: сповіщення йдуть у приватний чат.',
+        'Створіть супергрупу, увімкніть у ній теми і додайте бота адміном з правом керувати темами. Група з\'явиться тут; бот у ній нічого не робить, поки ви не дозволите публікацію.',
       );
     }
     for (const item of pending) {
       const params = { id: String(item.id) };
-      lines.push('', `Чекає підтвердження: <b>${escapeHtml(item.title)}</b>`);
+      lines.push('', `Без дозволу: <b>${escapeHtml(item.title)}</b> (додав <code>${escapeHtml(item.addedBy)}</code>)`);
       buttons.push([
-        { label: `✅ Прив'язати`, action: 'bind', params },
+        { label: '✅ Дозволити публікацію', action: 'bind', params },
         { label: '🚪 Вийти з групи', action: 'leave', params },
       ]);
     }
@@ -152,17 +162,16 @@ export class GroupsBot {
   }
 
   /**
-   * Група з кнопки «Прив'язати» / «Вийти з групи»: має справді чекати підтвердження (`requestedAt`), не бути
-   * прив'язаною і бот має бути в ній. Стара кнопка під давнім запитом не чіпає прив'язану групу: з неї виходять
-   * лише через «Відв'язати».
+   * Група з кнопки «Дозволити публікацію» / «Вийти з групи»: має бути у списку без дозволу (`requestedAt`) і бот
+   * має бути в ній. Стара кнопка під давнім рядком не чіпає групу з дозволом: у неї свої кнопки.
    */
   private _pending(id: BotParamValue | undefined): GroupChatEntity {
     const groupId = Number(id);
     const group = Number.isInteger(groupId) ? this._groups.findGroup({ groupId }) : null;
     if (!group) throw refuse('Групи вже немає в списку');
-    if (group.boundAt !== null) throw refuse(`«${group.title}» уже прив'язано: ця кнопка застаріла`);
+    if (group.boundAt !== null) throw refuse(`У «${group.title}» публікацію вже дозволено: ця кнопка застаріла`);
     if (group.leftAt !== null) throw refuse('Бот уже вийшов із цієї групи');
-    if (group.requestedAt === null) throw refuse('Ця група не чекає підтвердження');
+    if (group.requestedAt === null) throw refuse('Цієї групи немає у списку');
     return group;
   }
 }
