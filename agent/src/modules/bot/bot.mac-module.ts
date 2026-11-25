@@ -46,7 +46,7 @@ export class BotMacModule implements MacModule {
     const proxies = this._transports.proxies();
     return [
       buildBotOverviewPage(ctx, this._transports.list(), proxies, metrics, this._remoteAvailability(ctx)),
-      buildBotJournalPage(this._journal.findEvents({ limit: BOT_EVENTS_PAGE_LIMIT }), proxies),
+      buildBotJournalPage(this._journal.findEvents({ pagination: { limit: BOT_EVENTS_PAGE_LIMIT } }), proxies),
       buildBotStatsPage(ctx, this._calls, this._router.namespaces(MACONTROL_BOT), proxies),
     ];
   }

@@ -69,8 +69,40 @@ event_allowed() {
   case ",$list," in *",$id,"*|*",$1,"*) return 0 ;; *) return 1 ;; esac
 }
 
+# tg_thread <подія>: друкує "<id групи> <id топіка>", якщо агент прив'язав групу і джерело події (awake, system) має
+# в ній топік. Читає telegram-topics.env поруч із CONFIG щоразу (його пише агент; секретів там немає) і не виконує
+# його як код: береться лише число.
+tg_thread() {
+  local file src group thread
+  file="$(dirname "$CONFIG")/telegram-topics.env"
+  [ -n "$1" ] && [ -f "$file" ] || return 1
+  src=$(tg_event "$1"); src=${src%%.*}
+  case "$src" in ""|*[!A-Za-z0-9_]*) return 1 ;; esac
+  group=$(sed -n 's/^TG_GROUP_ID=\(-\{0,1\}[0-9][0-9]*\)$/\1/p' "$file" | head -1)
+  thread=$(sed -n "s/^TG_THREAD_${src}=\([0-9][0-9]*\)\$/\1/p" "$file" | head -1)
+  [ -n "$group" ] && [ -n "$thread" ] || return 1
+  echo "$group $thread"
+}
+
+# tg_send <текст> <chat id> [id топіка]: 0 — Telegram прийняв (HTTP 2xx і не "ok":false).
+tg_send() {
+  local resp code
+  # токен іде через stdin, щоб не світитися в списку процесів
+  resp=$(printf 'url = "https://api.telegram.org/bot%s/sendMessage"\n' "$TG_BOT_TOKEN" |
+    curl -s -m 10 -K - -w '\n%{http_code}' \
+      --data-urlencode "chat_id=$2" \
+      ${3:+--data-urlencode "message_thread_id=$3"} \
+      --data-urlencode "parse_mode=HTML" \
+      --data-urlencode "text=$1") || return 1
+  code=${resp##*$'\n'}
+  case "$code" in 2??) ;; *) return 1 ;; esac
+  case "$resp" in *'"ok":false'*|*'"ok": false'*) return 1 ;; esac
+  return 0
+}
+
 # say "<emoji> Заголовок" [key=value ...]
 # У термінал — один рядок; у Telegram — заголовок і JSON у <pre>-блоці.
+# Є прив'язана група з топіком джерела події — туди; не вийшло (або групи немає) — у приватний чат, як завжди.
 say() {
   local title=$1; shift
   echo "[$(date +%H:%M)] $title${*:+ ($*)}"
@@ -83,12 +115,9 @@ say() {
   local args=()
   for kv in "$@"; do case "$kv" in event=*) args+=("event=$(tg_event "$ev")") ;; *) args+=("$kv") ;; esac; done
   [ $# -gt 0 ] && text+=$'\n'"<pre>$(json "${args[@]}" | html_escape)</pre>"
-  # токен іде через stdin, щоб не світитися в списку процесів
-  printf 'url = "https://api.telegram.org/bot%s/sendMessage"\n' "$TG_BOT_TOKEN" |
-    curl -s -m 10 -K - -o /dev/null \
-      --data-urlencode "chat_id=$TG_CHAT_ID" \
-      --data-urlencode "parse_mode=HTML" \
-      --data-urlencode "text=$text" || echo "  (не вдалося надіслати в Telegram)"
+  local topic
+  if topic=$(tg_thread "$ev") && tg_send "$text" ${topic}; then return 0; fi
+  tg_send "$text" "$TG_CHAT_ID" || echo "  (не вдалося надіслати в Telegram)"
 }
 
 battery() {   # друкує "<відсоток> <AC|BAT>"

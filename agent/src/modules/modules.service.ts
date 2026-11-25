@@ -10,16 +10,18 @@ import type {
   UiSection,
   UiTree,
 } from '@awake/contracts';
-import { type BotMenu, type BotNamespace, BotRouterService } from '../bot';
+import { type BotMenu, type BotNamespace, BotRouterService, type BotViaInfo } from '../bot';
 import { BotJournalService, type BotEventCreate } from '../bot-journal';
 import { API_ERROR_CODES, AppException } from '../common/app-exception';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
 import { SettingsService } from '../settings/settings.service';
+import { TelegramNotificationsService } from '../telegram/notifications';
 import { buildSettingNode } from './helpers/build-setting-node';
 import { filterNodesByScope } from './helpers/filter-nodes-by-scope';
 import { isVisibleInScope } from './helpers/is-visible-in-scope';
 import { isValidSettingValue } from './helpers/is-valid-setting-value';
 import { resolveSettingValue } from './helpers/resolve-setting-value';
+import { validateModuleManifest } from './helpers/validate-module-manifest';
 import { MACONTROL_BOT } from './constants/macontrol-bot';
 import { AGENT_ENABLED_KEY, AGENT_MODULE } from './bot/constants/agent-enabled';
 import { LiveChartsService } from './live-charts.service';
@@ -42,8 +44,14 @@ export class ModulesService {
     private readonly _router: BotRouterService,
     private readonly _journal: BotJournalService,
     private readonly _liveCharts: LiveChartsService,
+    notifications: TelegramNotificationsService,
   ) {
     this._byId = new Map(modules.map((module) => [module.id, module]));
+    // Задекларовані частини маніфесту: перевірка на старті і реєстрація джерела сповіщень замість виклику в модулі.
+    for (const module of modules) {
+      validateModuleManifest(module);
+      if (module.notifications) notifications.register(module.notifications);
+    }
   }
 
   list(): MacModule[] {
@@ -127,14 +135,15 @@ export class ModulesService {
   /**
    * Кнопка SDUI, Telegram чи Mac: дія йде в `@BotAction` модуля (namespace = id модуля),
    * налаштування — в SettingsService. Кожен виклик іде в журнал бота з джерелом і проксі (`via.proxy`), якщо він був.
+   * `via` цілком бачить і сама дія (`@BotVia`): адмін-дії відмовляють проксі та груповому чату.
    */
-  async dispatch(event: UiEvent, source: ModuleSource, via: { proxy?: string } = {}): Promise<void> {
+  async dispatch(event: UiEvent, source: ModuleSource, via: BotViaInfo = {}): Promise<void> {
     const proxy = via.proxy ?? null;
     const entry: BotEventCreate =
       event.type === 'action'
         ? { source, proxy, type: 'action', namespace: event.action.module, name: event.action.name }
         : { source, proxy, type: 'setting', namespace: event.change.module, name: `${event.change.key} = ${String(event.change.value)}` };
-    await this._journaled(entry, () => this._dispatch(event, source));
+    await this._journaled(entry, () => this._dispatch(event, source, via));
   }
 
   /** Виконує виклик і пише його в журнал бота з результатом; помилку пробрасує далі. */
@@ -170,7 +179,7 @@ export class ModulesService {
     });
   }
 
-  private async _dispatch(event: UiEvent, source: ModuleSource): Promise<void> {
+  private async _dispatch(event: UiEvent, source: ModuleSource, via: BotViaInfo): Promise<void> {
     this._assertAgentOn(source);
     if (event.type === 'action') {
       const { module: moduleId, name, params } = event.action;
@@ -184,6 +193,7 @@ export class ModulesService {
         name,
         params: params ?? {},
         source,
+        via,
         context: this.context(moduleId),
       });
       return;

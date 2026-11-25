@@ -27,6 +27,6 @@ export class SleepMacModule implements MacModule {
   }
 
   pages(ctx: ModuleContext): UiPage[] {
-    return [buildTimerPage(ctx), buildHistoryPage(this._timers.findMany({ limit: SLEEP_QUERY_LIMIT }), new Date())];
+    return [buildTimerPage(ctx), buildHistoryPage(this._timers.findMany({ pagination: { limit: SLEEP_QUERY_LIMIT } }), new Date())];
   }
 }

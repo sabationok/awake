@@ -13,3 +13,6 @@ export const BotCtx = createParamDecorator((_: unknown, ec: ExecutionContext) =>
 
 /** Звідки прийшов виклик: 'telegram' | 'web' | 'mac'. */
 export const BotSource = createParamDecorator((_: unknown, ec: ExecutionContext) => args(ec).source);
+
+/** Шлях усередині джерела (`{ proxy }`, `{ group }`); прямий виклик — порожній об'єкт. */
+export const BotVia = createParamDecorator((_: unknown, ec: ExecutionContext) => args(ec).via ?? {});

@@ -4,6 +4,7 @@ export * from './modules';
 export * from './relay';
 export * from './webhooks';
 export * from './stats';
+export * from './groups';
 
 export type PowerSource = 'AC' | 'BAT' | 'unknown';
 export type ThermalLevel = 'nominal' | 'fair' | 'serious' | 'critical';

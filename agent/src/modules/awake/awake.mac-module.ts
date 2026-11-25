@@ -36,12 +36,12 @@ export class AwakeMacModule implements MacModule {
 
   pages(ctx: ModuleContext): UiPage[] {
     // Одна вибірка на всі сторінки: трекінг рахує за 7 днів і гортає історію.
-    const sessions = this._sessions.findMany({ limit: TRACKING_QUERY_LIMIT });
+    const sessions = this._sessions.findMany({ pagination: { limit: TRACKING_QUERY_LIMIT } });
     return [
       buildSessionPage(ctx),
       buildSessionSettingsPage(ctx),
       buildTrackingPage(sessions, this._sessions.history(), new Date()),
-      buildLogPage(this._logs.findMany({ limit: LOG_QUERY_LIMIT }), new Date()),
+      buildLogPage(this._logs.findMany({ pagination: { limit: LOG_QUERY_LIMIT } }), new Date()),
     ];
   }
 

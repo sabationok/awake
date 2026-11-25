@@ -1,5 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { BotModule } from '../bot';
+import { GroupsMacModule } from '../groups/groups.mac-module';
+import { GroupsModule } from '../groups/groups.module';
 import { LogsModule } from '../logs/logs.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { SleepTimersModule } from '../sleep-timers/sleep-timers.module';
@@ -30,7 +32,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
 
 @Global()
 @Module({
-  imports: [BotModule, SettingsModule, SessionsModule, SleepTimersModule, LogsModule],
+  imports: [BotModule, SettingsModule, SessionsModule, SleepTimersModule, LogsModule, GroupsModule],
   controllers: [UiController],
   providers: [
     ModulesService,
@@ -58,7 +60,8 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
     {
       provide: MAC_MODULES,
       useFactory: (...modules: MacModule[]) => modules,
-      inject: [AwakeMacModule, SleepMacModule, MediaMacModule, MacStateMacModule, TelegramMacModule, BotMacModule, RelayMacModule, TailscaleMacModule, ProximityMacModule],
+      // GroupsMacModule і бот /groups живуть у GroupsModule (імпорт вище): тут лише місце модуля в списку.
+      inject: [AwakeMacModule, SleepMacModule, MediaMacModule, MacStateMacModule, TelegramMacModule, GroupsMacModule, BotMacModule, RelayMacModule, TailscaleMacModule, ProximityMacModule],
     },
   ],
   exports: [ModulesService],

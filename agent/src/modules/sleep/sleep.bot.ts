@@ -62,7 +62,7 @@ export class SleepBot {
   @BotScreen('history')
   history(): BotMenu {
     return {
-      text: `<b>🕘 Останні таймери</b>\n${historyLines(this._timers.findMany({ limit: SLEEP_BOT_HISTORY_LIMIT }))}`,
+      text: `<b>🕘 Останні таймери</b>\n${historyLines(this._timers.findMany({ pagination: { limit: SLEEP_BOT_HISTORY_LIMIT } }))}`,
       buttons: [],
       back: { screen: '' },
     };

@@ -26,8 +26,9 @@ export class TelegramNotificationsService {
 
   /** Перемикачі всіх подій для модуля telegram. */
   settings(): SettingDefinition[] {
-    return this.sources().flatMap((source) =>
-      source.events.map(
+    return this.sources().flatMap((source) => [
+      ...(source.settings ?? []).map((setting): SettingDefinition => ({ ...setting, page: TELEGRAM_NOTIFICATIONS_PAGE })),
+      ...source.events.map(
         (event): SettingDefinition => ({
           type: 'switch',
           key: telegramNotificationSettingKey(source.id, event.type),
@@ -37,7 +38,7 @@ export class TelegramNotificationsService {
           default: event.default ?? true,
         }),
       ),
-    );
+    ]);
   }
 
   /** Подію шле скрипт Mac (awake.*, system.*): її перемикач треба переслати в аппку. */

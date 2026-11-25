@@ -23,7 +23,10 @@ export function buildTelegramNotificationsPage(ctx: ModuleContext, sources: Tele
             tabs: sources.map((source) => ({
               id: source.id,
               label: source.label,
-              children: source.events.map((event) => ctx.settingNode(telegramNotificationSettingKey(source.id, event.type))),
+              children: [
+                ...(source.settings ?? []).map((setting) => ctx.settingNode(setting.key)),
+                ...source.events.map((event) => ctx.settingNode(telegramNotificationSettingKey(source.id, event.type))),
+              ],
             })),
           },
         ],

@@ -1,6 +1,8 @@
 import type { CommandRequest, MacPermission, MacState, SettingDefinition, SettingValue, UiChart, UiNode, UiPage } from '@awake/contracts';
+import type { TelegramNotificationSource } from '../../telegram/notifications';
 import type { LiveChartSpec } from './live-chart.types';
 import type { ModuleSource } from './module-source';
+import type { UiModuleStats } from './ui-module-stats';
 
 /**
  * Що модуль отримує від хоста. Модуль не лізе в SQLite, stdin чи Upstash напряму:
@@ -40,10 +42,19 @@ export interface MacModule {
   id: string;
   title: string;
   icon: { symbol: string; tone: import('@awake/contracts').UiTone };
+  /** Одне-два речення для користувача: що робить модуль. Поки що лише в маніфесті, у дерево не йде. */
+  description?: string;
   /** Системні дозволи Mac, які модуль просить. Mac показує їх окремо по модулях і дає лише дозволені. */
   permissions: MacPermission[];
   /** Налаштування, які хост покаже в «Налаштуваннях» і збереже як `<id>.<key>`. */
   settings: SettingDefinition[];
+  /**
+   * Події, які модуль хоче слати: джерело з id модуля. Хост сам реєструє його в реєстрі сповіщень на старті
+   * (без `register` у конструкторі модуля); модуль далі лише кличе `notify`.
+   */
+  notifications?: TelegramNotificationSource;
+  /** Декларація статистики для UI: сторінка, графіки, ключі namespace-ів, фільтри. Запис — у сервісах модуля. */
+  stats?: UiModuleStats;
   /** Вкладки модуля в бічному меню. Будуються з поточного стану щоразу. */
   pages(ctx: ModuleContext): UiPage[] | Promise<UiPage[]>;
   /** Модуль вимкнений (жорстко в агенті чи у своїй вкладці): причина для сірого пункту меню; null — працює. Сторінок тоді немає. */

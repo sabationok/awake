@@ -26,6 +26,8 @@ import { BotJournalModule } from './bot-journal';
 import { SessionsModule } from './sessions/sessions.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { TlsModule } from './tls/tls.module';
+import { SessionEndingModule } from './session-ending/session-ending.module';
+import { GroupsModule } from './groups';
 
 @Module({
   imports: [
@@ -54,6 +56,9 @@ import { TlsModule } from './tls/tls.module';
     ModulesModule,
     RelayModule,
     TelegramModule,
+    // Після ModulesModule: порядок реєстрації модулів — порядок команд бота, /groups іде після команд модулів Mac.
+    GroupsModule,
+    SessionEndingModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
