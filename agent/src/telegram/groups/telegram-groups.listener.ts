@@ -169,7 +169,13 @@ export class TelegramGroupsListener implements OnModuleInit, OnModuleDestroy {
       return;
     }
     // Запит із кнопками — не сповіщення з перемикачем: без нього групу не прив'язати з Telegram.
-    await this._tellOwner(`👥 Бота додано в «${escapeHtml(chat.title)}». Прив'язати для сповіщень?`, confirmKeyboard(decision.group));
+    const fromOwner = ownerId !== null && String(update.from.id) === ownerId;
+    // Власник лише учасник групи, а подію зробив хтось інший: це не його згода, тож кажемо прямо, хто і що.
+    const text = fromOwner
+      ? `👥 Бота додано в «${escapeHtml(chat.title)}». Прив'язати для сповіщень?`
+      : `👥 Бот є в групі «${escapeHtml(chat.title)}», де ви учасник, але додали його не ви: права йому змінив користувач <code>${update.from.id}</code>. ` +
+        'Прив\'язуйте, лише якщо це ваша група: у неї підуть сповіщення про Mac.';
+    await this._tellOwner(text, confirmKeyboard(decision.group));
   }
 
   /** Сповіщення про чужу групу під обмежувачем: на чат, на того, хто додав, і загалом за годину. */
