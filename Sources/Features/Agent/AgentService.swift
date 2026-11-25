@@ -1,7 +1,9 @@
 import Foundation
 
-/// Запускає агента (Node, Resources/agent/agent.cjs) дочірнім процесом і говорить з ним
-/// JSON-рядками: стан і журнал у stdin, команди Web UI зі stdout. stderr агента йде в agent.log.
+/// Запускає агента (Node, agent.cjs) дочірнім процесом і говорить з ним JSON-рядками: стан і журнал у stdin,
+/// команди Web UI зі stdout. stderr агента йде в agent.log. Агент береться з бандла (Resources/agent), а в
+/// не-production збірці — із зовнішньої папки, якщо вона є: тоді сервер перезбирається окремо від аппки
+/// (`pnpm agent:dev`), і аппка сама перезапускає лише його процес, коли файл змінився.
 @MainActor
 final class AgentService {
     enum Status: Equatable {
@@ -31,6 +33,11 @@ final class AgentService {
     private var buffer = Data()
     private var wantRunning = false
     private var crashes = 0
+    /// Звідки і яку версію агента запущено: шлях і час зміни agent.cjs.
+    private var runningSource: String?
+    /// Процес зупиняємо самі, щоб підняти нову версію: це не падіння.
+    private var restarting = false
+    private var sourceTimer: Timer?
 
     static let logURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".config/awake/agent.log")
 
@@ -41,10 +48,33 @@ final class AgentService {
         return url
     }
 
+    /// Агент, який розробник зібрав окремо від аппки (`pnpm agent:dev`): agent.cjs, web/ і паспорт збірки.
+    static let externalDirectory = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent("Library/Application Support/MaControl/agent-dev")
+
+    /// Зовнішню папку бачить лише не-production збірка: production завжди запускає вшитого агента.
+    static var usesExternalAgent: Bool {
+        guard (Bundle.main.object(forInfoDictionaryKey: "MCStage") as? String ?? "production") != "production" else { return false }
+        return FileManager.default.fileExists(atPath: externalDirectory.appendingPathComponent("agent.cjs").path)
+    }
+
+    /// Каталог, з якого агент запускається зараз: зовнішній (dev) або з бандла.
+    static var activeDirectory: URL? {
+        usesExternalAgent ? externalDirectory : bundleDirectory
+    }
+
+    /// Підпис джерела: шлях і час зміни agent.cjs. Змінився — агента треба перезапустити.
+    private static func sourceSignature() -> String? {
+        guard let file = activeDirectory?.appendingPathComponent("agent.cjs"),
+              let modified = (try? FileManager.default.attributesOfItem(atPath: file.path))?[.modificationDate] as? Date else { return nil }
+        return "\(file.path)@\(modified.timeIntervalSince1970)"
+    }
+
     func start(settings: AgentSettings) {
         wantRunning = true
+        watchSource()
         guard process == nil else { return }
-        guard let directory = Self.bundleDirectory else {
+        guard let directory = Self.activeDirectory else {
             status = .failed("агента немає в збірці")
             return
         }
@@ -82,6 +112,7 @@ final class AgentService {
         do {
             try proc.run()
             process = proc
+            runningSource = Self.sourceSignature()
             input = stdin.fileHandleForWriting
             buffer = Data()
             status = .starting
@@ -90,8 +121,32 @@ final class AgentService {
         }
     }
 
+    /// Раз на кілька секунд звіряє джерело агента із запущеним. Лише там, де зовнішня папка взагалі можлива.
+    private func watchSource() {
+        guard sourceTimer == nil, (Bundle.main.object(forInfoDictionaryKey: "MCStage") as? String ?? "production") != "production" else { return }
+        sourceTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.checkSource() }
+        }
+    }
+
+    /// Нова версія agent.cjs (або папку ввімкнули / прибрали): перезапускаємо лише процес агента.
+    private func checkSource() {
+        guard wantRunning, !restarting, let current = Self.sourceSignature(), current != runningSource else { return }
+        crashes = 0
+        guard process != nil else {
+            start(settings: AgentSettingsStore.load())
+            return
+        }
+        restarting = true
+        try? input?.close()
+        input = nil
+        process?.terminate()
+    }
+
     func stop() {
         wantRunning = false
+        sourceTimer?.invalidate()
+        sourceTimer = nil
         // Закритий stdin — сигнал агенту завершитись самому.
         try? input?.close()
         input = nil
@@ -154,7 +209,14 @@ final class AgentService {
         process = nil
         input = nil
         guard wantRunning else {
+            restarting = false
             status = .stopped
+            return
+        }
+        if restarting {
+            restarting = false
+            status = .starting
+            start(settings: AgentSettingsStore.load())
             return
         }
         // Впав сам: кілька спроб перезапуску з паузою, далі показуємо помилку.
