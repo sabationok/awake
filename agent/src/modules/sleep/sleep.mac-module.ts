@@ -9,13 +9,13 @@ import { buildHistoryPage } from './pages/history-page';
 import { buildTimerPage } from './pages/timer-page';
 
 /**
- * Модуль «Таймер сну»: окрема сесія, як Awake. Рахує і присипляє Mac сама Mac-аппка,
+ * Модуль «Sleeper»: окрема сесія, як Awake. Рахує і присипляє Mac сама Mac-аппка,
  * вона ж закриває сесію Awake при старті таймера (і навпаки). Агент пише історію і шле сповіщення.
  */
 @Injectable()
 export class SleepMacModule implements MacModule {
   readonly id = 'sleep';
-  readonly title = 'Таймер сну';
+  readonly title = 'Sleeper';
   readonly icon = { symbol: 'moon.zzz.fill', tone: 'indigo' } as const;
   readonly permissions: MacModule['permissions'] = [];
   readonly settings = SLEEP_SETTINGS;

@@ -1,4 +1,4 @@
-/** Опції класу-обробника: `@Bot('MaControl', { namespace: 'sleep', command: 'sleep', description: '🌙 Таймер сну' })`. */
+/** Опції класу-обробника: `@Bot('MaControl', { namespace: 'sleep', command: 'sleep', description: '🌙 Sleeper' })`. */
 export interface BotOptions {
   /** Простір імен дій і екранів, як namespace у WsGateway. Кнопка шле `{ namespace, name }`. */
   namespace: string;

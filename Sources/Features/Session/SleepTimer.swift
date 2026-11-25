@@ -22,7 +22,7 @@ struct SleepTimerSession: Codable, Equatable {
     }
 }
 
-/// Таймер сну — окрема сесія, як Awake: свій відлік, свої сповіщення, своя історія.
+/// Sleeper — окрема сесія, як Awake: свій відлік, свої сповіщення, своя історія.
 /// Події йдуть в агент: він пише історію і шле Telegram (`silent` — без повідомлення).
 /// Одночасно працює лише одна з двох: нова закриває попередню з причиною в журналі.
 extension AwakeModel {
@@ -30,13 +30,13 @@ extension AwakeModel {
     func startSleepTimer(minutes: Int, source: SessionSource = .mac) {
         guard minutes > 0 else { stopSleepTimer(reason: "скасовано", source: source); return }
         if sleepTimer != nil { endSleepTimer(reason: "перезапуск", source: source, silent: true) }
-        if isRunning { stop(source: source, reason: "таймер сну") }
+        if isRunning { stop(source: source, reason: "Sleeper") }
         let now = Date()
         let session = SleepTimerSession(startedAt: now, sleepAt: now.addingTimeInterval(TimeInterval(minutes * 60)), minutes: minutes)
         sleepTimer = session
         let until = session.sleepAt.formatted(date: .omitted, time: .shortened)
         let fields = ["event=sleep.start", "until=\(until)", "minutes=\(minutes)"]
-        append("🌙 Таймер сну: засне о \(until) (\(fields.joined(separator: " ")))")
+        append("🌙 Sleeper: засне о \(until) (\(fields.joined(separator: " ")))")
         sendSleepTimerEvent(event: "start", at: now, session: session, source: source, reason: nil, silent: false)
         pushAgentState()
     }
@@ -73,7 +73,7 @@ extension AwakeModel {
         guard let session = sleepTimer else { return }
         sleepTimer = nil
         let fields = ["event=sleep.stop", "reason=\(reason)", "minutes=\(session.minutes)"]
-        let title = reason == "Mac заснув" ? "💤 Таймер сну: засинаю" : "🌙 Таймер сну завершено"
+        let title = reason == "Mac заснув" ? "💤 Sleeper: засинаю" : "🌙 Sleeper завершено"
         append("\(title) (\(fields.joined(separator: " ")))")
         sendSleepTimerEvent(event: "stop", at: Date(), session: session, source: source, reason: reason, silent: silent)
     }

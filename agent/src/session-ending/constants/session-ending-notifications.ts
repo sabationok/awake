@@ -22,6 +22,6 @@ export const SESSION_ENDING_NOTIFICATIONS: TelegramNotificationSource = {
   settings: [LEAD_SETTING],
   events: [
     { type: 'awake', label: 'Сесія Awake скоро скінчиться', icon: { symbol: 'cup.and.saucer.fill', tone: 'orange' } },
-    { type: 'sleep', label: 'Таймер сну скоро спрацює', icon: { symbol: 'moon.zzz.fill', tone: 'accent' } },
+    { type: 'sleep', label: 'Sleeper скоро спрацює', icon: { symbol: 'moon.zzz.fill', tone: 'accent' } },
   ],
 };

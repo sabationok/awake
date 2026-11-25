@@ -8,7 +8,7 @@ import type { TelegramNotification, TelegramNotificationSource } from './types/t
 export const TELEGRAM_NOTIFICATIONS_PAGE = 'telegram-notifications';
 
 /**
- * Реєстр сповіщень Telegram. Джерела (Awake, Стан Mac, Таймер сну, Агент, Webhooxy) реєструють себе в конструкторах,
+ * Реєстр сповіщень Telegram. Джерела (Awake, Стан Mac, Sleeper, Агент, Webhooxy) реєструють себе в конструкторах,
  * перемикачі й вкладки Сповіщень будуються з реєстру. Без залежностей: модулі не тягнуть за собою Telegraf.
  */
 @Injectable()

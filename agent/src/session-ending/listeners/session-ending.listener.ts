@@ -65,7 +65,7 @@ export class SessionEndingListener implements OnModuleInit, OnModuleDestroy {
     this._warned.set(kind, session.end);
     const minutes = Math.ceil((Date.parse(session.end) - now) / 60_000);
     const until = formatHhmm(session.end) ?? '—';
-    const title = kind === 'awake' ? `⏳ Awake: сесія скінчиться о ${until}` : `⏳ Таймер сну: Mac засне о ${until}`;
+    const title = kind === 'awake' ? `⏳ Awake: сесія скінчиться о ${until}` : `⏳ Sleeper: Mac засне о ${until}`;
     this._notifications.notify({ source: 'ending', type: kind, title, fields: { minutes, until } });
   }
 

@@ -18,7 +18,7 @@ const MINUTES = [
 ];
 
 /** Дії таймера сну і /sleep: головний екран, `set` (вибір хвилин) і `history` (останні таймери). */
-@Bot(MACONTROL_BOT, { namespace: 'sleep', command: 'sleep', description: '🌙 Таймер сну' })
+@Bot(MACONTROL_BOT, { namespace: 'sleep', command: 'sleep', description: '🌙 Sleeper' })
 export class SleepBot {
   constructor(private readonly _timers: SleepTimersService) {}
 
@@ -44,7 +44,7 @@ export class SleepBot {
     ];
     if (mac.sleepAt) rows.push([{ label: '✖️ Скасувати', action: 'stop' }]);
     rows.push([{ label: '🕘 Історія', go: { screen: 'history' } }]);
-    return { text: `<b>🌙 Таймер сну</b>\n${state}${awake}`, buttons: rows };
+    return { text: `<b>🌙 Sleeper</b>\n${state}${awake}`, buttons: rows };
   }
 
   /** Вибір хвилин ставить таймер з нуля і повертає на головний екран. */

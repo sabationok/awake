@@ -8,7 +8,7 @@ export interface SessionCardRun {
   changed: boolean;
 }
 
-/** Таймер і кнопки сесії модуля (Awake, Таймер сну): однакова поведінка, різні тексти й колір. */
+/** Таймер і кнопки сесії модуля (Awake, Sleeper): однакова поведінка, різні тексти й колір. */
 export interface SessionCard {
   module: string;
   mac: MacState | null;

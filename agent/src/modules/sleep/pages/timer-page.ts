@@ -8,7 +8,7 @@ import { SLEEP_TIMER_OPTIONS } from '../constants/sleep-timer-options';
 import { plannedMinutes } from '../helpers/planned-minutes';
 
 /**
- * Сторінка «Таймер сну» за патерном сесії Awake: відлік зверху, вкладки «Період» | «Час» і кнопка внизу.
+ * Сторінка «Sleeper» за патерном сесії Awake: відлік зверху, вкладки «Період» | «Час» і кнопка внизу.
  * Одночасно працює одна сесія: старт таймера закриває Awake, старт Awake — таймер.
  */
 export function buildTimerPage(ctx: ModuleContext): UiPage {
@@ -29,7 +29,7 @@ export function buildTimerPage(ctx: ModuleContext): UiPage {
   return {
     id: 'sleep-timer',
     module: 'sleep',
-    title: 'Таймер сну',
+    title: 'Sleeper',
     icon: { symbol: 'moon.zzz.fill', tone: 'indigo' },
     group: 'modules',
     children: [

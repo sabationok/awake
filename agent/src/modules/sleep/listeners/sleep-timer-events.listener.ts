@@ -31,10 +31,10 @@ export class SleepTimerEventsListener implements OnModuleInit, OnModuleDestroy {
   private _notify(event: SleepTimerEvent) {
     const fields = { minutes: event.minutes, until: formatHhmm(event.sleepAt) ?? '—' };
     if (event.event === 'start') {
-      this._notifications.notify({ source: 'sleep', type: 'start', title: `🌙 Таймер сну: засне о ${fields.until}`, fields });
+      this._notifications.notify({ source: 'sleep', type: 'start', title: `🌙 Sleeper: засне о ${fields.until}`, fields });
       return;
     }
-    const title = event.reason === 'Mac заснув' ? '💤 Таймер сну: засинаю' : '🌙 Таймер сну завершено';
+    const title = event.reason === 'Mac заснув' ? '💤 Sleeper: засинаю' : '🌙 Sleeper завершено';
     this._notifications.notify({ source: 'sleep', type: 'stop', title, fields: { ...fields, reason: event.reason ?? '—' } });
   }
 }
