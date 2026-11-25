@@ -19,7 +19,7 @@ export class GroupChatEntity {
   @Column({ type: 'json' }) botRights!: GroupBotRights;
   /** Бачили, що в групі ввімкнені теми. */
   @StateDateColumn() topicsEnabledAt!: string | null;
-  /** Додав власник, чекає підтвердження. */
+  /** Запит: бота додали, власник ще не вирішив. Без `requestedAt` і `boundAt` група неактивна. */
   @StateDateColumn() requestedAt!: string | null;
   @StateDateColumn() boundAt!: string | null;
   /** Бот вийшов або його видалили. */

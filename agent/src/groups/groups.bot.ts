@@ -24,6 +24,9 @@ const mark = (ok: boolean) => (ok ? '✓' : '✗');
 /** `staleThreadId` для джерела без топіка: thread id провайдера завжди додатний. */
 const NO_THREAD = -1;
 
+/** Скільки символів назви групи вміщається на кнопці поруч із дією. */
+const BUTTON_TITLE_MAX = 16;
+
 /**
  * /groups: група з дозволом на публікацію, її топіки, список груп без дозволу і адмін-дії. Дії приймаються з приватного чату власника, з Mac і з
  * локального Web UI; з групового чату і через проксі — відмова.
@@ -150,20 +153,27 @@ export class GroupsBot {
         'Створіть супергрупу, увімкніть у ній теми і додайте бота адміном з правом керувати темами. Група з\'явиться тут; бот у ній нічого не робить, поки ви не дозволите публікацію.',
       );
     }
-    for (const item of pending) {
-      const params = { id: String(item.id) };
-      lines.push('', `Без дозволу: <b>${escapeHtml(item.title)}</b> (додав <code>${escapeHtml(item.addedBy)}</code>)`);
-      buttons.push([
-        { label: '✅ Дозволити публікацію', action: 'bind', params },
-        { label: '🚪 Вийти з групи', action: 'leave', params },
-      ]);
-    }
+    const list = (title: string, items: GroupChatEntity[], allow: string) => {
+      if (items.length === 0) return;
+      lines.push('', `<b>${title}</b>`);
+      for (const item of items) {
+        const params = { id: String(item.id) };
+        // Назва на кнопці: у двох списках однакові номери плутались би.
+        const name = item.title.length > BUTTON_TITLE_MAX ? `${item.title.slice(0, BUTTON_TITLE_MAX)}…` : item.title;
+        lines.push(`• ${escapeHtml(item.title)} (додав <code>${escapeHtml(item.addedBy)}</code>)`);
+        buttons.push([
+          { label: `✅ ${allow}: ${name}`, action: 'bind', params },
+          { label: `🚪 Вийти: ${name}`, action: 'leave', params },
+        ]);
+      }
+    };
+    list('Запити (не підтверджені)', pending, 'Дозволити');
+    list('Неактивні', this._groups.inactiveGroups(), 'Активувати');
     return { text: lines.join('\n'), buttons };
   }
 
   /**
-   * Група з кнопки «Дозволити публікацію» / «Вийти з групи»: має бути у списку без дозволу (`requestedAt`) і бот
-   * має бути в ній. Стара кнопка під давнім рядком не чіпає групу з дозволом: у неї свої кнопки.
+   * Група з кнопки «Дозволити публікацію» / «Вийти з групи»: запит або неактивна, і бот має бути в ній. Стара кнопка під давнім рядком не чіпає групу з дозволом: у неї свої кнопки.
    */
   private _pending(id: BotParamValue | undefined): GroupChatEntity {
     const groupId = Number(id);
@@ -171,7 +181,6 @@ export class GroupsBot {
     if (!group) throw refuse('Групи вже немає в списку');
     if (group.boundAt !== null) throw refuse(`У «${group.title}» публікацію вже дозволено: ця кнопка застаріла`);
     if (group.leftAt !== null) throw refuse('Бот уже вийшов із цієї групи');
-    if (group.requestedAt === null) throw refuse('Цієї групи немає у списку');
     return group;
   }
 }

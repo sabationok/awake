@@ -6,8 +6,10 @@ import type { GroupTopicRow } from './group-topic-row.types';
 export interface GroupsPageView {
   /** Прив'язана група (також якщо бот з неї вийшов) або null. */
   group: GroupChatEntity | null;
-  /** Групи, куди бота додав власник і які чекають «Прив'язати». */
+  /** Запити: бота додали, власник ще не вирішив. */
   pending: GroupChatEntity[];
+  /** Неактивні: бот у групі, дозвіл на публікацію знято. */
+  inactive: GroupChatEntity[];
   /** Чому зараз не можна створювати топіки; null — можна. */
   topicsBlocker: string | null;
   /** Конектор прив'язаної групи, а без групи — єдиний зареєстрований. */

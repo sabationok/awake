@@ -69,7 +69,7 @@ export class GroupsService {
     // Живий рядок групи один (унікальний індекс); якщо його немає — останній відв'язаний, його й відновлюємо.
     const existing = this._chats.findOne(ref) ?? this._chats.findOne(ref, { withDeleted: true, order: { id: 'DESC' } });
     const listed = existing !== null && existing.deletedAt === null && existing.leftAt === null;
-    const stay = dto.byOwner || listed || this.pendingGroups().length < GROUPS_WAITING_LIMIT;
+    const stay = dto.byOwner || listed || this.pendingGroups().length + this.inactiveGroups().length < GROUPS_WAITING_LIMIT;
     const state: UpdateGroupChatStateDto = {
       title: dto.title,
       addedBy: dto.addedBy,
@@ -133,13 +133,13 @@ export class GroupsService {
   }
 
   /**
-   * Знімає дозвіл на публікацію: група повертається у список (`requestedAt`), бот лишається в ній, її топіки
-   * зберігаються для наступного дозволу. Повертає групу, якою вона була, або null.
+   * Знімає дозвіл на публікацію: група стає неактивною (ні `boundAt`, ні `requestedAt`), бот лишається в ній, її
+   * топіки зберігаються для наступного дозволу. Повертає групу, якою вона була, або null.
    */
   release(): GroupChatEntity | null {
     const group = this._findBound();
     if (!group) return null;
-    this._chats.update({ id: group.id }, { boundAt: null, requestedAt: group.leftAt === null ? new Date().toISOString() : null });
+    this._chats.update({ id: group.id }, { boundAt: null, requestedAt: null });
     this._invalidate();
     return group;
   }
@@ -197,7 +197,12 @@ export class GroupsService {
     return group !== null && group.leftAt !== null && group.requestedAt === null && group.boundAt === null;
   }
 
-  /** Групи, де бот є, а публікацію не дозволено: у них він нічого не робить. */
+  /** Неактивні групи: бот у них є, власник дозвіл зняв. Бот там нічого не робить. */
+  inactiveGroups(): GroupChatEntity[] {
+    return this._chats.findMany({ requested: false, bound: false, left: false }, { order: { id: 'ASC' } });
+  }
+
+  /** Запити: бота додали, власник ще нічого не вирішив. Бот там нічого не робить. */
   pendingGroups(): GroupChatEntity[] {
     return this._chats.findMany({ requested: true, bound: false, left: false }, { order: { id: 'ASC' } });
   }

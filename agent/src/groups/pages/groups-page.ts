@@ -47,7 +47,7 @@ export function buildGroupsPage(ctx: ModuleContext, view: GroupsPageView): UiPag
     ...view.pending.flatMap((item): UiNode[] => {
       const params = { id: String(item.id) };
       return [
-        { id: `groups-pending-${item.id}`, type: 'row', label: item.title, hint: `Бот у групі нічого не робить · додав ${item.addedBy}`, dot: { tone: 'orange' } },
+        { id: `groups-pending-${item.id}`, type: 'row', label: item.title, hint: `Запит · бот у групі нічого не робить · додав ${item.addedBy}`, dot: { tone: 'orange' } },
         {
           id: `groups-pending-${item.id}-buttons`,
           type: 'buttons',
@@ -82,7 +82,7 @@ export function buildGroupsPage(ctx: ModuleContext, view: GroupsPageView): UiPag
         type: 'section',
         title: 'Куди публікувати',
         footer:
-          'Додайте бота адміном у супергрупу з увімкненими темами: вона з\'явиться тут. Бот у групі нічого не робить, поки ви не дозволите публікацію; дозволена група одна. Те саме — командою /groups у приватному чаті з ботом.',
+          'Додайте бота адміном у супергрупу з увімкненими темами: вона з\'явиться тут. Бот у групі нічого не робить, поки ви не дозволите публікацію; дозволена група одна. Усі групи за станом — на вкладці «Список груп». Те саме — командою /groups у приватному чаті з ботом.',
         children: binding,
       },
       {

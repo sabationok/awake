@@ -12,6 +12,7 @@ import { GroupsService } from './groups.service';
 import { capabilityReason } from './helpers/capability-reason';
 import { groupTopicRows } from './helpers/group-topic-rows';
 import { groupsTopicSettingSource } from './helpers/groups-topic-setting';
+import { buildGroupsListPage } from './pages/groups-list-page';
 import { buildGroupsPage } from './pages/groups-page';
 import { buildGroupsStatsPage } from './pages/groups-stats-page';
 import { buildGroupsTopicsPage } from './pages/groups-topics-page';
@@ -49,6 +50,7 @@ export class GroupsMacModule implements MacModule {
     const view = this._view();
     return [
       buildGroupsPage(ctx, view),
+      buildGroupsListPage(view),
       buildGroupsTopicsPage(ctx, view),
       buildGroupsStatsPage(ctx, (namespace, { granularity, from, to }) => this._stats.timeline({ namespace, granularity, from, to })),
     ];
@@ -85,6 +87,7 @@ export class GroupsMacModule implements MacModule {
     return {
       group,
       pending: this._groups.pendingGroups(),
+      inactive: this._groups.inactiveGroups(),
       topicsBlocker: this._groups.topicsBlocker(),
       provider,
       supports: (capability) => this._groups.supports(provider.id, capability),
