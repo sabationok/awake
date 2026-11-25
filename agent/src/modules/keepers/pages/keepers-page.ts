@@ -83,7 +83,7 @@ function sessionRows(mac: MacState | null): UiRow[] {
 /** «17:22», а якщо тримає не з сьогодні — «24.11 17:22». */
 function sinceLabel(since: string): string {
   const date = new Date(since);
-  const time = formatHhmm(since);
+  const time = formatHhmm(since) ?? '';
   if (date.toDateString() === new Date().toDateString()) return time;
   return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')} ${time}`;
 }
