@@ -14,6 +14,9 @@ import { MacStateMacModule } from './mac/mac.mac-module';
 import { MediaBot } from './media/media.bot';
 import { MediaMacModule } from './media/media.mac-module';
 import { SleepBot } from './sleep/sleep.bot';
+import { KeepersListener } from './keepers/keepers.listener';
+import { KeepersMacModule } from './keepers/keepers.mac-module';
+import { KeepersService } from './keepers/keepers.service';
 import { SleepMacModule } from './sleep/sleep.mac-module';
 import { TelegramMacModule } from '../telegram/telegram.mac-module';
 import { RelayBot } from '../relay/relay.bot';
@@ -41,6 +44,9 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
     AwakeSessionListener,
     AwakeMacModule,
     SleepMacModule,
+    KeepersService,
+    KeepersMacModule,
+    KeepersListener,
     MediaMacModule,
     MacStateMacModule,
     TelegramMacModule,
@@ -61,7 +67,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
       provide: MAC_MODULES,
       useFactory: (...modules: MacModule[]) => modules,
       // GroupsMacModule і бот /groups живуть у GroupsModule (імпорт вище): тут лише місце модуля в списку.
-      inject: [AwakeMacModule, SleepMacModule, MediaMacModule, MacStateMacModule, TelegramMacModule, GroupsMacModule, BotMacModule, RelayMacModule, TailscaleMacModule, ProximityMacModule],
+      inject: [AwakeMacModule, SleepMacModule, KeepersMacModule, MediaMacModule, MacStateMacModule, TelegramMacModule, GroupsMacModule, BotMacModule, RelayMacModule, TailscaleMacModule, ProximityMacModule],
     },
   ],
   exports: [ModulesService],
