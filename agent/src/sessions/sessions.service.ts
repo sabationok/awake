@@ -2,6 +2,10 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { StatGranularity, type MacToAgentMessage, type SessionRecord, type StatMetrics } from '@awake/contracts';
 import { statNextPeriodStart, statPeriodStart, StatsService } from '../stats';
 import { AWAKE_SESSIONS_STAT_NS, AWAKE_TIME_STAT_NS, SESSION_STAT_GRANULARITIES } from './constants/session-stats';
+import { CloseSessionDto } from './dto/close-session.dto';
+import type { CreateSessionDto } from './dto/create-session.dto';
+import type { SessionEntity } from './entities/session.entity';
+import { FindManySessionsQuery } from './query/find-many-sessions.query';
 import { SessionsRepository } from './repositories/sessions.repository';
 import type { SessionsHistory, SessionsPeriod } from './types/sessions-history.types';
 
@@ -24,7 +28,7 @@ export class SessionsService implements OnModuleInit {
   /** Історія до появи статистики — один раз, з таблиці sessions. Далі лічильники ведуть події. */
   onModuleInit() {
     if (this._stats.hasNamespace(AWAKE_SESSIONS_STAT_NS)) return;
-    const sessions = this._sessions.findAll();
+    const sessions = this._sessions.findMany({}, { order: { startedAt: 'ASC' } });
     for (const session of sessions) {
       this._countStart(session.startedAt, session.source);
       if (session.endedAt) this._trackTime(session, session.endedAt);
@@ -52,8 +56,9 @@ export class SessionsService implements OnModuleInit {
     }
   }
 
-  findMany(query: { limit: number }): SessionRecord[] {
-    return this._sessions.findMany(query);
+  /** Від найновішої. */
+  findMany(query: FindManySessionsQuery): SessionEntity[] {
+    return this._sessions.findMany(query, { order: { startedAt: 'DESC' } });
   }
 
   /** Таймлайн: скільки сесій і скільки часу по днях (локальних), тижнях і місяцях. Відкрита сесія — без часу, доки не закриється. */
@@ -66,14 +71,16 @@ export class SessionsService implements OnModuleInit {
   }
 
   private _open(event: SessionEvent, battery: number | null) {
-    this._sessions.create({ startedAt: event.at, duration: event.duration ?? null, source: event.source, batteryStart: battery });
+    const dto: CreateSessionDto = { startedAt: event.at, duration: event.duration ?? null, source: event.source, batteryStart: battery };
+    this._sessions.create(dto);
     this._countStart(event.at, event.source);
   }
 
-  private _closeOpen(data: { endedAt: string; endReason: string | null; batteryEnd: number | null }) {
-    const open = this._sessions.findOpen();
-    this._sessions.closeOpen(data);
-    if (open) this._trackTime(open, data.endedAt);
+  private _closeOpen(dto: CloseSessionDto) {
+    const open = this._sessions.findOne({ ended: false }, { order: { startedAt: 'DESC' } });
+    if (!open) return;
+    this._sessions.update({ ended: false }, dto);
+    this._trackTime(open, dto.endedAt);
   }
 
   private _countStart(at: string, source: string) {

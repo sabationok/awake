@@ -8,6 +8,7 @@ import { TailscaleService } from '../../tailscale/services/tailscale';
 import { TrustedNetworksService } from '../../trusted-networks';
 import { findLanAddress } from '../../presence/helpers/find-lan-address';
 import { describeUserAgent } from '../helpers/describe-user-agent';
+import { DEVICE_PUBLIC_FIELDS } from '../constants/device-public-fields';
 import { DevicesRepository } from '../repositories/devices.repository';
 import { PairingService } from './pairing.service';
 
@@ -63,7 +64,9 @@ export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
   }
 
   private _snapshot(): DevicesSnapshot {
-    const devices = this._devices.list().map((device) => ({ ...device, name: describeUserAgent(device.userAgent) }));
+    const devices = this._devices
+      .findMany({}, { select: DEVICE_PUBLIC_FIELDS, order: { createdAt: 'DESC' } })
+      .map((device) => ({ ...device, name: describeUserAgent(device.userAgent) }));
     const requests = this._pairing.pendingRequests().map((request) => ({ ...request, name: describeUserAgent(request.userAgent) }));
     return { devices, requests, pairing: { local: this._localLink(), tailnet: this._tailnetLink(), remote: this._remoteLink() } };
   }

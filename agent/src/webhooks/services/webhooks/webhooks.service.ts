@@ -5,6 +5,9 @@ import { Subject } from 'rxjs';
 import type { Webhook, WebhookInput, WebhookType } from '@awake/contracts';
 import { readEnvFile } from '../../../secrets';
 import { generateWhId } from '../../helpers/generate-wh-id';
+import type { SaveWebhookDto } from '../../dto/save-webhook.dto';
+import type { SetWebhookDisabledDto } from '../../dto/set-webhook-disabled.dto';
+import { toWebhook } from '../../helpers/to-webhook';
 import { WebhooksRepository } from '../../repositories/webhooks.repository';
 
 const LEGACY_RELAY_ENV_PATH = join(homedir(), '.config/awake/relay.env');
@@ -26,7 +29,7 @@ export class WebhooksService implements OnModuleInit {
   }
 
   findMany(): Webhook[] {
-    return this._repository.findMany();
+    return this._repository.findMany({}, { order: { createdAt: 'ASC', id: 'ASC' } }).map(toWebhook);
   }
 
   /** Увімкнений вебхук типу; перший, якщо їх кілька. */
@@ -35,8 +38,7 @@ export class WebhooksService implements OnModuleInit {
   }
 
   save(input: WebhookInput): Webhook | null {
-    const now = new Date().toISOString();
-    const data = {
+    const dto: SaveWebhookDto = {
       whId: input.whId || generateWhId(),
       provider: input.provider,
       type: input.type,
@@ -46,40 +48,33 @@ export class WebhooksService implements OnModuleInit {
       config: input.type === 'relay' ? { room: input.config.room } : {},
     };
     let id = input.id;
-    if (id === undefined) id = this._repository.create({ ...data, createdAt: now });
-    else if (!this._repository.update(id, data, now)) return null;
+    if (id === undefined) id = this._repository.create(dto).id;
+    else if (!this._repository.update({ id }, dto)) return null;
     this.changed$.next();
-    return this._repository.findOne(id);
+    const saved = this._repository.findOne({ id });
+    return saved ? toWebhook(saved) : null;
   }
 
   setEnabled(id: number, enabled: boolean) {
-    const now = new Date().toISOString();
-    if (this._repository.setDisabledAt(id, enabled ? null : now, now)) this.changed$.next();
+    const dto: SetWebhookDisabledDto = { disabledAt: enabled ? null : new Date().toISOString() };
+    if (this._repository.update({ id }, dto)) this.changed$.next();
   }
 
   delete(id: number) {
-    if (this._repository.softDelete(id, new Date().toISOString())) this.changed$.next();
+    if (this._repository.delete({ id })) this.changed$.next();
   }
 
   /** relay.env з workspace / DEST / room (до вебхуків у SQLite): переносимо relay один раз. Секрети лишаються там, де були. */
   private _importLegacyRelay() {
-    if (this._repository.hasEverType('relay')) return;
+    if (this._repository.exists({ type: 'relay' }, { withDeleted: true })) return;
     const file = readEnvFile(process.env.MACONTROL_RELAY_ENV || LEGACY_RELAY_ENV_PATH);
     const pick = (name: string) => process.env[name] || file.get(name);
     const workspace = pick('WEBHOOXY_WORKSPACE');
     const destId = pick('WEBHOOXY_DEST_ID');
     const room = pick('WEBHOOXY_ROOM');
     if (!workspace || !destId || !room) return;
-    this._repository.create({
-      whId: generateWhId(),
-      provider: 'macontrol',
-      type: 'relay',
-      mode: 'stream',
-      workspace,
-      destId,
-      config: { room },
-      createdAt: new Date().toISOString(),
-    });
+    const dto: SaveWebhookDto = { whId: generateWhId(), provider: 'macontrol', type: 'relay', mode: 'stream', workspace, destId, config: { room } };
+    this._repository.create(dto);
     this._logger.log('relay webhook imported from relay.env');
   }
 }

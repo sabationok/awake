@@ -10,6 +10,6 @@ export class LogsController {
 
   @Get()
   findMany(@Query('limit') limit?: string): AppResponse<LogRecord[]> {
-    return AppResponse.ok(this._logs.findMany({ limit: clampLimit(limit, 100) }));
+    return AppResponse.ok(this._logs.findMany({ pagination: { limit: clampLimit(limit, 100) } }));
   }
 }

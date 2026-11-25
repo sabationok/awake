@@ -1,122 +1,71 @@
-import { Injectable } from '@nestjs/common';
-import type { StatGranularity, StatMetrics } from '@awake/contracts';
-import { DatabaseService } from '../../database/database.service';
+import { EntityRepository, LessThan, MoreThanOrEqual, SqliteRepository, type SqliteWhereBuilder, type SqliteWhereQuery } from '@nest-kit/sqlite';
+import { MetricSnapshotEntity } from '../entities/metric-snapshot.entity';
+import type { UpsertMetricSnapshotDto } from '../dto/upsert-metric-snapshot.dto';
 import { addStatMetrics } from '../helpers/add-stat-metrics';
+import { FindManyMetricSnapshotsQuery } from '../query/find-many-metric-snapshots.query';
+import { FindOneMetricSnapshotQuery } from '../query/find-one-metric-snapshot.query';
 import type { StatBucket, StatFilter } from '../types/stat-bucket.types';
+import type { StatCellRow, StatSeriesCellRow } from '../types/stat-cell.types';
 
-/** Рядок агрегату: одна клітинка value × status у бакеті. */
-export interface StatCellRow {
-  periodStart: string;
-  value: string;
-  status: string;
-  count: number;
-}
+export type { StatCellRow, StatSeriesCellRow } from '../types/stat-cell.types';
 
-/** Сума клітинки за діапазон в одній серії. */
-export interface StatSeriesCellRow {
-  subjectType: string;
-  subjectId: string | null;
-  seriesKey: string;
-  value: string;
-  status: string;
-  count: number;
-}
+type SnapshotQuery = SqliteWhereQuery<FindOneMetricSnapshotQuery, FindManyMetricSnapshotsQuery>;
 
-/** metric_snapshots у SQLite. Глобальна серія зберігається з subject_id '' (NULL у первинному ключі SQLite не конфліктує). */
-@Injectable()
-export class MetricSnapshotsRepository {
-  constructor(private readonly _database: DatabaseService) {}
-
+/** metric_snapshots у SQLite. Агрегати — через `_qb()` з `json_each`, SQL-тексту тут немає. */
+@EntityRepository(MetricSnapshotEntity)
+export class MetricSnapshotsRepository extends SqliteRepository<MetricSnapshotEntity, FindOneMetricSnapshotQuery, FindManyMetricSnapshotsQuery> {
   /**
    * Додає дельти до бакетів однією транзакцією. Додавання, а не заміна (на відміну від Redis-варіанту скіла):
    * пам'ять процесу не переживає перезапуск, і заміна зменшила б підсумок. Один процес — подвійного flush немає.
    */
   addBatch(buckets: StatBucket[], at: string) {
-    const db = this._database.db;
-    const select = db.prepare(
-      'SELECT metrics FROM metric_snapshots WHERE namespace = ? AND subject_type = ? AND subject_id = ? AND series_key = ? AND granularity = ? AND period_start = ?',
-    );
-    const upsert = db.prepare(
-      `INSERT INTO metric_snapshots (namespace, subject_type, subject_id, series_key, granularity, period_start, metrics, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT (namespace, subject_type, subject_id, series_key, granularity, period_start)
-       DO UPDATE SET metrics = excluded.metrics, updated_at = excluded.updated_at`,
-    );
-    db.exec('BEGIN');
-    try {
+    this._transaction(() => {
       for (const bucket of buckets) {
-        const key = [bucket.namespace, bucket.subjectType, bucket.subjectId ?? '', bucket.seriesKey, bucket.granularity, bucket.periodStart.toISOString()] as const;
-        const row = select.get(...key) as { metrics: string } | undefined;
-        const metrics = addStatMetrics(row ? (JSON.parse(row.metrics) as StatMetrics) : {}, bucket.metrics);
-        upsert.run(...key, JSON.stringify(metrics), at);
+        const key: FindOneMetricSnapshotQuery = {
+          namespace: bucket.namespace,
+          subjectType: bucket.subjectType,
+          subjectId: bucket.subjectId ?? '',
+          seriesKey: bucket.seriesKey,
+          granularity: bucket.granularity,
+          periodStart: bucket.periodStart.toISOString(),
+        };
+        const existing = this.findOne(key, { select: ['metrics'] });
+        const dto: UpsertMetricSnapshotDto = { ...key, metrics: addStatMetrics(existing?.metrics ?? {}, bucket.metrics), updatedAt: at };
+        this.upsert(dto, { conflict: ['namespace', 'subjectType', 'subjectId', 'seriesKey', 'granularity', 'periodStart'], update: ['metrics', 'updatedAt'] });
       }
-      db.exec('COMMIT');
-    } catch (error) {
-      db.exec('ROLLBACK');
-      throw error;
-    }
+    });
   }
 
-  /** Сума клітинок за бакетами (дві розгортки JSON → SUM). */
+  /** Сума клітинок value × status за бакетами. */
   sumCells(filter: StatFilter): StatCellRow[] {
-    const { where, params } = this._where(filter);
-    const rows = this._database.db
-      .prepare(
-        `SELECT m.period_start AS periodStart, v.key AS value, s.key AS status, SUM(s.value) AS count
-         FROM metric_snapshots m, json_each(m.metrics) v, json_each(v.value) s
-         WHERE ${where} GROUP BY m.period_start, v.key, s.key`,
-      )
-      .all(...params) as unknown as StatCellRow[];
-    return rows.map((row) => ({ ...row, count: Number(row.count) }));
+    return this._qb('m')
+      .jsonEach('v', 'm.metrics')
+      .jsonEach('s', 'v.value')
+      .select({ periodStart: 'm.periodStart', value: 'v.key', status: 's.key' })
+      .sum('s.value', 'count')
+      .applyQuery(filter)
+      .groupBy('m.periodStart', 'v.key', 's.key')
+      .getRawMany<StatCellRow>();
   }
 
   /** Сума за весь діапазон з розрізом по серіях (subject, seriesKey): для лічильників з кількома вимірами. */
   sumSeries(filter: StatFilter): StatSeriesCellRow[] {
-    const { where, params } = this._where(filter);
-    const rows = this._database.db
-      .prepare(
-        `SELECT m.subject_type AS subjectType, m.subject_id AS subjectId, m.series_key AS seriesKey, v.key AS value, s.key AS status, SUM(s.value) AS count
-         FROM metric_snapshots m, json_each(m.metrics) v, json_each(v.value) s
-         WHERE ${where} GROUP BY m.subject_type, m.subject_id, m.series_key, v.key, s.key`,
-      )
-      .all(...params) as unknown as StatSeriesCellRow[];
-    return rows.map((row) => ({ ...row, subjectId: row.subjectId === '' ? null : row.subjectId, count: Number(row.count) }));
+    return this._qb('m')
+      .jsonEach('v', 'm.metrics')
+      .jsonEach('s', 'v.value')
+      .select({ subjectType: 'm.subjectType', subjectId: 'm.subjectId', seriesKey: 'm.seriesKey', value: 'v.key', status: 's.key' })
+      .sum('s.value', 'count')
+      .applyQuery(filter)
+      .groupBy('m.subjectType', 'm.subjectId', 'm.seriesKey', 'v.key', 's.key')
+      .getRawMany<StatSeriesCellRow>()
+      .map((row) => ({ ...row, subjectId: row.subjectId === '' ? null : row.subjectId }));
   }
 
-  hasNamespace(namespace: string): boolean {
-    return !!this._database.db.prepare('SELECT 1 FROM metric_snapshots WHERE namespace = ? LIMIT 1').get(namespace);
-  }
-
-  deleteOlderThan(granularity: StatGranularity, before: Date): number {
-    const result = this._database.db
-      .prepare('DELETE FROM metric_snapshots WHERE granularity = ? AND period_start < ?')
-      .run(granularity, before.toISOString());
-    return Number(result.changes);
-  }
-
-  private _where(filter: StatFilter): { where: string; params: string[] } {
-    const where = ['m.namespace = ?', 'm.granularity = ?'];
-    const params: string[] = [filter.namespace, filter.granularity];
-    if (filter.subjectType !== undefined) {
-      where.push('m.subject_type = ?');
-      params.push(filter.subjectType);
-    }
-    if (filter.subjectId !== undefined) {
-      where.push('m.subject_id = ?');
-      params.push(filter.subjectId ?? '');
-    }
-    if (filter.seriesKey !== undefined) {
-      where.push('m.series_key = ?');
-      params.push(filter.seriesKey);
-    }
-    if (filter.from) {
-      where.push('m.period_start >= ?');
-      params.push(filter.from.toISOString());
-    }
-    if (filter.to) {
-      where.push('m.period_start < ?');
-      params.push(filter.to.toISOString());
-    }
-    return { where: where.join(' AND '), params };
+  protected override _applyWhere(where: SqliteWhereBuilder<MetricSnapshotEntity>, query: SnapshotQuery): void {
+    const { subjectId, from, to, ...rest } = query;
+    super._applyWhere(where, rest);
+    if (subjectId !== undefined) where.field('subjectId', subjectId ?? '');
+    if (from) where.field('periodStart', MoreThanOrEqual(from.toISOString()));
+    if (to) where.field('periodStart', LessThan(to.toISOString()));
   }
 }

@@ -14,7 +14,7 @@ export class LogsListener implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    this._subscription = this._bridge.logs$.subscribe((line) => this._logs.create(line));
+    this._subscription = this._bridge.logs$.subscribe(({ at, text }) => this._logs.create({ at, text }));
   }
 
   onModuleDestroy() {

@@ -2,16 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { WebSessionIdleMinutes, WebSessionInfo } from '@awake/contracts';
 import { SESSION_RETENTION_MS } from '../constants/web-auth';
+import type { CreateWebSessionDto } from '../dto/create-web-session.dto';
 import { WebSessionsRepository } from '../repositories/web-sessions.repository';
+import type { ActiveWebSession, CreatedWebSession } from '../types/web-session.types';
+
+export type { ActiveWebSession, CreatedWebSession } from '../types/web-session.types';
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
-
-export interface ActiveWebSession {
-  id: string;
-  deviceId: number;
-  idleMinutes: WebSessionIdleMinutes;
-  expiresAt: string;
-}
 
 /**
  * Ковзні вебсесії: opaque-токен у куці `mc_session`, у SQLite лише його sha256. Сесія належить пристрою
@@ -22,38 +19,44 @@ export class WebSessionsService {
   constructor(private readonly _sessions: WebSessionsRepository) {}
 
   /** Нова сесія пристрою. Повертає токен для куки (лише тут він існує у відкритому вигляді). */
-  create(deviceId: number, idleMinutes: WebSessionIdleMinutes): { token: string; session: ActiveWebSession } {
+  create(deviceId: number, idleMinutes: WebSessionIdleMinutes): CreatedWebSession {
     const now = Date.now();
-    this._sessions.prune(new Date(now - SESSION_RETENTION_MS).toISOString());
+    this._sessions.delete({ staleBefore: new Date(now - SESSION_RETENTION_MS).toISOString() });
     const token = randomBytes(32).toString('base64url');
     const id = randomUUID();
-    this._sessions.create({ id, tokenHash: sha256(token), deviceId, idleMinutes, at: new Date(now).toISOString() });
+    const at = new Date(now).toISOString();
+    const dto: CreateWebSessionDto = { id, tokenHash: sha256(token), deviceId, idleMinutes, createdAt: at, lastActiveAt: at };
+    this._sessions.create(dto);
     return { token, session: { id, deviceId, idleMinutes, expiresAt: new Date(now + idleMinutes * 60_000).toISOString() } };
   }
 
   /** Жива сесія цього пристрою; продовжує її. null — немає, чужа, відкликана або протухла. */
   validate(token: string, deviceId: number): ActiveWebSession | null {
-    const row = this._sessions.findActive(sha256(token), deviceId);
+    const row = this._sessions.findOne({ tokenHash: sha256(token), deviceId, revoked: false });
     if (!row) return null;
     const now = Date.now();
     const idleMs = row.idleMinutes * 60_000;
     if (now - Date.parse(row.lastActiveAt) > idleMs) {
-      this._sessions.revoke(row.id, new Date(now).toISOString());
+      this._revoke(row.id, new Date(now).toISOString());
       return null;
     }
-    this._sessions.touch(row.id, new Date(now).toISOString());
+    this._sessions.update({ id: row.id }, { lastActiveAt: new Date(now).toISOString() });
     return { id: row.id, deviceId: row.deviceId, idleMinutes: row.idleMinutes as WebSessionIdleMinutes, expiresAt: new Date(now + idleMs).toISOString() };
   }
 
   revoke(id: string) {
-    this._sessions.revoke(id, new Date().toISOString());
+    this._revoke(id, new Date().toISOString());
   }
 
   /** Таймаут і строк живої сесії за id (без продовження). */
   info(id: string): WebSessionInfo | null {
-    const row = this._sessions.findById(id);
+    const row = this._sessions.findOne({ id, revoked: false });
     if (!row) return null;
     return { idleMinutes: row.idleMinutes as WebSessionIdleMinutes, expiresAt: new Date(Date.parse(row.lastActiveAt) + row.idleMinutes * 60_000).toISOString() };
+  }
+
+  private _revoke(id: string, at: string) {
+    this._sessions.update({ id, revoked: false }, { revokedAt: at });
   }
 
   static info(session: ActiveWebSession): WebSessionInfo {

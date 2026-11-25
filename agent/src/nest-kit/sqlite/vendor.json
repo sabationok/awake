@@ -1,0 +1,264 @@
+{
+  "package": "@my-nestjs-kit/sqlite",
+  "version": "0.1.0",
+  "source": "~/projects/nest-sqlite-lib",
+  "repo": "github:sabationok/nest-sqlite-lib",
+  "ref": "dev",
+  "sourceCommit": "b28935d4ecdfcf3a86d5670632253c93460dc18d",
+  "copiedAt": "2026-11-24",
+  "localEdits": "first line of every .ts: TEMP nest-kit shim header",
+  "files": {
+    "constants/sqlite-tokens.ts": {
+      "upstreamSha256": "c536fcd186cc7591c2a83e323020b12e5a52eb2a1073a4e78ae78f5810813e49",
+      "localSha256": "e1677a8db69c2ff8e4175799e3ba976efb982e0bea02096af17fe7c42366995a"
+    },
+    "data-source/helpers/match-like-pattern.ts": {
+      "upstreamSha256": "4e6c2f1d80acc50779dd0efbc773634f3d0cd3f7bac4bf23e35068980b5ea88b",
+      "localSha256": "a8bae15c24a18c9930ca06b640b07f0d28c9059f3e4f978f734947c846358da7"
+    },
+    "data-source/helpers/register-ts-like.ts": {
+      "upstreamSha256": "0f65fc9e1dce6436bfc402d04149db67426b426090aabd95c34e43676af2b105",
+      "localSha256": "e62b9c5cbe120f11009d777482a26f31ff86a523fa5041a60b57cd78cfa7307e"
+    },
+    "data-source/sqlite-data-source.ts": {
+      "upstreamSha256": "b3c387aee6fdb0cbeba89318e7dc7d02887a026c1739174cc625b3b873a8888d",
+      "localSha256": "0344c19d90a6b0651c15cd5f7cb17eaad368454ccfafc13274f34f88f61f9ee4"
+    },
+    "decorators/column.decorator.ts": {
+      "upstreamSha256": "fdde9d537b182b5d0a0975d3c5d8dd107981ecb1018252bf566561a43d29bcdb",
+      "localSha256": "a55f002512a24fb0607790c3c82b5afaa5cf77833ffdef9eeaba07f3b8816faa"
+    },
+    "decorators/create-date-column.decorator.ts": {
+      "upstreamSha256": "9467ef2dde2dfea8242a212156a0bcff08c9c93dcff4f6b96f09640734efdf41",
+      "localSha256": "d7f5a915d9b72276a6d18416afccb3662ed8a2b29a5b0124aad8cc2366613969"
+    },
+    "decorators/delete-date-column.decorator.ts": {
+      "upstreamSha256": "8e742e354746d3610bd91b7ed0d43282b06c4e4e80e01604e8aa7a004ba6369f",
+      "localSha256": "e21ac38689c1e3e590af834cc43e64697f9fa829b8807cb9d5e2eb4d7c2ba77f"
+    },
+    "decorators/entity-repository.decorator.ts": {
+      "upstreamSha256": "9aabbfb2a8021bf69a9f56b795a15704b4457e1237f5ffe58f984327682ab4a4",
+      "localSha256": "018deb639344d7c9d1ac9109616293d3cae1f21bec28ae24a9c2af9552d67d94"
+    },
+    "decorators/entity.decorator.ts": {
+      "upstreamSha256": "ec994d56a782dfe92ca2137b36437ab6bcc5c6554104ea5722f05784e9e12b8b",
+      "localSha256": "c25cd2b51d144a3882af971935bc5660e4a80624887323d908242334e06404bc"
+    },
+    "decorators/index.decorator.ts": {
+      "upstreamSha256": "0ec33402f28fa8cbc60611859171dd4e891a0a78d3d26970d3831118d11c975f",
+      "localSha256": "2ddd5e680914d7e8d76ac9094115f65dedd36194a23e497fee50a9ca9b8dd55f"
+    },
+    "decorators/many-to-one.decorator.ts": {
+      "upstreamSha256": "0a89e4f72e8cc1d60e9d5f6755272780f8aee9d567e679c0fcd5e38d74759e35",
+      "localSha256": "3c3f96e8e4111fdb63a111266ebed91e0a94d7818fa7847cc3d4198c17ee64d3"
+    },
+    "decorators/one-to-many.decorator.ts": {
+      "upstreamSha256": "c3f5498c5b2d7c17ab91b026a739ae8d947a1d1a0f705ded3f23c138fe52fda6",
+      "localSha256": "ab5c02d571fe99e9083c0e64eff01de17ecd3b15b906b4edcc2713491da8a2b8"
+    },
+    "decorators/one-to-one.decorator.ts": {
+      "upstreamSha256": "a9fa7cab804e6878d72ef08be18aae0c15b403a27e683a2a4781109318b43ada",
+      "localSha256": "39ce67e631cf5ebe2c1b54dcfe5c07308c1cd601f5e9cbe6bbadcfeaab315d67"
+    },
+    "decorators/primary-column.decorator.ts": {
+      "upstreamSha256": "3db14026c0ea8109b3a131912d88ac4397bf26f8665f0552b8d0e98f46956149",
+      "localSha256": "50c7079d01952165980fad22ed690ae86faa82854b2cbd415d72c7d339dcbeec"
+    },
+    "decorators/primary-generated-column.decorator.ts": {
+      "upstreamSha256": "ba19c5ee0391e8b0b364401853cc48eacde98374f139e7758200d888baa63edd",
+      "localSha256": "ae145936fddc6c54c110cc29acf8c5515b044ad7d2a812d8071c08064b272cdb"
+    },
+    "decorators/state-date-column.decorator.ts": {
+      "upstreamSha256": "3df7a0b24e8cbeb181ef00a04fb8822479402bdfa8c9adba80cf60c661d3b63e",
+      "localSha256": "6644027f189f81e53191dfe476afc606bf1c5a4a6e44943686d6c470a11a5ae1"
+    },
+    "decorators/update-date-column.decorator.ts": {
+      "upstreamSha256": "8014891dfb4e4c270ac852166a258b225f919f6401f552b9199c5c69c73ff43b",
+      "localSha256": "c75879879b485692191052dd4fe08563bb315d6d4de2aefa1de799e00255dfb4"
+    },
+    "helpers/assert-order-direction.ts": {
+      "upstreamSha256": "a4b46711569a4df2d910ec665d77e2097aad4eea940c3722fac07cdf0e9a58fc",
+      "localSha256": "e129377e9ce4b983371cf2a7b7b7242925142b6f9d4bfe0ddd51313c089320ae"
+    },
+    "helpers/assert-pragma-value.ts": {
+      "upstreamSha256": "3797141781446e51a1b5ea06ce2db78560d493bf44aa50264fc65ae310067d67",
+      "localSha256": "264de3ce5a49f73e4596d95f696d8182c4c90648a5698ae2e5262ca292fa6de6"
+    },
+    "helpers/assert-row-count.ts": {
+      "upstreamSha256": "d214033c954ff2ccc28d80850831507c2703e6facd054ce3da8f2d2fd2537804",
+      "localSha256": "7d5b9d975115d5ebd77ccf78ac317d7b0fa320743f0ca5eae3a50991e4f10896"
+    },
+    "helpers/assert-sql-name.ts": {
+      "upstreamSha256": "f47544c4a7e6291318594f0c584c368027375e2cee47edf687a22a92747f055c",
+      "localSha256": "f72d2a63e523943c89889e98e13681dd5a1e1f3cd67041cb5f293b39d94f153c"
+    },
+    "index.ts": {
+      "upstreamSha256": "8f36913aa92faa281a3f98076c937addd33165a2f4f430844e81702d5aed4722",
+      "localSha256": "295491daa93d53cf946d8081ee7f58227c6ab0cf8512f6733863e641340531fd"
+    },
+    "metadata/helpers/to-snake-case.ts": {
+      "upstreamSha256": "89e93b436c547c3d9554177048cf0c99cbea31942072b7e7af162a5c8deba56a",
+      "localSha256": "c4869301c35b2c048e84ea52a652724f3865d1e31d996db74a1e1390e9cc1388"
+    },
+    "metadata/metadata-storage.ts": {
+      "upstreamSha256": "b28a73af58468ffda4683d0febc4d9e0eaf5554f55a62134451d64345eb45f5f",
+      "localSha256": "b2d79a3c43caa53782e74a81742c8d665be24baafee9efb25f26fec4f5624746"
+    },
+    "metadata/types/entity-meta.types.ts": {
+      "upstreamSha256": "778c2d19aac52b89caf65ecc8af3f21b81e9692ae4efd1ee19e711e63abc0e5f",
+      "localSha256": "6b3b704347597ce01f9505cf107f7ce499d6bb4b003adf01ee13f766d70f22da"
+    },
+    "migrations/decorators/migration.decorator.ts": {
+      "upstreamSha256": "6218d53666010a533975b8fe0242a4e8d5a124cf24351a23101b0ebf7c4c5599",
+      "localSha256": "55aef5a08b1ac4075d8b7be8085a0a1217d7888b9685f4b2e7842d92ede90f02"
+    },
+    "migrations/define-migration.ts": {
+      "upstreamSha256": "6211fb6096a692715e1dc474bdba96299b673ec6652d74adf9bddd5fcef40fd9",
+      "localSha256": "ef892da6c855db092db9514c5667037a15c73fb203903b8f88b5e6afc6e2b3b5"
+    },
+    "migrations/helpers/resolve-migrations.ts": {
+      "upstreamSha256": "bccda9433e0ff78f4fb9d199dc33de4efdd0118e25083c78275eeda666a5a205",
+      "localSha256": "7aa720416b0376352bd7c943be0143718a8eb938b697d63ca3c78c89c3af11ce"
+    },
+    "migrations/migration-context.ts": {
+      "upstreamSha256": "1da414d4f31f7d5c05c9c4efee1b01adbd16c423a3984d9809566dd9975465ff",
+      "localSha256": "1640c6e13fdb5c4a5db06f6f9f21b087a1f4af13aab9e2181147883911e3330d"
+    },
+    "migrations/migrations-runner.ts": {
+      "upstreamSha256": "13a1c6454d4465da0e94c3c895a11129a636108eaffd69f1832e08f884f2a41f",
+      "localSha256": "0e8dd767895ab7313a43725354b07df592ebb142d3498dbcf95f4c5ffb1293bf"
+    },
+    "migrations/migrations.service.ts": {
+      "upstreamSha256": "5cd9afa97b2f6f57afd467e4dcc72f6eeedf5db78f0d2293ce9d68c3d65b0214",
+      "localSha256": "aa1bba96bc0dd75be07bb44e9ed94c80df514eb3c65736939060efa3c3fbbf4c"
+    },
+    "migrations/types/migration.types.ts": {
+      "upstreamSha256": "8eb712ba641fc1321e8da006ecd8eb5fb283eea447e435bfcb849a85794cfe12",
+      "localSha256": "f3ea8b2813d56eccc7806471419b139aa98b2517ac3860fddcd9b2cb738dbacd"
+    },
+    "operators/and.ts": {
+      "upstreamSha256": "774ee6b2b352a85142997bf2c2286de41d4985e66999b0473a7245c4224fdbf9",
+      "localSha256": "e158fb91b5401558064befe087e2a97822d65f3a354d6c6eda819addfbe4edf1"
+    },
+    "operators/between.ts": {
+      "upstreamSha256": "d1e37d8dcdf586c19796661fc9842f4b251d833f1b7bafdbcc1c7a5f0575a95d",
+      "localSha256": "88ae9043071898b26b6aa9880652435e94e3d4455fb8b4459c78c794429625c5"
+    },
+    "operators/equal.ts": {
+      "upstreamSha256": "f1a557caaf6d1aee2424d80953e3af8081685fca3147b9cbbddcb3fd8c90eed1",
+      "localSha256": "a44f5247115cc116b0fdff1b00e90bbfe1499cb2f1e128f61732791fe75ad3f8"
+    },
+    "operators/find-operator.ts": {
+      "upstreamSha256": "6294f2bbad2c75c29d773e09767f4c00f3828171c7a91894048f44d61a506138",
+      "localSha256": "046a2e923739c988daadef9f0017ac0c442cd4b87a2ae706273b560b3432c59c"
+    },
+    "operators/i-like.ts": {
+      "upstreamSha256": "3c0ce44f9c28c9f6a0761839c8509b5e3d0ee19f2383a2fd36e2af91c0711ee1",
+      "localSha256": "509888115012a3b20f83948ca6817479aa23e63c479d1e4ba4819455b854fc3d"
+    },
+    "operators/in.ts": {
+      "upstreamSha256": "1a534ce130ef3871146703c7997b82992cc21bb1405a1ab74835e788171d23ac",
+      "localSha256": "693e84b0a4b98d20425015517f0399d44fe89072c59d7d7379362cf99d6ec2bd"
+    },
+    "operators/index.ts": {
+      "upstreamSha256": "d58d2056fccf2593c3b9253c2a60f7693db21d2ab803bc4eac108ed05179369f",
+      "localSha256": "a64db54d0940f22c408f298a462497169077c87d3074c1dbaa619d5caee9d948"
+    },
+    "operators/is-null.ts": {
+      "upstreamSha256": "c972956d497ae5b90eea5eef8e1b50a634d4f66e8ebfe96b60ceb2ff1abd99b8",
+      "localSha256": "ebd6198f4b9e87a8e5ea9788215423e182a0f1d56e5cabe9e3fa3329c879456d"
+    },
+    "operators/less-than-or-equal.ts": {
+      "upstreamSha256": "8736791557b839cdbdfd9c76e8060d189013285e4750371975ab26bbc08f9d59",
+      "localSha256": "29143a15d4df056af872edfd63511b28f9ec06d064ad79218659ff8e157aa568"
+    },
+    "operators/less-than.ts": {
+      "upstreamSha256": "01393693b5919eb7da4312c6bc5d947f627b9e203a9a6bbe884aa8df26711073",
+      "localSha256": "e0fd22bdc16ff00eea3e43eb0182ab55c0d9a325125a9fd31acb49dd2965f69d"
+    },
+    "operators/like.ts": {
+      "upstreamSha256": "65de7abae52298f8bc6b5d75d71cfbbb9ceafb5d53aa681a4907a2de1702ebec",
+      "localSha256": "80d111822e33c54d04f1a8a0bb237110a022eef2d865e12750fe29dbaead3e98"
+    },
+    "operators/more-than-or-equal.ts": {
+      "upstreamSha256": "a40d815cc1df48f79c3fceaa3b920467d6b6e8eb68cabff089049af77dc9988c",
+      "localSha256": "5e6f73bc23d2bea1c261d55f9c3e00a986859b86f58451b5ff186c131cbb694a"
+    },
+    "operators/more-than.ts": {
+      "upstreamSha256": "2d9c3bc1ffc7f67280eeacbcda505dbe47f1483fdba728e5620fbc59bc48d06a",
+      "localSha256": "d7f4fa3615ca34637df4b8cde9c022670ce56cb315134dfd042a71cc619f54cd"
+    },
+    "operators/not.ts": {
+      "upstreamSha256": "ab79a0501eaa36321b42cce06132122d6ce7a4f8fcf0ce0465da7608043b65ea",
+      "localSha256": "90440f8d82beedc20b2cdf8e32b753156151812ee4336a7e5a15fa3b2713157f"
+    },
+    "query/find-many-query.base.ts": {
+      "upstreamSha256": "06d6c8dab66f1bcf6a35da71759931b9623e5a4007d553b9a384ae31392baad3",
+      "localSha256": "6878160eadfc4eb3e2e6ff9bc4f7f4f52418ff7f70b772be184140af78038b47"
+    },
+    "query/id.query.ts": {
+      "upstreamSha256": "e8a03b6a5544c37add9ee06925cc555152d9aa48255b836bbf8d3c0ea62dbbe8",
+      "localSha256": "c8c16b6400c3a2702ac45fb902eacbd7ef6eb3487c319d890a8f1e68827a0b37"
+    },
+    "query/pagination.query.ts": {
+      "upstreamSha256": "a807143c50c42bdfb1852978a7df4bb1bef50d6345809ac407f01d65859521fa",
+      "localSha256": "6f3a842ddd24725c71b0dd556af646ad698abc4d6bb899cec5e19fc1cd338014"
+    },
+    "query-builder/helpers/normalize-relations.ts": {
+      "upstreamSha256": "6e8c5984456f40b5b6b9e896792767dec8daa83b8ac4ca183b869c9194d16d1d",
+      "localSha256": "1f9475f8af8b9f31c32343175b9cdd3e6123757e0f4255bf6a33d9ffed1dce8e"
+    },
+    "query-builder/sqlite-query-builder.ts": {
+      "upstreamSha256": "ea7c27a3684f04af51ad0cf03f96c0ef74b1db85f1336d0003d2c3f93a3c4f3e",
+      "localSha256": "a3405c475fbd7c47583f6b4fe2f3c9bdcc41d41fb2c293250743a4f764337e34"
+    },
+    "query-builder/sqlite-where-builder.ts": {
+      "upstreamSha256": "c92d65448840ebaca9ad03f9b32c2f3bde5e4011b209fa6d17604276db26b2f8",
+      "localSha256": "ab3f8ef62b87a1187b439f8f9c1bb0f89d11487731be1384f20441ada2261af7"
+    },
+    "query-builder/types/query-builder.types.ts": {
+      "upstreamSha256": "c963f15333fdc823e6002be7f844b67163753df586cb47686014055384cafebc",
+      "localSha256": "de829cca02acf113945c4a9a88546889bbfbe350f135d7814ca371a0ca64dda3"
+    },
+    "repository/helpers/column-value.ts": {
+      "upstreamSha256": "1a0670162ea5830f41c88b5c2e1581701a6c6393388a39d10ebf14f2112d98ba",
+      "localSha256": "78e847e89a7f17e4f67277f9f8a45ab96aa846be0654241ac96c18ad3113cad7"
+    },
+    "repository/helpers/compile-condition.ts": {
+      "upstreamSha256": "e92dd5756611f22345b4d8d4747fc758dd8677f31838fc516a1f89387460c899",
+      "localSha256": "8c5962fb082e41ffd7e9a6b1543c43893363fc73bce6aa9a2539d1c865bd39dc"
+    },
+    "repository/helpers/quote-identifier.ts": {
+      "upstreamSha256": "050ed624b32b6ab6302563eb9284fec0c425fefa862f4ae635dbcfeacb76bd78",
+      "localSha256": "ade5d2e58fccb71328556256290eabdcd8d9f3cfe5da0be6f9a8982fefcd3b1f"
+    },
+    "repository/helpers/relation-target.ts": {
+      "upstreamSha256": "d3d1b1f3d1694a407e7487e75013ff7325f7215e4e853bea4363707ba680c869",
+      "localSha256": "9493fdaa90623d3323441335808ec04b8c76fb65489cd842cc30babc5a91c048"
+    },
+    "repository/helpers/resolve-inverse-property.ts": {
+      "upstreamSha256": "9e63caf82937d0b335e568ef5b35c7fd973b0baf22528ee8461415b03efa3253",
+      "localSha256": "19e479adaf7d539487d966010588ad6282c145ab79f69ef53dc76560df7207b8"
+    },
+    "repository/sqlite-repository.ts": {
+      "upstreamSha256": "834f89b51d0b5ffb2d52aec4e00296d0b4aeb393261b242d7ac6b05a662f8f49",
+      "localSha256": "9422bbb39dd82a9f209c923bf3dcb04cb1aa80b1e000c7bcde75af6b706fdb5c"
+    },
+    "repository/types/find-opts.types.ts": {
+      "upstreamSha256": "0bd44a3affc6c1cddc63e96138e6367278f92d6b68d5e9a7c4d05ce5931bab6c",
+      "localSha256": "8931c6926a98ce74dce7547298a5f65cdaaa6901c254b15b7407f413e0fe5f15"
+    },
+    "repository/types/sql-fragment.types.ts": {
+      "upstreamSha256": "c334d7f166fb1ee7fdceecd15e12e89c4e285fbccdc8f97ac1582af62856f25e",
+      "localSha256": "4596fa504ac8ebbca7817d5e357912c6c68437a18dfa88577c961de37a4aae02"
+    },
+    "sqlite.module.ts": {
+      "upstreamSha256": "be7441b8d8f1781a4942c92302941d1c71df8c5d8ef3c30f7611c21a5af44add",
+      "localSha256": "1f8c6afa345d3acb64bd1d6792c379a688e9cd76fe4b932634f9f4d20512e9b0"
+    },
+    "types/sqlite-module-options.types.ts": {
+      "upstreamSha256": "4e4b09cb9760de417f56c5cf97c618bab970e2402002a58ded04d7e968b1f1c3",
+      "localSha256": "2ea636a671e16ee7444599869e5fa00c16f10357c6a0becb8a67625dccc424c0"
+    }
+  }
+}

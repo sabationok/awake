@@ -14,7 +14,13 @@
     "skipLibCheck": true,
     "types": [
       "node"
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@nest-kit/*": [
+        "src/nest-kit/*"
+      ]
+    }
   },
   "include": [
     "src"

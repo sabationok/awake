@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Subject } from 'rxjs';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
+import { CreateTrustedNetworkDto } from '../../dto/create-trusted-network.dto';
 import { TrustedNetworksRepository } from '../../repositories/trusted-networks.repository';
 
 /** SSID довжиною більше за 32 байти Wi-Fi не має: довше — сміття, не пишемо. */
@@ -20,11 +21,12 @@ export class TrustedNetworksService {
     private readonly _repository: TrustedNetworksRepository,
     private readonly _bridge: MacBridgeService,
   ) {
-    this._ssids = new Set(_repository.list());
+    this._ssids = new Set(this.list());
   }
 
+  /** SSID у порядку додавання. */
   list(): string[] {
-    return this._repository.list();
+    return this._repository.findMany({}, { select: ['ssid'], order: { addedAt: 'ASC', ssid: 'ASC' } }).map((network) => network.ssid);
   }
 
   isTrusted(ssid: string | null | undefined): boolean {
@@ -38,15 +40,16 @@ export class TrustedNetworksService {
 
   add(ssid: string) {
     if (!ssid || Buffer.byteLength(ssid) > MAX_SSID_BYTES) return;
-    if (this._repository.add(ssid, new Date().toISOString())) this._reload();
+    const dto: CreateTrustedNetworkDto = { ssid, addedAt: new Date().toISOString() };
+    if (this._repository.upsert(dto, { conflict: ['ssid'] })) this._reload();
   }
 
   remove(ssid: string) {
-    if (this._repository.remove(ssid)) this._reload();
+    if (this._repository.delete({ ssid })) this._reload();
   }
 
   private _reload() {
-    this._ssids = new Set(this._repository.list());
+    this._ssids = new Set(this.list());
     this.changed$.next();
   }
 }

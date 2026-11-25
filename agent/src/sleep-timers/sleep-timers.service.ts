@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import type { SleepTimerEvent, SleepTimerRecord } from '@awake/contracts';
+import type { SleepTimerEvent } from '@awake/contracts';
+import type { CloseSleepTimerDto } from './dto/close-sleep-timer.dto';
+import type { CreateSleepTimerDto } from './dto/create-sleep-timer.dto';
+import type { SleepTimerEntity } from './entities/sleep-timer.entity';
+import { FindManySleepTimersQuery } from './query/find-many-sleep-timers.query';
 import { SleepTimersRepository } from './repositories/sleep-timers.repository';
 
 @Injectable()
@@ -10,14 +14,20 @@ export class SleepTimersService {
   applyEvent(event: SleepTimerEvent) {
     if (event.event === 'start') {
       // Незакритий таймер перед новим означає збій: аппку вбили, поки таймер ішов.
-      this._timers.closeOpen({ endedAt: event.at, endReason: 'перервано' });
-      this._timers.create({ startedAt: event.startedAt, sleepAt: event.sleepAt, minutes: event.minutes, source: event.source });
+      this._closeOpen({ endedAt: event.at, endReason: 'перервано' });
+      const dto: CreateSleepTimerDto = { startedAt: event.startedAt, sleepAt: event.sleepAt, minutes: event.minutes, source: event.source };
+      this._timers.create(dto);
       return;
     }
-    this._timers.closeOpen({ endedAt: event.at, endReason: event.reason ?? null });
+    this._closeOpen({ endedAt: event.at, endReason: event.reason ?? null });
   }
 
-  findMany(query: { limit: number }): SleepTimerRecord[] {
-    return this._timers.findMany(query);
+  /** Від найновішого. */
+  findMany(query: FindManySleepTimersQuery): SleepTimerEntity[] {
+    return this._timers.findMany(query, { order: { startedAt: 'DESC' } });
+  }
+
+  private _closeOpen(dto: CloseSleepTimerDto) {
+    this._timers.update({ ended: false }, dto);
   }
 }

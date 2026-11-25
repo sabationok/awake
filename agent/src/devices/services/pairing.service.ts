@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Subject } from 'rxjs';
 import type { DevicePairingMode } from '@awake/contracts';
+import type { CreateDeviceDto } from '../dto/create-device.dto';
 import { DevicesRepository } from '../repositories/devices.repository';
 import type { PairingEvent } from '../types/pairing-event.types';
 
@@ -118,7 +119,8 @@ export class PairingService {
     request.answeredAt = Date.now();
     if (approve) {
       const token = randomBytes(32).toString('base64url');
-      request.deviceId = this._devices.create({ tokenHash: sha256(token), userAgent: request.userAgent, createdAt: new Date().toISOString(), via: request.via });
+      const dto: CreateDeviceDto = { tokenHash: sha256(token), userAgent: request.userAgent, createdAt: new Date().toISOString(), via: request.via };
+      request.deviceId = this._devices.create(dto).id;
       request.status = 'approved';
       request.token = token;
     } else {
@@ -141,7 +143,7 @@ export class PairingService {
   }
 
   revoke(id: number): boolean {
-    const removed = this._devices.remove(id);
+    const removed = this._devices.delete({ id }) > 0;
     if (removed) this.changed$.next();
     return removed;
   }
@@ -157,15 +159,16 @@ export class PairingService {
    */
   findDeviceId(token: string, via: DevicePairingMode): number | null {
     const now = new Date();
-    const device = this._devices.touch(sha256(token), via, now.toISOString());
+    const device = this._devices.findOne({ tokenHash: sha256(token), via }, { select: ['id', 'userAgent', 'lastSeenAt'] });
     if (!device) return null;
-    const away = device.previousSeenAt ? now.getTime() - Date.parse(device.previousSeenAt) : Infinity;
+    this._devices.update({ id: device.id }, { lastSeenAt: now.toISOString() });
+    const away = device.lastSeenAt ? now.getTime() - Date.parse(device.lastSeenAt) : Infinity;
     if (away > RECONNECT_GAP_MS) this.events$.next({ type: 'connected', via, userAgent: device.userAgent });
     return device.id;
   }
 
   deviceExists(id: number): boolean {
-    return this._devices.exists(id);
+    return this._devices.exists({ id });
   }
 
   /** Протухлі запити: без відповіді або з відповіддю, яку пристрій так і не забрав. Mac ховає їх сам за `expiresAt`. */

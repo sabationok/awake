@@ -10,6 +10,6 @@ export class SessionsController {
 
   @Get()
   findMany(@Query('limit') limit?: string): AppResponse<SessionRecord[]> {
-    return AppResponse.ok(this._sessions.findMany({ limit: clampLimit(limit, 50) }));
+    return AppResponse.ok(this._sessions.findMany({ pagination: { limit: clampLimit(limit, 50) } }));
   }
 }

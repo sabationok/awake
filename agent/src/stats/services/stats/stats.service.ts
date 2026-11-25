@@ -179,13 +179,13 @@ export class StatsService {
 
   /** Чи є в серії хоч щось (у базі чи ще в пам'яті): для одноразового перенесення історії. */
   hasNamespace(namespace: string): boolean {
-    return [...this._pending.values()].some((bucket) => bucket.namespace === namespace) || this._snapshots.hasNamespace(namespace);
+    return [...this._pending.values()].some((bucket) => bucket.namespace === namespace) || this._snapshots.exists({ namespace });
   }
 
   /** Правило 12: старі min / hour геть. */
   prune(now = new Date()) {
     for (const [granularity, ms] of Object.entries(STAT_RETENTION_MS)) {
-      this._snapshots.deleteOlderThan(granularity as StatGranularity, new Date(now.getTime() - (ms ?? 0)));
+      this._snapshots.delete({ granularity: granularity as StatGranularity, to: new Date(now.getTime() - (ms ?? 0)) });
     }
   }
 

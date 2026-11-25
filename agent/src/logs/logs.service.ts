@@ -1,5 +1,8 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import type { LogRecord } from '@awake/contracts';
+import { LessThan } from '@nest-kit/sqlite';
+import { CreateLogDto } from './dto/create-log.dto';
+import type { LogEntity } from './entities/log.entity';
+import { FindManyLogsQuery } from './query/find-many-logs.query';
 import { LogsRepository } from './repositories/logs.repository';
 
 /** Журнал тримаємо 30 днів, як і Mac-аппка. */
@@ -20,15 +23,16 @@ export class LogsService implements OnModuleInit, OnModuleDestroy {
     clearInterval(this._pruneTimer);
   }
 
-  create(data: { at: string; text: string }) {
-    this._logs.create(data);
+  create(dto: CreateLogDto) {
+    this._logs.create(dto);
   }
 
-  findMany(query: { limit: number }): LogRecord[] {
-    return this._logs.findMany(query);
+  /** Від найновішого. */
+  findMany(query: FindManyLogsQuery): LogEntity[] {
+    return this._logs.findMany(query, { order: { id: 'DESC' } });
   }
 
   prune() {
-    this._logs.deleteOlderThan(new Date(Date.now() - RETENTION_MS).toISOString());
+    this._logs.delete({ at: LessThan(new Date(Date.now() - RETENTION_MS).toISOString()) });
   }
 }
