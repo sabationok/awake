@@ -9,4 +9,5 @@ rm -rf Resources/agent
 mkdir -p Resources/agent
 cp agent/dist/agent.cjs Resources/agent/agent.cjs
 cp -R web/out Resources/agent/web
+node scripts/build-info.mjs
 echo "Агент: Resources/agent ($(du -sh Resources/agent | cut -f1))"

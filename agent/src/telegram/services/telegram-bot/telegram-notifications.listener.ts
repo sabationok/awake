@@ -55,7 +55,7 @@ export class TelegramNotificationsListener implements OnModuleInit, OnModuleDest
     }
     const host = this._bridge.state$.value?.host ?? 'Mac';
     const fields = { event: `${notification.source}.${notification.type}`, ...notification.fields };
-    const html = formatEventMessage(host, notification.title, fields);
+    const html = formatEventMessage(host, notification.title, fields, notification.body);
     const privateOnly = this._notifications.sources().some((source) => source.id === notification.source && source.privateOnly === true);
     const addressees = pickDelivery({
       mode: privateOnly ? 'private' : this._groupsSettings.delivery(),

@@ -30,5 +30,7 @@ export interface TelegramNotification {
   source: string;
   type: string;
   title: string;
+  /** Звичайний текст під заголовком (напр. список змін збірки). */
+  body?: string;
   fields: Record<string, string | number>;
 }

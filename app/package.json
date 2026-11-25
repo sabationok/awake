@@ -1,0 +1,6 @@
+{
+  "name": "macontrol",
+  "version": "1.3.0",
+  "private": true,
+  "description": "MaControl as one versioned unit (Mac app + agent + Web UI). Its version and CHANGELOG.md are managed by Changesets; the workspace packages are parts of it and are not versioned on their own."
+}
