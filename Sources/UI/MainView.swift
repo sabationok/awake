@@ -60,6 +60,9 @@ struct MainView: View {
         return first?.id == id ? tree.modules.first { $0.id == page.module } : nil
     }
 
+    /// Динамічні сторінки, у які аппка вшиває власну секцію (токени й ключі живуть лише на Mac).
+    private static let mixedPages: Set<String> = ["telegram", "relay"]
+
     private func treePage(_ id: String) -> UiPage? {
         model.uiTree?.pages.first { $0.id == id }
     }
@@ -102,18 +105,26 @@ struct MainView: View {
         switch page {
         case .remote(let id):
             if let uiPage = treePage(id) {
-                Form {
-                    // Токен і чат живуть лише на Mac (telegram.env), тож цю секцію малює аппка, а не агент.
-                    // Підключення модуля — лише на його головній вкладці.
-                    if uiPage.id == "telegram" {
-                        TelegramSection()
+                if Self.mixedPages.contains(uiPage.id) {
+                    // Змішана сторінка: нативна секція аппки (токени й ключі живуть лише на Mac) і секції агента,
+                    // кожна позначається окремо.
+                    Form {
+                        if uiPage.id == "telegram" {
+                            TelegramSection().originHighlight(.native, scope: .section)
+                        }
+                        if uiPage.id == "relay" {
+                            WebhooksSection().originHighlight(.native, scope: .section)
+                        }
+                        ForEach(uiPage.children) { UiNodeView(node: $0).originHighlight(.agent, scope: .section) }
                     }
-                    if uiPage.id == "relay" {
-                        WebhooksSection()
+                    .formStyle(.grouped)
+                } else {
+                    Form {
+                        ForEach(uiPage.children) { UiNodeView(node: $0) }
                     }
-                    ForEach(uiPage.children) { UiNodeView(node: $0) }
+                    .formStyle(.grouped)
+                    .originHighlight(.agent, scope: .page)
                 }
-                .formStyle(.grouped)
             } else {
                 ContentUnavailableView("Агент не запущений", systemImage: "server.rack",
                                        description: Text(model.agentStatus.statusText))
@@ -125,17 +136,21 @@ struct MainView: View {
                 AppSecretsSection()
             }
             .formStyle(.grouped)
+            .originHighlight(.native, scope: .page)
         case .server:
             Form {
                 ServerSection()
+                InterfaceOriginSection()
             }
             .formStyle(.grouped)
+            .originHighlight(.native, scope: .page)
         case .serverStats:
             if model.agentStatus.isRunning, let info = model.serverInfo {
                 Form {
                     ServerStatsSections(pid: info.pid)
                 }
                 .formStyle(.grouped)
+                .originHighlight(.native, scope: .page)
             } else {
                 ContentUnavailableView("Агент не запущений", systemImage: "chart.bar.xaxis",
                                        description: Text(model.agentStatus.statusText))
@@ -145,6 +160,7 @@ struct MainView: View {
                 DevicesSection()
             }
             .formStyle(.grouped)
+            .originHighlight(.native, scope: .page)
         case .disabledModule:
             EmptyView()
         case .permission:
@@ -152,6 +168,7 @@ struct MainView: View {
                 PermissionSection()
             }
             .formStyle(.grouped)
+            .originHighlight(.native, scope: .page)
         }
     }
 }
