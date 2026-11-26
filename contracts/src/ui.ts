@@ -235,6 +235,8 @@ export interface UiFormField {
   hint?: string;
   required?: boolean;
   minLength?: number;
+  /** Ім'я іншого поля, з яким значення має збігтися («Повторіть пароль»). Клієнт показує незбіг одразу, сервер перевіряє ще раз. */
+  sameAs?: string;
   /** Лише для `select`. */
   options?: UiOption[];
 }
@@ -322,6 +324,16 @@ export interface UiSeparator extends UiNodeBase {
   word?: string;
 }
 
+/**
+ * QR-код з рядка (посилання сполучення). Шлеться лише зі scope mac: код у ньому одноразовий і з Mac не виходить.
+ * `expiresAt` — коли код перестане діяти: рендерер затемнює QR, сервер тоді ж шле новий вузол.
+ */
+export interface UiQr extends UiNodeBase {
+  type: 'qr';
+  value: string;
+  expiresAt?: string | null;
+}
+
 export type UiNode =
   | UiSection
   | UiRow
@@ -336,7 +348,8 @@ export type UiNode =
   | UiChart
   | UiItem
   | UiNotice
-  | UiSeparator;
+  | UiSeparator
+  | UiQr;
 
 /** Вкладка бічного меню. */
 export interface UiPage {

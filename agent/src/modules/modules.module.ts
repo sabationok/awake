@@ -36,6 +36,8 @@ import { WebUiTreeListener } from '../web-ui/listeners/web-ui-tree.listener';
 import { WebUiMacModule } from '../web-ui/web-ui.mac-module';
 import { WebUiModule } from '../web-ui/web-ui.module';
 import { ModulesService } from './modules.service';
+import { ModuleOrderService } from './services/module-order.service';
+import { AgentBot } from './bot/agent.bot';
 import { LiveChartsService } from './live-charts.service';
 import { MacUiListener } from './mac-ui.listener';
 import { UiController } from './ui.controller';
@@ -47,6 +49,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
   controllers: [UiController],
   providers: [
     ModulesService,
+    ModuleOrderService,
     LiveChartsService,
     MacUiListener,
     AwakeSessionListener,
@@ -73,6 +76,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
     MediaBot,
     MacBot,
     RelayBot,
+    AgentBot,
     {
       provide: MAC_MODULES,
       useFactory: (...modules: MacModule[]) => modules,

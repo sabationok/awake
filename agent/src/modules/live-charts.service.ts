@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import type { ChartTick, StatsPeriod, UiChart } from '@awake/contracts';
+import type { ChartTick, UiChart } from '@awake/contracts';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
-import { statNextPeriodStart, statPeriodStart, statsPeriodWindow } from '../stats';
+import { statNextPeriodStart, statPeriodStart, statsPeriodWindow, type StatsChartPeriod } from '../stats';
 import type { LiveChartRegistry, LiveChartSpec } from './types/live-chart.types';
 
 /** Як часто слати поточний бакет: так само, як заміри «Сервера». */
@@ -42,7 +42,7 @@ export class LiveChartsService implements OnModuleInit, OnModuleDestroy {
   }
 
   tick(now = new Date()) {
-    const byPeriod = new Map<StatsPeriod, LiveChartSpec[]>();
+    const byPeriod = new Map<StatsChartPeriod, LiveChartSpec[]>();
     for (const spec of this._registry.values()) byPeriod.set(spec.period, [...(byPeriod.get(spec.period) ?? []), spec]);
     for (const [period, specs] of byPeriod) {
       const window = statsPeriodWindow(period, now);

@@ -7,10 +7,12 @@ import { AWAKE_NOTIFICATIONS } from './constants/awake-notifications';
 import type { MacModule, ModuleContext } from '../types/mac-module';
 import { awakeStatus } from './helpers/awake-status';
 import { AWAKE_SETTINGS } from './constants/awake-settings';
-import { LOG_QUERY_LIMIT, TRACKING_QUERY_LIMIT } from './constants/session-limits';
+import { LOG_QUERY_LIMIT, TRACKING_HISTORY_LIMIT } from './constants/session-limits';
+import { STATS_PERIOD_KEY } from '../../stats';
 import { buildLogPage } from './pages/log-page';
 import { buildSessionPage } from './pages/session-page';
 import { buildSessionSettingsPage } from './pages/session-settings-page';
+import { buildAwakeHistoryPage } from './pages/history-page';
 import { buildTrackingPage } from './pages/tracking-page';
 
 /** Модуль Awake: сесія (Mac не спить), її налаштування, історія сесій і журнал. */
@@ -35,17 +37,18 @@ export class AwakeMacModule implements MacModule {
   }
 
   pages(ctx: ModuleContext): UiPage[] {
-    // Одна вибірка на всі сторінки: трекінг рахує за 7 днів і гортає історію.
-    const sessions = this._sessions.findMany({ pagination: { limit: TRACKING_QUERY_LIMIT } });
     return [
       buildSessionPage(ctx),
       buildSessionSettingsPage(ctx),
-      buildTrackingPage(sessions, this._sessions.history(), new Date()),
+      buildTrackingPage(ctx, (kind, window) => this._sessions.chartPoints(kind, window)),
+      buildAwakeHistoryPage(this._sessions.findMany({ pagination: { limit: TRACKING_HISTORY_LIMIT } }), new Date()),
       buildLogPage(this._logs.findMany({ pagination: { limit: LOG_QUERY_LIMIT } }), new Date()),
     ];
   }
 
   onSettingChanged(key: string, value: SettingValue, ctx: ModuleContext) {
+    // Вкладка періоду трекінгу — налаштування сторінки, Mac-аппці воно ні до чого.
+    if (key === STATS_PERIOD_KEY) return;
     ctx.sendToMac({ action: 'setting', key: `awake.${key}`, value }, 'web');
   }
 }

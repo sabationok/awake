@@ -5,16 +5,29 @@ import type { WebUiSnapshot } from '../types/web-ui-snapshot.types';
 
 const SOURCE_LABEL = { published: 'Опублікована окремо', bundle: 'З аппки' } as const;
 
+/** Адреси за каналом, як фільтр на «Пристроях»: Local, Priv, Proxy. */
+const ADDRESS_SECTIONS = [
+  {
+    id: 'local',
+    title: 'Local',
+    ids: ['mac', 'lan'],
+    footer: 'У локальній мережі сервер відповідає лише в довіреній Wi-Fi. Список мереж — на сторінці «Мережі».',
+  },
+  { id: 'priv', title: 'Priv · Tailscale', ids: ['tailnet'], footer: 'Лише пристрої твого tailnet, з будь-якої мережі.' },
+  { id: 'proxy', title: 'Proxy · Vercel', ids: ['vercel'], footer: 'Перегляд стану з будь-якої мережі; керування — через канали вище.' },
+];
+
 /** Головна сторінка модуля: за якими адресами відкривається Web UI і яку його збірку віддає сервер. */
 export function buildOverviewPage(snapshot: WebUiSnapshot): UiPage {
-  const addresses: UiNode[] = snapshot.addresses.map((address) => ({
+  // Адреса — лише для читання: URL іде в copy (кнопка «Копіювати»), на статусі — Працює / Недоступно.
+  const addresses: UiNode[] = snapshot.addresses.map((address): UiNode => ({
     id: `webui-address-${address.id}`,
-    type: 'row',
-    label: address.label,
-    value: address.url ?? 'Недоступно',
-    hint: address.note,
+    type: 'item',
+    title: address.label,
     icon: { symbol: address.symbol, tone: 'accent' },
-    dot: { tone: address.url ? 'green' : 'gray' },
+    status: address.url ? { label: 'Працює', tone: 'green' } : { label: 'Недоступно', tone: 'gray' },
+    ...(address.url ? { copy: { value: address.url } } : {}),
+    ...(address.note ? { comment: address.note } : {}),
   }));
   const { web } = snapshot;
   return {
@@ -26,13 +39,13 @@ export function buildOverviewPage(snapshot: WebUiSnapshot): UiPage {
     // Адреси, сесії й пристрої — справа адміна: через Vercel не віддаємо.
     scope: 'local',
     children: [
-      {
-        id: 'webui-addresses',
+      ...ADDRESS_SECTIONS.map((section): UiNode => ({
+        id: `webui-addresses-${section.id}`,
         type: 'section',
-        title: 'Адреси',
-        footer: 'У локальній мережі сервер відповідає лише в довіреній Wi-Fi. Список мереж — на сторінці «Мережі».',
-        children: addresses,
-      },
+        title: section.title,
+        footer: section.footer,
+        children: addresses.filter((node) => section.ids.some((id) => node.id === `webui-address-${id}`)),
+      })).filter((node) => node.type === 'section' && node.children.length > 0),
       {
         id: 'webui-build',
         type: 'section',

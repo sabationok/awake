@@ -5,6 +5,7 @@ import { ButtonsNode } from './buttons-node';
 import { ChartNode } from './chart-node';
 import { ItemNode } from './item-node';
 import { NoticeNode } from './notice-node';
+import { QrNode } from './qr-node';
 import { SeparatorNode } from './separator-node';
 import { ListNode } from './list-node';
 import { RowNode } from './row-node';
@@ -33,6 +34,7 @@ const NODE_COMPONENTS: NodeComponents = {
   item: ItemNode,
   notice: NoticeNode,
   separator: SeparatorNode,
+  qr: QrNode,
 };
 
 /** Вибирає компонент за типом вузла; рендерер не знає, звідки вузол узявся. */

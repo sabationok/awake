@@ -4,13 +4,14 @@ import { GROUPS_MODULE, GROUPS_TOPICS_PAGE } from '../constants/groups-module';
 import { capabilityReason } from '../helpers/capability-reason';
 import { groupTopicStateText } from '../helpers/group-topic-rows';
 import { groupsTopicSettingKey } from '../helpers/groups-topic-setting';
+import { menuItem, settingControl } from '../../modules/helpers/menu-item';
 import { withSettingState } from '../helpers/with-setting-state';
 import type { GroupTopicRow } from '../types/group-topic-row.types';
 import type { GroupsPageView } from '../types/groups-page-view.types';
 
 /**
- * Групи → Топіки: секція на кожне джерело сповіщень — його топік і стан, перемикач `topic.<source>` і «Створити
- * заново». Конектор без топіків: усе видно сірим з причиною.
+ * Групи → Топіки: один блок з назвою групи і її станом у шапці, під ним картка на кожне джерело сповіщень — стан
+ * топіка і перемикач `topic.<source>`. Конектор без топіків: усе видно сірим з причиною.
  */
 export function buildGroupsTopicsPage(ctx: ModuleContext, view: GroupsPageView): UiPage {
   const supported = view.supports('topics');
@@ -28,48 +29,53 @@ export function buildGroupsTopicsPage(ctx: ModuleContext, view: GroupsPageView):
       {
         id: 'groups-topics-state',
         type: 'section',
+        title: view.group ? view.group.title : 'Публікацію не дозволено в жодну групу',
+        status: {
+          label: blocked ?? 'Топіки можна створювати',
+          tone: blocked === null ? 'green' : view.group ? 'orange' : 'gray',
+        },
         footer:
-          'Джерело з вимкненим перемикачем пише в General групи, а джерела, які шле скрипт Mac (Awake, Стан Mac), — у приватний чат. Вимкнення не видаляє топік у групі.',
-        children: [
-          {
-            id: 'groups-topics-status',
-            type: 'status',
-            label: view.group ? view.group.title : 'Публікацію не дозволено в жодну групу',
-            hint: blocked ?? 'Топіки можна створювати',
-            tone: blocked === null ? 'green' : view.group ? 'orange' : 'gray',
-          },
-        ],
+          'Джерело з вимкненим перемикачем пише в General групи, а Awake і Стан Mac — у приватний чат. Вимкнення не видаляє топік у групі.',
+        children: view.rows.map((row): UiNode => topicItem(ctx, row, unsupported, blocked)),
       },
-      ...view.rows.map((row): UiNode => sourceSection(ctx, row, unsupported, blocked)),
     ],
   };
 }
 
-function sourceSection(ctx: ModuleContext, row: GroupTopicRow, unsupported: string | null, blocked: string | null): UiNode {
+/**
+ * Рядок топіка: назва джерела, стан словами, перемикач «публікувати» праворуч. Дія лише тоді, коли топіка в групі
+ * немає («Створити») або його закрили («Створити заново»); активний топік дій не має.
+ */
+function topicItem(ctx: ModuleContext, row: GroupTopicRow, unsupported: string | null, blocked: string | null): UiNode {
+  // Стан словом праворуч; під назвою — лише назва топіка в групі.
   const state = groupTopicStateText(row);
-  const hint = unsupported ?? `${row.topic ? `«${row.topic}» · ` : ''}${state}${row.viaMac ? ' · шле скрипт Mac' : ''}`;
+  const tone = !row.enabled ? 'gray' : row.state === 'active' ? 'green' : row.state === 'closed' ? 'orange' : 'gray';
+  const comment = unsupported ?? (row.topic ? `Топік «${row.topic}»` : undefined);
+  const control = settingControl(withSettingState(ctx.settingNode(groupsTopicSettingKey(row.source)), { disabled: unsupported !== null }));
+  const recreate = { module: GROUPS_MODULE, name: 'recreateTopic', params: { source: row.source } };
+  const disabled = blocked !== null || !row.enabled;
+  const actions =
+    row.state === 'missing'
+      ? [menuItem(`groups-topic-${row.source}-create`, 'Створити', recreate, { variant: 'accent', disabled })]
+      : row.state === 'closed'
+        ? [
+            menuItem(`groups-topic-${row.source}-recreate`, 'Створити заново', recreate, {
+              disabled,
+              confirm: {
+                title: `Створити топік «${row.label}» заново?`,
+                text: 'Старий лишиться в групі порожнім: видаліть його в Telegram самі.',
+                ok: 'Створити',
+              },
+            }),
+          ]
+        : [];
   return {
     id: `groups-topic-${row.source}`,
-    type: 'section',
+    type: 'item',
     title: row.label,
-    children: [
-      withSettingState(ctx.settingNode(groupsTopicSettingKey(row.source)), { disabled: unsupported !== null, hint }),
-      {
-        id: `groups-topic-${row.source}-buttons`,
-        type: 'buttons',
-        buttons: [
-          {
-            id: `groups-topic-${row.source}-recreate`,
-            label: row.state === 'missing' ? 'Створити' : 'Створити заново',
-            action: { module: GROUPS_MODULE, name: 'recreateTopic', params: { source: row.source } },
-            variant: 'plain',
-            disabled: blocked !== null || !row.enabled,
-            ...(row.state === 'missing'
-              ? {}
-              : { confirm: `Створити новий топік «${row.label}»? Старий лишиться в групі порожнім: видаліть його в Telegram самі.` }),
-          },
-        ],
-      },
-    ],
+    status: { label: state.charAt(0).toUpperCase() + state.slice(1), tone },
+    ...(comment ? { comment } : {}),
+    ...(control ? { control } : {}),
+    ...(actions.length > 0 ? { actions } : {}),
   };
 }

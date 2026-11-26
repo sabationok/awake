@@ -1,4 +1,5 @@
 import type { MacPermission, PermissionsSnapshot, UiNode, UiPage } from '@awake/contracts';
+import { menuItem } from '../../modules/helpers/menu-item';
 import { MAC_PERMISSIONS, PERMISSIONS_MODULE, PERMISSION_INFO } from '../constants/permissions';
 
 /** Модуль і системні дозволи, які він декларує. */
@@ -20,37 +21,33 @@ export function buildPermissionsPage(snapshot: PermissionsSnapshot, modules: Mod
   const denied = (module: string, permission: MacPermission) =>
     snapshot.denied.some((entry) => entry.module === module && entry.permission === permission);
 
-  const system: UiNode[] = MAC_PERMISSIONS.flatMap((permission): UiNode[] => {
+  const system: UiNode[] = MAC_PERMISSIONS.map((permission): UiNode => {
     const info = PERMISSION_INFO[permission];
     const isGranted = granted(permission);
-    return [
-      {
-        id: `permissions-system-${permission}`,
-        type: 'row',
-        label: info.title,
-        value: isGranted ? 'Видано' : 'Не видано',
-        hint: info.purpose,
-        icon: info.icon,
-        dot: { tone: isGranted ? 'green' : 'gray' },
-      },
-      {
-        id: `permissions-system-${permission}-actions`,
-        type: 'buttons',
-        scope: 'mac',
-        buttons: [
-          isGranted
-            ? {
-                id: `permissions-revoke-${permission}`,
-                label: `Відкликати «${info.title}»…`,
-                action: action('revoke', { permission }),
-                variant: 'plain',
-                // Сесія тримає сон вимкненим цим самим правилом.
-                disabled: permission === 'sleepControl' && awakeActive,
-              }
-            : { id: `permissions-grant-${permission}`, label: `Надати «${info.title}»…`, action: action('grant', { permission }), variant: 'filled' },
-        ],
-      },
-    ];
+    const onlyMac = { scope: 'mac' as const, hint: 'Змінити можна лише в аппці на Mac' };
+    return {
+      id: `permissions-system-${permission}`,
+      type: 'item',
+      title: info.title,
+      icon: info.icon,
+      status: isGranted ? { label: 'Видано', tone: 'green' } : { label: 'Немає', tone: 'gray' },
+      comment: info.purpose,
+      actions: [
+        isGranted
+          ? menuItem(`permissions-revoke-${permission}`, 'Відкликати', action('revoke', { permission }), {
+              ...onlyMac,
+              variant: 'danger',
+              confirm: {
+                title: `Відкликати «${info.title}»?`,
+                text: 'Модулі, яким він потрібен, перестануть це робити. macOS попросить пароль.',
+                ok: 'Відкликати',
+              },
+              // Сесія тримає сон вимкненим цим самим правилом.
+              disabled: permission === 'sleepControl' && awakeActive,
+            })
+          : menuItem(`permissions-grant-${permission}`, 'Запит', action('grant', { permission }), { ...onlyMac, variant: 'accent' }),
+      ],
+    };
   });
 
   const moduleSections: UiNode[] = modules

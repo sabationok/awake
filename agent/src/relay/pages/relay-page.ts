@@ -26,9 +26,17 @@ export function buildRelayPage(state: RelayStateSnapshot, enabledNode: UiNode): 
         footer: 'Проксі до Web UI: агент тримає кімнату в webhooxy, Web UI підключається до неї за квитком. Працює, коли модуль увімкнено і на Огляді Агента ввімкнено «Webhooxy».',
         children: [
           enabledNode,
-          { id: 'status', type: 'status', label: view.label, tone: view.tone, pulse: state.status === 'connecting', hint: state.reason ?? undefined },
+          {
+            id: 'status',
+            type: 'item',
+            title: 'Host',
+            status: { label: view.label, tone: view.tone, pulse: state.status === 'connecting' },
+            ...(state.reason ? { comment: state.reason } : {}),
+          },
           { id: 'viewers', type: 'row', label: 'Сесій зараз', value: String(state.viewers.length) },
           ...(state.connection ? relayConnectionNodes(state.connection) : []),
+          // TODO(webhooxy): сюди рядок «Токен воркспейсу» (стан, «Змінити» з формою, Touch ID), як «Ключ JWT» на
+          // «Web UI → Вхід». Поки токен задається на «Підключенні» → «Ключі аппки».
         ],
       },
     ],

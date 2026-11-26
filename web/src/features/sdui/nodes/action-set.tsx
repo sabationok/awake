@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { UiMenuItem } from '@awake/contracts';
 import { Button } from '@/components/button';
@@ -15,20 +15,30 @@ import type { SduiEventHandler } from '../sdui.types';
  * Набір дій елемента: 1 пункт — кнопка, 2+ — меню «⋯». Вимкнений (у т.ч. scope mac у web) не відкривається.
  * Підтвердження і форма йдуть через діалоги; інлайн-форма з одним полем — у батька (onInlineForm).
  */
+/** Дія самого клієнта без сервера (копіювати, відкрити посилання). */
+export interface LocalAction {
+  id: string;
+  label: string;
+  icon?: ReactNode;
+  onSelect: () => void;
+}
+
 interface ActionSetProps {
   items: UiMenuItem[];
+  /** Клієнтські дії; стоять у тому самому меню перед серверними. */
+  local?: LocalAction[];
   onEvent: SduiEventHandler;
   onInlineForm?: (item: UiMenuItem) => void;
 }
 
 type Pending = { kind: 'confirm' | 'form'; item: UiMenuItem };
 
-export function ActionSet({ items, onEvent, onInlineForm }: ActionSetProps) {
+export function ActionSet({ items, local = [], onEvent, onInlineForm }: ActionSetProps) {
   const { send, busy } = useBusyEvent(onEvent);
   const [pending, setPending] = useState<Pending | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
-  if (items.length === 0) return null;
+  if (items.length + local.length === 0) return null;
 
   const isOff = (item: UiMenuItem) => item.scope === 'mac' || Boolean(item.disabled);
 
@@ -87,7 +97,16 @@ export function ActionSet({ items, onEvent, onInlineForm }: ActionSetProps) {
     </>
   );
 
-  if (items.length === 1) {
+  if (items.length === 0 && local.length === 1) {
+    const only = local[0];
+    return (
+      <Button variant="default" onClick={only.onSelect} className="h-8 px-3 text-[13px]">
+        {only.label}
+      </Button>
+    );
+  }
+
+  if (items.length === 1 && local.length === 0) {
     const item = items[0];
     return (
       <>
@@ -105,7 +124,15 @@ export function ActionSet({ items, onEvent, onInlineForm }: ActionSetProps) {
     );
   }
 
-  const menuItems: DotMenuItem[] = items.map((item) => {
+  const localItems: DotMenuItem[] = local.map((action) => ({
+    id: action.id,
+    label: action.label,
+    icon: action.icon,
+    variant: 'default',
+    onSelect: action.onSelect,
+  }));
+
+  const serverItems: DotMenuItem[] = items.map((item) => {
     const Icon = item.icon ? findSymbolIcon(item.icon.symbol) : undefined;
     return {
       id: item.id,
@@ -120,7 +147,7 @@ export function ActionSet({ items, onEvent, onInlineForm }: ActionSetProps) {
 
   return (
     <>
-      <DotMenu items={menuItems} disabled={busy} />
+      <DotMenu items={[...localItems, ...serverItems]} disabled={busy} />
       {dialogs}
     </>
   );

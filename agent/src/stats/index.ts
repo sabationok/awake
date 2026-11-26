@@ -10,5 +10,5 @@ export { statPeriodRange } from './helpers/stat-period';
 export { statsPeriodWindow, type StatsPeriodWindow } from './helpers/stats-period-window';
 export { counterChartPoints, gaugeChartPoints, sumChartPoints, totalChartPoints } from './helpers/stat-timeline-charts';
 export { asStatsPeriod, statsPeriodSetting } from './helpers/stats-period-setting';
-export { STATS_PERIOD_KEY } from './constants/stats-period';
+export { STATS_PAGE_PERIODS, STATS_PERIOD_KEY, type StatsChartPeriod, type StatsPagePeriod } from './constants/stats-period';
 export { statSeriesTones } from './helpers/stat-series-tones';

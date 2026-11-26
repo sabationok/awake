@@ -1,6 +1,7 @@
 import type { UiRow } from '@awake/contracts';
 import { FlexRow } from '@/components/flex';
 import { KeyValueRow } from '@/components/key-value-row';
+import { StatusBadge } from '@/components/status-badge';
 import { StatusDot } from '@/components/status-dot';
 import { useCountdown } from '../hooks/use-countdown';
 import type { NodeProps } from '../sdui.types';
@@ -9,15 +10,24 @@ import { SduiIcon } from './sdui-icon';
 
 /** Рядок «назва — значення» або «назва — керування», з іконкою, крапкою стану і відліком. */
 export function RowNode({ node, onEvent }: NodeProps<UiRow>) {
-  // Крапка — лише позначка біля тексту: без підказки чи відліку рядок її не показує.
-  const hasHint = Boolean(node.hint || node.countdownTo);
+  // Стан словом праворуч: крапка зі значенням — це статус («● Працює»), а не позначка під назвою.
+  const statusOnRight = Boolean(node.dot && node.value && !node.control);
+  const row = statusOnRight ? { ...node, dot: undefined } : node;
+  const hasHint = Boolean(row.hint || row.countdownTo);
+  const value = node.control ? (
+    <ControlView control={node.control} label={node.label} onEvent={onEvent} />
+  ) : statusOnRight && node.dot && node.value ? (
+    <StatusBadge label={node.value} tone={node.dot.tone} pulse={node.dot.pulse} />
+  ) : (
+    node.value
+  );
   return (
     <KeyValueRow
       icon={<SduiIcon icon={node.icon} large={node.prominent} />}
       label={node.label}
       prominent={node.prominent}
-      hint={hasHint ? <RowHint node={node} /> : undefined}
-      value={node.control ? <ControlView control={node.control} label={node.label} onEvent={onEvent} /> : node.value}
+      hint={hasHint ? <RowHint node={row} /> : undefined}
+      value={value}
     />
   );
 }

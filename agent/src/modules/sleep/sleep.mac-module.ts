@@ -6,6 +6,7 @@ import { SLEEP_QUERY_LIMIT } from './constants/sleep-limits';
 import { SLEEP_SETTINGS } from './constants/sleep-settings';
 import { sleepStatus } from './helpers/sleep-status';
 import { buildHistoryPage } from './pages/history-page';
+import { buildSleepTrackingPage } from './pages/tracking-page';
 import { buildTimerPage } from './pages/timer-page';
 
 /**
@@ -27,6 +28,7 @@ export class SleepMacModule implements MacModule {
   }
 
   pages(ctx: ModuleContext): UiPage[] {
-    return [buildTimerPage(ctx), buildHistoryPage(this._timers.findMany({ pagination: { limit: SLEEP_QUERY_LIMIT } }), new Date())];
+    const timers = this._timers.findMany({ pagination: { limit: SLEEP_QUERY_LIMIT } });
+    return [buildTimerPage(ctx), buildSleepTrackingPage(ctx, timers), buildHistoryPage(timers)];
   }
 }

@@ -5,7 +5,7 @@ import { TrustedNetworksService } from '../../trusted-networks';
 import type { MacModule, ModuleContext } from '../types/mac-module';
 import { MAC_NOTIFICATIONS } from './constants/mac-notifications';
 import { macStatus } from './helpers/mac-status';
-import { MAC_SETTINGS } from './constants/mac-settings';
+import { MAC_SETTINGS, METRICS_TRACKING_KEY } from './constants/mac-settings';
 import { buildStatusPage } from './pages/status-page';
 
 /**
@@ -36,6 +36,8 @@ export class MacStateMacModule implements MacModule {
   }
 
   onSettingChanged(key: string, value: SettingValue, ctx: ModuleContext) {
+    // Заміри пише сервер; Mac-аппці це налаштування ні до чого.
+    if (key === METRICS_TRACKING_KEY) return;
     ctx.sendToMac({ action: 'setting', key: `system.${key}`, value }, 'web');
   }
 }

@@ -45,7 +45,7 @@ export function ConfirmDialog({ open, title, text, ok, danger = false, onConfirm
         <div className="flex flex-col gap-4 rounded-2xl bg-surface p-5 shadow-lg">
           <div className="flex flex-col gap-1.5">
             <h2 className="text-[17px] font-semibold">{title}</h2>
-            <p className="text-[13px] text-secondary">{text}</p>
+            {text && <p className="text-[13px] text-secondary">{text}</p>}
           </div>
           <div className="flex gap-2">
             <Button variant="plain" onClick={onCancel} className="flex-1">

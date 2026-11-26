@@ -1,4 +1,5 @@
-import type { UiButton, UiNode, UiPage } from '@awake/contracts';
+import type { UiMenuItem, UiNode, UiPage, UiStatusBadge, UiTabs } from '@awake/contracts';
+import { menuItem } from '../../modules/helpers/menu-item';
 import { GROUPS_LIST_PAGE, GROUPS_MODULE } from '../constants/groups-module';
 import type { GroupChatEntity } from '../entities/group-chat.entity';
 import type { GroupsPageView } from '../types/groups-page-view.types';
@@ -7,7 +8,7 @@ const action = (name: string, params?: Record<string, string>) => ({ module: GRO
 
 /**
  * Групи → Список груп: усі групи, де бот є, за станом. Активні — публікація дозволена (зараз така одна), неактивні —
- * дозвіл знято, запити — бота додали, а власник ще не вирішив. Порожня секція лишається видимою з поясненням.
+ * дозвіл знято, запити — бота додали, а власник ще не вирішив. Вкладки з лічильниками; видно один список за раз.
  */
 export function buildGroupsListPage(view: GroupsPageView): UiPage {
   const active = view.group && view.group.leftAt === null ? [view.group] : [];
@@ -20,64 +21,89 @@ export function buildGroupsListPage(view: GroupsPageView): UiPage {
     // Дозвіл на публікацію — справа адміна: через Vercel не віддаємо.
     scope: 'local',
     children: [
-      section('active', 'Активні', 'Сюди бот публікує сповіщення. Зараз активною може бути одна група.', 'Активних груп немає', active, 'green', () => [
-        { id: 'groups-list-release', label: 'Деактивувати', action: action('release'), variant: 'plain' },
-        {
-          id: 'groups-list-unbind',
-          label: 'Вийти з групи',
-          action: action('unbind'),
-          variant: 'destructive',
-          confirm: 'Вийти з групи? Сповіщення підуть у приватний чат, повернути групу можна лише новим додаванням бота.',
-        },
-      ]),
-      section(
-        'inactive',
-        'Неактивні',
-        'Бот у групі є, але нічого в ній не робить. «Активувати» перемикає публікацію сюди; попередня активна стає неактивною.',
-        'Неактивних груп немає',
-        view.inactive,
-        'gray',
-        (item) => waitingButtons(item, 'Активувати'),
-      ),
-      section(
-        'requests',
-        'Запити (не підтверджені)',
-        'Бота додали в групу, а ви ще не вирішили. До вашого рішення він нічого в ній не робить.',
-        'Запитів немає',
-        view.pending,
-        'orange',
-        (item) => waitingButtons(item, 'Підтвердити'),
-      ),
+      {
+        id: 'groups-list',
+        type: 'section',
+        children: [
+          {
+            id: 'groups-list-tabs',
+            type: 'tabs',
+            sticky: true,
+            tabs: [
+              tab('active', 'Активні', 'Сюди бот публікує сповіщення. Зараз активною може бути одна група.', 'Активних груп немає', active, {
+                label: 'Активна',
+                tone: 'green',
+              }, () => [
+                menuItem('groups-list-release', 'Деактивувати', action('release')),
+                menuItem('groups-list-unbind', 'Вийти з групи', action('unbind'), {
+                  variant: 'danger',
+                  confirm: {
+                    title: 'Вийти з групи?',
+                    text: 'Сповіщення підуть у приватний чат, повернути групу можна лише новим додаванням бота.',
+                    ok: 'Вийти',
+                  },
+                }),
+              ]),
+              tab(
+                'inactive',
+                'Неактивні',
+                'Бот у групі є, але нічого в ній не робить. «Активувати» перемикає публікацію сюди; попередня активна стає неактивною.',
+                'Неактивних груп немає',
+                view.inactive,
+                { label: 'Неактивна', tone: 'gray' },
+                (item) => waitingActions(item, 'Активувати'),
+              ),
+              tab(
+                'requests',
+                'Запити',
+                'Бота додали в групу, а ви ще не вирішили. До вашого рішення він нічого в ній не робить.',
+                'Запитів немає',
+                view.pending,
+                { label: 'Запит', tone: 'orange' },
+                (item) => waitingActions(item, 'Підтвердити'),
+              ),
+            ],
+          },
+        ],
+      },
     ],
   };
 }
 
-function waitingButtons(item: GroupChatEntity, allow: string): UiButton[] {
+function waitingActions(item: GroupChatEntity, allow: string): UiMenuItem[] {
   const params = { id: String(item.id) };
   return [
-    { id: `groups-list-bind-${item.id}`, label: allow, action: action('bind', params), variant: 'filled' },
-    { id: `groups-list-leave-${item.id}`, label: 'Вийти з групи', action: action('leave', params), variant: 'plain' },
+    menuItem(`groups-list-bind-${item.id}`, allow, action('bind', params), { variant: 'accent' }),
+    menuItem(`groups-list-leave-${item.id}`, 'Вийти з групи', action('leave', params), { variant: 'danger' }),
   ];
 }
 
-function section(
+/** Вкладка списку: лічильник у назві, картка на групу, підпис під списком. Порожня вкладка пояснює, чому порожньо. */
+function tab(
   id: string,
   title: string,
-  footer: string,
+  caption: string,
   empty: string,
   items: GroupChatEntity[],
-  tone: 'green' | 'gray' | 'orange',
-  buttons: (item: GroupChatEntity) => UiButton[],
-): UiNode {
-  const rows = items.flatMap((item): UiNode[] => [
-    { id: `groups-list-${id}-${item.id}`, type: 'row', label: item.title, hint: `Додав ${item.addedBy}`, dot: { tone } },
-    { id: `groups-list-${id}-${item.id}-buttons`, type: 'buttons', buttons: buttons(item) },
-  ]);
+  status: UiStatusBadge,
+  actions: (item: GroupChatEntity) => UiMenuItem[],
+): UiTabs['tabs'][number] {
+  const cards = items.map(
+    (item): UiNode => ({
+      id: `groups-list-${id}-${item.id}`,
+      type: 'item',
+      title: item.title,
+      status,
+      comment: `Додав ${item.addedBy}`,
+      actions: actions(item),
+    }),
+  );
   return {
-    id: `groups-list-${id}`,
-    type: 'section',
-    title: `${title} · ${items.length}`,
-    footer,
-    children: rows.length > 0 ? rows : [{ id: `groups-list-${id}-empty`, type: 'text', text: empty, tone: 'gray' }],
+    id,
+    label: `${title} · ${items.length}`,
+    children: [
+      ...(cards.length > 0 ? cards : [{ id: `groups-list-${id}-empty`, type: 'text' as const, text: empty, tone: 'gray' as const }]),
+      { id: `groups-list-${id}-caption`, type: 'text', text: caption },
+    ],
   };
 }

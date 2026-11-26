@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Subscription, distinctUntilChanged, map, merge } from 'rxjs';
 import type { DevicePairing, DevicePairingMode, DevicesSnapshot } from '@awake/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';
@@ -18,6 +18,7 @@ import { PairingService } from './pairing.service';
  */
 @Injectable()
 export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
+  private readonly _logger = new Logger(DevicesBridgeService.name);
   private _subscription?: Subscription;
 
   constructor(
@@ -46,11 +47,18 @@ export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
     this._subscription = merge(trustedChanged, relayOnlineChanged, tailnetChanged, this._pairing.changed$).subscribe(() => this._push());
     this._subscription.add(
       this._bridge.devices$.subscribe((request) => {
-        if (request.action === 'revoke') this._pairing.revoke(request.id);
-        if (request.action === 'answer') this._pairing.answer(request.requestId, request.approve);
         // resetCodes сам шле changed$, тобто й знімок.
         if (request.action === 'newCode') return this._pairing.resetCodes();
-        this._push();
+        // Дозвіл і відкликання чекають Touch ID; відмова лишає все як було, знімок однаково йде в аппку.
+        const done =
+          request.action === 'revoke'
+            ? this._pairing.revoke(request.id)
+            : request.action === 'answer'
+              ? this._pairing.answer(request.requestId, request.approve)
+              : Promise.resolve();
+        void Promise.resolve(done)
+          .catch((error: Error) => this._logger.warn(`devices ${request.action}: ${error.message}`))
+          .finally(() => this._push());
       }),
     );
   }
@@ -60,10 +68,11 @@ export class DevicesBridgeService implements OnModuleInit, OnModuleDestroy {
   }
 
   private _push() {
-    this._bridge.sendDevices(this._snapshot());
+    this._bridge.sendDevices(this.snapshot());
   }
 
-  private _snapshot(): DevicesSnapshot {
+  /** Пристрої, запити і посилання з кодом на кожен шлях; також для сторінки «Web UI → Пристрої» (QR там лише зі scope mac). */
+  snapshot(): DevicesSnapshot {
     const devices = this._devices
       .findMany({}, { select: DEVICE_PUBLIC_FIELDS, order: { createdAt: 'DESC' } })
       .map((device) => ({ ...device, name: describeUserAgent(device.userAgent) }));

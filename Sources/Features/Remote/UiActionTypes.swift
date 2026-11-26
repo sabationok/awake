@@ -32,6 +32,8 @@ struct UiFormField: Decodable, Hashable, Identifiable {
     var hint: String?
     var required: Bool?
     var minLength: Int?
+    /// Ім'я поля, з яким значення має збігтися («Повторіть пароль»).
+    var sameAs: String?
     var options: [UiOption]?
 
     var id: String { name }

@@ -3,8 +3,11 @@ import type { UiOption } from '@awake/contracts';
 /** Як часто перевіряти стан Mac на наближення кінця сесії і таймера сну. */
 export const SESSION_ENDING_POLL_MS = 30_000;
 
-/** Ключ налаштування «Попереджати за» в модулі telegram (вкладка «Попередження» на Сповіщеннях). */
-export const SESSION_ENDING_LEAD_KEY = 'events.ending.lead';
+/** «Попереджати за» окремо для кожного виду сесії; вкладка Awake і вкладка Sleeper на Сповіщеннях. */
+export const SESSION_ENDING_LEAD_KEYS = {
+  awake: 'events.ending.awake.lead',
+  sleep: 'events.ending.sleep.lead',
+} as const;
 
 /** Значення за замовчуванням, хвилини. */
 export const SESSION_ENDING_LEAD_DEFAULT = '15';

@@ -5,7 +5,7 @@ import { MacBridgeService } from '../../mac-bridge/services/mac-bridge.service';
 import { ModulesService } from '../../modules/modules.service';
 import { TelegramNotificationsService } from '../../telegram/notifications';
 import { SESSION_ENDING_NOTIFICATIONS } from '../constants/session-ending-notifications';
-import { SESSION_ENDING_LEAD_DEFAULT, SESSION_ENDING_LEAD_KEY, SESSION_ENDING_POLL_MS } from '../constants/session-ending';
+import { SESSION_ENDING_LEAD_DEFAULT, SESSION_ENDING_LEAD_KEYS, SESSION_ENDING_POLL_MS } from '../constants/session-ending';
 import { shouldWarnEnding } from '../helpers/should-warn-ending';
 
 /** Сесія, що має кінець: ISO кінця і ISO початку (null — невідомо). */
@@ -46,12 +46,11 @@ export class SessionEndingListener implements OnModuleInit, OnModuleDestroy {
     // `state` стає null, коли Mac мовчить: за застарілим знімком не попереджаємо і нічого не забуваємо.
     const mac = this._bridge.state;
     if (!mac) return;
-    const leadMinutes = this._leadMinutes();
     const now = Date.now();
     const awake = mac.active && mac.until ? { end: mac.until, start: mac.startedAt } : null;
     const sleep = mac.sleepAt ? { end: mac.sleepAt, start: mac.sleepStartedAt } : null;
-    this._warnIfDue('awake', awake, leadMinutes, now);
-    this._warnIfDue('sleep', sleep, leadMinutes, now);
+    this._warnIfDue('awake', awake, this._leadMinutes('awake'), now);
+    this._warnIfDue('sleep', sleep, this._leadMinutes('sleep'), now);
   }
 
   private _warnIfDue(kind: EndingKind, session: EndingSession | null, leadMinutes: number, now: number) {
@@ -69,9 +68,9 @@ export class SessionEndingListener implements OnModuleInit, OnModuleDestroy {
     this._notifications.notify({ source: 'ending', type: kind, title, fields: { minutes, until } });
   }
 
-  /** «Попереджати за» з модуля telegram; нечислове значення — за замовчуванням. */
-  private _leadMinutes(): number {
-    const lead = Number(this._modules.context('telegram').setting<string>(SESSION_ENDING_LEAD_KEY));
+  /** «Попереджати за» цього виду сесії з модуля telegram; нечислове значення — за замовчуванням. */
+  private _leadMinutes(kind: EndingKind): number {
+    const lead = Number(this._modules.context('telegram').setting<string>(SESSION_ENDING_LEAD_KEYS[kind]));
     return Number.isFinite(lead) ? lead : Number(SESSION_ENDING_LEAD_DEFAULT);
   }
 }

@@ -4,6 +4,7 @@ import { Subject } from 'rxjs';
 import type { DevicePairingMode } from '@awake/contracts';
 import type { CreateDeviceDto } from '../dto/create-device.dto';
 import { DEVICE_PUBLIC_FIELDS } from '../constants/device-public-fields';
+import { OwnerAuthService } from '../../mac-helper/services/owner-auth.service';
 import { DevicesRepository } from '../repositories/devices.repository';
 import type { PairingEvent } from '../types/pairing-event.types';
 
@@ -59,7 +60,13 @@ export class PairingService {
   /** Запити, відповіді й повторні входи пристроїв, з шляхом: з них модулі шляхів шлють сповіщення. */
   readonly events$ = new Subject<PairingEvent>();
 
-  constructor(private readonly _devices: DevicesRepository) {}
+  /** Таймер на шлях: коли код спливе, changed$ — сторінка «Пристрої» перебудується з новим QR. */
+  private readonly _expiryTimers = new Map<DevicePairingMode, NodeJS.Timeout>();
+
+  constructor(
+    private readonly _devices: DevicesRepository,
+    private readonly _ownerAuth: OwnerAuthService,
+  ) {}
 
   /** Поточний код шляху і коли його перестануть видавати (ще один період його приймають). */
   currentCodeInfo(mode: DevicePairingMode): { value: string; expiresAt: number } {
@@ -69,13 +76,26 @@ export class PairingService {
     if (latest && now - latest.issuedAt < CODE_TTL_MS) return { value: latest.value, expiresAt: latest.issuedAt + CODE_TTL_MS };
     const code: PairingCode = { value: randomBytes(16).toString('base64url'), issuedAt: now, mode };
     this._codes.push(code);
+    this._scheduleExpiry(mode);
     return { value: code.value, expiresAt: now + CODE_TTL_MS };
   }
 
   /** «Новий код» на Mac: усі видані коди перестають діяти, наступний знімок отримає нові. */
   resetCodes(): void {
     this._codes = [];
+    for (const timer of this._expiryTimers.values()) clearTimeout(timer);
+    this._expiryTimers.clear();
     this.changed$.next();
+  }
+
+  private _scheduleExpiry(mode: DevicePairingMode): void {
+    if (this._expiryTimers.has(mode)) return;
+    const timer = setTimeout(() => {
+      this._expiryTimers.delete(mode);
+      this.changed$.next();
+    }, CODE_TTL_MS + 500);
+    timer.unref();
+    this._expiryTimers.set(mode, timer);
   }
 
   /** Міняє код на запит, що чекає підтвердження на Mac. Код після цього недійсний; чужого шляху код не приймається. */
@@ -113,8 +133,12 @@ export class PairingService {
   }
 
   /** Відповідь з Mac. «Дозволити» одразу заводить пристрій, токен чекає, поки пристрій його забере. */
-  answer(id: string, approve: boolean): void {
+  /** «Дозволити» спершу питає Touch ID: пристрій отримує токен лише після підтвердження власника. */
+  async answer(id: string, approve: boolean): Promise<void> {
     this._prune();
+    if (approve && this._requests.some((candidate) => candidate.id === id && candidate.status === 'pending')) {
+      await this._ownerAuth.confirm('дозволити новому пристрою доступ до MaControl');
+    }
     const request = this._requests.find((candidate) => candidate.id === id && candidate.status === 'pending');
     if (!request) return;
     request.answeredAt = Date.now();
@@ -148,7 +172,9 @@ export class PairingService {
     return this._devices.findMany({}, { select: DEVICE_PUBLIC_FIELDS, order: { createdAt: 'DESC' } });
   }
 
-  revoke(id: number): boolean {
+  /** Відкликання пристрою — теж через Touch ID. */
+  async revoke(id: number): Promise<boolean> {
+    await this._ownerAuth.confirm('відкликати доступ пристрою до MaControl');
     const removed = this._devices.delete({ id }) > 0;
     if (removed) this.changed$.next();
     return removed;

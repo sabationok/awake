@@ -38,16 +38,21 @@ export type HelperAction =
   | 'sleepNow'
   /** Видати або відкликати системний дозвіл `name`: помічник показує вікно пароля macOS і чекає відповіді власника. */
   | 'permissionGrant'
-  | 'permissionRevoke';
+  | 'permissionRevoke'
+  /**
+   * Підтвердження власника: системне вікно Touch ID (або пароль Mac, коли Touch ID немає). `name` — чому питаємо,
+   * macOS показує це у вікні. ok: false з `error: 'cancelled'` — власник відмовив. Яким діям потрібне, вирішує сервер.
+   */
+  | 'authenticate';
 
-export const HELPER_ACTIONS: readonly HelperAction[] = ['lock', 'displayOff', 'volume', 'mute', 'brightness', 'sleepDisabled', 'sleepNow', 'permissionGrant', 'permissionRevoke'];
+export const HELPER_ACTIONS: readonly HelperAction[] = ['lock', 'displayOff', 'volume', 'mute', 'brightness', 'sleepDisabled', 'sleepNow', 'permissionGrant', 'permissionRevoke', 'authenticate'];
 
 export interface HelperRequest {
   id: string;
   action: HelperAction;
   /** volume / brightness — 0…100, mute / sleepDisabled — boolean. */
   value?: number | boolean;
-  /** permissionGrant / permissionRevoke — назва дозволу. */
+  /** permissionGrant / permissionRevoke — назва дозволу; authenticate — причина для вікна Touch ID. */
   name?: string;
 }
 

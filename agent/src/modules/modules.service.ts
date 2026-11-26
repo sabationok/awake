@@ -29,6 +29,7 @@ import { LiveChartsService } from './live-charts.service';
 import type { LiveChartRegistry } from './types/live-chart.types';
 import { MAC_MODULES, type MacModule, type ModuleContext, type ModulesStatus, type StatusFields } from './types/mac-module';
 import type { ModuleSource } from './types/module-source';
+import { ModuleOrderService } from './services/module-order.service';
 
 /** Реєстр модулів MaControl: з них будується дерево UI і сюди приходять дії та налаштування. */
 @Injectable()
@@ -46,6 +47,7 @@ export class ModulesService {
     private readonly _journal: BotJournalService,
     private readonly _liveCharts: LiveChartsService,
     private readonly _permissions: MacPermissionsService,
+    private readonly _order: ModuleOrderService,
     notifications: TelegramNotificationsService,
   ) {
     this._byId = new Map(modules.map((module) => [module.id, module]));
@@ -56,8 +58,15 @@ export class ModulesService {
     }
   }
 
+  /** Модулі в порядку меню (ModuleOrderService): від нього — порядок сторінок і модулів у дереві. */
   list(): MacModule[] {
-    return [...this._byId.values()];
+    return this._order.sort([...this._byId.values()]);
+  }
+
+  /** Новий порядок меню: лише відомі модулі; дерево перебудовується. */
+  reorder(ids: string[]) {
+    this._order.set(ids.filter((id) => this._byId.has(id)));
+    this.treeChanged$.next();
   }
 
   /** `charts` — реєстр графіків збирання дерева; без нього графіки будуються, але тіків не отримують. */
@@ -97,7 +106,7 @@ export class ModulesService {
     const mac = this._bridge.state;
     const pages: UiPage[] = [];
     const charts: LiveChartRegistry = new Map();
-    for (const module of this._byId.values()) {
+    for (const module of this.list()) {
       const ctx = this.context(module.id, charts);
       if (module.disabled?.(ctx)) continue;
       pages.push(...(await module.pages(ctx)));

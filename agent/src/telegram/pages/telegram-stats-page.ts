@@ -1,6 +1,7 @@
 import type { UiChartPoint, UiPage, UiTone } from '@awake/contracts';
-import { asStatsPeriod, STATS_PERIOD_KEY, type StatsPeriodWindow } from '../../stats';
+import { buildStatsPage } from '../../modules/helpers/build-stats-page';
 import type { ModuleContext } from '../../modules/types/mac-module';
+import type { StatsPeriodWindow } from '../../stats';
 import { TELEGRAM_COMMANDS_METRIC, TELEGRAM_METRICS, TELEGRAM_STATS_PAGE } from '../constants/telegram-metrics';
 
 const STATS: { metric: string; label: string; tone: UiTone }[] = [
@@ -10,26 +11,27 @@ const STATS: { metric: string; label: string; tone: UiTone }[] = [
   { metric: TELEGRAM_METRICS.notifyFailed, label: 'Сповіщень не доставлено', tone: 'red' },
 ];
 
-/** Telegram → Статистика: графік на кожен лічильник Telegram за вибраний період; у Mac поточний бакет живий. */
+/** Telegram → Статистика: спільний лейаут статистики, графік і сума на кожен лічильник Telegram. */
 export function buildTelegramStatsPage(ctx: ModuleContext, points: (metric: string, window: StatsPeriodWindow) => UiChartPoint[]): UiPage {
-  const period = asStatsPeriod(ctx.setting<string>(STATS_PERIOD_KEY));
-  return {
+  return buildStatsPage(ctx, {
     id: TELEGRAM_STATS_PAGE,
     module: 'telegram',
     title: 'Статистика',
     icon: { symbol: 'chart.bar.fill', tone: 'accent' },
-    group: 'modules',
-    children: [
-      { id: 'period', type: 'section', children: [ctx.settingNode(STATS_PERIOD_KEY)] },
+    footer: 'Журнал усіх джерел — Агент → Журнал.',
+    sections: [
       {
-        id: 'stats',
-        type: 'section',
-        title: 'Статистика',
-        footer: 'Журнал усіх джерел — Агент → Журнал.',
-        children: STATS.map(({ metric, label, tone }) =>
-          ctx.liveChart({ id: `${TELEGRAM_STATS_PAGE}-${metric}`, title: label, period, tone, format: 'count', points: (window) => points(metric, window) }),
-        ),
+        id: 'charts',
+        title: 'Графіки',
+        charts: STATS.map(({ metric, label, tone }) => ({
+          id: metric.replace(/\W+/g, '-'),
+          title: label,
+          tone,
+          format: 'count' as const,
+          total: true,
+          points: (window: StatsPeriodWindow) => points(metric, window),
+        })),
       },
     ],
-  };
+  });
 }

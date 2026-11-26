@@ -43,6 +43,8 @@ struct UiNodeView: View {
             UiNoticeView(notice: notice)
         case .separator(_, let word):
             UiSeparatorView(word: word)
+        case .qr(_, let value, let expiresAt):
+            UiQrView(value: value, expiresAt: expiresAt)
         case .unknown:
             EmptyView()
         }

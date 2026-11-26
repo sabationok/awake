@@ -13,6 +13,7 @@ import {
 import {
   SERVER_CPU_STAT_NS,
   SERVER_LOAD_STAT_NS,
+  SERVER_THERMAL_STAT_NS,
   SERVER_MEMORY_STAT_NS,
   SERVER_REQUESTS_STAT_NS,
   SERVER_STARTS_STAT_NS,
@@ -67,6 +68,8 @@ export class ServerChartsService {
       { id: 'rss', type: 'chart', title: "Пам'ять", unit, tone: 'orange', format: 'bytes', points: gaugeChartPoints(memory, 'rss') },
       { id: 'heap', type: 'chart', title: 'Купа JS', unit, tone: 'yellow', format: 'bytes', points: gaugeChartPoints(memory, 'heap') },
       { id: 'load', type: 'chart', title: 'Навантаження Mac', unit, tone: 'indigo', format: 'number', points: gaugeChartPoints(timeline(SERVER_LOAD_STAT_NS), 'load') },
+      // 0 норма · 1 теплий · 2 гарячий · 3 критичний (ProcessInfo.thermalState); °C без sudo macOS не віддає.
+      { id: 'thermal', type: 'chart', title: 'Нагрів Mac (0–3)', unit, tone: 'red', format: 'number', points: gaugeChartPoints(timeline(SERVER_THERMAL_STAT_NS), 'level') },
       {
         id: 'requests',
         type: 'chart',

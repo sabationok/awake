@@ -10,30 +10,40 @@ struct EnvifySection: View {
 
     var body: some View {
         Section {
-            SettingsRow(title: "Envify", symbol: "key.horizontal.fill", color: .purple,
-                        text: model.secrets?.envify.url ?? "немає для цього stage")
-            if editing {
-                SettingsRow(title: "Токен сервісу", symbol: "lock.fill", color: .gray) {
-                    SecretField(text: $token, prompt: hasToken ? "задано, лишити" : "envify_…")
-                        .frame(maxWidth: 240)
-                        .textFieldStyle(.roundedBorder)
-                }
-            } else {
-                SettingsRow(title: "Токен сервісу", symbol: "lock.fill", color: .gray, text: hasToken ? "задано" : "немає")
-                SettingsRow(title: "Стан", symbol: "arrow.down.circle", color: .gray) {
-                    Text(stateText).foregroundStyle(model.secrets?.envify.state == "error" ? .red : .secondary)
-                }
+            ItemCard(title: "Envify", symbol: "key.horizontal.fill", color: .purple,
+                     comment: model.secrets?.envify.url ?? "немає для цього stage")
+            ItemCard(title: "Токен сервісу", symbol: "lock.fill", color: .gray,
+                     status: hasToken ? ItemCardStatus(label: "Задано", color: .green) : ItemCardStatus(label: "Немає", color: .gray),
+                     comment: editing ? nil : stateText,
+                     commentColor: model.secrets?.envify.state == "error" ? .red : .secondary) {
+                if !editing { ItemCardActions(actions: actions) }
+            } below: {
+                if editing { inlineForm }
             }
-            buttons
         } header: {
             Text("Секрети")
         } footer: {
             Text("Токен з вкладки Connect сервісу в Envify, лежить у envify.env на цьому Mac. Ключі з Envify перебивають файли на кшталт relay.env; process.env перебиває все.")
         }
         .animation(.default, value: editing)
-        .onAppear {
-            hasToken = EnvifySettingsStore.hasToken
-            editing = !hasToken
+        .onAppear { hasToken = EnvifySettingsStore.hasToken }
+    }
+
+    /// З токеном: «Оновити» і «Змінити» в меню «⋯»; без нього — одна кнопка «Задати».
+    private var actions: [ItemCardActions.Action] {
+        guard hasToken else { return [.init(id: "set", label: "Задати", prominent: true) { editing = true }] }
+        return [
+            .init(id: "refresh", label: "Оновити", symbol: "arrow.clockwise",
+                  disabled: model.secrets?.envify.state == "loading") { model.refreshEnvify() },
+            .init(id: "edit", label: "Змінити", symbol: "pencil") { editing = true },
+        ]
+    }
+
+    /// Одне поле — спільна інлайн-форма під лінією, кнопки праворуч.
+    private var inlineForm: some View {
+        InlineForm(canSubmit: !token.isEmpty, onCancel: cancel, onSubmit: save) {
+            FormInput(label: hasToken ? "Новий токен" : "Токен сервісу", text: $token, prompt: "envify_…", secure: true,
+                      hint: "З вкладки Connect сервісу в Envify.", error: saveError, onSubmit: save)
         }
     }
 
@@ -49,28 +59,8 @@ struct EnvifySection: View {
         }
     }
 
-    /// «Оновити» + «Змінити» в перегляді; «Скасувати» + «Зберегти» в редагуванні.
-    private var buttons: some View {
-        HStack {
-            if let saveError { Text(saveError).foregroundStyle(.red) }
-            Spacer()
-            if editing {
-                if hasToken {
-                    Button("Скасувати") { cancel() }
-                }
-                Button("Зберегти") { save() }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(token.isEmpty)
-                    .keyboardShortcut(.defaultAction)
-            } else {
-                Button("Оновити") { model.refreshEnvify() }
-                    .disabled(!hasToken || model.secrets?.envify.state == "loading")
-                Button("Змінити") { editing = true }
-            }
-        }
-    }
-
     private func save() {
+        guard !token.isEmpty else { return }
         do {
             try model.saveEnvifyToken(token)
             hasToken = EnvifySettingsStore.hasToken

@@ -42,8 +42,9 @@ struct UiItemView: View {
             if let control = item.control {
                 UiControlView(control: control)
             }
-            if let actions = item.actions {
-                UiActionSetView(items: actions) { picked in
+            // Поки відкрита інлайн-форма, кнопка, що її відкрила, ховається: дії форми — під нею.
+            if inline == nil, item.actions != nil || item.copy != nil {
+                UiActionSetView(items: item.actions ?? [], local: localActions) { picked in
                     draft = picked.form?.fields.first?.value ?? ""
                     inline = picked
                 }
@@ -51,38 +52,45 @@ struct UiItemView: View {
         }
     }
 
+    /// Значення під назвою; «Скопійовано» на мить після копіювання з меню.
     private func copyRow(_ copy: UiItem.Copy) -> some View {
         HStack(spacing: 6) {
             Text(copy.value)
                 .font(.callout.monospaced())
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
-            Button {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(copy.value, forType: .string)
-                copied = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copied = false }
-            } label: {
-                Image(systemName: copied ? "checkmark" : "doc.on.doc")
+            if copied {
+                Text("Скопійовано").font(.caption).foregroundStyle(.green)
             }
-            .buttonStyle(.borderless)
-            .accessibilityLabel(copy.label ?? "Копіювати")
-            .help(copy.label ?? "Копіювати")
         }
     }
 
-    /// Одне поле з «Скасувати» / OK. Помилку сервера аппка не отримує у відповідь, тож форма закривається одразу.
-    private func inlineForm(_ picked: UiMenuItem, field: UiFormField) -> some View {
-        HStack(spacing: 8) {
-            UiFormFieldView(field: field, value: $draft, labelHidden: true)
-                .onSubmit { submit(picked, field: field) }
-            Button("Скасувати") { inline = nil }
-                .keyboardShortcut(.cancelAction)
-            Button(picked.form?.submit ?? "Зберегти") { submit(picked, field: field) }
-                .buttonStyle(.borderedProminent)
-                .disabled(!field.accepts(draft))
+    /// «Копіювати» і, для посилання, «Відкрити» — пункти меню «⋯» картки.
+    private var localActions: [UiLocalAction] {
+        guard let copy = item.copy else { return [] }
+        var actions = [UiLocalAction(id: "copy", label: copy.label ?? "Копіювати", symbol: "doc.on.doc") {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(copy.value, forType: .string)
+            copied = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copied = false }
+        }]
+        if let url = URL(string: copy.value), ["http", "https"].contains(url.scheme ?? "") {
+            actions.append(UiLocalAction(id: "open", label: "Відкрити", symbol: "arrow.up.right.square") {
+                NSWorkspace.shared.open(url)
+            })
         }
-        .controlSize(.small)
+        return actions
+    }
+
+    /// Одне поле: спільна `InlineForm` з `FormInput`. Помилку сервера аппка не отримує у відповідь, тож форма
+    /// закривається одразу.
+    private func inlineForm(_ picked: UiMenuItem, field: UiFormField) -> some View {
+        InlineForm(submit: picked.form?.submit ?? "Зберегти", canSubmit: field.accepts(draft),
+                   onCancel: { inline = nil }, onSubmit: { submit(picked, field: field) }) {
+            UiFormFieldView(field: field, value: $draft, error: field.mismatch(in: [field.name: draft], fields: [field])) {
+                submit(picked, field: field)
+            }
+        }
     }
 
     private func submit(_ picked: UiMenuItem, field: UiFormField) {

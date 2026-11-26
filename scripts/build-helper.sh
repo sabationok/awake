@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 mkdir -p build
 swiftc -swift-version 5 -O \
   -target arm64-apple-macos14 \
-  -framework IOKit -framework CoreAudio -framework AudioToolbox -framework CoreWLAN -framework CoreGraphics \
+  -framework IOKit -framework CoreAudio -framework AudioToolbox -framework CoreWLAN -framework CoreGraphics -framework LocalAuthentication \
   Helper/main.swift \
   Helper/SudoersRules.swift \
   Sources/Core/Permissions/AppPermission.swift \

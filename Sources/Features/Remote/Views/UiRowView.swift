@@ -55,7 +55,7 @@ struct UiRowView: View {
         let hasText = (withHint && row.hint != nil) || row.countdownTo != nil
         if hasText {
             HStack(spacing: 6) {
-                if let dot = row.dot {
+                if let dot = row.dot, row.value == nil || row.control != nil {
                     StatusDot(color: dot.tone.color, pulse: dot.pulse ?? false)
                 }
                 if withHint, let hint = row.hint {
@@ -75,6 +75,9 @@ struct UiRowView: View {
     private var trailing: some View {
         if let control = row.control {
             UiControlView(control: control)
+        } else if let value = row.value, let dot = row.dot {
+            // Крапка зі значенням — стан словом праворуч («● Працює»), а не позначка під назвою.
+            UiStatusBadgeView(status: UiStatusBadge(label: value, tone: dot.tone, pulse: dot.pulse))
         } else if let value = row.value {
             Text(value).foregroundStyle(.secondary)
         }

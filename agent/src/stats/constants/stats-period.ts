@@ -1,13 +1,22 @@
 import type { StatsPeriod } from '@awake/contracts';
 
-/** Ключ select-а періоду на сторінці статистики модуля (`<module>.statsPeriod`). */
+/** Ключ налаштування з вибраною вкладкою періоду на сторінці статистики модуля (`<module>.statsPeriod`). */
 export const STATS_PERIOD_KEY = 'statsPeriod';
-export const STATS_PERIOD_DEFAULT: StatsPeriod = 'today';
 
-/** Періоди графіків статистики в порядку select-а. */
-export const STATS_PERIOD_OPTIONS: { value: StatsPeriod; label: string }[] = [
-  { value: 'hour', label: 'Година' },
+/**
+ * Період вкладки на сторінці статистики (спільний лейаут `buildStatsPage`): Сьогодні — години, Дні — 30 днів,
+ * Тижні — 12 тижнів, Місяці — 12 місяців. Нативні графіки «Сервер» і вебхуків мають свій `StatsPeriod`.
+ */
+export type StatsPagePeriod = 'today' | 'days' | 'weeks' | 'months';
+export const STATS_PERIOD_DEFAULT: StatsPagePeriod = 'today';
+
+/** Вкладки періоду в порядку показу. */
+export const STATS_PAGE_PERIODS: { value: StatsPagePeriod; label: string }[] = [
   { value: 'today', label: 'Сьогодні' },
-  { value: 'week', label: '7 днів' },
-  { value: 'month', label: '30 днів' },
+  { value: 'days', label: 'Дні' },
+  { value: 'weeks', label: 'Тижні' },
+  { value: 'months', label: 'Місяці' },
 ];
+
+/** Будь-який період, з якого рушій будує вікно графіка. */
+export type StatsChartPeriod = StatsPeriod | StatsPagePeriod;

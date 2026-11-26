@@ -8,3 +8,5 @@ export const SERVER_CPU_STAT_NS = 'server.cpu';
 export const SERVER_MEMORY_STAT_NS = 'server.memory';
 /** Навантаження Mac (load average за 1 хв): value `load`. */
 export const SERVER_LOAD_STAT_NS = 'server.load';
+/** Нагрів Mac з помічника (ProcessInfo.thermalState): value `level`, 0 норма · 1 теплий · 2 гарячий · 3 критичний. */
+export const SERVER_THERMAL_STAT_NS = 'server.thermal';

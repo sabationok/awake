@@ -1,15 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import { Copy, ExternalLink } from 'lucide-react';
 import type { UiItem, UiMenuItem } from '@awake/contracts';
-import { CopyButton } from '@/components/copy-button';
 import { FlexRow } from '@/components/flex';
 import { InlineEditField } from '@/components/inline-edit-field';
 import { StatusBadge } from '@/components/status-badge';
 import { Tag } from '@/components/tag';
 import { useBusyEvent } from '../hooks/use-busy-event';
 import type { NodeProps } from '../sdui.types';
-import { ActionSet } from './action-set';
+import { ActionSet, type LocalAction } from './action-set';
 import { ControlView } from './control-view';
 import { SduiIcon } from './sdui-icon';
 
@@ -32,6 +32,27 @@ export function ItemNode({ node, onEvent }: NodeProps<UiItem>) {
   };
 
   const inlineField = inline?.form?.fields[0];
+  const [copied, setCopied] = useState(false);
+
+  // Значення для копіювання: «Копіювати» і, для посилання, «Відкрити» — пункти того самого меню «⋯».
+  const local: LocalAction[] = [];
+  if (node.copy) {
+    const value = node.copy.value;
+    local.push({
+      id: 'copy',
+      label: node.copy.label ?? 'Копіювати',
+      icon: <Copy size={16} />,
+      onSelect: () => {
+        void navigator.clipboard.writeText(value).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        });
+      },
+    });
+    if (/^https?:\/\//.test(value)) {
+      local.push({ id: 'open', label: 'Відкрити', icon: <ExternalLink size={16} />, onSelect: () => window.open(value, '_blank', 'noopener') });
+    }
+  }
 
   return (
     <div className="flex flex-col gap-1.5 px-4 py-2.5">
@@ -43,9 +64,10 @@ export function ItemNode({ node, onEvent }: NodeProps<UiItem>) {
         <FlexRow gap="sm" className="shrink-0">
           {node.status && <StatusBadge label={node.status.label} tone={node.status.tone} pulse={node.status.pulse} />}
           {node.control && <ControlView control={node.control} label={node.title} onEvent={onEvent} />}
-          {node.actions && (
+          {(node.actions || local.length > 0) && (
             <ActionSet
-              items={node.actions}
+              items={node.actions ?? []}
+              local={local}
               onEvent={onEvent}
               onInlineForm={(item) => {
                 setInlineError(null);
@@ -66,8 +88,8 @@ export function ItemNode({ node, onEvent }: NodeProps<UiItem>) {
 
       {node.copy && (
         <FlexRow gap="xs" className="min-w-0">
-          <span className="min-w-0 flex-1 break-all font-mono text-[13px] text-secondary">{node.copy.value}</span>
-          <CopyButton value={node.copy.value} label={node.copy.label} />
+          <span className="min-w-0 break-all font-mono text-[13px] text-secondary">{node.copy.value}</span>
+          {copied && <span className="shrink-0 text-[12px] text-green">Скопійовано</span>}
         </FlexRow>
       )}
 

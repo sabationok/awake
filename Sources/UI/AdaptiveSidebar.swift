@@ -15,8 +15,8 @@ struct SidebarSection<Item: Hashable>: Hashable {
 }
 
 /// Меню розділів і сторінка.
-/// Широке вікно: повне меню поруч зі сторінкою. Вузьке: меню стискається в іконковий рейл.
-/// Кнопки-перемикача немає: ширину меню задає ширина вікна.
+/// Широке вікно: повне меню поруч зі сторінкою. Вузьке: сторінка на всю ширину, а повне меню (з групами й
+/// вкладеними пунктами) відкривається поверх неї кнопкою в тулбарі і закривається вибором пункту чи кліком поза ним.
 /// Назва вибраного розділу йде в заголовок вікна (`navigationTitle`), сторінка свого заголовка не малює.
 /// Універсальний: не знає про конкретні розділи, лише отримує секції і замикання.
 struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: View>: View {
@@ -26,38 +26,86 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
     let symbol: (Item) -> String
     /// Вимкнений пункт: сірий, без вибору; текст — підказка, чому. nil — звичайний.
     var disabledReason: (Item) -> String? = { _ in nil }
+    /// Новий порядок пунктів першої секції (модулів) після «Упорядкувати» → «Готово». nil — кнопки немає.
+    var onReorder: (([Item]) -> Void)? = nil
     @ViewBuilder let footer: () -> Footer
     @ViewBuilder let content: (Item) -> Content
 
     private let pinnedWidth: CGFloat = 640
     private let expandedWidth: CGFloat = 200
-    private let railWidth: CGFloat = 56
+    private let overlayWidth: CGFloat = 260
+
+    /// Меню поверх сторінки у вузькому вікні.
+    @State private var overlayOpen = false
+    /// Розгорнуті групи. На старті все згорнуто, між запусками не пам'ятається; закрите меню-оверлей згортає все.
+    @State private var expanded: Set<String> = []
+    /// Режим «Упорядкувати»: перша секція — плаский список, пункти перетягуються.
+    @State private var organizing = false
+    @State private var order: [Item] = []
 
     var body: some View {
         GeometryReader { geo in
             let compact = geo.size.width < pinnedWidth
-            HStack(spacing: 0) {
-                panel(compact: compact)
-                Divider()
-                content(selection).background(Palette.content)
+            ZStack(alignment: .topLeading) {
+                HStack(spacing: 0) {
+                    if !compact {
+                        panel.frame(width: expandedWidth)
+                        Divider()
+                    }
+                    content(selection)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Palette.content)
+                }
+                if compact {
+                    // Меню завжди в ієрархії: відкриття й закриття — той самий зсув убік, анімований в обидва боки.
+                    Color.black.opacity(overlayOpen ? 0.18 : 0)
+                        .contentShape(Rectangle())
+                        .allowsHitTesting(overlayOpen)
+                        .onTapGesture { overlayOpen = false }
+                    let width = min(overlayWidth, geo.size.width - 40)
+                    panel
+                        .frame(width: width)
+                        .shadow(color: .black.opacity(overlayOpen ? 0.25 : 0), radius: 16, x: 4)
+                        .offset(x: overlayOpen ? 0 : -width - 24)
+                        .allowsHitTesting(overlayOpen)
+                }
             }
-            .animation(.easeOut(duration: 0.22), value: compact)
+            .animation(.easeOut(duration: 0.2), value: overlayOpen)
+            .onChange(of: selection) { _, _ in overlayOpen = false }
+            .onChange(of: overlayOpen) { _, open in
+                if !open {
+                    expanded = []
+                    organizing = false
+                }
+            }
+            .onChange(of: compact) { _, isCompact in if !isCompact { overlayOpen = false } }
+            .toolbar {
+                if compact {
+                    ToolbarItem(placement: .navigation) {
+                        Button {
+                            overlayOpen.toggle()
+                        } label: {
+                            Image(systemName: "sidebar.left")
+                        }
+                        .help(overlayOpen ? "Сховати меню" : "Показати меню")
+                    }
+                }
+            }
         }
         .navigationTitle(title(selection))
     }
 
-    /// Панель меню. Згорнута в рейл показує лише іконки, футер прихований.
-    private func panel(compact: Bool) -> some View {
+    /// Повне меню: групи, вкладені пункти і футер — однакове поруч зі сторінкою і поверх неї.
+    private var panel: some View {
         VStack(spacing: 0) {
-            if compact {
-                rail
-            } else {
-                list
+            if organizing { organizeList } else { list }
+            if onReorder != nil {
                 Divider()
-                footer()
+                organizeBar
             }
+            Divider()
+            footer()
         }
-        .frame(width: compact ? railWidth : expandedWidth)
         .frame(maxHeight: .infinity)
         .background(.regularMaterial)
     }
@@ -88,62 +136,81 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
     @ViewBuilder
     private func label(_ item: Item) -> some View {
         if let reason = disabledReason(item) {
-            Label(title(item), systemImage: symbol(item))
+            itemLabel(item)
                 .foregroundStyle(.tertiary)
                 .selectionDisabled()
                 .help(reason)
                 .tag(item)
         } else {
-            Label(title(item), systemImage: symbol(item)).tag(item)
+            itemLabel(item).tag(item)
         }
     }
 
-    /// Розгорнуті батьківські пункти (за назвою, щоб пам'ятати між запусками). За замовчуванням усе згорнуто.
-    @AppStorage("adaptiveSidebar.expanded") private var expanded = ""
+    /// Назва з іконкою модуля. Колір іконки явний: поверх сторінки sidebar-стиль списку її не підфарбовує.
+    private func itemLabel(_ item: Item) -> some View {
+        Label {
+            Text(title(item))
+        } icon: {
+            Image(systemName: symbol(item)).foregroundStyle(Color.accentColor)
+        }
+    }
 
     private func expansion(of item: Item) -> Binding<Bool> {
         let key = title(item)
         return Binding(
-            get: { expanded.split(separator: "\n").contains(Substring(key)) },
+            get: { expanded.contains(key) },
             set: { open in
-                var keys = expanded.split(separator: "\n").map(String.init).filter { $0 != key }
-                if open { keys.append(key) }
-                expanded = keys.joined(separator: "\n")
+                if open { expanded.insert(key) } else { expanded.remove(key) }
             }
         )
     }
 
-    /// Іконковий рейл: ті самі розділи, лише символи. Назва з'являється підказкою.
-    private var rail: some View {
-        VStack(spacing: 6) {
-            ForEach(Array(sections.enumerated()), id: \.offset) { index, section in
-                if index > 0 {
-                    Divider().padding(.vertical, 4)
+    /// Пункти першої секції без вкладених: тягнеш — міняється порядок. Вибір сторінки на цей час вимкнений.
+    private var organizeList: some View {
+        List {
+            Section {
+                ForEach(order, id: \.self) { item in
+                    HStack {
+                        itemLabel(item)
+                        Spacer()
+                        Image(systemName: "line.3.horizontal").foregroundStyle(.tertiary)
+                    }
                 }
-                ForEach(section.items) { item in
-                    railButton(item)
-                }
+                .onMove { from, to in order.move(fromOffsets: from, toOffset: to) }
+            } header: {
+                Text("Перетягни модулі")
             }
-            Spacer()
         }
-        .padding(.top, 8)
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
     }
 
-    private func railButton(_ item: Item) -> some View {
-        let selected = item == selection
-        let reason = disabledReason(item)
-        return Button {
-            selection = item
-        } label: {
-            Image(systemName: symbol(item))
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(selected ? Color.white : Color.secondary)
-                .frame(width: 36, height: 30)
-                .background(selected ? Color.accentColor : Color.clear, in: RoundedRectangle(cornerRadius: 7))
+    /// Унизу меню: «Упорядкувати»; у режимі — «Скасувати» і «Готово».
+    private var organizeBar: some View {
+        HStack(spacing: 8) {
+            if organizing {
+                Button("Скасувати") { organizing = false }
+                Spacer()
+                Button("Готово") {
+                    onReorder?(order)
+                    organizing = false
+                }
+                .buttonStyle(.borderedProminent)
+            } else {
+                Button {
+                    order = sections.first?.nodes.map(\.item) ?? []
+                    expanded = []
+                    organizing = true
+                } label: {
+                    Label("Упорядкувати", systemImage: "arrow.up.arrow.down")
+                }
+                .buttonStyle(.borderless)
+                .help("Змінити порядок модулів у меню")
+                Spacer()
+            }
         }
-        .buttonStyle(.plain)
-        .disabled(reason != nil)
-        .help(reason.map { "\(title(item)): \($0)" } ?? title(item))
-        .accessibilityLabel(title(item))
+        .controlSize(.small)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 }

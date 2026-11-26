@@ -23,6 +23,12 @@ export interface TelegramNotificationSource {
   privateOnly?: boolean;
   settings?: SettingDefinition[];
   events: TelegramNotificationEvent[];
+  /**
+   * Чия вкладка на Сповіщеннях показує налаштування: ключ налаштування (`events.<source>.<…>`) → id іншого джерела.
+   * Так попередження про кінець Awake стоїть у вкладці Awake, а Sleeper — у Sleeper; джерело без власних рядків
+   * вкладки не має.
+   */
+  tabOf?: Record<string, string>;
 }
 
 /** Що агент хоче сказати в Telegram; формат повідомлення і перевірку перемикача робить Telegram. */

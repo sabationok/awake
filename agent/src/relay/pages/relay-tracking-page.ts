@@ -1,5 +1,6 @@
 import type { UiChartPoint, UiPage, UiTone } from '@awake/contracts';
-import { asStatsPeriod, STATS_PERIOD_KEY, type StatsPeriodWindow } from '../../stats';
+import { buildStatsPage, type StatsPageChart } from '../../modules/helpers/build-stats-page';
+import type { StatsPeriodWindow } from '../../stats';
 import type { ModuleContext } from '../../modules/types/mac-module';
 import { RELAY_METRICS } from '../constants/relay-metrics';
 import { RELAY_TRACKING_PAGE } from '../constants/relay-settings';
@@ -25,39 +26,35 @@ const EVENT_CHARTS: { id: string; title: string; series: { metric: string; label
   { id: 'errors', title: 'Помилок', series: [{ metric: RELAY_METRICS.errors, label: '', tone: 'red' }] },
 ];
 
-/** «Трекінг»: дії через webhooxy з журналу бота і події вебхука relay графіками за вибраний період. */
+/** «Трекінг»: спільний лейаут статистики — дії через webhooxy з журналу бота і події вебхука relay. */
 export function buildRelayTrackingPage(ctx: ModuleContext, points: RelayTrackingPoints): UiPage {
-  const period = asStatsPeriod(ctx.setting<string>(STATS_PERIOD_KEY));
-  return {
+  return buildStatsPage(ctx, {
     id: RELAY_TRACKING_PAGE,
     module: 'relay',
     title: 'Трекінг',
     icon: { symbol: 'chart.bar.fill', tone: 'accent' },
-    group: 'modules',
     // Webhooxy налаштовують лише в SwiftUI: Web UI, що йде через нього, сам його не крутить.
     scope: 'mac',
-    children: [
-      { id: 'period', type: 'section', children: [ctx.settingNode(STATS_PERIOD_KEY)] },
+    sections: [
       {
-        id: 'tracking',
-        type: 'section',
-        title: 'Трекінг',
-        children: [
-          ctx.liveChart({ id: `${RELAY_TRACKING_PAGE}-actions`, title: 'Дій через webhooxy', period, tone: 'accent', format: 'count', points: (window) => points.actions(window) }),
-          ...EVENT_CHARTS.map(({ id, title, series }) => {
+        id: 'charts',
+        title: 'Графіки',
+        charts: [
+          { id: 'actions', title: 'Дій через webhooxy', tone: 'accent', format: 'count', total: true, points: (window) => points.actions(window) },
+          ...EVENT_CHARTS.map(({ id, title, series }): StatsPageChart => {
             const labels = Object.fromEntries(series.map(({ metric, label }) => [metric, label]));
             const tones = series.length > 1 ? Object.fromEntries(series.map(({ label, tone }) => [label, tone])) : undefined;
-            return ctx.liveChart({
-              id: `${RELAY_TRACKING_PAGE}-${id}`,
+            return {
+              id,
               title,
-              period,
               ...(tones ? { tones } : { tone: series[0].tone }),
               format: 'count',
+              total: true,
               points: (window) => points.events(window, labels),
-            });
+            };
           }),
         ],
       },
     ],
-  };
+  });
 }

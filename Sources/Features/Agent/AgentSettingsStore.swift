@@ -68,10 +68,7 @@ enum AgentSettingsStore {
         var env = ProcessInfo.processInfo.environment
         env["MACONTROL_AGENT_TOKEN"] = settings.token
         env["MACONTROL_AGENT_PORT"] = String(settings.port)
-        if settings.hasUpstash {
-            env["UPSTASH_REDIS_REST_URL"] = settings.upstashURL
-            env["UPSTASH_REDIS_REST_TOKEN"] = settings.upstashToken
-        }
+        // Ключі Upstash сервер читає сам (secrets.env, а старі — з цього ж agent.env) і задає формою на «Мережах».
         return env
     }
 

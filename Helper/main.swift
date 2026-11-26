@@ -4,6 +4,7 @@
 // Системні сервіси спільні з аппкою (Sources/**), список файлів у scripts/build-helper.sh.
 import CoreWLAN
 import Foundation
+import LocalAuthentication
 
 let helperVersion = "0.1.0"
 /// Як часто стан іде серверу без запиту. Сервер вважає Mac офлайн після 30 с тиші.
@@ -140,6 +141,25 @@ func changePermission(_ request: Request.Body, grant: Bool) {
     }
 }
 
+/// Touch ID або пароль Mac: системне вікно висить, доки власник не відповість, тож чекаємо поза головною чергою.
+/// `.deviceOwnerAuthentication` сам переходить на пароль, коли Touch ID немає чи він заблокований.
+func authenticate(_ request: Request.Body) {
+    let context = LAContext()
+    var failure: NSError?
+    guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &failure) else {
+        return finish(request, error: failure?.localizedDescription ?? "authentication unavailable")
+    }
+    let reason = request.name.flatMap { $0.isEmpty ? nil : $0 } ?? "підтвердити дію MaControl"
+    context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, error in
+        DispatchQueue.main.async {
+            if success { return finish(request, error: nil) }
+            let code = (error as? LAError)?.code
+            let cancelled = code == .userCancel || code == .appCancel || code == .systemCancel
+            finish(request, error: cancelled ? "cancelled" : (error?.localizedDescription ?? "authentication failed"))
+        }
+    }
+}
+
 func finish(_ request: Request.Body, error: String?) {
     var result: [String: Any] = ["id": request.id, "ok": error == nil]
     if let error { result["error"] = error }
@@ -153,6 +173,7 @@ func handle(_ line: String) {
     switch request.data.action {
     case "permissionGrant": changePermission(request.data, grant: true)
     case "permissionRevoke": changePermission(request.data, grant: false)
+    case "authenticate": authenticate(request.data)
     default: finish(request.data, error: perform(request.data))
     }
 }

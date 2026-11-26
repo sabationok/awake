@@ -19,6 +19,8 @@ export interface FormField {
   hint?: string;
   required?: boolean;
   minLength?: number;
+  /** Ім'я поля, з яким значення має збігтися («Повторіть пароль»). */
+  sameAs?: string;
   options?: { value: string; label: string; disabled?: boolean }[];
 }
 
@@ -79,6 +81,9 @@ function FormBody({ title, fields, submit, busy, error, onSubmit, onCancel }: Om
             <span className="text-[13px] text-secondary">{field.label}</span>
             <FieldControl field={field} value={values[field.name] ?? ''} onChange={(v) => setValues((prev) => ({ ...prev, [field.name]: v }))} />
             {field.hint && <span className="text-[12px] text-secondary">{field.hint}</span>}
+            {mismatch(field, values) && (
+              <span className="text-[12px] text-red">Не збігається з полем «{fields.find((other) => other.name === field.sameAs)?.label}»</span>
+            )}
           </label>
         ))}
       </div>
@@ -87,7 +92,7 @@ function FormBody({ title, fields, submit, busy, error, onSubmit, onCancel }: Om
         <Button variant="plain" onClick={onCancel} className="flex-1">
           Скасувати
         </Button>
-        <Button type="submit" variant="accent" disabled={busy} className="flex-1">
+        <Button type="submit" variant="accent" disabled={busy || fields.some((field) => mismatch(field, values))} className="flex-1">
           {submit}
         </Button>
       </div>
@@ -132,6 +137,11 @@ export function FieldControl({
       className="h-9 w-full rounded-md bg-[color-mix(in_srgb,var(--gray)_18%,transparent)] px-3 text-[15px] text-label outline-none placeholder:text-secondary"
     />
   );
+}
+
+/** Поле `sameAs` заповнене і не збігається зі своїм полем. */
+function mismatch(field: FormField, values: Record<string, string>): boolean {
+  return !!field.sameAs && !!values[field.name] && values[field.name] !== values[field.sameAs];
 }
 
 export function initialValues(fields: FormField[]): Record<string, string> {

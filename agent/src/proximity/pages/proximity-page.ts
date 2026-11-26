@@ -1,4 +1,4 @@
-import type { BluetoothState, UiNode, UiPage, UiRow, UiStatus, UiTone } from '@awake/contracts';
+import type { BluetoothState, UiNode, UiNotice, UiPage, UiTone } from '@awake/contracts';
 import { formatClock } from '../../modules/helpers/format-clock';
 import type { ModuleContext } from '../../modules/types/mac-module';
 import { PROXIMITY_MODULE, PROXIMITY_PAGE } from '../constants/proximity-settings';
@@ -37,8 +37,9 @@ export function buildProximityPage(ctx: ModuleContext, state: ProximityState): U
         ],
       },
       {
-        id: 'about',
-        type: 'text',
+        id: 'proximity-bluetooth-notice',
+        type: 'notice',
+        variant: 'warn',
         text: 'Спарте iPhone чи Apple Watch з Mac у Системних параметрах → Bluetooth, інакше iOS міняє адресу і Mac його губить. Розблоковує лише пароль або Apple Watch.',
       },
     ],
@@ -54,21 +55,22 @@ function absenceSection(state: ProximityState): UiNode[] {
   return banner ? [{ id: 'absence', type: 'section', children: [banner] }] : [];
 }
 
-function absenceBanner(state: ProximityState, now: number): UiStatus | null {
+function absenceBanner(state: ProximityState, now: number): UiNotice | null {
   const { config } = state;
   if (!config.enabled) return null;
-  const warn = (label: string, hint: string, tone: UiTone): UiStatus => ({
+  // Сірий та індиго — стан, про який варто знати; помаранчевий і червоний — блокування зараз не спрацює.
+  const warn = (title: string, text: string, tone: UiTone): UiNotice => ({
     id: 'absence-banner',
-    type: 'status',
-    label,
-    hint,
-    tone,
+    type: 'notice',
+    variant: tone === 'orange' || tone === 'red' ? 'warn' : 'info',
     icon: { symbol: 'exclamationmark.triangle', tone },
+    title,
+    text,
   });
 
   if (state.bluetooth !== 'on') {
     const reason = state.bluetooth === null ? { label: 'Аппка не надсилає даних', tone: 'gray' as UiTone } : BLUETOOTH[state.bluetooth];
-    return warn('Блокування не працює', reason.label, reason.tone);
+    return warn('Блокування не працює', `Bluetooth: ${reason.label}`, reason.tone);
   }
   if (config.device === '') return warn('Пристрій не вибрано', 'Mac не блокуватиме, доки не вибрано iPhone чи Watch', 'orange');
   if (!state.watching) return warn('Не стежить', 'Блокування лише під час сесії', 'gray');
@@ -77,14 +79,14 @@ function absenceBanner(state: ProximityState, now: number): UiStatus | null {
   const name = state.targetName ?? 'Пристрій';
   const lockAt = Date.parse(state.farSince) + config.delayMs;
   if (now >= lockAt) return warn(`Заблоковано: ${name} далеко`, `з ${formatClock(state.farSince)}`, 'indigo');
-  return { ...warn(`${name} ${state.target ? 'далеко' : 'не видно'}`, 'Mac заблокується, якщо не повернеться', 'orange'), countdownTo: new Date(lockAt).toISOString() };
+  return warn(`${name} ${state.target ? 'далеко' : 'не видно'}`, `Mac заблокується о ${formatClock(new Date(lockAt).toISOString())}, якщо не повернеться`, 'orange');
 }
 
-function statusRows(state: ProximityState): UiRow[] {
+function statusRows(state: ProximityState): UiNode[] {
   const { config } = state;
   const bluetooth = state.bluetooth === null ? { label: 'Аппка не надсилає даних', tone: 'gray' as UiTone } : BLUETOOTH[state.bluetooth];
   return [
-    { id: 'bluetooth', type: 'row', label: 'Bluetooth', value: bluetooth.label, dot: { tone: bluetooth.tone } },
+    { id: 'bluetooth', type: 'item', title: 'Bluetooth', status: { label: bluetooth.label, tone: bluetooth.tone } },
     {
       id: 'device',
       type: 'row',

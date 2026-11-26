@@ -1,6 +1,8 @@
 import { Loader2 } from 'lucide-react';
 import type { UiButton, UiControl, UiEvent } from '@awake/contracts';
+import { useState } from 'react';
 import { Button } from '@/components/button';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Select } from '@/components/select';
 import { Slider } from '@/components/slider';
 import { Switch } from '@/components/switch';
@@ -86,13 +88,30 @@ function SliderControl({ control, label, onEvent }: { control: SliderUi; label: 
 
 function ButtonControl({ button, onEvent }: { button: UiButton; onEvent: SduiEventHandler }) {
   const { send, busy } = useBusyEvent(onEvent);
-  const press = () => {
-    if (button.confirm && !window.confirm(button.confirm)) return;
-    void send({ type: 'action', action: button.action });
-  };
+  const [confirming, setConfirming] = useState(false);
+  const fire = () => void send({ type: 'action', action: button.action });
   return (
-    <Button variant={button.variant} disabled={button.disabled || busy} onClick={press} className="h-8 px-3 text-[13px]">
-      {busy ? <Loader2 size={14} className="animate-spin" /> : button.label}
-    </Button>
+    <>
+      <Button
+        variant={button.variant}
+        disabled={button.disabled || busy}
+        onClick={() => (button.confirm ? setConfirming(true) : fire())}
+        className="h-8 px-3 text-[13px]"
+      >
+        {busy ? <Loader2 size={14} className="animate-spin" /> : button.label}
+      </Button>
+      <ConfirmDialog
+        open={confirming}
+        title={button.confirm ?? ''}
+        text=""
+        ok={button.label}
+        danger={button.variant === 'destructive'}
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false);
+          fire();
+        }}
+      />
+    </>
   );
 }

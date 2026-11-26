@@ -2,7 +2,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { UiPage } from '@awake/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 import { describeUserAgent } from '../devices/helpers/describe-user-agent';
+import { DevicesBridgeService } from '../devices/services/devices-bridge.service';
 import { PairingService } from '../devices/services/pairing.service';
+import { AppSecretsService } from '../secrets';
 import type { MacModule, ModuleContext } from '../modules/types/mac-module';
 import { findLanAddress } from '../presence/helpers/find-lan-address';
 import { readWebInfo } from '../server-info/helpers/read-web-info';
@@ -37,32 +39,43 @@ export class WebUiMacModule implements MacModule {
     private readonly _password: DashboardPasswordService,
     private readonly _sessions: WebSessionsService,
     private readonly _pairing: PairingService,
+    private readonly _secrets: AppSecretsService,
+    private readonly _devicesBridge: DevicesBridgeService,
   ) {}
 
   pages(ctx: ModuleContext): UiPage[] {
     const snapshot = this._snapshot(ctx);
-    return [buildOverviewPage(snapshot), buildLoginPage(snapshot), buildNetworksPage(snapshot), buildDevicesPage(snapshot)];
+    return [buildOverviewPage(snapshot), buildLoginPage(snapshot), buildNetworksPage(snapshot), buildDevicesPage(this._devicesBridge.snapshot())];
   }
 
   private _snapshot(ctx: ModuleContext): WebUiSnapshot {
     const devices = this._pairing.devices();
-    const names = new Map(devices.map((device) => [device.id, describeUserAgent(device.userAgent)]));
+    const byId = new Map(devices.map((device) => [device.id, device]));
     return {
       addresses: this._addresses(),
       web: readWebInfo(this._config.webPublishedDir, this._config.webDir),
       passwordSet: this._password.isSet,
+      passwordSource: this._secrets.keys.find((key) => key.name === 'MACONTROL_DASHBOARD_PASSWORD')?.source ?? null,
+      jwtKey: {
+        configured: !!this._secrets.get('jwtKey'),
+        source: this._secrets.keys.find((key) => key.name === 'MACONTROL_JWT_KEY')?.source ?? null,
+      },
       sessions: this._sessions.active().map((session) => ({
         id: session.id,
-        deviceName: names.get(session.deviceId) ?? 'Невідомий пристрій',
+        deviceName: byId.has(session.deviceId) ? describeUserAgent(byId.get(session.deviceId)!.userAgent) : 'Невідомий пристрій',
+        via: byId.get(session.deviceId)?.via ?? 'local',
         lastActiveAt: session.lastActiveAt,
         expiresAt: session.expiresAt,
       })),
       trustedNetworks: this._networks.list(),
       currentSsid: ctx.mac?.ssid ?? null,
-      upstashConfigured: !!(this._config.upstashUrl && this._config.upstashToken),
+      remoteStore: {
+        configured: !!(this._secrets.get('upstashUrl') && this._secrets.get('upstashToken')),
+        source: this._secrets.keys.find((key) => key.name === 'UPSTASH_REDIS_REST_URL')?.source ?? null,
+      },
       devices: devices.map((device) => ({
         id: device.id,
-        name: names.get(device.id) ?? 'Невідомий пристрій',
+        name: describeUserAgent(device.userAgent),
         via: device.via,
         createdAt: device.createdAt,
         lastSeenAt: device.lastSeenAt,

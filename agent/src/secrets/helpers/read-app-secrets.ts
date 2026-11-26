@@ -7,10 +7,12 @@ import { APP_SECRET_KEYS, type AppSecretField } from '../constants/app-secret-ke
 
 const LINE_PATTERN = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/;
 
-/** Локальне сховище секретів аппки (пише лише Mac-аппка). */
+/** Локальне сховище секретів аппки: пишуть Mac-аппка (свої ключі) і сервер (Remote KV Store), кожен лише свої рядки. */
 export const SECRETS_ENV_PATH = join(homedir(), '.config/awake/secrets.env');
 /** Старий файл ключів relay: секрети звідти ще читаємо, поки їх не перенесли. */
 const LEGACY_RELAY_ENV_PATH = join(homedir(), '.config/awake/relay.env');
+/** Старе місце ключів Upstash (їх писала аппка): читаємо, поки їх не збережуть формою на сервері. */
+const LEGACY_AGENT_ENV_PATH = join(homedir(), '.config/awake/agent.env');
 
 export interface AppSecretsRead {
   values: Partial<Record<AppSecretField, string>>;
@@ -35,11 +37,15 @@ export function readEnvFile(path: string): Map<string, string> {
 
 /** Кожен секрет окремо. Пріоритет: process.env, Envify, secrets.env, relay.env; у межах джерела — основне ім'я, потім старі. */
 export function readAppSecrets(envify: Readonly<Record<string, string>>, env: NodeJS.ProcessEnv = process.env): AppSecretsRead {
-  const files = [readEnvFile(env.MACONTROL_SECRETS_ENV || SECRETS_ENV_PATH), readEnvFile(env.MACONTROL_RELAY_ENV || LEGACY_RELAY_ENV_PATH)];
+  const files = [
+    readEnvFile(env.MACONTROL_SECRETS_ENV || SECRETS_ENV_PATH),
+    readEnvFile(env.MACONTROL_RELAY_ENV || LEGACY_RELAY_ENV_PATH),
+    readEnvFile(env.MACONTROL_AGENT_ENV || LEGACY_AGENT_ENV_PATH),
+  ];
   const sources: [Exclude<SecretSource, null>, (name: string) => string | undefined][] = [
     ['env', (name) => env[name]],
     ['envify', (name) => envify[name]],
-    ['file', (name) => files[0].get(name) || files[1].get(name)],
+    ['file', (name) => files[0].get(name) || files[1].get(name) || files[2].get(name)],
   ];
   const values: AppSecretsRead['values'] = {};
   const keys: SecretKeyInfo[] = [];

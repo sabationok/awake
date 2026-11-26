@@ -4,6 +4,8 @@ import SwiftUI
 /// Підтвердження — confirmationDialog; форма з одним полем — інлайн у батька (`onInlineForm`), більше — аркуш.
 struct UiActionSetView: View {
     let items: [UiMenuItem]
+    /// Дії самої аппки без сервера (копіювати, відкрити посилання): стоять у тому самому меню перед серверними.
+    var local: [UiLocalAction] = []
     var onInlineForm: ((UiMenuItem) -> Void)?
     @EnvironmentObject private var model: AwakeModel
     @State private var confirming: UiMenuItem?
@@ -34,13 +36,18 @@ struct UiActionSetView: View {
 
     @ViewBuilder
     private var content: some View {
-        if items.count == 1, let item = items.first {
+        if items.isEmpty, local.count == 1, let only = local.first {
+            Button(only.label, action: only.run).buttonStyle(.bordered).controlSize(.small)
+        } else if items.count == 1, local.isEmpty, let item = items.first {
             styled(Button(item.label) { pick(item) }, variant: item.variant)
                 .controlSize(.small)
                 .disabled(item.disabled == true)
                 .help(item.hint ?? "")
-        } else if items.count > 1 {
+        } else if items.count + local.count > 1 {
             Menu {
+                ForEach(local) { action in
+                    Button(action: action.run) { Label(action.label, systemImage: action.symbol) }
+                }
                 ForEach(items) { item in
                     Button(role: item.variant == .danger ? .destructive : nil) { pick(item) } label: {
                         if let icon = item.icon {
@@ -90,4 +97,12 @@ struct UiActionSetView: View {
     private func send(_ action: UiAction) {
         model.sendUiEvent(.action(action))
     }
+}
+
+/// Дія самої аппки в меню «⋯»: без сервера, напр. скопіювати адресу.
+struct UiLocalAction: Identifiable {
+    let id: String
+    let label: String
+    let symbol: String
+    let run: () -> Void
 }

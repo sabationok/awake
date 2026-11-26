@@ -2,7 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { filter, merge, Subscription } from 'rxjs';
 import type { StatsPeriod, WebhookInfo } from '@awake/contracts';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
-import { asStatsPeriod, StatsService } from '../../../stats';
+import { StatsService } from '../../../stats';
 import { RelayStateService } from '../../../relay/state/relay-state.service';
 import type { RelayStatus } from '../../../relay/types/relay-status.types';
 import { isValidWebhookInput } from '../../helpers/is-valid-webhook-input';
@@ -39,7 +39,8 @@ export class WebhooksListener implements OnModuleInit, OnModuleDestroy {
     this._subscription.add(
       this._bridge.webhooks$.subscribe((request) => {
         if (request?.action === 'period') {
-          this._period = asStatsPeriod(String(request.period));
+          // Нативні картки вебхуків мають свій StatsPeriod (Година / Сьогодні / 7 / 30 днів), не вкладки сторінок.
+          this._period = (['hour', 'today', 'week', 'month'] as const).find((value) => value === request.period) ?? 'today';
           this._push();
           return;
         }

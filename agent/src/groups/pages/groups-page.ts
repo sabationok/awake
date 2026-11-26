@@ -1,4 +1,5 @@
-import type { GroupBotRights, UiButton, UiNode, UiPage, UiRow } from '@awake/contracts';
+import type { GroupBotRights, UiItem, UiNode, UiPage } from '@awake/contracts';
+import { menuItem } from '../../modules/helpers/menu-item';
 import type { ModuleContext } from '../../modules/types/mac-module';
 import { GROUP_CAPABILITY_LABEL } from '../constants/groups-capabilities';
 import { GROUPS_MODULE, GROUPS_PAGE } from '../constants/groups-module';
@@ -22,50 +23,47 @@ export function buildGroupsPage(ctx: ModuleContext, view: GroupsPageView): UiPag
   const offline = !group ? 'Публікацію не дозволено в жодну групу' : !online ? 'Бот вийшов із групи' : null;
   const topicsReason = offline ?? (topics ? null : capabilityReason(provider, 'topics'));
 
-  const buttons: UiButton[] = [
-    { id: 'groups-check-rights', label: 'Перевірити права', action: action('checkRights'), variant: 'plain', disabled: offline !== null },
-    { id: 'groups-ensure-topics', label: 'Створити топіки', action: action('ensureTopics'), variant: 'filled', disabled: topicsReason !== null },
-    { id: 'groups-release', label: 'Заборонити публікацію', action: action('release'), variant: 'plain', disabled: group === null },
-    {
-      id: 'groups-unbind',
-      label: 'Вийти з групи',
-      action: action('unbind'),
-      variant: 'destructive',
-      disabled: group === null,
-      confirm: 'Вийти з групи? Сповіщення підуть у приватний чат, повернути групу можна лише новим додаванням бота.',
-    },
-  ];
-
+  // Стан групи і її дії в одній картці; запити — окремі картки з дією на кожен.
   const binding: UiNode[] = [
     {
       id: 'groups-state',
-      type: 'status',
-      label: group ? group.title : 'Публікацію не дозволено в жодну групу',
-      hint: group ? (view.topicsBlocker ?? 'Сповіщення йдуть у топіки групи') : 'Сповіщення йдуть у приватний чат',
-      tone: !online ? 'gray' : view.topicsBlocker ? 'orange' : 'green',
+      type: 'item',
+      title: group ? group.title : 'Публікацію не дозволено в жодну групу',
+      status: {
+        label: group ? (view.topicsBlocker ?? 'Сповіщення йдуть у топіки групи') : 'Сповіщення йдуть у приватний чат',
+        tone: !online ? 'gray' : view.topicsBlocker ? 'orange' : 'green',
+      },
+      actions: [
+        menuItem('groups-check-rights', 'Перевірити права', action('checkRights'), { disabled: offline !== null }),
+        menuItem('groups-ensure-topics', 'Створити топіки', action('ensureTopics'), { variant: 'accent', disabled: topicsReason !== null }),
+        menuItem('groups-release', 'Заборонити публікацію', action('release'), { disabled: group === null }),
+        menuItem('groups-unbind', 'Вийти з групи', action('unbind'), {
+          variant: 'danger',
+          disabled: group === null,
+          confirm: {
+            title: 'Вийти з групи?',
+            text: 'Сповіщення підуть у приватний чат, повернути групу можна лише новим додаванням бота.',
+            ok: 'Вийти',
+          },
+        }),
+      ],
     },
-    ...view.pending.flatMap((item): UiNode[] => {
-      const params = { id: String(item.id) };
-      return [
-        { id: `groups-pending-${item.id}`, type: 'row', label: item.title, hint: `Запит · бот у групі нічого не робить · додав ${item.addedBy}`, dot: { tone: 'orange' } },
-        {
-          id: `groups-pending-${item.id}-buttons`,
-          type: 'buttons',
-          buttons: [
-            {
-              id: `groups-bind-${item.id}`,
-              // Група з дозволом одна: з попередньої він знімається, бот у ній лишається.
-              label: 'Дозволити публікацію',
-              action: action('bind', params),
-              variant: 'filled',
-            },
-            { id: `groups-leave-${item.id}`, label: 'Вийти з групи', action: action('leave', params), variant: 'plain' },
-          ],
-        },
-      ];
-    }),
-    { id: 'groups-buttons', type: 'buttons', buttons },
     ...(topicsReason !== null && offline === null ? [{ id: 'groups-buttons-reason', type: 'text', text: topicsReason, tone: 'gray' } satisfies UiNode] : []),
+    ...view.pending.map((item): UiNode => {
+      const params = { id: String(item.id) };
+      return {
+        id: `groups-pending-${item.id}`,
+        type: 'item',
+        title: item.title,
+        status: { label: 'Запит', tone: 'orange' },
+        comment: `бот у групі нічого не робить · додав ${item.addedBy}`,
+        actions: [
+          // Група з дозволом одна: з попередньої він знімається, бот у ній лишається.
+          menuItem(`groups-bind-${item.id}`, 'Дозволити публікацію', action('bind', params), { variant: 'accent' }),
+          menuItem(`groups-leave-${item.id}`, 'Вийти з групи', action('leave', params)),
+        ],
+      };
+    }),
   ];
 
   return {
@@ -126,15 +124,14 @@ export function buildGroupsPage(ctx: ModuleContext, view: GroupsPageView): UiPag
 }
 
 /** Рядок на кожне право: чи воно є і що дає. Без групи — сірі рядки без значення. */
-function rightsRows({ group, provider, supports }: GroupsPageView): UiRow[] {
+function rightsRows({ group, provider, supports }: GroupsPageView): UiItem[] {
   const rights: GroupBotRights | null = group?.botRights ?? null;
-  const row = (id: string, label: string, ok: boolean | null, hint: string, required: boolean): UiRow => ({
+  const row = (id: string, label: string, ok: boolean | null, hint: string, required: boolean): UiItem => ({
     id: `groups-right-${id}`,
-    type: 'row',
-    label,
-    value: ok === null ? '—' : ok ? '✓' : '✗',
-    hint,
-    dot: { tone: ok === null ? 'gray' : ok ? 'green' : required ? 'red' : 'gray' },
+    type: 'item',
+    title: label,
+    status: { label: ok === null ? '—' : ok ? '✓' : '✗', tone: ok === null ? 'gray' : ok ? 'green' : required ? 'red' : 'gray' },
+    comment: hint,
   });
   return [
     row('forum', 'Теми в групі', group ? group.topicsEnabledAt !== null : null, 'Окремий топік на кожне джерело сповіщень; без тем бот у групу не пише', true),

@@ -18,6 +18,7 @@ struct MainView: View {
             title: { title(of: $0) },
             symbol: { symbol(of: $0) },
             disabledReason: { disabledReason(of: $0) },
+            onReorder: model.uiTree == nil ? nil : { reorder($0) },
             footer: { UpdateBanner(status: updates) }
         ) { page in
             content(for: page)
@@ -68,6 +69,18 @@ struct MainView: View {
         return [SidebarSection(nodes: modules), SidebarSection(nodes: system + native)]
     }
 
+    /// Новий порядок модулів іде на сервер: він його зберігає і віддає дерево вже в цьому порядку (і вебу теж).
+    private func reorder(_ items: [MainPage]) {
+        let ids = items.compactMap { item -> String? in
+            switch item {
+            case .remote(let id): treePage(id)?.module
+            case .disabledModule(let id): id
+            default: nil
+            }
+        }
+        model.sendUiEvent(.action(UiAction(module: "bot", name: "reorderModules", params: ["ids": .string(ids.joined(separator: ","))])))
+    }
+
     /// Модуль, головною сторінкою якого є ця: тоді пункт і заголовок носять назву та іконку модуля.
     private func moduleOwning(_ id: String) -> UiModuleInfo? {
         guard let tree = model.uiTree, let page = treePage(id) else { return nil }
@@ -76,7 +89,7 @@ struct MainView: View {
     }
 
     /// Динамічні сторінки, у які аппка вшиває власну секцію (токени й ключі живуть лише на Mac).
-    private static let mixedPages: Set<String> = ["telegram", "relay", "permissions", "webui-login", "webui-networks", "webui-devices"]
+    private static let mixedPages: Set<String> = ["telegram", "relay", "permissions"]
 
     private func treePage(_ id: String) -> UiPage? {
         model.uiTree?.pages.first { $0.id == id }
@@ -129,15 +142,6 @@ struct MainView: View {
                         ForEach(uiPage.children) { UiNodeView(node: $0).originHighlight(.agent, scope: .section) }
                         if uiPage.id == "permissions" {
                             PermissionSection().originHighlight(.native, scope: .section)
-                        }
-                        if uiPage.id == "webui-login" {
-                            AppSecretsSection(passwordOnly: true).originHighlight(.native, scope: .section)
-                        }
-                        if uiPage.id == "webui-networks" {
-                            UpstashSection().originHighlight(.native, scope: .section)
-                        }
-                        if uiPage.id == "webui-devices" {
-                            DevicesSection().originHighlight(.native, scope: .section)
                         }
                     }
                     .formStyle(.grouped)

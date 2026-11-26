@@ -10,52 +10,48 @@ struct ServerSection: View {
 
     var body: some View {
         Section {
-            SettingsRow(title: "Стан", symbol: "server.rack", color: .indigo) {
-                Text(model.agentStatus.statusText).foregroundStyle(statusColor)
-            }
-            if let info = running {
-                SettingsRow(title: "Працює", symbol: "clock", color: .gray) {
+            ItemCard(title: "Сервер", symbol: "server.rack", color: .indigo,
+                     status: ItemCardStatus(label: model.agentStatus.statusText, color: statusColor, pulse: model.agentStatus.isRunning)) {
+                ItemCardActions(actions: actions)
+            } below: {
+                if let info = running {
                     TimelineView(.periodic(from: .now, by: 30)) { context in
-                        Text(Self.uptime(since: info.startedAt, now: context.date)).foregroundStyle(.secondary)
+                        Text("працює \(Self.uptime(since: info.startedAt, now: context.date)) · pid \(info.pid) · \(info.node) · stage \(info.stage)")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                SettingsRow(title: "Процес", symbol: "number", color: .gray, text: "pid \(info.pid)")
-                SettingsRow(title: "Node", symbol: "chevron.left.forwardslash.chevron.right", color: .gray, text: "\(info.node) · stage \(info.stage)")
             }
         } header: {
             Text("Стан")
         } footer: {
-            Text("Сервер — процес, який аппка запускає сама: API, Web UI і з'єднання. Що він робить (модулі, транспорти, журнал) — у «Агент».")
-        }
-
-        Section {
-            HStack {
-                if !model.agentEnabled {
-                    Button("Старт") { model.agentEnabled = true }
-                        .buttonStyle(.borderedProminent)
-                }
-                Spacer()
-                // TODO(observability): живий потік логів, подій і помилок сервера в аппці з фільтрами, а не відкриття файлу.
-                Button("Відкрити лог") { NSWorkspace.shared.open(AgentService.logURL) }
-            }
-        } header: {
-            Text("Керування")
-        } footer: {
-            Text("Observability — TODO: живі логи, події й помилки сервера в аппці. Поки що лог — просто файл. Зупинка й перезапуск — у «Небезпечній зоні» внизу.")
+            // TODO(observability): живий потік логів, подій і помилок сервера в аппці з фільтрами, а не відкриття файлу.
+            Text("Сервер — процес, який аппка запускає сама: API, Web UI і з'єднання. Що він робить (модулі, транспорти, журнал) — у «Агент». Лог поки що просто файл. Зупинка й перезапуск — у «Небезпечній зоні» внизу.")
         }
 
         if let info = running {
             Section("Порти") {
-                SettingsRow(title: "HTTPS", symbol: "lock.fill", color: .blue, text: "\(info.ports.https) · Web UI напряму")
-                SettingsRow(title: "HTTP", symbol: "network", color: .blue,
-                            text: model.currentNetworkTrusted ? "\(info.ports.http) · видно в довіреній Wi-Fi" : "\(info.ports.http) · лише на цьому Mac")
-                SettingsRow(title: "Tailscale", symbol: "point.3.connected.trianglepath.dotted", color: .blue, text: "\(info.ports.tailnet) · лише 127.0.0.1, для serve")
+                ItemCard(title: "HTTPS", symbol: "lock.fill", color: .blue, comment: "\(info.ports.https) · Web UI напряму")
+                ItemCard(title: "HTTP", symbol: "network", color: .blue,
+                         comment: model.currentNetworkTrusted ? "\(info.ports.http) · видно в довіреній Wi-Fi" : "\(info.ports.http) · лише на цьому Mac")
+                ItemCard(title: "Tailscale", symbol: "point.3.connected.trianglepath.dotted", color: .blue,
+                         comment: "\(info.ports.tailnet) · лише 127.0.0.1, для serve")
             }
         }
 
         if model.agentEnabled {
             ServerDangerZone()
         }
+    }
+
+    /// «Старт», лише коли сервер вимкнено, і «Відкрити лог»: одна дія — кнопка, дві — меню «⋯».
+    private var actions: [ItemCardActions.Action] {
+        var list: [ItemCardActions.Action] = []
+        if !model.agentEnabled {
+            list.append(.init(id: "start", label: "Старт", symbol: "play.fill", prominent: true) { model.agentEnabled = true })
+        }
+        list.append(.init(id: "log", label: "Відкрити лог", symbol: "doc.text") { NSWorkspace.shared.open(AgentService.logURL) })
+        return list
     }
 
     private var statusColor: Color {

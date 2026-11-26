@@ -1,4 +1,4 @@
-import type { MacState, UiPage, UiRow } from '@awake/contracts';
+import type { MacState, UiNode, UiPage } from '@awake/contracts';
 import { formatHhmm } from '../../../common/format-hhmm';
 import { KEEPERS_MODULE } from '../constants/keepers';
 import { keepersSummary } from '../helpers/keepers-summary';
@@ -25,10 +25,11 @@ export function buildKeepersPage(mac: MacState | null, keepers: Keeper[]): UiPag
         children: [
           {
             id: 'keepers-status',
-            type: 'status',
-            label: names.length > 0 ? 'Mac сам не засне' : 'Mac може заснути сам',
-            hint: names.length > 0 ? `Тримають: ${names.join(', ')}` : 'Зараз його ніхто не тримає',
-            tone: names.length > 0 ? 'green' : 'gray',
+            type: 'item',
+            title: 'Сон Mac',
+            icon: { symbol: 'moon.zzz', tone: 'indigo' },
+            status: names.length > 0 ? { label: 'Не засне сам', tone: 'green' } : { label: 'Може заснути', tone: 'gray' },
+            comment: names.length > 0 ? `Тримають: ${names.join(', ')}` : 'Зараз його ніхто не тримає',
           },
         ],
       },
@@ -57,25 +58,24 @@ export function buildKeepersPage(mac: MacState | null, keepers: Keeper[]): UiPag
   };
 }
 
-function sessionRows(mac: MacState | null): UiRow[] {
+/** Наші сесії: стан на статусі, пояснення в коментарі. */
+function sessionRows(mac: MacState | null): UiNode[] {
   const awake = mac?.active === true;
   const sleeper = mac?.sleepAt ?? null;
   return [
     {
       id: 'keepers-awake',
-      type: 'row',
-      label: 'Awake',
-      value: awake ? (mac?.until ? `до ${formatHhmm(mac.until)}` : 'йде') : 'немає',
-      hint: 'Тримає Mac без сну',
-      dot: { tone: awake ? 'green' : 'gray' },
+      type: 'item',
+      title: 'Awake',
+      status: { label: awake ? (mac?.until ? `до ${formatHhmm(mac.until)}` : 'йде') : 'немає', tone: awake ? 'green' : 'gray' },
+      comment: 'Тримає Mac без сну',
     },
     {
       id: 'keepers-sleeper',
-      type: 'row',
-      label: 'Sleeper',
-      value: sleeper ? `засне о ${formatHhmm(sleeper)}` : 'немає',
-      hint: 'Не тримає, а присипляє: спрацює попри всіх у цьому списку',
-      dot: { tone: sleeper ? 'indigo' : 'gray' },
+      type: 'item',
+      title: 'Sleeper',
+      status: { label: sleeper ? `засне о ${formatHhmm(sleeper)}` : 'немає', tone: sleeper ? 'indigo' : 'gray' },
+      comment: 'Не тримає, а присипляє: спрацює попри всіх у цьому списку',
     },
   ];
 }

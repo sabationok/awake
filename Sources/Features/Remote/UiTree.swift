@@ -134,12 +134,13 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
     case item(UiItem)
     case notice(UiNotice)
     case separator(id: String, word: String?)
+    case qr(id: String, value: String, expiresAt: Date?)
     case unknown(id: String)
 
     var id: String {
         switch self {
         case .toggle(let id, _, _, _, _, _, _), .select(let id, _, _, _, _, _, _, _),
-             .buttons(let id, _), .list(let id, _, _), .text(let id, _, _), .tabs(let id, _, _, _), .separator(let id, _),
+             .buttons(let id, _), .list(let id, _, _), .text(let id, _, _), .tabs(let id, _, _, _), .separator(let id, _), .qr(let id, _, _),
              .unknown(let id):
             id
         case .section(let section): section.id
@@ -153,7 +154,7 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
     }
 
     private enum Keys: String, CodingKey {
-        case type, id, title, footer, children, word, label, hint, icon, module, key, value, options, disabled, buttons, items, empty, text, tone, tabs, setting
+        case type, id, title, footer, children, word, expiresAt, label, hint, icon, module, key, value, options, disabled, buttons, items, empty, text, tone, tabs, setting
     }
 
     init(from decoder: Decoder) throws {
@@ -202,6 +203,9 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
             self = .notice(try UiNotice(from: decoder))
         case "separator":
             self = .separator(id: id, word: try c.decodeIfPresent(String.self, forKey: .word))
+        case "qr":
+            self = .qr(id: id, value: try c.decode(String.self, forKey: .value),
+                       expiresAt: try c.decodeIfPresent(Date.self, forKey: .expiresAt))
         default:
             self = .unknown(id: id)
         }

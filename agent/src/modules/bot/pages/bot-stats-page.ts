@@ -1,7 +1,8 @@
-import type { StatsPeriod, UiNode, UiPage } from '@awake/contracts';
+import type { UiPage } from '@awake/contracts';
 import type { BotNamespace } from '../../../bot';
 import type { BotCallsChartsService } from '../../../bot-journal';
-import { asStatsPeriod, STATS_PERIOD_KEY, statSeriesTones, statsPeriodWindow } from '../../../stats';
+import { statSeriesTones } from '../../../stats';
+import { buildStatsPage } from '../../helpers/build-stats-page';
 import type { AgentProxy } from '../../../transports';
 import type { ModuleContext } from '../../types/mac-module';
 import type { ModuleSource } from '../../types/module-source';
@@ -16,85 +17,59 @@ function proxyLabel(proxy: AgentProxy): string {
   return `${proxy.title} → ${BOT_SOURCE_LABEL[proxy.via]}`;
 }
 
-function proxyNodes(ctx: ModuleContext, charts: BotCallsChartsService, period: StatsPeriod, proxies: AgentProxy[]): UiNode[] {
-  if (proxies.length === 0) return [{ id: `${BOT_STATS_PAGE}-no-proxies`, type: 'text', text: 'Проксі немає' }];
-  const labels = Object.fromEntries(proxies.map((proxy) => [proxy.id, proxyLabel(proxy)]));
-  return [
-    ctx.liveChart({
-      id: `${BOT_STATS_PAGE}-proxies`,
-      title: 'Через проксі',
-      period,
-      tones: statSeriesTones(Object.values(labels)),
-      format: 'count',
-      points: (window) => charts.byProxy(window, labels),
-    }),
-  ];
-}
-
 /**
- * «Статистика»: усі виклики нашого бота з усіх транспортів графіками за вибраний період — разом і помилки,
- * за джерелом, через проксі і за модулем. Поточний бакет у Mac оновлюється live-тіками.
+ * «Статистика»: спільний лейаут статистики — усі виклики нашого бота з усіх транспортів: разом і помилки, за
+ * джерелом, через проксі і за модулем. Поточний бакет у Mac оновлюється live-тіками.
  */
 export function buildBotStatsPage(ctx: ModuleContext, charts: BotCallsChartsService, namespaces: BotNamespace[], proxies: AgentProxy[]): UiPage {
-  const period = asStatsPeriod(ctx.setting<string>(STATS_PERIOD_KEY));
   const sources = Object.fromEntries(SOURCES.map((source) => [source, BOT_SOURCE_LABEL[source]]));
-  const modules = charts.topModules(statsPeriodWindow(period), namespaces.map((ns) => ns.namespace), BOT_STATS_TOP_MODULES);
-  return {
+  const proxyLabels = Object.fromEntries(proxies.map((proxy) => [proxy.id, proxyLabel(proxy)]));
+  return buildStatsPage(ctx, {
     id: BOT_STATS_PAGE,
     module: 'bot',
     title: 'Статистика',
     icon: { symbol: 'chart.bar.fill', tone: 'accent' },
-    group: 'modules',
-    children: [
-      { id: 'period', type: 'section', children: [ctx.settingNode(STATS_PERIOD_KEY)] },
+    footer: 'Дії, екрани й налаштування з Mac, вебу (напряму й через проксі) і Telegram — усе, що йде через бота. Історія до stats-рушія є лише по днях.',
+    sections: [
       {
         id: 'totals',
-        type: 'section',
         title: 'Виклики',
-        footer: 'Дії, екрани й налаштування з Mac, вебу (напряму й через проксі) і Telegram — усе, що йде через бота. Історія до stats-рушія є лише по днях, тож вона видна в 7 і 30 днях.',
-        children: [
-          ctx.liveChart({ id: `${BOT_STATS_PAGE}-total`, title: 'Усього', period, tone: 'accent', format: 'count', points: (window) => charts.total(window) }),
-          ctx.liveChart({ id: `${BOT_STATS_PAGE}-errors`, title: 'Помилок', period, tone: 'red', format: 'count', points: (window) => charts.errors(window) }),
+        charts: [
+          { id: 'total', title: 'Усього', tone: 'accent', format: 'count', total: 'Викликів', points: (window) => charts.total(window) },
+          { id: 'errors', title: 'Помилок', tone: 'red', format: 'count', total: true, points: (window) => charts.errors(window) },
         ],
       },
       {
         id: 'by-source',
-        type: 'section',
         title: 'За джерелом',
-        children: [
-          ctx.liveChart({
-            id: `${BOT_STATS_PAGE}-sources`,
-            title: 'Джерела',
-            period,
-            tones: SOURCE_TONES,
-            format: 'count',
-            points: (window) => charts.bySource(window, sources),
-          }),
-        ],
+        charts: [{ id: 'sources', title: 'Джерела', tones: SOURCE_TONES, format: 'count', points: (window) => charts.bySource(window, sources) }],
       },
       {
         id: 'by-proxy',
-        type: 'section',
         title: 'Через проксі',
         footer: 'Частина викликів джерела, що прийшла через проксі, а не напряму.',
-        children: proxyNodes(ctx, charts, period, proxies),
+        empty: 'Проксі немає',
+        charts: proxies.length
+          ? [
+              {
+                id: 'proxies',
+                title: 'Через проксі',
+                tones: statSeriesTones(Object.values(proxyLabels)),
+                format: 'count',
+                points: (window) => charts.byProxy(window, proxyLabels),
+              },
+            ]
+          : [],
       },
       {
         id: 'by-module',
-        type: 'section',
         title: 'За модулями',
         footer: `Найактивніші ${BOT_STATS_TOP_MODULES} модулів за період.`,
-        children: [
-          ctx.liveChart({
-            id: `${BOT_STATS_PAGE}-modules`,
-            title: 'Модулі',
-            period,
-            tones: statSeriesTones(modules),
-            format: 'count',
-            points: (window) => charts.byModule(window, modules),
-          }),
-        ],
+        charts: (window) => {
+          const modules = charts.topModules(window, namespaces.map((ns) => ns.namespace), BOT_STATS_TOP_MODULES);
+          return [{ id: 'modules', title: 'Модулі', tones: statSeriesTones(modules), format: 'count', points: (w) => charts.byModule(w, modules) }];
+        },
       },
     ],
-  };
+  });
 }
