@@ -135,7 +135,7 @@ final class AgentService {
         }
         let script = directory.appendingPathComponent("agent.cjs")
         if let info = ServerInfoFile.read(), info.isAlive {
-            guard info.matches(script) else {
+            guard info.matches(script, helper: Self.helperURL) else {
                 // Працює інша збірка (стара аппка або нова версія з `pnpm agent:dev`): зупиняємо, наступний тік запустить потрібну.
                 kill(info.pid, SIGTERM)
                 closeConnection()
@@ -280,6 +280,9 @@ struct ServerInfoFile: Decodable {
     let pid: pid_t
     let script: String
     let scriptModifiedAt: Double?
+    /// Помічник, з яким сервер запущено: він частина сервера, тож інша його збірка теж потребує перезапуску.
+    let helper: String?
+    let helperModifiedAt: Double?
 
     static func read() -> ServerInfoFile? {
         guard let data = try? Data(contentsOf: AgentService.serverInfoURL) else { return nil }
@@ -288,12 +291,18 @@ struct ServerInfoFile: Decodable {
 
     var isAlive: Bool { kill(pid, 0) == 0 }
 
-    /// Сервер запущено саме з цього файла і файл відтоді не змінювався.
-    func matches(_ file: URL) -> Bool {
-        guard script == file.path,
+    /// Сервер запущено саме з цього файла і цим помічником, і жоден із них відтоді не змінювався.
+    func matches(_ file: URL, helper helperFile: URL?) -> Bool {
+        guard Self.same(file, path: script, modifiedAt: scriptModifiedAt) else { return false }
+        guard let helperFile else { return true }
+        return Self.same(helperFile, path: helper, modifiedAt: helperModifiedAt)
+    }
+
+    private static func same(_ file: URL, path: String?, modifiedAt: Double?) -> Bool {
+        guard path == file.path,
               let modified = (try? FileManager.default.attributesOfItem(atPath: file.path))?[.modificationDate] as? Date
         else { return false }
-        return abs(modified.timeIntervalSince1970 - (scriptModifiedAt ?? 0)) < 1
+        return abs(modified.timeIntervalSince1970 - (modifiedAt ?? 0)) < 1
     }
 }
 

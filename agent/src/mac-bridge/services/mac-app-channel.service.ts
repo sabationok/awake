@@ -94,7 +94,10 @@ export class MacAppChannelService implements OnApplicationShutdown {
   /** Паспорт запущеного сервера: за ним аппка бачить, що працює стара збірка, і перезапускає її. */
   private _writeInfo() {
     const script = process.argv[1] ?? '';
-    const info = { pid: process.pid, script, scriptModifiedAt: existsSync(script) ? statSync(script).mtimeMs / 1000 : null };
+    const helper = this._config.helperPath ?? '';
+    const modifiedAt = (path: string) => (path && existsSync(path) ? statSync(path).mtimeMs / 1000 : null);
+    // Помічник — частина сервера: нова його збірка теж означає перезапуск.
+    const info = { pid: process.pid, script, scriptModifiedAt: modifiedAt(script), helper, helperModifiedAt: modifiedAt(helper) };
     writeFileSync(this._config.serverInfoPath, JSON.stringify(info));
   }
 }
