@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { createInterface } from 'node:readline';
 import { randomUUID } from 'node:crypto';
 import { BehaviorSubject, Subject } from 'rxjs';
@@ -10,6 +10,8 @@ import type {
   UiEvent,
   UiTree,
   CommandRequest,
+  HelperAction,
+  HelperState,
   MacState,
   MacToAgentMessage,
   SessionSource,
@@ -23,6 +25,9 @@ import type {
   WebhookAction,
   WebhookInfo,
 } from '@awake/contracts';
+import { HELPER_ACTIONS } from '@awake/contracts';
+import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';
+import { MacHelperService } from '../../mac-helper/mac-helper.service';
 import { writeProtocolLine } from './protocol-stdout';
 
 type SessionMessage = Extract<MacToAgentMessage, { type: 'session' }>['data'];
@@ -34,8 +39,10 @@ type TrustedNetworksRequest = Extract<MacToAgentMessage, { type: 'trustedNetwork
 const STATE_STALE_MS = 30_000;
 
 /**
- * Канал з Mac-аппкою: читає JSON-рядки зі stdin, пише команди в stdout.
- * Інші модулі підписуються на потоки, а не на сам stdin.
+ * Канал з Mac: інші модулі підписуються на потоки і шлють команди сюди, а не в сам транспорт.
+ * Транспортів два. Старий: сервер — підпроцес Mac-аппки, JSON-рядки через stdin / stdout.
+ * Новий (`standalone`): сервер працює сам, стан і системні дії йдуть через помічник (MacHelperService),
+ * а stdin / stdout протоколом не є.
  */
 @Injectable()
 export class MacBridgeService implements OnModuleInit {
@@ -62,7 +69,21 @@ export class MacBridgeService implements OnModuleInit {
   readonly serverCharts$ = new Subject<{ period: StatsPeriod }>();
   private _stateAt = 0;
 
+  constructor(
+    @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
+    private readonly _helper: MacHelperService,
+  ) {}
+
   onModuleInit() {
+    if (this._config.standalone) {
+      this._helper.state$.subscribe((state) => {
+        if (!state) return;
+        this._stateAt = Date.now();
+        this.state$.next(toMacState(state));
+      });
+      this._helper.start();
+      return;
+    }
     const lines = createInterface({ input: process.stdin });
     lines.on('line', (line) => this._handleLine(line));
     // Mac-аппка закрилась: агенту більше нема кому служити. SIGTERM, а не process.exit: так спрацюють
@@ -83,7 +104,8 @@ export class MacBridgeService implements OnModuleInit {
 
   sendCommand(command: CommandRequest, source: SessionSource): string {
     const id = randomUUID();
-    this._send({ type: 'command', data: { ...command, id, source } });
+    if (this._config.standalone) this._runOnHelper(command);
+    else this._send({ type: 'command', data: { ...command, id, source } });
     return id;
   }
 
@@ -128,7 +150,26 @@ export class MacBridgeService implements OnModuleInit {
   }
 
   private _send(message: AgentToMacMessage) {
+    // Без аппки stdout нікому читати: дерево й знімки клієнти беруть через HTTP.
+    if (this._config.standalone) return;
     writeProtocolLine(message);
+  }
+
+  /** Системні дії виконує помічник. Сесії й налаштування аппки без аппки ще не працюють: пишемо це в журнал. */
+  private _runOnHelper(command: CommandRequest) {
+    if (!isHelperAction(command.action)) {
+      const text = `Без аппки дія «${command.action}» ще не працює: сесії й налаштування поки виконує аппка`;
+      this._logger.warn(text);
+      this.logs$.next({ at: new Date().toISOString(), text });
+      return;
+    }
+    const value = typeof command.value === 'string' ? undefined : command.value;
+    void this._helper.run(command.action, value).then((result) => {
+      if (result.ok) return;
+      const text = `Помічник не виконав «${command.action}»: ${result.error ?? 'невідома помилка'}`;
+      this._logger.warn(text);
+      this.logs$.next({ at: new Date().toISOString(), text });
+    });
   }
 
   private _handleLine(line: string) {
@@ -180,4 +221,22 @@ export class MacBridgeService implements OnModuleInit {
         return;
     }
   }
+}
+
+function isHelperAction(action: CommandRequest['action']): action is HelperAction {
+  return (HELPER_ACTIONS as readonly string[]).includes(action);
+}
+
+/** Системний стан від помічника плюс порожні поля сесій: без аппки сесій ще немає. */
+function toMacState(state: HelperState): MacState {
+  return {
+    ...state,
+    active: false,
+    until: null,
+    startedAt: null,
+    duration: null,
+    appVersion: 'без аппки',
+    sleepStartedAt: null,
+    sleepAt: null,
+  };
 }

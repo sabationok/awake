@@ -5,6 +5,7 @@ export * from './relay';
 export * from './webhooks';
 export * from './stats';
 export * from './groups';
+export * from './helper';
 
 export type PowerSource = 'AC' | 'BAT' | 'unknown';
 export type ThermalLevel = 'nominal' | 'fair' | 'serious' | 'critical';

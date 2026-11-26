@@ -8,6 +8,8 @@
     "agent:dev": "scripts/agent-dev.sh",
     "agent:dev:web": "scripts/agent-dev.sh web",
     "agent:dev:off": "scripts/agent-dev.sh off",
+    "helper:build": "scripts/build-helper.sh",
+    "server:dev": "scripts/server-dev.sh",
     "build:web:local": "pnpm --filter @awake/web build:local",
     "dev:web": "pnpm --filter @awake/web dev",
     "deploy:web": "scripts/deploy-web-dev.sh",

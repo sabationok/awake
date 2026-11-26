@@ -26,3 +26,17 @@ folder has `agent.cjs`, and restarts only the agent process when the file change
   rebuilds the Web UI; `pnpm agent:dev:off` removes the folder, the app goes back to the bundled agent.
 - Agent-only changes need no reinstall of the app. A reinstall is needed only for Swift changes.
 - A production build ignores the folder: `scripts/build-agent.sh` bundles the agent into the app as before.
+
+## Server alone, without the app (dev)
+
+Target architecture: the server (NestJS) is the main process, the helper on pure Swift (`Helper/`, binary
+`build/mc-helper`) is its subprocess and the only thing that talks to macOS, and the SwiftUI app, the Web UI and
+the Telegram bot are equal clients. Direction is one way: clients → server → helper → macOS.
+
+- `pnpm server:dev` builds the helper and the server and runs the server with `MACONTROL_STANDALONE=1`: it starts
+  the helper itself and takes the state and system actions (lock, display off, volume, mute, brightness) from it.
+  Keys come from `~/.config/awake/agent.env`. The app must be closed: same port, same bot.
+- The helper protocol is `contracts/src/helper.ts` (JSON lines over the helper's stdin / stdout). The helper
+  reuses the system services from `Sources/**`; the file list is in `scripts/build-helper.sh`.
+- Not moved yet: Awake / Sleeper sessions and app settings still run in the app, so in standalone mode those
+  actions only write a line to the journal. The installed app still starts the server as its child (old mode).

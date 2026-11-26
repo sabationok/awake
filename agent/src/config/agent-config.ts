@@ -51,6 +51,13 @@ export interface AgentConfig {
   dashboardOrigins: string[];
   /** Каталог локального CA і сертифікатів агента. */
   tlsDir: string;
+  /**
+   * Сервер працює сам, без Mac-аппки (`MACONTROL_STANDALONE=1`): stdin не є каналом з аппкою, а до macOS
+   * він ходить через помічник. Без прапорця — старий режим: підпроцес аппки.
+   */
+  standalone: boolean;
+  /** Бінарник помічника (`MACONTROL_HELPER`); потрібен лише в режимі standalone. */
+  helperPath: string | null;
 }
 
 export const AGENT_CONFIG = Symbol('AGENT_CONFIG');
@@ -77,5 +84,7 @@ export function readAgentConfig(env: NodeJS.ProcessEnv = process.env): AgentConf
     corsOrigin: env.MACONTROL_CORS_ORIGIN || null,
     dashboardOrigins: listedOrigins.length ? listedOrigins : DEFAULT_DASHBOARD_ORIGINS,
     tlsDir: env.MACONTROL_TLS_DIR || join(homedir(), '.config/awake/tls'),
+    standalone: env.MACONTROL_STANDALONE === '1',
+    helperPath: env.MACONTROL_HELPER || null,
   };
 }
