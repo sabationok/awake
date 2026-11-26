@@ -23,6 +23,8 @@ final class AwakeModel: ObservableObject {
     // MARK: Web UI (агент)
     /// Дерево UI від агента. nil, поки агента немає або він зупинений.
     @Published var uiTree: UiTree?
+    /// У цьому запуску сервер уже надіслав дерево: до того вікно показує кеш під заставкою.
+    @Published var treeIsFresh = false
     /// Сполучені пристрої і посилання сполучення. nil, поки агент їх не надіслав.
     @Published var devices: AgentDevices?
     /// Стан Envify і звідки агент узяв кожен ключ. nil, поки агент його не надіслав.

@@ -8,6 +8,8 @@ struct MainView: View {
     @State private var picked: MainPage?
     /// Остання вибрана сторінка між запусками.
     @AppStorage("mainView.page") private var savedPage = ""
+    /// Власник закрив заставку сам, бо сервер не запустився.
+    @State private var splashSkipped = false
 
     var body: some View {
         AdaptiveSidebar(
@@ -21,7 +23,20 @@ struct MainView: View {
             content(for: page)
         }
         .frame(minWidth: 460, idealWidth: 720, minHeight: 360, idealHeight: 520)
+        .overlay {
+            if showsSplash {
+                SplashView(status: model.agentStatus) { splashSkipped = true }
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeOut(duration: 0.25), value: showsSplash)
         .pairingPrompt()
+    }
+
+    /// Заставка лежить поверх вікна від запуску аппки до першого свіжого дерева від сервера.
+    /// Пізніші перепідключення (сервер перезапустився з новою збіркою) оновлюють вікно без неї.
+    private var showsSplash: Bool {
+        model.agentEnabled && !model.treeIsFresh && !splashSkipped
     }
 
     /// Вибір у цьому запуску, далі збережений з минулого (якщо така сторінка ще є), далі перша.

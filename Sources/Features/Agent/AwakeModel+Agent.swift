@@ -26,6 +26,7 @@ extension AwakeModel {
             PermissionGate.remember(tree.modules)
             // Те саме дерево не перемальовує вікно.
             if self?.uiTree != tree { self?.uiTree = tree }
+            if self?.treeIsFresh == false { self?.treeIsFresh = true }
         }
         agent.onSettings = { [weak self] in self?.applyAgentSettings($0) }
         agent.onDevices = { [weak self] devices in
