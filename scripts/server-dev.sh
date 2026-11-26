@@ -10,6 +10,9 @@ cd "$(dirname "$0")/.."
 ENV_FILE="$HOME/.config/awake/agent.env"
 [ -f "$ENV_FILE" ] || { echo "Немає $ENV_FILE: один раз запусти аппку, вона створить ключі."; exit 1; }
 set -a; . "$ENV_FILE"; set +a
+# Файл аппки досі пише старі назви ключів (AWAKE_*): сервер читає лише MACONTROL_*.
+export MACONTROL_AGENT_TOKEN="${MACONTROL_AGENT_TOKEN:-${AWAKE_AGENT_TOKEN:-}}"
+export MACONTROL_AGENT_PORT="${MACONTROL_AGENT_PORT:-${AWAKE_AGENT_PORT:-47800}}"
 PORT="${MACONTROL_AGENT_PORT:-47800}"
 if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   echo "Порт $PORT зайнятий: схоже, сервер уже запущений (аппкою чи іншим терміналом). Спершу закрий його."
