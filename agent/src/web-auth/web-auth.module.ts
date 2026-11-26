@@ -8,6 +8,6 @@ import { WebAuthController } from './web-auth.controller';
 @Module({
   controllers: [WebAuthController],
   providers: [WebSessionsRepository, WebSessionsService, DashboardPasswordService],
-  exports: [WebSessionsService],
+  exports: [WebSessionsService, DashboardPasswordService],
 })
 export class WebAuthModule {}

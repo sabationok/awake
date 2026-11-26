@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// «Ключі аппки» на сторінці «Підключення»: токен воркспейсу webhooxy, ключ JWT і пароль Web UI, спільні для всіх вебхуків.
+/// «Ключі аппки» на сторінці «Підключення»: токен воркспейсу webhooxy і ключ JWT, спільні для всіх вебхуків; пароль Web UI — та сама секція на сторінці «Web UI → Вхід».
 /// Значення ніколи не показуються: лише звідки агент їх узяв. Ключ з Envify чи process.env у файлі не потрібен.
 struct AppSecretsSection: View {
     @EnvironmentObject private var model: AwakeModel
@@ -8,13 +8,31 @@ struct AppSecretsSection: View {
     @State private var editing = false
     @State private var saveError: String?
 
+    /// true — лише пароль Web UI (сторінка «Web UI → Вхід»); false — решта ключів (сторінка «Підключення»).
+    var passwordOnly = false
+
     private typealias Key = AppSecretsStore.Key
 
     var body: some View {
+        if passwordOnly { password } else { keys }
+    }
+
+    private var password: some View {
+        Section {
+            row("Пароль Web UI", key: Key.dashboardPassword, prompt: "щонайменше 12 символів")
+            buttons
+        } header: {
+            Text("Змінити пароль (на цьому Mac)")
+        } footer: {
+            Text("Пароль зберігається лише на Mac і ніколи не показується.")
+        }
+        .animation(.default, value: editing)
+    }
+
+    private var keys: some View {
         Section {
             row("Токен воркспейсу", key: Key.workspaceToken, prompt: "privateKey воркспейсу")
             row("Ключ JWT", key: Key.jwtKey, prompt: "ключ HS256")
-            row("Пароль Web UI", key: Key.dashboardPassword, prompt: "щонайменше 12 символів")
             buttons
         } header: {
             Text("Ключі аппки")

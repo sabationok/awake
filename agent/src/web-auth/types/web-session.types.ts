@@ -12,3 +12,11 @@ export interface CreatedWebSession {
   token: string;
   session: ActiveWebSession;
 }
+
+/** Жива сесія в списку на сторінці «Вхід». */
+export interface ListedWebSession {
+  id: string;
+  deviceId: number;
+  lastActiveAt: string;
+  expiresAt: string;
+}

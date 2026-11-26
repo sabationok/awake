@@ -3,6 +3,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Subject } from 'rxjs';
 import type { DevicePairingMode } from '@awake/contracts';
 import type { CreateDeviceDto } from '../dto/create-device.dto';
+import { DEVICE_PUBLIC_FIELDS } from '../constants/device-public-fields';
 import { DevicesRepository } from '../repositories/devices.repository';
 import type { PairingEvent } from '../types/pairing-event.types';
 
@@ -140,6 +141,11 @@ export class PairingService {
     return request.status === 'approved' && request.token && request.deviceId !== undefined
       ? { status: 'approved', token: request.token, deviceId: request.deviceId, via: request.via }
       : { status: 'denied' };
+  }
+
+  /** Сполучені пристрої без хешу токена, найновіші перші. */
+  devices() {
+    return this._devices.findMany({}, { select: DEVICE_PUBLIC_FIELDS, order: { createdAt: 'DESC' } });
   }
 
   revoke(id: number): boolean {

@@ -4,7 +4,6 @@ enum MainPage: Hashable, Identifiable {
     /// Вимкнений модуль дерева: сірий пункт без сторінки, вибрати його не можна.
     case disabledModule(id: String)
     case connection
-    case devices
     case server
     /// «Сервер → Статистика»: навантаження й запити графіками, окремо від стану сервера.
     case serverStats
@@ -17,7 +16,6 @@ enum MainPage: Hashable, Identifiable {
         case .remote(let id): "remote:\(id)"
         case .disabledModule(let id): "module:\(id)"
         case .connection: "connection"
-        case .devices: "devices"
         case .server: "server"
         case .serverStats: "server.stats"
         }
@@ -28,7 +26,8 @@ enum MainPage: Hashable, Identifiable {
         // Рідної сторінки «Дозвіл» більше немає: її замінила серверна «Дозволи».
         case "permission": self = .remote(id: "permissions")
         case "connection": self = .connection
-        case "devices": self = .devices
+        // Рідної сторінки «Пристрої» більше немає: вона стала сторінкою модуля «Web UI».
+        case "devices": self = .remote(id: "webui-devices")
         case "server": self = .server
         case "server.stats": self = .serverStats
         default:

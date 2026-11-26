@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// «Сервер»: сам процес агента — стан, керування, порти і звідки він віддає Web UI. Навантаження й запити — у «Сервер → Статистика».
+/// «Сервер»: сам процес агента — стан, керування і порти. Звідки він віддає Web UI — на сторінці «Web UI». Навантаження й запити — у «Сервер → Статистика».
 /// Що він робить (модулі, транспорти, журнал) — окремо, у «Агент».
 struct ServerSection: View {
     @EnvironmentObject private var model: AwakeModel
@@ -51,21 +51,6 @@ struct ServerSection: View {
                             text: model.currentNetworkTrusted ? "\(info.ports.http) · видно в довіреній Wi-Fi" : "\(info.ports.http) · лише на цьому Mac")
                 SettingsRow(title: "Tailscale", symbol: "point.3.connected.trianglepath.dotted", color: .blue, text: "\(info.ports.tailnet) · лише 127.0.0.1, для serve")
             }
-
-            Section {
-                SettingsRow(title: "Звідки", symbol: "globe", color: .teal) {
-                    HStack(spacing: 8) {
-                        Text(Self.webSource(info.web)).foregroundStyle(.secondary)
-                        if let builtAt = info.web.builtAt {
-                            SourceTag(text: builtAt.formatted(date: .abbreviated, time: .shortened))
-                        }
-                    }
-                }
-            } header: {
-                Text("Web UI")
-            } footer: {
-                Text("Нову збірку Web UI публікує scripts/publish-web-local.sh: сервер віддає його одразу, без перевстановлення аппки. Без публікації — збірка з аппки.")
-            }
         }
 
         if model.agentEnabled {
@@ -76,14 +61,6 @@ struct ServerSection: View {
     private var statusColor: Color {
         if case .failed = model.agentStatus { return .red }
         return model.agentStatus.isRunning ? .green : .secondary
-    }
-
-    private static func webSource(_ web: AgentServerInfo.Web) -> String {
-        switch web.source {
-        case "published": "опублікований"
-        case "bundle": "з аппки"
-        default: "немає збірки"
-        }
     }
 
     private static func uptime(since start: Date, now: Date) -> String {

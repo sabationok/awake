@@ -48,12 +48,12 @@ struct MainView: View {
     }
 
     /// Бічне меню: головний пункт модуля — його назва (Awake), він відкриває першу сторінку модуля з керуванням;
-    /// решта сторінок вкладені під ним. Далі системні сторінки дерева і нативні «Підключення» та «Пристрої».
+    /// решта сторінок вкладені під ним. Далі системні сторінки дерева і нативні «Сервер» та «Підключення».
     /// Без дерева (агент не запущений) лишаються лише нативні.
     private var sections: [SidebarSection<MainPage>] {
         // Статистика сервера — окрема вкладена сторінка, як «Статистика» в модулів.
         let native = [SidebarNode(item: MainPage.server, children: [.serverStats])]
-            + [MainPage.connection, .devices].map { SidebarNode(item: $0) }
+            + [SidebarNode(item: MainPage.connection)]
         guard let tree = model.uiTree else { return [SidebarSection(nodes: native)] }
         let modules = tree.modules.compactMap { module -> SidebarNode<MainPage>? in
             // Вимкнений модуль: сірий пункт без дітей і без сторінки.
@@ -76,7 +76,7 @@ struct MainView: View {
     }
 
     /// Динамічні сторінки, у які аппка вшиває власну секцію (токени й ключі живуть лише на Mac).
-    private static let mixedPages: Set<String> = ["telegram", "relay", "permissions"]
+    private static let mixedPages: Set<String> = ["telegram", "relay", "permissions", "webui-login", "webui-networks", "webui-devices"]
 
     private func treePage(_ id: String) -> UiPage? {
         model.uiTree?.pages.first { $0.id == id }
@@ -96,7 +96,6 @@ struct MainView: View {
         case .remote(let id): moduleOwning(id)?.title ?? treePage(id)?.title ?? ""
         case .disabledModule(let id): treeModule(id)?.title ?? id
         case .connection: "Підключення"
-        case .devices: "Пристрої"
         case .server: "Сервер"
         case .serverStats: "Статистика"
         }
@@ -107,7 +106,6 @@ struct MainView: View {
         case .remote(let id): moduleOwning(id)?.icon.symbol ?? treePage(id)?.icon.symbol ?? "questionmark.circle"
         case .disabledModule(let id): treeModule(id)?.icon.symbol ?? "questionmark.circle"
         case .connection: "antenna.radiowaves.left.and.right"
-        case .devices: "laptopcomputer.and.iphone"
         case .server: "server.rack"
         case .serverStats: "chart.bar.xaxis"
         }
@@ -132,6 +130,15 @@ struct MainView: View {
                         if uiPage.id == "permissions" {
                             PermissionSection().originHighlight(.native, scope: .section)
                         }
+                        if uiPage.id == "webui-login" {
+                            AppSecretsSection(passwordOnly: true).originHighlight(.native, scope: .section)
+                        }
+                        if uiPage.id == "webui-networks" {
+                            UpstashSection().originHighlight(.native, scope: .section)
+                        }
+                        if uiPage.id == "webui-devices" {
+                            DevicesSection().originHighlight(.native, scope: .section)
+                        }
                     }
                     .formStyle(.grouped)
                 } else {
@@ -147,7 +154,6 @@ struct MainView: View {
             }
         case .connection:
             Form {
-                RemoteSection()
                 EnvifySection()
                 AppSecretsSection()
             }
@@ -171,12 +177,6 @@ struct MainView: View {
                 ContentUnavailableView("Агент не запущений", systemImage: "chart.bar.xaxis",
                                        description: Text(model.agentStatus.statusText))
             }
-        case .devices:
-            Form {
-                DevicesSection()
-            }
-            .formStyle(.grouped)
-            .originHighlight(.native, scope: .page)
         case .disabledModule:
             EmptyView()
         }

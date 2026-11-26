@@ -2,6 +2,8 @@ import { Global, Module } from '@nestjs/common';
 import { BotModule } from '../bot';
 import { GroupsMacModule } from '../groups/groups.mac-module';
 import { GroupsModule } from '../groups/groups.module';
+import { DevicesModule } from '../devices/devices.module';
+import { WebAuthModule } from '../web-auth/web-auth.module';
 import { LogsModule } from '../logs/logs.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { SleepTimersModule } from '../sleep-timers/sleep-timers.module';
@@ -30,6 +32,9 @@ import { SleepTimerEventsListener } from './sleep/listeners/sleep-timer-events.l
 import { PermissionsTreeListener } from '../mac-permissions/listeners/permissions-tree.listener';
 import { MacPermissionsModule } from '../mac-permissions/mac-permissions.module';
 import { PermissionsMacModule } from '../mac-permissions/permissions.mac-module';
+import { WebUiTreeListener } from '../web-ui/listeners/web-ui-tree.listener';
+import { WebUiMacModule } from '../web-ui/web-ui.mac-module';
+import { WebUiModule } from '../web-ui/web-ui.module';
 import { ModulesService } from './modules.service';
 import { LiveChartsService } from './live-charts.service';
 import { MacUiListener } from './mac-ui.listener';
@@ -38,7 +43,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
 
 @Global()
 @Module({
-  imports: [BotModule, SettingsModule, SessionsModule, SleepTimersModule, LogsModule, GroupsModule, MacPermissionsModule],
+  imports: [BotModule, SettingsModule, SessionsModule, SleepTimersModule, LogsModule, GroupsModule, MacPermissionsModule, WebUiModule, DevicesModule, WebAuthModule],
   controllers: [UiController],
   providers: [
     ModulesService,
@@ -51,6 +56,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
     KeepersMacModule,
     KeepersListener,
     PermissionsTreeListener,
+    WebUiTreeListener,
     MediaMacModule,
     MacStateMacModule,
     TelegramMacModule,
@@ -71,7 +77,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
       provide: MAC_MODULES,
       useFactory: (...modules: MacModule[]) => modules,
       // GroupsMacModule і бот /groups живуть у GroupsModule (імпорт вище): тут лише місце модуля в списку.
-      inject: [AwakeMacModule, SleepMacModule, KeepersMacModule, MediaMacModule, MacStateMacModule, TelegramMacModule, GroupsMacModule, BotMacModule, RelayMacModule, TailscaleMacModule, ProximityMacModule, PermissionsMacModule],
+      inject: [AwakeMacModule, SleepMacModule, KeepersMacModule, MediaMacModule, MacStateMacModule, TelegramMacModule, GroupsMacModule, BotMacModule, WebUiMacModule, RelayMacModule, TailscaleMacModule, ProximityMacModule, PermissionsMacModule],
     },
   ],
   exports: [ModulesService],

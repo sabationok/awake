@@ -16,6 +16,18 @@ Changesets keeps its version and `app/CHANGELOG.md`; the workspace packages `@aw
   `app/package.json`; the release notes are the CHANGELOG section).
 - `changeset init` and `changeset add` without flags are interactive and hang without a TTY: write the file by hand.
 
+## Mockup before UI code
+
+A new page, a new module with pages, or a rearrangement of existing pages (rows moving between pages, a page
+split or merged) starts with a mockup shown to the owner in the chat, before any code:
+
+- Draw the layout as it will look: the sidebar entry and every page with its sections and rows. Values may be
+  placeholders; say so.
+- Mark on it what moves from where, what is new, and what is visible but changeable only on the Mac.
+- Next to it list what stays outside and the points you are not sure about.
+- Code starts only after the owner approves the mockup. A change to one row or one label on an existing page
+  needs none.
+
 ## Who owns what
 
 One direction: clients → server → helper → macOS. Answers and events come back.
