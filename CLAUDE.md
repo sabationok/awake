@@ -38,5 +38,8 @@ the Telegram bot are equal clients. Direction is one way: clients → server →
   Keys come from `~/.config/awake/agent.env`. The app must be closed: same port, same bot.
 - The helper protocol is `contracts/src/helper.ts` (JSON lines over the helper's stdin / stdout). The helper
   reuses the system services from `Sources/**`; the file list is in `scripts/build-helper.sh`.
-- Not moved yet: Awake / Sleeper sessions and app settings still run in the app, so in standalone mode those
-  actions only write a line to the journal. The installed app still starts the server as its child (old mode).
+- In standalone mode the server owns the Awake and Sleeper sessions (`agent/src/mac-sessions`): timers, the
+  one-session rule, battery / thermal / lid reactions, history and Telegram. The helper only runs primitives
+  (`sleepDisabled`, `sleepNow`, lock, display off). The bash script `Resources/awake` is not used there.
+- Not moved yet: Wi-Fi name (needs the location permission for the helper), Bluetooth «Поруч», the helper as a
+  launchd service. The installed app still starts the server as its child and runs sessions itself (old mode).

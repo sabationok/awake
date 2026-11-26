@@ -44,6 +44,7 @@ func sendState() {
         "volume": orNull(SoundService.volume()),
         "muted": SoundService.isMuted() ?? false,
         "brightness": orNull(BrightnessService.brightness()),
+        "idleSeconds": Int(DisplayService.idleSeconds()),
     ])
 }
 
@@ -99,6 +100,14 @@ func perform(_ request: Request.Body) -> String? {
     case "brightness":
         guard let percent = request.value?.percent else { return "brightness needs 0…100" }
         return BrightnessService.setBrightness(percent) ? nil : "no built-in display"
+    case "sleepDisabled":
+        guard let disabled = request.value?.flag else { return "sleepDisabled needs true or false" }
+        // -n: без правила sudoers (scripts/install.sh) sudo не питає пароль, а одразу відмовляє.
+        let result = Shell.run("/usr/bin/sudo", ["-n", "/usr/bin/pmset", "-a", "disablesleep", disabled ? "1" : "0"])
+        return result.succeeded ? nil : "no sudoers rule for pmset disablesleep"
+    case "sleepNow":
+        _ = Shell.run("/usr/bin/pmset", ["sleepnow"])
+        return nil
     default:
         return "unknown action \(request.action)"
     }

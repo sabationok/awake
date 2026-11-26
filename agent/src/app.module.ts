@@ -15,6 +15,7 @@ import { TrustedNetworksModule } from './trusted-networks';
 import { ProximityModule } from './proximity';
 import { LogsModule } from './logs/logs.module';
 import { MacBridgeModule } from './mac-bridge/mac-bridge.module';
+import { MacSessionsModule } from './mac-sessions/mac-sessions.module';
 import { ModulesModule } from './modules/modules.module';
 import { PresenceModule } from './presence/presence.module';
 import { RelayModule } from './relay/relay.module';
@@ -60,6 +61,7 @@ import { GroupsModule } from './groups';
     // Після ModulesModule: порядок реєстрації модулів — порядок команд бота, /groups іде після команд модулів Mac.
     GroupsModule,
     SessionEndingModule,
+    MacSessionsModule,
     AppUpdateModule,
   ],
   providers: [

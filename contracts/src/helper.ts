@@ -19,17 +19,28 @@ export interface HelperState {
   muted: boolean;
   /** Яскравість вбудованого дисплея 0…100; null — його немає. */
   brightness: number | null;
+  /** Секунди від останнього руху миші чи натискання клавіші. */
+  idleSeconds: number;
 }
 
 /** Примітиви, які помічник уміє виконати. */
-export type HelperAction = 'lock' | 'displayOff' | 'volume' | 'mute' | 'brightness';
+export type HelperAction =
+  | 'lock'
+  | 'displayOff'
+  | 'volume'
+  | 'mute'
+  | 'brightness'
+  /** `pmset -a disablesleep` через sudo (правило sudoers з install.sh): true — Mac не засинає навіть із закритою кришкою. */
+  | 'sleepDisabled'
+  /** Присипити Mac зараз. Не діє, поки сон вимкнено. */
+  | 'sleepNow';
 
-export const HELPER_ACTIONS: readonly HelperAction[] = ['lock', 'displayOff', 'volume', 'mute', 'brightness'];
+export const HELPER_ACTIONS: readonly HelperAction[] = ['lock', 'displayOff', 'volume', 'mute', 'brightness', 'sleepDisabled', 'sleepNow'];
 
 export interface HelperRequest {
   id: string;
   action: HelperAction;
-  /** volume / brightness — 0…100, mute — boolean. */
+  /** volume / brightness — 0…100, mute / sleepDisabled — boolean. */
   value?: number | boolean;
 }
 

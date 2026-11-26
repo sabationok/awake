@@ -33,6 +33,18 @@ import { writeProtocolLine } from './protocol-stdout';
 type SessionMessage = Extract<MacToAgentMessage, { type: 'session' }>['data'];
 type LogMessage = Extract<MacToAgentMessage, { type: 'log' }>['data'];
 type DevicesRequest = Extract<MacToAgentMessage, { type: 'devices' }>['data'];
+/** Поля сесій у стані Mac. */
+export type MacSessionFields = Pick<MacState, 'active' | 'until' | 'startedAt' | 'duration' | 'sleepStartedAt' | 'sleepAt'>;
+
+export interface ServerCommand {
+  command: CommandRequest;
+  source: SessionSource;
+}
+
+const NO_SESSIONS: MacSessionFields = { active: false, until: null, startedAt: null, duration: null, sleepStartedAt: null, sleepAt: null };
+/** Версії аппки без аппки немає. */
+const STANDALONE_APP_VERSION = 'без аппки';
+
 type TrustedNetworksRequest = Extract<MacToAgentMessage, { type: 'trustedNetworks' }>['data'];
 
 /** Mac вважається офлайн, якщо стан не приходив довше за цей час. */
@@ -68,6 +80,13 @@ export class MacBridgeService implements OnModuleInit {
   /** Сторінка «Сервер» відкрилась або змінився період графіків. */
   readonly serverCharts$ = new Subject<{ period: StatsPeriod }>();
   private _stateAt = 0;
+  /**
+   * Лише standalone: дії, які не є примітивом помічника (сесії, налаштування). Їх виконує MacSessionsService.
+   * Зі старим транспортом вони йдуть в аппку.
+   */
+  readonly serverCommands$ = new Subject<ServerCommand>();
+  private _helperState: HelperState | null = null;
+  private _sessionFields: MacSessionFields = NO_SESSIONS;
 
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
@@ -77,9 +96,10 @@ export class MacBridgeService implements OnModuleInit {
   onModuleInit() {
     if (this._config.standalone) {
       this._helper.state$.subscribe((state) => {
+        this._helperState = state;
         if (!state) return;
         this._stateAt = Date.now();
-        this.state$.next(toMacState(state));
+        this.state$.next({ ...state, ...this._sessionFields, appVersion: STANDALONE_APP_VERSION });
       });
       this._helper.start();
       return;
@@ -104,7 +124,7 @@ export class MacBridgeService implements OnModuleInit {
 
   sendCommand(command: CommandRequest, source: SessionSource): string {
     const id = randomUUID();
-    if (this._config.standalone) this._runOnHelper(command);
+    if (this._config.standalone) this._runOnHelper(command, source);
     else this._send({ type: 'command', data: { ...command, id, source } });
     return id;
   }
@@ -155,12 +175,16 @@ export class MacBridgeService implements OnModuleInit {
     writeProtocolLine(message);
   }
 
-  /** Системні дії виконує помічник. Сесії й налаштування аппки без аппки ще не працюють: пишемо це в журнал. */
-  private _runOnHelper(command: CommandRequest) {
+  /** Лише standalone: сесії веде сервер і кладе їх поля в стан Mac. Стан одразу йде підписникам. */
+  setSessionFields(fields: MacSessionFields) {
+    this._sessionFields = fields;
+    if (this._helperState) this.state$.next({ ...this._helperState, ...fields, appVersion: STANDALONE_APP_VERSION });
+  }
+
+  /** Примітиви виконує помічник, решту (сесії, налаштування) — сервер. */
+  private _runOnHelper(command: CommandRequest, source: SessionSource) {
     if (!isHelperAction(command.action)) {
-      const text = `Без аппки дія «${command.action}» ще не працює: сесії й налаштування поки виконує аппка`;
-      this._logger.warn(text);
-      this.logs$.next({ at: new Date().toISOString(), text });
+      this.serverCommands$.next({ command, source });
       return;
     }
     const value = typeof command.value === 'string' ? undefined : command.value;
@@ -223,20 +247,7 @@ export class MacBridgeService implements OnModuleInit {
   }
 }
 
-function isHelperAction(action: CommandRequest['action']): action is HelperAction {
+/** Дії клієнтів, які є примітивом помічника; решту (сесії, налаштування) виконує сервер. */
+function isHelperAction(action: CommandRequest['action']): action is CommandRequest['action'] & HelperAction {
   return (HELPER_ACTIONS as readonly string[]).includes(action);
-}
-
-/** Системний стан від помічника плюс порожні поля сесій: без аппки сесій ще немає. */
-function toMacState(state: HelperState): MacState {
-  return {
-    ...state,
-    active: false,
-    until: null,
-    startedAt: null,
-    duration: null,
-    appVersion: 'без аппки',
-    sleepStartedAt: null,
-    sleepAt: null,
-  };
 }
