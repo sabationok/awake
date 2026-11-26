@@ -1,12 +1,8 @@
 import AppKit
 import Foundation
 
-/// Агент і Web UI: запуск підпроцесу, стан кожні 5 секунд, журнал і події сесій, команди з Web UI.
+/// Сервер: аппка підключається до нього як клієнт, отримує знімки (дерево, стан, пристрої…) і шле натискання.
 extension AwakeModel {
-    /// Telegram-події за ключами налаштувань `telegram.events.<domain>.<type>`.
-    private static let telegramEventKeys: [String: TelegramEvent] =
-        Dictionary(uniqueKeysWithValues: TelegramEvent.allCases.map { ("telegram.events.\($0.rawValue)", $0) })
-
     func setUpAgent() {
         // Спершу кеш з диска: вікно одразу має всі сторінки, а агент оновить їх, коли підніметься.
         if agentEnabled {
@@ -23,7 +19,9 @@ extension AwakeModel {
                 AgentCache.clear()
             }
         }
-        agent.onCommand = { [weak self] in self?.handleAgentCommand($0) }
+        agent.onState = { [weak self] in self?.applyServerState($0) }
+        // Назву Wi-Fi знає лише аппка (дозвіл геолокації): сервер отримує її одразу після підключення.
+        agent.onConnected = { [weak self] in self?.sendWifi() }
         agent.onTree = { [weak self] tree in
             PermissionGate.remember(tree.modules)
             // Те саме дерево не перемальовує вікно.
@@ -59,7 +57,6 @@ extension AwakeModel {
     func applyAgent() {
         if agentEnabled {
             agent.start(settings: agentSettings)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in self?.pushAgentState() }
         } else {
             agent.stop()
         }
@@ -99,8 +96,14 @@ extension AwakeModel {
         let ssid = wifi.currentSSID()
         guard ssid != currentSSID else { return }
         currentSSID = ssid
-        // Агент вирішує, чи мережа довірена, лише за назвою з цього стану.
-        pushAgentState()
+        // Сервер вирішує, чи мережа довірена, лише за цією назвою.
+        sendWifi()
+    }
+
+    /// Тимчасово: помічник сервера ще не має дозволу геолокації, тож назву Wi-Fi серверу дає аппка.
+    func sendWifi() {
+        struct Wifi: Encodable { let ssid: String? }
+        agent.send(type: "wifi", data: Wifi(ssid: currentSSID))
     }
 
     var currentNetworkTrusted: Bool {
@@ -129,161 +132,32 @@ extension AwakeModel {
         append("Довірені мережі перенесено в базу агента: \(legacy.count)")
     }
 
-    // MARK: стан → агент
+    // MARK: стан від сервера
 
-    func pushAgentState() {
-        guard agentEnabled else { return }
-        currentSSID = wifi.currentSSID()
-        let state = AgentMacState(
-            host: Host.current().localizedName ?? "Mac",
-            active: isRunning,
-            until: endDate,
-            startedAt: startDate,
-            duration: sessionDuration,
-            battery: power.percent,
-            power: power.percent == nil ? "unknown" : (power.onAC ? "AC" : "BAT"),
-            thermal: Self.thermalName(thermal),
-            lidClosed: ClamshellService.isClosed(),
-            sleepBlocked: sleepBlocked,
-            ssid: currentSSID,
-            appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?",
-            sleepStartedAt: sleepTimer?.startedAt,
-            sleepAt: sleepTimer?.sleepAt,
-            volume: SoundService.volume(),
-            muted: SoundService.isMuted() ?? false,
-            brightness: BrightnessService.brightness()
-        )
-        agent.send(type: "state", data: state)
+    /// Сесії веде сервер: аппка лише показує їх у меню-барі.
+    func applyServerState(_ state: ServerMacState) {
+        if serverState != state { serverState = state }
     }
 
-    /// Кожен рядок журналу йде в SQLite агента; рядки start/restart/stop ще й як подія сесії.
+    /// Рядок журналу аппки (збережено ключі, видано дозвіл) іде в журнал сервера.
     func forwardToAgent(_ entry: LogEntry) {
         guard agentEnabled else { return }
         agent.send(type: "log", data: AgentProtocol.LogLine(at: entry.date, text: entry.text))
-        guard let event = SessionHistory.field("event", in: entry.text), ["start", "restart", "stop"].contains(event) else { return }
-        agent.send(type: "session", data: AgentProtocol.SessionEvent(
-            event: event,
-            at: entry.date,
-            source: sessionSource.rawValue,
-            duration: SessionHistory.field("duration", in: entry.text),
-            battery: SessionHistory.field("battery", in: entry.text).flatMap(Int.init),
-            reason: SessionHistory.field("reason", in: entry.text)
-        ))
-        // Наступна дія без явного джерела — з Mac.
-        if event == "stop" { sessionSource = .mac }
     }
 
-    // MARK: налаштування від агента
+    // MARK: налаштування від сервера
 
-    /// Знімок від агента при його старті: застосовуємо тихо, без журналу.
-    /// `awake.restoreSleep` — разова дія з команди, тож у знімку її немає.
+    /// Знімок налаштувань: аппці потрібні лише ключі «Поруч», бо Bluetooth поки сканує вона.
     func applyAgentSettings(_ settings: [String: UiScalar]) {
-        for (key, value) in settings where key != "awake.restoreSleep" {
-            applyAgentSetting(key: key, value: value)
+        for (key, value) in settings where key.hasPrefix("proximity.") {
+            _ = applyProximitySetting(key: key, value: value)
         }
     }
 
-    /// Одне налаштування: зі знімка або з команди. false для невідомого ключа, поганого значення або збою запису.
-    @discardableResult
-    func applyAgentSetting(key: String, value: UiScalar) -> Bool {
-        if key.hasPrefix("proximity.") { return applyProximitySetting(key: key, value: value) }
-        if let event = Self.telegramEventKeys[key] {
-            guard let enabled = value.boolValue else { return false }
-            return setTelegramEvent(event, enabled: enabled)
-        }
-        switch key {
-        case "awake.duration":
-            guard let chosen = value.stringValue.flatMap(SessionPreset.find) else { return false }
-            preset = chosen
-        case "awake.displayOff":
-            guard let raw = Self.number(value),
-                  let option = DisplayOffOption.all.first(where: { $0.id == Int(raw) }) else { return false }
-            displayOff = option
-        case "awake.lockOnLidClose":
-            guard let flag = value.boolValue else { return false }
-            lockOnLidClose = flag
-        case "awake.batteryStop":
-            guard let percent = Self.percent(value) else { return false }
-            SafetyLimits.batteryStop = percent
-        case "system.batteryWarn", "mac.batteryWarn", "awake.batteryWarn":
-            guard let percent = Self.percent(value) else { return false }
-            SafetyLimits.batteryWarn = percent
-        case "awake.restoreSleep":
-            forceRestore()
-        default:
-            return false
-        }
-        return true
-    }
+    // MARK: дії меню-бара
 
-    private static func number(_ value: UiScalar) -> Double? {
-        if case .number(let number) = value { return number }
-        return nil
-    }
-
-    /// Відсоток батареї, 0…100.
-    private static func percent(_ value: UiScalar) -> Int? {
-        guard let raw = number(value), (0.0...100.0).contains(raw) else { return nil }
-        return Int(raw)
-    }
-
-    // MARK: команди з Web UI
-
-    private func handleAgentCommand(_ command: AgentCommand) {
-        if command.action != .setting {
-            let argument = command.duration ?? command.value.map(Self.settingText)
-            append("Web UI: \(command.action.rawValue)\(argument.map { " \($0)" } ?? "")")
-        }
-        let source = command.source ?? .web
-        switch command.action {
-        case .start:
-            let chosen = command.duration.flatMap(SessionPreset.find) ?? preset
-            restart(chosen, source: source)
-        case .stop:
-            if isRunning { stop(source: source) }
-        case .lock:
-            LockService.lockAndSleepDisplay()
-        case .displayOff:
-            turnDisplayOff()
-        case .sleepTimer:
-            guard let minutes = command.value.flatMap(Self.number) else { return }
-            startSleepTimer(minutes: Int(minutes), source: source)
-        case .volume:
-            guard let percent = command.value.flatMap(Self.percent) else { return }
-            SoundService.setVolume(percent)
-            pushAgentState()
-        case .mute:
-            guard let muted = command.value?.boolValue else { return }
-            SoundService.setMuted(muted)
-            pushAgentState()
-        case .brightness:
-            guard let percent = command.value.flatMap(Self.percent) else { return }
-            BrightnessService.setBrightness(percent)
-            pushAgentState()
-        case .setting:
-            guard let key = command.key, let value = command.value else { return }
-            // Журналюємо лише зміну, яку застосували.
-            if applyAgentSetting(key: key, value: value) {
-                append("Налаштування \(key) = \(Self.settingText(value))")
-            }
-        }
-    }
-
-    private static func settingText(_ value: UiScalar) -> String {
-        switch value {
-        case .string(let text): text
-        case .number(let number): number.rounded() == number ? String(Int(number)) : String(number)
-        case .bool(let flag): String(flag)
-        }
-    }
-
-    private static func thermalName(_ state: ProcessInfo.ThermalState) -> String {
-        switch state {
-        case .nominal: "nominal"
-        case .fair: "fair"
-        case .serious: "serious"
-        case .critical: "critical"
-        @unknown default: "nominal"
-        }
+    /// Ті самі дії, що й кнопки на сторінках: виконує їх сервер.
+    func sendAction(_ module: String, _ name: String, _ params: [String: UiScalar]? = nil) {
+        sendUiEvent(.action(UiAction(module: module, name: name, params: params)))
     }
 }

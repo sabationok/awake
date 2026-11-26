@@ -16,22 +16,36 @@ Changesets keeps its version and `app/CHANGELOG.md`; the workspace packages `@aw
   `app/package.json`; the release notes are the CHANGELOG section).
 - `changeset init` and `changeset add` without flags are interactive and hang without a TTY: write the file by hand.
 
-## Server (agent) separately from the app in dev
+## Who owns what
 
-The agent is a child process of the Mac app (state in stdin, commands from stdout), so it is never started by hand.
-In a dev or preview build the app takes it from `~/Library/Application Support/MaControl/agent-dev/` when that
-folder has `agent.cjs`, and restarts only the agent process when the file changes (checked every 2 s).
+One direction: clients → server → helper → macOS. Answers and events come back.
 
-- `pnpm agent:dev` builds the agent and puts it there (Web UI only the first time); `pnpm agent:dev:web` also
-  rebuilds the Web UI; `pnpm agent:dev:off` removes the folder, the app goes back to the bundled agent.
-- Agent-only changes need no reinstall of the app. A reinstall is needed only for Swift changes.
-- A production build ignores the folder: `scripts/build-agent.sh` bundles the agent into the app as before.
+- **Server** (NestJS, `agent/`): the main process. Owns logic, sessions (Awake, Sleeper), data (SQLite), the
+  Telegram bot, notifications, settings. Works alone; keeps running when the app is closed.
+- **Helper** (pure Swift, `Helper/`, binary `mc-helper`): the server's subprocess and the only thing that calls
+  macOS. Runs primitives (sleep on / off, sleep now, lock, display off, volume, mute, brightness) and reports the
+  system state. Decides nothing. Protocol: `contracts/src/helper.ts`.
+- **Clients**: the SwiftUI app (`Sources/`), the Web UI (`web/`), the Telegram bot. They render what the server
+  gives and send clicks; no session logic, no system calls. The app is also the double-click entry point: it starts
+  the server when none is running, or when a different build is running, and then connects to it over the local
+  socket `~/Library/Application Support/MaControl/server.sock` (same JSON lines as the old stdin / stdout link).
+- Temporary exceptions, to be moved into the helper: the app still reads the Wi-Fi name and scans Bluetooth
+  (macOS gives those permissions to the app bundle) and sends them to the server; the app still installs the
+  sudoers rules («Дозволи»); the server reads `pmset -g assertions` itself for Keepers.
+- The old link (server as a child of the app, `MACONTROL_STANDALONE` unset) is kept only for the e2e harness.
+
+## Server separately from the app in dev
+
+The app looks for the server in `~/Library/Application Support/MaControl/agent-dev/` first (dev / preview builds
+only) and restarts the server when `agent.cjs` there changes; it compares the file with `server.json`, which the
+running server writes.
+
+- `pnpm agent:dev` builds the server and puts it there (Web UI only the first time); `pnpm agent:dev:web` also
+  rebuilds the Web UI; `pnpm agent:dev:off` removes the folder, the app goes back to the bundled server.
+- Server-only changes need no reinstall of the app. A reinstall is needed only for Swift changes (app or helper).
+- A production build ignores the folder: `scripts/build-agent.sh` bundles the server into the app as before.
 
 ## Server alone, without the app (dev)
-
-Target architecture: the server (NestJS) is the main process, the helper on pure Swift (`Helper/`, binary
-`build/mc-helper`) is its subprocess and the only thing that talks to macOS, and the SwiftUI app, the Web UI and
-the Telegram bot are equal clients. Direction is one way: clients → server → helper → macOS.
 
 - `pnpm server:dev` builds the helper and the server and runs the server with `MACONTROL_STANDALONE=1`: it starts
   the helper itself and takes the state and system actions (lock, display off, volume, mute, brightness) from it.
@@ -41,5 +55,4 @@ the Telegram bot are equal clients. Direction is one way: clients → server →
 - In standalone mode the server owns the Awake and Sleeper sessions (`agent/src/mac-sessions`): timers, the
   one-session rule, battery / thermal / lid reactions, history and Telegram. The helper only runs primitives
   (`sleepDisabled`, `sleepNow`, lock, display off). The bash script `Resources/awake` is not used there.
-- Not moved yet: Wi-Fi name (needs the location permission for the helper), Bluetooth «Поруч», the helper as a
-  launchd service. The installed app still starts the server as its child and runs sessions itself (old mode).
+- Without the app there is no Wi-Fi name and no Bluetooth «Поруч» (see the temporary exceptions above).

@@ -10,7 +10,8 @@ struct MenuBarContent: View {
         Divider()
         sessionActions
         Divider()
-        Button("Погасити екран") { model.turnDisplayOff() }
+        Button("Погасити екран") { model.sendAction("awake", "displayOff") }
+            .disabled(!model.serverOnline)
         Button("Відкрити вікно…") {
             DockVisibility.show()
             openWindow(id: WindowID.main)
@@ -25,7 +26,9 @@ struct MenuBarContent: View {
     }
 
     @ViewBuilder private var status: some View {
-        if let remaining = model.remaining {
+        if !model.serverOnline {
+            Text("Сервер недоступний")
+        } else if let remaining = model.remaining {
             Text("Не сплю ще \(remaining)")
         } else {
             Text(model.sleepBlocked ? "Сон заблоковано" : "Сон працює нормально")
@@ -36,14 +39,14 @@ struct MenuBarContent: View {
 
     @ViewBuilder private var sessionActions: some View {
         if model.isRunning {
-            Button("Зупинити") { model.stop() }
+            Button("Зупинити") { model.sendAction("awake", "stop") }
         } else {
             ForEach(SessionPreset.all) { preset in
-                Button("Не спати \(preset.title)") { model.start(preset) }
+                Button("Не спати \(preset.title)") { model.sendAction("awake", "start", ["duration": .string(preset.id)]) }
             }
-            .disabled(!model.isGranted(.sleepControl))
+            .disabled(!model.serverOnline || !model.isGranted(.sleepControl))
             if model.sleepBlocked {
-                Button("Повернути сон") { model.forceRestore() }
+                Button("Повернути сон") { model.sendAction("awake", "restoreSleep") }
             }
         }
     }

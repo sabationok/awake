@@ -1,38 +1,15 @@
 import Foundation
 
-/// Знімок стану для агента. Поля збігаються з `MacState` у contracts/src/index.ts.
-struct AgentMacState: Encodable, Equatable {
-    var host: String
+/// Стан Mac і сесій від сервера. Поля — з `MacState` у contracts/src/index.ts; аппка бере лише те, що показує.
+struct ServerMacState: Decodable, Equatable {
     var active: Bool
     var until: Date?
     var startedAt: Date?
-    var duration: String?
     var battery: Int?
     var power: String
     var thermal: String
-    var lidClosed: Bool
     var sleepBlocked: Bool
-    var ssid: String?
-    var appVersion: String
-    /// Сесія таймера сну: коли поставили і коли Mac засне.
-    var sleepStartedAt: Date?
     var sleepAt: Date?
-    var volume: Int?
-    var muted: Bool
-    var brightness: Int?
-}
-
-/// Команда від агента: що натиснули у Web UI або яке налаштування змінили.
-struct AgentCommand: Decodable {
-    enum Action: String, Decodable { case start, stop, lock, displayOff, setting, sleepTimer, volume, mute, brightness }
-    var id: String
-    var action: Action
-    var duration: String?
-    /// Для setting: ключ `<module>.<key>` і нове значення.
-    var key: String?
-    var value: UiScalar?
-    /// Звідки прийшла дія: мак, Telegram чи веб. Без поля лишається веб.
-    var source: SessionSource?
 }
 
 enum AgentProtocol {
@@ -56,31 +33,10 @@ enum AgentProtocol {
 
     struct LogLine: Encodable { let at: Date; let text: String }
 
-    struct SessionEvent: Encodable {
-        let event: String
-        let at: Date
-        let source: String
-        let duration: String?
-        let battery: Int?
-        let reason: String?
-    }
-
-    /// Подія сесії таймера сну: start або stop з причиною. `silent` — агент не шле її в Telegram.
-    struct SleepTimerEvent: Encodable {
-        let event: String
-        let at: Date
-        let startedAt: Date
-        let sleepAt: Date
-        let minutes: Int
-        let source: String
-        let reason: String?
-        let silent: Bool
-    }
-
     /// Рядок від агента. Типи, які аппка не обробляє, дає як `.other`.
     enum Incoming {
         case ready(port: Int)
-        case command(AgentCommand)
+        case state(ServerMacState)
         case tree(UiTree)
         case settings([String: UiScalar])
         case devices(AgentDevices)
@@ -104,10 +60,10 @@ enum AgentProtocol {
             struct Wrapper: Decodable { let data: Ready }
             guard let port = try? JSONDecoder().decode(Wrapper.self, from: data).data.port else { return .other }
             return .ready(port: port)
-        case "command":
-            struct Wrapper: Decodable { let data: AgentCommand }
-            guard let command = try? JSONDecoder().decode(Wrapper.self, from: data).data else { return .other }
-            return .command(command)
+        case "state":
+            struct Wrapper: Decodable { let data: ServerMacState }
+            guard let state = try? UiTreeDecoder.decoder.decode(Wrapper.self, from: data).data else { return .other }
+            return .state(state)
         case "tree":
             // Дерево містить ISO-дати з мілісекундами, тож декодер свій, як у UiTreeDecoder.
             struct Wrapper: Decodable { let data: UiTree }

@@ -42,9 +42,13 @@ export interface ServerCommand {
   source: SessionSource;
 }
 
-/** Що сервер приймає від аппки-клієнта. `proximity` і `wifi` — тимчасово, поки Bluetooth і геолокація не в помічнику. */
+/**
+ * Що сервер приймає від аппки-клієнта. `log` — її власні рядки журналу (збережено ключі, видано дозвіл).
+ * `proximity` і `wifi` — тимчасово, поки Bluetooth і геолокація не в помічнику.
+ */
 const CLIENT_TYPES: ReadonlySet<MacToAgentMessage['type']> = new Set([
   'event',
+  'log',
   'devices',
   'relayEnv',
   'envify',

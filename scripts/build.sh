@@ -10,6 +10,9 @@ swiftc -swift-version 5 -O -parse-as-library \
   -framework SwiftUI -framework IOKit -framework CoreAudio -framework AudioToolbox -framework CoreWLAN -framework CoreLocation -framework CoreBluetooth -framework Sparkle -F Vendor/Sparkle \
   -Xlinker -rpath -Xlinker @executable_path/../Frameworks \
   $(find Sources -name "*.swift" | sort) -o "$APP/Contents/MacOS/MaControl"
+# Помічник сервера (чистий Swift, єдиний, хто звертається до macOS) лежить поруч із виконуваним файлом аппки.
+scripts/build-helper.sh
+cp build/mc-helper "$APP/Contents/MacOS/mc-helper"
 cp Info.plist "$APP/Contents/Info.plist"
 cp Resources/awake "$APP/Contents/Resources/awake"
 # Стейдж збірки: dev | preview | production (за замовчуванням dev, поки production немає).
