@@ -159,9 +159,9 @@ func drawMac(_ k: Canvas) {
              from: CGPoint(x: 480, y: 640), to: CGPoint(x: 480, y: 420), glow: rgb(0x5EF2C6, 0.9), glowBlur: 30)
     // хвилі сигналу з кута монітора: керування на відстані
     let src = CGPoint(x: 742, y: 702)
-    for (i, r) in [CGFloat(70), 118, 166].enumerated() {
+    for (i, r) in [CGFloat(58), 98, 138].enumerated() {
         let a = 1 - CGFloat(i) * 0.22
-        k.stroke(arc(src, r, from: 12, to: 78, clockwise: false), width: 30, [white(a), white(a)],
+        k.stroke(arc(src, r, from: 14, to: 76, clockwise: false), width: 26, [white(a), white(a)],
                  from: .zero, to: CGPoint(x: 1, y: 1))
     }
     k.solid(circle(src, 26), rgb(0x22C55E), glow: rgb(0x5EF2C6, 0.9), glowBlur: 20)
