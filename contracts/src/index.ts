@@ -167,7 +167,9 @@ export type MacToAgentMessage =
   /** Вебхуки webhooxy: аппка зберігає форму з модалки, вмикає, вимикає, прибирає. Секрети сюди не йдуть. */
   | { type: 'webhooks'; data: import('./webhooks').WebhookAction }
   /** Сторінка «Сервер» відкрилась або змінився період: агент шле графіки й далі live-тіки цього періоду. */
-  | { type: 'serverCharts'; data: { period: StatsPeriod } };
+  | { type: 'serverCharts'; data: { period: StatsPeriod } }
+  /** Тимчасово, поки помічник не має дозволу геолокації: назву Wi-Fi знає лише аппка. */
+  | { type: 'wifi'; data: { ssid: string | null } };
 
 /** Стан Bluetooth на Mac. `unauthorized` — macOS не дала аппці доступ. */
 export type BluetoothState = 'on' | 'off' | 'unauthorized' | 'unsupported' | 'unknown';
@@ -187,6 +189,8 @@ export interface ProximityReport {
 
 export type AgentToMacMessage =
   | { type: 'ready'; data: { port: number } }
+  /** Лише аппці-клієнту (standalone): стан Mac і сесій, щоб меню-бар показував те саме, що й сервер. */
+  | { type: 'state'; data: MacState }
   | { type: 'command'; data: CommandRequest & { id: string; source: SessionSource } }
   /** Повне дерево UI (scope local) для SwiftUI; шлеться при кожній зміні. */
   | { type: 'tree'; data: import('./ui').UiTree }

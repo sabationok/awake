@@ -58,6 +58,10 @@ export interface AgentConfig {
   standalone: boolean;
   /** Бінарник помічника (`MACONTROL_HELPER`); потрібен лише в режимі standalone. */
   helperPath: string | null;
+  /** Unix-сокет для Mac-аппки як клієнта (`MACONTROL_APP_SOCKET`); лише standalone. */
+  appSocketPath: string;
+  /** Паспорт запущеного сервера (pid, файл збірки) поруч із сокетом. */
+  serverInfoPath: string;
 }
 
 export const AGENT_CONFIG = Symbol('AGENT_CONFIG');
@@ -86,5 +90,7 @@ export function readAgentConfig(env: NodeJS.ProcessEnv = process.env): AgentConf
     tlsDir: env.MACONTROL_TLS_DIR || join(homedir(), '.config/awake/tls'),
     standalone: env.MACONTROL_STANDALONE === '1',
     helperPath: env.MACONTROL_HELPER || null,
+    appSocketPath: env.MACONTROL_APP_SOCKET || join(homedir(), 'Library/Application Support/MaControl/server.sock'),
+    serverInfoPath: env.MACONTROL_SERVER_INFO || join(homedir(), 'Library/Application Support/MaControl/server.json'),
   };
 }

@@ -28,6 +28,7 @@ import type {
 import { HELPER_ACTIONS } from '@awake/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';
 import { MacHelperService } from '../../mac-helper/mac-helper.service';
+import { MacAppChannelService } from './mac-app-channel.service';
 import { writeProtocolLine } from './protocol-stdout';
 
 type SessionMessage = Extract<MacToAgentMessage, { type: 'session' }>['data'];
@@ -40,6 +41,19 @@ export interface ServerCommand {
   command: CommandRequest;
   source: SessionSource;
 }
+
+/** Що сервер приймає від аппки-клієнта. `proximity` і `wifi` — тимчасово, поки Bluetooth і геолокація не в помічнику. */
+const CLIENT_TYPES: ReadonlySet<MacToAgentMessage['type']> = new Set([
+  'event',
+  'devices',
+  'relayEnv',
+  'envify',
+  'trustedNetworks',
+  'webhooks',
+  'serverCharts',
+  'proximity',
+  'wifi',
+]);
 
 const NO_SESSIONS: MacSessionFields = { active: false, until: null, startedAt: null, duration: null, sleepStartedAt: null, sleepAt: null };
 /** Версії аппки без аппки немає. */
@@ -87,21 +101,25 @@ export class MacBridgeService implements OnModuleInit {
   readonly serverCommands$ = new Subject<ServerCommand>();
   private _helperState: HelperState | null = null;
   private _sessionFields: MacSessionFields = NO_SESSIONS;
+  /** Назва Wi-Fi від аппки-клієнта: помічник її поки не бачить. */
+  private _clientSsid: string | null = null;
 
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     private readonly _helper: MacHelperService,
+    private readonly _app: MacAppChannelService,
   ) {}
 
   onModuleInit() {
     if (this._config.standalone) {
       this._helper.state$.subscribe((state) => {
         this._helperState = state;
-        if (!state) return;
-        this._stateAt = Date.now();
-        this.state$.next({ ...state, ...this._sessionFields, appVersion: STANDALONE_APP_VERSION });
+        if (state) this._emitState();
       });
+      this._app.lines$.subscribe((line) => this._handleLine(line, CLIENT_TYPES));
+      this._app.empty$.subscribe(() => (this._clientSsid = null));
       this._helper.start();
+      this._app.start();
       return;
     }
     const lines = createInterface({ input: process.stdin });
@@ -170,15 +188,27 @@ export class MacBridgeService implements OnModuleInit {
   }
 
   private _send(message: AgentToMacMessage) {
-    // Без аппки stdout нікому читати: дерево й знімки клієнти беруть через HTTP.
-    if (this._config.standalone) return;
+    // Аппка тут клієнт на сокеті; команд їй сервер не шле, системне виконує помічник.
+    if (this._config.standalone) {
+      if (message.type !== 'command') this._app.send(message);
+      return;
+    }
     writeProtocolLine(message);
   }
 
   /** Лише standalone: сесії веде сервер і кладе їх поля в стан Mac. Стан одразу йде підписникам. */
   setSessionFields(fields: MacSessionFields) {
     this._sessionFields = fields;
-    if (this._helperState) this.state$.next({ ...this._helperState, ...fields, appVersion: STANDALONE_APP_VERSION });
+    this._emitState();
+  }
+
+  private _emitState() {
+    const helper = this._helperState;
+    if (!helper) return;
+    this._stateAt = Date.now();
+    const state: MacState = { ...helper, ...this._sessionFields, ssid: helper.ssid ?? this._clientSsid, appVersion: STANDALONE_APP_VERSION };
+    this.state$.next(state);
+    this._app.send({ type: 'state', data: state });
   }
 
   /** Примітиви виконує помічник, решту (сесії, налаштування) — сервер. */
@@ -196,7 +226,8 @@ export class MacBridgeService implements OnModuleInit {
     });
   }
 
-  private _handleLine(line: string) {
+  /** `allowed` — які типи приймаємо: від аппки-клієнта лише натискання й запити, не стан і не сесії. */
+  private _handleLine(line: string, allowed?: ReadonlySet<MacToAgentMessage['type']>) {
     if (!line.trim()) return;
     let message: MacToAgentMessage;
     try {
@@ -205,7 +236,13 @@ export class MacBridgeService implements OnModuleInit {
       this._logger.warn(`bad line from Mac: ${line.slice(0, 200)}`);
       return;
     }
+    if (allowed && !allowed.has(message.type)) return;
     switch (message.type) {
+      case 'wifi':
+        if (this._clientSsid === message.data.ssid) return;
+        this._clientSsid = message.data.ssid;
+        this._emitState();
+        return;
       case 'state':
         this._stateAt = Date.now();
         this.state$.next(message.data);
