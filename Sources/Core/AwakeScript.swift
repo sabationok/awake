@@ -5,12 +5,11 @@ import Foundation
 enum AwakeScript {
     static let url = Bundle.main.url(forResource: "awake", withExtension: nil)!
 
-    /// Середовище: пороги з `SafetyLimits` і дозвіл на читання температури.
+    /// Середовище: пороги з `SafetyLimits`.
     static var environment: [String: String] {
         var env = ProcessInfo.processInfo.environment
         env["MACONTROL_BATT_WARN"] = String(SafetyLimits.batteryWarn)
         env["MACONTROL_BATT_STOP"] = String(SafetyLimits.batteryStop)
-        env["MACONTROL_THERMAL"] = PermissionGate.thermalForScript ? "1" : "0"
         return env
     }
 

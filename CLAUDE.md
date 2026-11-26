@@ -29,9 +29,12 @@ One direction: clients → server → helper → macOS. Answers and events come 
   gives and send clicks; no session logic, no system calls. The app is also the double-click entry point: it starts
   the server when none is running, or when a different build is running, and then connects to it over the local
   socket `~/Library/Application Support/MaControl/server.sock` (same JSON lines as the old stdin / stdout link).
-- Temporary exceptions, to be moved into the helper: the app still reads the Wi-Fi name and scans Bluetooth
-  (macOS gives those permissions to the app bundle) and sends them to the server; the app still installs the
-  sudoers rules («Дозволи»); the server reads `pmset -g assertions` itself for Keepers.
+- Permissions belong to the server: the helper checks and installs the sudoers rules (it shows the macOS password
+  window), the server stores the per-module switches and checks them before acting, and sends the snapshot to the
+  clients on every change. Clients show it and send clicks.
+- Not moved yet, and not an agreed exception: the app still reads the Wi-Fi name and scans Bluetooth and sends them
+  to the server (macOS grants those two to a bundle with an Info.plist; the helper must become a background bundle
+  to take them over). The server reads `pmset -g assertions` itself for Keepers.
 - The old link (server as a child of the app, `MACONTROL_STANDALONE` unset) is kept only for the e2e harness.
 
 ## Server separately from the app in dev

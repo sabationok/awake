@@ -1,8 +1,9 @@
-import AppKit
+import Foundation
 
 /// Кожен системний дозвіл — окреме правило sudoers із фіксованими командами без пароля.
-/// Видається і прибирається через системний діалог пароля.
-enum PermissionService {
+/// Видається і прибирається через системний діалог пароля macOS. Живе в помічнику: аппка і веб сюди не звертаються,
+/// вони лише просять сервер, а сервер — помічник.
+enum SudoersRules {
     enum Outcome {
         case done
         case cancelled
@@ -22,7 +23,7 @@ enum PermissionService {
         "\(directory)/.\(prefix)\(permission.rawValue).tmp"
     }
 
-    /// Команди правила з повними шляхами, як їх викликає аппка.
+    /// Команди правила з повними шляхами, як їх викликає помічник.
     private static func sudoCommands(_ permission: AppPermission) -> [String] {
         switch permission {
         case .sleepControl: ["/usr/bin/pmset -a disablesleep 0", "/usr/bin/pmset -a disablesleep 1"]
@@ -59,19 +60,16 @@ enum PermissionService {
         return commands
     }
 
-    @MainActor
     static func grant(_ permission: AppPermission) -> Outcome {
         apply(granted().union([permission]), prompt: "MaControl хоче отримати дозвіл «\(permission.title)».")
     }
 
-    @MainActor
     static func revoke(_ permission: AppPermission) -> Outcome {
         apply(granted().subtracting([permission]), prompt: "MaControl хоче прибрати дозвіл «\(permission.title)».")
     }
 
     /// Приводить /etc/sudoers.d до набору `permissions` однією дією адміністратора:
     /// пише правило кожного дозволу з набору, видаляє решту і правила під старими іменами.
-    @MainActor
     private static func apply(_ permissions: Set<AppPermission>, prompt: String) -> Outcome {
         let user = NSUserName()
         guard user.range(of: #"^[A-Za-z0-9._-]+$"#, options: .regularExpression) != nil else {
@@ -108,15 +106,15 @@ enum PermissionService {
         return runAsAdmin(command, prompt: prompt)
     }
 
-    /// Одна команда від root через стандартне вікно пароля macOS.
-    @MainActor
+    /// Одна команда від root через стандартне вікно пароля macOS. `osascript` окремим процесом: виклик блокує,
+    /// поки власник не відповість, тож іде не з головної черги помічника.
     private static func runAsAdmin(_ command: String, prompt: String) -> Outcome {
         let source = "do shell script \"\(escape(command))\" with prompt \"\(escape(prompt))\" with administrator privileges"
-        var error: NSDictionary?
-        NSAppleScript(source: source)?.executeAndReturnError(&error)
-        guard let error else { return .done }
-        if error[NSAppleScript.errorNumber] as? Int == -128 { return .cancelled }
-        return .failed(error[NSAppleScript.errorMessage] as? String ?? "невідома помилка")
+        let result = Shell.run("/usr/bin/osascript", ["-e", source])
+        if result.succeeded { return .done }
+        // −128: власник закрив вікно пароля.
+        if result.output.contains("-128") { return .cancelled }
+        return .failed(result.output.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     private static func escape(_ s: String) -> String {

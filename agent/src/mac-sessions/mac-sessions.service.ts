@@ -3,11 +3,12 @@ import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { interval, type Subscription } from 'rxjs';
-import type { HelperState, PermissionsSnapshot, SessionSource, SettingValue } from '@awake/contracts';
+import type { HelperState, SessionSource, SettingValue } from '@awake/contracts';
 import { formatHhmm } from '../common/format-hhmm';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 import { MacBridgeService, type ServerCommand } from '../mac-bridge/services/mac-bridge.service';
 import { MacHelperService } from '../mac-helper/mac-helper.service';
+import { MacPermissionsService } from '../mac-permissions/mac-permissions.service';
 import { ModulesService } from '../modules/modules.service';
 import { SettingsService } from '../settings/settings.service';
 import { TelegramNotificationsService } from '../telegram/notifications';
@@ -17,7 +18,6 @@ import {
   BATTERY_STOP_DEFAULT,
   BATTERY_WARN_DEFAULT,
   MAC_SESSIONS_STORE,
-  PERMISSIONS_KEY,
   SESSION_TICK_MS,
   SLEEPER_SESSION_KEY,
   SLEEP_DELAY_MS,
@@ -47,14 +47,13 @@ export class MacSessionsService implements OnModuleInit, OnModuleDestroy {
   /** Екран уже гасили в цей період бездіяльності. */
   private _dimmed = false;
   private _restored = false;
-  /** Останній знімок дозволів від аппки; null — аппка його ще не надсилала, тоді нічого не забороняємо. */
-  private _permissions: PermissionsSnapshot | null = null;
 
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
     private readonly _bridge: MacBridgeService,
     private readonly _helper: MacHelperService,
     private readonly _settings: SettingsService,
+    private readonly _permissions: MacPermissionsService,
     private readonly _modules: ModulesService,
     private readonly _notifications: TelegramNotificationsService,
   ) {}
@@ -63,14 +62,9 @@ export class MacSessionsService implements OnModuleInit, OnModuleDestroy {
     if (!this._config.standalone) return;
     this._awake = this._load<AwakeSession>(AWAKE_SESSION_KEY);
     this._sleeper = this._load<SleeperSession>(SLEEPER_SESSION_KEY);
-    this._permissions = this._load<PermissionsSnapshot>(PERMISSIONS_KEY);
     this._publish();
     this._subscriptions.push(
       this._bridge.serverCommands$.subscribe((request) => void this._handle(request)),
-      this._bridge.permissions$.subscribe((snapshot) => {
-        this._permissions = snapshot;
-        this._settings.set(MAC_SESSIONS_STORE, PERMISSIONS_KEY, JSON.stringify(snapshot));
-      }),
       this._helper.state$.subscribe((state) => void this._onState(state)),
       interval(SESSION_TICK_MS).subscribe(() => void this._tick()),
     );
@@ -102,7 +96,7 @@ export class MacSessionsService implements OnModuleInit, OnModuleDestroy {
   private async _startAwake(duration: string, source: SessionSource) {
     const seconds = durationSeconds(duration);
     if (seconds === null) return this._log(`Awake: незрозуміла тривалість «${duration}»`);
-    if (!this._allowed('awake', 'sleepControl')) return this._log('Керування сном вимкнено для модуля Awake або не видано дозвіл');
+    if (!this._permissions.allowed('awake', 'sleepControl')) return this._log('Керування сном вимкнено для модуля Awake або не видано дозвіл');
     // Одна сесія за раз: Awake закриває Sleeper.
     this._endSleeper(STOP_REASON.awake, source, false);
     const now = new Date();
@@ -322,13 +316,6 @@ export class MacSessionsService implements OnModuleInit, OnModuleDestroy {
 
   private _sleepError(error: string | undefined): string {
     return error?.includes('sudoers') ? 'немає правила sudoers для pmset, запусти scripts/install.sh' : (error ?? 'помічник не відповів');
-  }
-
-  /** Дозвіл видано в системі і власник не вимкнув його цьому модулю. */
-  private _allowed(module: string, permission: string): boolean {
-    const snapshot = this._permissions;
-    if (!snapshot) return true;
-    return snapshot.granted.includes(permission) && !snapshot.denied.some((entry) => entry.module === module && entry.permission === permission);
   }
 
   private _awakeSetting<T extends SettingValue>(key: string): T | undefined {

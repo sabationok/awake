@@ -8,6 +8,8 @@ swiftc -swift-version 5 -O \
   -target arm64-apple-macos14 \
   -framework IOKit -framework CoreAudio -framework AudioToolbox -framework CoreWLAN -framework CoreGraphics \
   Helper/main.swift \
+  Helper/SudoersRules.swift \
+  Sources/Core/Permissions/AppPermission.swift \
   Sources/Core/Shell.swift \
   Sources/Features/Status/PowerService.swift \
   Sources/Features/Status/PowerStatus.swift \

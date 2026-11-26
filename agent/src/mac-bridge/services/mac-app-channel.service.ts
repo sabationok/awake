@@ -15,6 +15,7 @@ const REPLAYED: ReadonlySet<AgentToMacMessage['type']> = new Set([
   'settings',
   'devices',
   'secrets',
+  'permissions',
   'trustedNetworks',
   'webhooks',
   'server',

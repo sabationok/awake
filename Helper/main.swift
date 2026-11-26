@@ -30,7 +30,13 @@ func thermalName(_ state: ProcessInfo.ThermalState) -> String {
     }
 }
 
+/// Видані в системі дозволи (правила sudoers). `sudo -n -l` важчий за решту стану, тож перечитується рідше.
+var grantedPermissions = SudoersRules.granted()
+var stateTicks = 0
+
 func sendState() {
+    stateTicks += 1
+    if stateTicks % 3 == 0 { grantedPermissions = SudoersRules.granted() }
     let power = PowerService.battery()
     send(type: "state", data: [
         "host": Host.current().localizedName ?? "Mac",
@@ -45,6 +51,7 @@ func sendState() {
         "muted": SoundService.isMuted() ?? false,
         "brightness": orNull(BrightnessService.brightness()),
         "idleSeconds": Int(DisplayService.idleSeconds()),
+        "granted": grantedPermissions.map(\.rawValue).sorted(),
     ])
 }
 
@@ -55,6 +62,8 @@ struct Request: Decodable {
         let id: String
         let action: String
         let value: Value?
+        /// Назва дозволу для permissionGrant / permissionRevoke.
+        let name: String?
     }
 
     enum Value: Decodable {
@@ -113,14 +122,39 @@ func perform(_ request: Request.Body) -> String? {
     }
 }
 
-func handle(_ line: String) {
-    guard let data = line.data(using: .utf8), let request = try? JSONDecoder().decode(Request.self, from: data),
-          request.type == "request" else { return }
-    let error = perform(request.data)
-    var result: [String: Any] = ["id": request.data.id, "ok": error == nil]
+/// Видати або відкликати дозвіл: системне вікно пароля може висіти довго, тож чекаємо його поза головною чергою.
+func changePermission(_ request: Request.Body, grant: Bool) {
+    guard let permission = request.name.flatMap(AppPermission.init(rawValue:)) else {
+        return finish(request, error: "unknown permission \(request.name ?? "")")
+    }
+    DispatchQueue.global().async {
+        let outcome = grant ? SudoersRules.grant(permission) : SudoersRules.revoke(permission)
+        DispatchQueue.main.async {
+            grantedPermissions = SudoersRules.granted()
+            switch outcome {
+            case .done: finish(request, error: nil)
+            case .cancelled: finish(request, error: "cancelled")
+            case .failed(let message): finish(request, error: message)
+            }
+        }
+    }
+}
+
+func finish(_ request: Request.Body, error: String?) {
+    var result: [String: Any] = ["id": request.id, "ok": error == nil]
     if let error { result["error"] = error }
     send(type: "result", data: result)
     sendState()
+}
+
+func handle(_ line: String) {
+    guard let data = line.data(using: .utf8), let request = try? JSONDecoder().decode(Request.self, from: data),
+          request.type == "request" else { return }
+    switch request.data.action {
+    case "permissionGrant": changePermission(request.data, grant: true)
+    case "permissionRevoke": changePermission(request.data, grant: false)
+    default: finish(request.data, error: perform(request.data))
+    }
 }
 
 // MARK: старт

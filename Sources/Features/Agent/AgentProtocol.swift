@@ -12,6 +12,13 @@ struct ServerMacState: Decodable, Equatable {
     var sleepAt: Date?
 }
 
+/// Дозволи від сервера: що видано в системі і що вимкнено окремим модулям. Аппка їх лише показує.
+struct ServerPermissions: Decodable, Equatable {
+    struct Denied: Decodable, Equatable { let module: String; let permission: String }
+    var granted: [String]
+    var denied: [Denied]
+}
+
 enum AgentProtocol {
     static let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
@@ -37,6 +44,7 @@ enum AgentProtocol {
     enum Incoming {
         case ready(port: Int)
         case state(ServerMacState)
+        case permissions(ServerPermissions)
         case tree(UiTree)
         case settings([String: UiScalar])
         case devices(AgentDevices)
@@ -64,6 +72,10 @@ enum AgentProtocol {
             struct Wrapper: Decodable { let data: ServerMacState }
             guard let state = try? UiTreeDecoder.decoder.decode(Wrapper.self, from: data).data else { return .other }
             return .state(state)
+        case "permissions":
+            struct Wrapper: Decodable { let data: ServerPermissions }
+            guard let permissions = try? JSONDecoder().decode(Wrapper.self, from: data).data else { return .other }
+            return .permissions(permissions)
         case "tree":
             // Дерево містить ISO-дати з мілісекундами, тож декодер свій, як у UiTreeDecoder.
             struct Wrapper: Decodable { let data: UiTree }

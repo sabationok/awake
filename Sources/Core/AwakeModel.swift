@@ -10,7 +10,8 @@ final class AwakeModel: ObservableObject {
     /// Останній стан Mac і сесій від сервера; nil, поки сервер його не надіслав або з'єднання немає.
     @Published var serverState: ServerMacState?
     @Published private(set) var now = Date()
-    @Published private(set) var grantedPermissions: Set<AppPermission> = []
+    /// Дозволи від сервера; nil, поки він їх не надіслав. Аппка їх не перевіряє і не зберігає.
+    @Published var permissions: ServerPermissions?
 
     @Published var telegram = TelegramSettingsStore.load()
     /// Те, що лежить у файлі. Розбіжність із `telegram` означає незбережені зміни.
@@ -60,7 +61,6 @@ final class AwakeModel: ObservableObject {
     private var tickCount = 0
 
     private init() {
-        refresh()
         setUpAgent()
         ticker = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in AwakeModel.shared.tick() }
@@ -102,20 +102,9 @@ final class AwakeModel: ObservableObject {
         }
     }
 
-    // MARK: оновлення стану
-
-    func refresh() {
-        let granted = PermissionService.granted()
-        guard granted != grantedPermissions else { return }
-        grantedPermissions = granted
-        // Сервер перевіряє дозволи сам, тож дізнається про зміну одразу.
-        sendPermissions()
-    }
-
     private func tick() {
         now = Date()
         tickCount += 1
-        if tickCount % 15 == 0 { refresh() }
         if tickCount % 5 == 0 { refreshWifi() }
     }
 

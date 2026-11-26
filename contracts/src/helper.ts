@@ -21,6 +21,8 @@ export interface HelperState {
   brightness: number | null;
   /** Секунди від останнього руху миші чи натискання клавіші. */
   idleSeconds: number;
+  /** Дозволи, видані в системі (правила sudoers): `sleepControl`, `thermalRead`. */
+  granted: string[];
 }
 
 /** Примітиви, які помічник уміє виконати. */
@@ -33,15 +35,20 @@ export type HelperAction =
   /** `pmset -a disablesleep` через sudo (правило sudoers з install.sh): true — Mac не засинає навіть із закритою кришкою. */
   | 'sleepDisabled'
   /** Присипити Mac зараз. Не діє, поки сон вимкнено. */
-  | 'sleepNow';
+  | 'sleepNow'
+  /** Видати або відкликати системний дозвіл `name`: помічник показує вікно пароля macOS і чекає відповіді власника. */
+  | 'permissionGrant'
+  | 'permissionRevoke';
 
-export const HELPER_ACTIONS: readonly HelperAction[] = ['lock', 'displayOff', 'volume', 'mute', 'brightness', 'sleepDisabled', 'sleepNow'];
+export const HELPER_ACTIONS: readonly HelperAction[] = ['lock', 'displayOff', 'volume', 'mute', 'brightness', 'sleepDisabled', 'sleepNow', 'permissionGrant', 'permissionRevoke'];
 
 export interface HelperRequest {
   id: string;
   action: HelperAction;
   /** volume / brightness — 0…100, mute / sleepDisabled — boolean. */
   value?: number | boolean;
+  /** permissionGrant / permissionRevoke — назва дозволу. */
+  name?: string;
 }
 
 export interface HelperResult {

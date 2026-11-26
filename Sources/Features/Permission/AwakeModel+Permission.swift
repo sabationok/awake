@@ -1,22 +1,36 @@
+/// Дозволи належать серверу: він перевіряє їх через помічник і зберігає перемикачі модулів.
+/// Аппка показує знімок від сервера і шле йому натискання.
 extension AwakeModel {
     func isGranted(_ permission: AppPermission) -> Bool {
-        grantedPermissions.contains(permission)
+        permissions?.granted.contains(permission.rawValue) ?? false
     }
 
+    /// Перемикач «Дозволено модулю». За замовчуванням увімкнено.
+    func isAllowed(_ permission: AppPermission, module: String) -> Bool {
+        !(permissions?.denied.contains { $0.module == module && $0.permission == permission.rawValue } ?? false)
+    }
+
+    /// Вікно пароля macOS показує помічник сервера, не аппка.
     func grant(_ permission: AppPermission) {
-        report(PermissionService.grant(permission), success: "Дозвіл «\(permission.title)» надано")
+        sendPermissionClick(.init(action: "grant", permission: permission.rawValue))
     }
 
     func revoke(_ permission: AppPermission) {
-        report(PermissionService.revoke(permission), success: "Дозвіл «\(permission.title)» відкликано")
+        sendPermissionClick(.init(action: "revoke", permission: permission.rawValue))
     }
 
-    private func report(_ outcome: PermissionService.Outcome, success: String) {
-        switch outcome {
-        case .done: append(success)
-        case .cancelled: append("Скасовано")
-        case .failed(let message): append("Помилка: \(message)")
-        }
-        refresh()
+    func setAllowed(_ allowed: Bool, _ permission: AppPermission, module: String) {
+        sendPermissionClick(.init(action: "setModule", permission: permission.rawValue, module: module, allowed: allowed))
+    }
+
+    private struct PermissionClick: Encodable {
+        let action: String
+        let permission: String
+        var module: String?
+        var allowed: Bool?
+    }
+
+    private func sendPermissionClick(_ click: PermissionClick) {
+        agent.send(type: "permission", data: click)
     }
 }

@@ -52,9 +52,10 @@ private struct SystemPermissionRow: View {
                 Text(granted ? "Видано" : "Не видано").foregroundStyle(.secondary)
                 if granted {
                     Button("Відкликати…") { model.revoke(permission) }
-                        .disabled(permission == .sleepControl && model.isRunning)
+                        .disabled(model.permissions == nil || (permission == .sleepControl && model.isRunning))
                 } else {
                     Button("Надати…") { model.grant(permission) }
+                        .disabled(model.permissions == nil)
                 }
             }
         }
@@ -129,36 +130,30 @@ private struct ModuleSection: View {
     }
 }
 
-/// Перемикач «Дозволено модулю» і для чого потрібен дозвіл.
+/// Перемикач «Дозволено модулю» і для чого потрібен дозвіл. Значення — зі знімка сервера, зміна — натискання до нього.
 private struct ModulePermissionRow: View {
+    @EnvironmentObject private var model: AwakeModel
     let module: String
     let permission: AppPermission
     let systemGranted: Bool
-    @State private var allowed: Bool
-
-    init(module: String, permission: AppPermission, systemGranted: Bool) {
-        self.module = module
-        self.permission = permission
-        self.systemGranted = systemGranted
-        _allowed = State(initialValue: PermissionGate.moduleAllowed(permission, module: module))
-    }
 
     var body: some View {
+        let allowed = model.isAllowed(permission, module: module)
         VStack(alignment: .leading, spacing: 6) {
             SettingsRow(title: permission.title, symbol: permission.symbol,
                         color: allowed && systemGranted ? .blue : .gray) {
-                Toggle("Дозволено модулю", isOn: $allowed)
-                    .toggleStyle(.switch)
-                    .labelsHidden()
+                Toggle("Дозволено модулю", isOn: Binding(
+                    get: { model.isAllowed(permission, module: module) },
+                    set: { model.setAllowed($0, permission, module: module) }
+                ))
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .disabled(model.permissions == nil)
             }
             Text(systemGranted ? permission.purpose : "\(permission.purpose) Не діє, поки систему не дозволено вище.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-        }
-        .onChange(of: allowed) { _, value in
-            PermissionGate.setModuleAllowed(value, permission, module: module)
-            AwakeModel.shared.sendPermissions()
         }
     }
 }

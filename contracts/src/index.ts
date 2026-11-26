@@ -168,20 +168,22 @@ export type MacToAgentMessage =
   | { type: 'webhooks'; data: import('./webhooks').WebhookAction }
   /** Сторінка «Сервер» відкрилась або змінився період: агент шле графіки й далі live-тіки цього періоду. */
   | { type: 'serverCharts'; data: { period: StatsPeriod } }
-  /**
-   * Дозволи, як їх виставив власник у «Дозволах» аппки: що видано в системі і що вимкнено окремим модулям.
-   * Сервер зберігає знімок і сам перевіряє його перед дією, тож правило діє й без аппки.
-   */
-  | { type: 'permissions'; data: PermissionsSnapshot }
+  /** Натискання в «Дозволах»: видати / відкликати системний дозвіл або перемкнути його для модуля. Виконує сервер. */
+  | { type: 'permission'; data: PermissionClick }
   /** Тимчасово, поки помічник не має дозволу геолокації: назву Wi-Fi знає лише аппка. */
   | { type: 'wifi'; data: { ssid: string | null } };
 
+/** Дозволи, якими володіє сервер: що видано в системі (перевіряє помічник) і що вимкнено окремим модулям. */
 export interface PermissionsSnapshot {
   /** Дозволи, видані в системі (правила sudoers): `sleepControl`, `thermalRead`. */
   granted: string[];
   /** Вимкнені перемикачі «Дозволено модулю». */
   denied: { module: string; permission: string }[];
 }
+
+export type PermissionClick =
+  | { action: 'grant' | 'revoke'; permission: string }
+  | { action: 'setModule'; module: string; permission: string; allowed: boolean };
 
 /** Стан Bluetooth на Mac. `unauthorized` — macOS не дала аппці доступ. */
 export type BluetoothState = 'on' | 'off' | 'unauthorized' | 'unsupported' | 'unknown';
@@ -201,6 +203,8 @@ export interface ProximityReport {
 
 export type AgentToMacMessage =
   | { type: 'ready'; data: { port: number } }
+  /** Дозволи від сервера: на старті й після кожної зміни, хто б її не зробив. */
+  | { type: 'permissions'; data: PermissionsSnapshot }
   /** Лише аппці-клієнту (standalone): стан Mac і сесій, щоб меню-бар показував те саме, що й сервер. */
   | { type: 'state'; data: MacState }
   | { type: 'command'; data: CommandRequest & { id: string; source: SessionSource } }

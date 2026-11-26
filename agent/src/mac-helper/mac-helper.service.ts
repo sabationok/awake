@@ -59,7 +59,7 @@ export class MacHelperService implements OnApplicationShutdown {
   }
 
   /** Виконати примітив. Не кидає: збій приходить як `ok: false`. */
-  run(action: HelperAction, value?: number | boolean): Promise<HelperResult> {
+  run(action: HelperAction, value?: number | boolean, name?: string, timeoutMs = REQUEST_TIMEOUT_MS): Promise<HelperResult> {
     const id = randomUUID();
     const child = this._process;
     if (!child) return Promise.resolve({ id, ok: false, error: 'helper is not running' });
@@ -67,9 +67,9 @@ export class MacHelperService implements OnApplicationShutdown {
       const timer = setTimeout(() => {
         this._pending.delete(id);
         resolve({ id, ok: false, error: 'helper did not answer' });
-      }, REQUEST_TIMEOUT_MS);
+      }, timeoutMs);
       this._pending.set(id, { resolve, timer });
-      const message: ServerToHelperMessage = { type: 'request', data: { id, action, value } };
+      const message: ServerToHelperMessage = { type: 'request', data: { id, action, value, name } };
       child.stdin.write(`${JSON.stringify(message)}\n`);
     });
   }

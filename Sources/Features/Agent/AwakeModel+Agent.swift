@@ -21,12 +21,11 @@ extension AwakeModel {
         }
         agent.onState = { [weak self] in self?.applyServerState($0) }
         // Назву Wi-Fi знає лише аппка (дозвіл геолокації): сервер отримує її одразу після підключення.
-        agent.onConnected = { [weak self] in
-            self?.sendWifi()
-            self?.sendPermissions()
+        agent.onPermissions = { [weak self] permissions in
+            if self?.permissions != permissions { self?.permissions = permissions }
         }
+        agent.onConnected = { [weak self] in self?.sendWifi() }
         agent.onTree = { [weak self] tree in
-            PermissionGate.remember(tree.modules)
             // Те саме дерево не перемальовує вікно.
             if self?.uiTree != tree { self?.uiTree = tree }
             if self?.treeIsFresh == false { self?.treeIsFresh = true }
@@ -134,18 +133,6 @@ extension AwakeModel {
         for ssid in legacy where !known.contains(ssid) { setTrusted(ssid, true) }
         LegacyTrustedNetworks.clear()
         append("Довірені мережі перенесено в базу агента: \(legacy.count)")
-    }
-
-    /// Дозволи з «Дозволів»: що видано в системі і що вимкнено окремим модулям. Перевіряє їх сервер.
-    func sendPermissions() {
-        struct Denied: Encodable { let module: String; let permission: String }
-        struct Snapshot: Encodable { let granted: [String]; let denied: [Denied] }
-        let denied = PermissionGate.declarations.keys.sorted().flatMap { module in
-            AppPermission.allCases
-                .filter { !PermissionGate.moduleAllowed($0, module: module) }
-                .map { Denied(module: module, permission: $0.rawValue) }
-        }
-        agent.send(type: "permissions", data: Snapshot(granted: grantedPermissions.map(\.rawValue).sorted(), denied: denied))
     }
 
     // MARK: стан від сервера

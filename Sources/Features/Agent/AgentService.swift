@@ -18,6 +18,7 @@ final class AgentService {
     private(set) var status = Status.stopped { didSet { if status != oldValue { onStatus?(status) } } }
     var onStatus: ((Status) -> Void)?
     var onState: ((ServerMacState) -> Void)?
+    var onPermissions: ((ServerPermissions) -> Void)?
     var onTree: ((UiTree) -> Void)?
     var onSettings: (([String: UiScalar]) -> Void)?
     var onDevices: ((AgentDevices) -> Void)?
@@ -243,6 +244,8 @@ final class AgentService {
                 status = .running(port: port)
             case .state(let state):
                 onState?(state)
+            case .permissions(let permissions):
+                onPermissions?(permissions)
             case .tree(let tree):
                 AgentCache.save(.tree, line: line)
                 onTree?(tree)
