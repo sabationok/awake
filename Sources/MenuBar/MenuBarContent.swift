@@ -18,7 +18,7 @@ struct MenuBarContent: View {
         }
         if updates.isReady {
             Divider()
-            // Встановлення перезапускає аппку, тому активна сесія завершиться.
+            // Встановлення перезапускає аппку; сесію тримає сервер, тож вона не завершується.
             Button("Перезавантажити для оновлення") { updates.installNow() }
         }
         Button("Вийти") { NSApp.terminate(nil) }
