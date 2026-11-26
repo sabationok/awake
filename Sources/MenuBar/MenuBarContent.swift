@@ -18,8 +18,8 @@ struct MenuBarContent: View {
         }
         if updates.isReady {
             Divider()
-            // Встановлення перезапускає аппку; сесію тримає сервер, тож вона не завершується.
-            Button("Перезавантажити для оновлення") { updates.installNow() }
+            // Що буде з сесією при перезапуску, пояснює модалка.
+            Button("Доступне оновлення…") { updates.confirmInstall(session: model.activeSessionName) }
         }
         Button("Вийти") { NSApp.terminate(nil) }
             .keyboardShortcut("q")

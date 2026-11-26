@@ -81,6 +81,13 @@ final class AwakeModel: ObservableObject {
         return Countdown.string(until: endDate, now: now)
     }
 
+    /// Назва сесії, що йде зараз, для модалки перед оновленням.
+    var activeSessionName: String? {
+        if isRunning { return "Awake" }
+        if liveState?.sleepAt != nil { return "Sleeper" }
+        return nil
+    }
+
     var power: PowerStatus {
         guard let state = liveState else { return .unknown }
         return PowerStatus(percent: state.battery, onAC: state.power != "BAT")
