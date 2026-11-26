@@ -14,6 +14,8 @@ export function ButtonsNode({ node, onEvent }: NodeProps<UiButtons>) {
     setPendingId(button.id);
     try {
       await onEvent({ type: 'action', action: button.action });
+    } catch {
+      // Помилку показує підпис секції.
     } finally {
       setPendingId(null);
     }

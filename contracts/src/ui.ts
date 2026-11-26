@@ -49,6 +49,10 @@ export interface UiSection extends UiNodeBase {
   type: 'section';
   title?: string;
   footer?: string;
+  /** Стан блоку праворуч від заголовка («● Підключено»). */
+  status?: UiStatusBadge;
+  /** Дії блоку в шапці («Створити»): 1 — кнопка, 2+ — меню «⋯». */
+  actions?: UiMenuItem[];
   children: UiNode[];
 }
 
@@ -164,6 +168,8 @@ export interface UiTabs extends UiNodeBase {
   value?: string;
   /** Вибір вкладки пише це налаштування (id вкладки), коли від нього залежить дія модуля. */
   setting?: { module: string; key: string };
+  /** Плашка вкладок прилипає до верху скрол-області. */
+  sticky?: boolean;
 }
 
 /** Великий таймер на всю ширину: зворотний відлік до `until` або `value`, коли відліку немає. */
@@ -206,7 +212,131 @@ export interface UiChart extends UiNodeBase {
   limit?: number;
 }
 
-export type UiNode = UiSection | UiRow | UiStatus | UiSwitch | UiSelect | UiButtons | UiList | UiText | UiTabs | UiTimer | UiChart;
+/**
+ * Колір дії: default — сіра, accent — синя, warn — помаранчева, danger — червона.
+ * Нове замість `UiButton.variant`; старі кнопки лишаються, поки сервер і Swift не перейдуть.
+ */
+export type UiActionVariant = 'default' | 'accent' | 'warn' | 'danger';
+
+/** Підтвердження перед дією: діалог з заголовком, текстом і кнопкою OK (ліворуч завжди «Скасувати»). */
+export interface UiConfirm {
+  title: string;
+  text: string;
+  ok: string;
+}
+
+/** Поле форми дії. Значення йде в `action.params[name]`. */
+export interface UiFormField {
+  name: string;
+  label: string;
+  kind: 'text' | 'password' | 'url' | 'select';
+  value?: string;
+  placeholder?: string;
+  hint?: string;
+  required?: boolean;
+  minLength?: number;
+  /** Лише для `select`. */
+  options?: UiOption[];
+}
+
+/**
+ * Форма дії: одне поле — інлайн (рядок стає полем з «Скасувати» / OK), два і більше — модалка.
+ * Вибір між ними робить рендерер за кількістю полів, сервер його не задає.
+ */
+export interface UiForm {
+  title?: string;
+  fields: UiFormField[];
+  /** Підпис кнопки OK; без нього «Зберегти». */
+  submit?: string;
+}
+
+/**
+ * Пункт дії. Сервер віддає вже розв'язаний список за станом (видано → лише «Відкликати», ні → лише «Запит»);
+ * клієнт нічого не перевіряє. 1 пункт — кнопка, 2+ — меню «⋯», 0 — нічого.
+ */
+export interface UiMenuItem {
+  id: string;
+  label: string;
+  icon?: UiIcon;
+  variant: UiActionVariant;
+  action: UiAction;
+  confirm?: UiConfirm;
+  /** Дія з формою: клієнт збирає поля і шле `action` з їхніми значеннями в params. */
+  form?: UiForm;
+  /** mac — у web пункт видно, але він вимкнений з `hint`. */
+  scope?: UiScope;
+  hint?: string;
+  disabled?: boolean;
+}
+
+/** Мітка-чип без дії (напр. «Tailscale»). */
+export interface UiTag {
+  label: string;
+  tone?: UiTone;
+}
+
+/** Стан словом з крапкою: «● Активна», «● Підключено». */
+export interface UiStatusBadge {
+  label: string;
+  tone: UiTone;
+  pulse?: boolean;
+}
+
+/**
+ * Картка елемента (пристрій, група, дозвіл, мережа, сесія). Зверху вниз: заголовок (назва; праворуч статус,
+ * керування, дії), теги, значення для копіювання, коментар. Під заголовком і в коментарі кнопок немає.
+ */
+export interface UiItem extends UiNodeBase {
+  type: 'item';
+  title: string;
+  icon?: UiIcon;
+  status?: UiStatusBadge;
+  tags?: UiTag[];
+  /** Значення лише для читання (адреса, ID) під заголовком з кнопкою «Копіювати». */
+  copy?: { value: string; label?: string };
+  comment?: string;
+  /** Керування праворуч у заголовку (напр. перемикач «публікувати» топіка). */
+  control?: UiControl;
+  actions?: UiMenuItem[];
+}
+
+/**
+ * Сповіщення в сторінці: info / warn / error. Чи показувати, коли нагадати і чи закрито — рахує сервер
+ * (timestamp-и), клієнт лише малює і шле `dismiss`.
+ */
+export interface UiNotice extends UiNodeBase {
+  type: 'notice';
+  variant: 'info' | 'warn' | 'error';
+  icon?: UiIcon;
+  title?: string;
+  text: string;
+  /** Прилипає до краю скрол-області; без поля — у потоці. */
+  sticky?: 'top' | 'bottom';
+  /** Є — показується хрестик, клік шле цю дію. */
+  dismiss?: UiAction;
+}
+
+/** Роздільна лінія; з `word` — лінія, слово, лінія («або»). */
+export interface UiSeparator extends UiNodeBase {
+  type: 'separator';
+  word?: string;
+}
+
+export type UiNode =
+  | UiSection
+  | UiRow
+  | UiStatus
+  | UiSwitch
+  | UiSelect
+  | UiButtons
+  | UiList
+  | UiText
+  | UiTabs
+  | UiTimer
+  | UiChart
+  | UiItem
+  | UiNotice
+  | UiSeparator;
 
 /** Вкладка бічного меню. */
 export interface UiPage {

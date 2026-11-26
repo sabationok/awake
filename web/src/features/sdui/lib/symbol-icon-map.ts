@@ -1,28 +1,39 @@
 import {
   Activity,
+  Bell,
   BatteryLow,
   BatteryMedium,
   BatteryWarning,
   ChartColumn,
   History,
   Circle,
+  CircleX,
   Coffee,
+  Copy,
   Flame,
+  Hand,
+  Info,
   Laptop,
   LaptopMinimal,
+  LogOut,
   Lock,
   Monitor,
   Moon,
-  Sun,
-  Volume2,
-  VolumeX,
+  Pencil,
   Plug,
+  Plus,
+  Power,
   ScrollText,
   Send,
   Settings,
   Shield,
   SlidersHorizontal,
+  Sun,
   Thermometer,
+  Trash2,
+  TriangleAlert,
+  Volume2,
+  VolumeX,
   Wifi,
   type LucideIcon,
 } from 'lucide-react';
@@ -54,8 +65,24 @@ const SYMBOL_ICON: Record<string, LucideIcon | undefined> = {
   'speaker.slash.fill': VolumeX,
   'sun.max.fill': Sun,
   lock: Lock,
+  'xmark.circle': CircleX,
+  'hand.raised': Hand,
+  trash: Trash2,
+  'doc.on.doc': Copy,
+  pencil: Pencil,
+  bell: Bell,
+  'exclamationmark.triangle': TriangleAlert,
+  'info.circle': Info,
+  'rectangle.portrait.and.arrow.right': LogOut,
+  plus: Plus,
+  power: Power,
 };
 
+/** Іконка lucide за SF Symbol; невідома назва — undefined (для меню без іконки). */
+export function findSymbolIcon(symbol: string): LucideIcon | undefined {
+  return SYMBOL_ICON[symbol];
+}
+
 export function resolveSymbolIcon(symbol: string): LucideIcon {
-  return SYMBOL_ICON[symbol] ?? Circle;
+  return findSymbolIcon(symbol) ?? Circle;
 }

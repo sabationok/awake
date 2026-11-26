@@ -3,6 +3,9 @@ import type { UiNode } from '@awake/contracts';
 import type { NodeProps } from '../sdui.types';
 import { ButtonsNode } from './buttons-node';
 import { ChartNode } from './chart-node';
+import { ItemNode } from './item-node';
+import { NoticeNode } from './notice-node';
+import { SeparatorNode } from './separator-node';
 import { ListNode } from './list-node';
 import { RowNode } from './row-node';
 import { SectionNode } from './section-node';
@@ -27,6 +30,9 @@ const NODE_COMPONENTS: NodeComponents = {
   tabs: TabsNode,
   timer: TimerNode,
   chart: ChartNode,
+  item: ItemNode,
+  notice: NoticeNode,
+  separator: SeparatorNode,
 };
 
 /** Вибирає компонент за типом вузла; рендерер не знає, звідки вузол узявся. */
