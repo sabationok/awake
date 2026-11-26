@@ -120,7 +120,7 @@ struct UiListItem: Codable, Hashable, Identifiable {
 
 /// Вузол дерева. Невідомий тип стає `.unknown`, щоб нова версія агента не ламала старий рендерер.
 indirect enum UiNode: Decodable, Identifiable, Hashable {
-    case section(id: String, title: String?, footer: String?, children: [UiNode])
+    case section(UiSection)
     case row(UiRow)
     case status(UiStatus)
     case toggle(id: String, label: String, hint: String?, icon: UiIcon?, setting: UiSettingRef, value: Bool, disabled: Bool)
@@ -131,13 +131,20 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
     case tabs(id: String, tabs: [UiTab], value: String?, setting: UiSettingRef?)
     case timer(UiTimer)
     case chart(UiChart)
+    case item(UiItem)
+    case notice(UiNotice)
+    case separator(id: String, word: String?)
     case unknown(id: String)
 
     var id: String {
         switch self {
-        case .section(let id, _, _, _), .toggle(let id, _, _, _, _, _, _), .select(let id, _, _, _, _, _, _, _),
-             .buttons(let id, _), .list(let id, _, _), .text(let id, _, _), .tabs(let id, _, _, _), .unknown(let id):
+        case .toggle(let id, _, _, _, _, _, _), .select(let id, _, _, _, _, _, _, _),
+             .buttons(let id, _), .list(let id, _, _), .text(let id, _, _), .tabs(let id, _, _, _), .separator(let id, _),
+             .unknown(let id):
             id
+        case .section(let section): section.id
+        case .item(let item): item.id
+        case .notice(let notice): notice.id
         case .row(let row): row.id
         case .status(let status): status.id
         case .timer(let timer): timer.id
@@ -146,7 +153,7 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
     }
 
     private enum Keys: String, CodingKey {
-        case type, id, title, footer, children, label, hint, icon, module, key, value, options, disabled, buttons, items, empty, text, tone, tabs, setting
+        case type, id, title, footer, children, word, label, hint, icon, module, key, value, options, disabled, buttons, items, empty, text, tone, tabs, setting
     }
 
     init(from decoder: Decoder) throws {
@@ -155,9 +162,7 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
         let disabled = try c.decodeIfPresent(Bool.self, forKey: .disabled) ?? false
         switch try c.decode(String.self, forKey: .type) {
         case "section":
-            self = .section(id: id, title: try c.decodeIfPresent(String.self, forKey: .title),
-                            footer: try c.decodeIfPresent(String.self, forKey: .footer),
-                            children: try c.decode([UiNode].self, forKey: .children))
+            self = .section(try UiSection(from: decoder))
         case "row":
             self = .row(try UiRow(from: decoder))
         case "status":
@@ -191,6 +196,12 @@ indirect enum UiNode: Decodable, Identifiable, Hashable {
             self = .timer(try UiTimer(from: decoder))
         case "chart":
             self = .chart(try UiChart(from: decoder))
+        case "item":
+            self = .item(try UiItem(from: decoder))
+        case "notice":
+            self = .notice(try UiNotice(from: decoder))
+        case "separator":
+            self = .separator(id: id, word: try c.decodeIfPresent(String.self, forKey: .word))
         default:
             self = .unknown(id: id)
         }

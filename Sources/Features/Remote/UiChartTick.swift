@@ -43,8 +43,9 @@ private extension UiNode {
         case .chart(let chart):
             guard let fresh = tick.points[chart.id] else { return self }
             return .chart(chart.merging(fresh, from: tick.from))
-        case .section(let id, let title, let footer, let children):
-            return .section(id: id, title: title, footer: footer, children: children.map { $0.applying(tick) })
+        case .section(var section):
+            section.children = section.children.map { $0.applying(tick) }
+            return .section(section)
         case .tabs(let id, let tabs, let value, let setting):
             let updated = tabs.map { tab in
                 var tab = tab

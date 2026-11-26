@@ -7,8 +7,8 @@ struct UiNodeView: View {
     @ViewBuilder
     var body: some View {
         switch node {
-        case .section(_, let title, let footer, let children):
-            sectionView(title: title, footer: footer, children: children)
+        case .section(let section):
+            sectionView(section)
         case .row(let row):
             UiRowView(row: row)
         case .status(let status):
@@ -37,29 +37,37 @@ struct UiNodeView: View {
             UiTimerView(timer: timer)
         case .chart(let chart):
             UiChartView(chart: chart)
+        case .item(let item):
+            UiItemView(item: item)
+        case .notice(let notice):
+            UiNoticeView(notice: notice)
+        case .separator(_, let word):
+            UiSeparatorView(word: word)
         case .unknown:
             EmptyView()
         }
     }
 
-    /// Секція без заголовка чи підпису не отримує порожнього місця під них.
+    /// Секція без заголовка чи підпису не отримує порожнього місця під них. Стан і дії — праворуч у шапці.
     @ViewBuilder
-    private func sectionView(title: String?, footer: String?, children: [UiNode]) -> some View {
-        if let title, let footer {
+    private func sectionView(_ section: UiSection) -> some View {
+        let children = section.children
+        let hasHeader = section.title != nil || section.status != nil || !(section.actions ?? []).isEmpty
+        if hasHeader, let footer = section.footer {
             Section {
                 rows(children)
             } header: {
-                Text(title)
+                sectionHeader(section)
             } footer: {
                 Text(footer)
             }
-        } else if let title {
+        } else if hasHeader {
             Section {
                 rows(children)
             } header: {
-                Text(title)
+                sectionHeader(section)
             }
-        } else if let footer {
+        } else if let footer = section.footer {
             Section {
                 rows(children)
             } footer: {
@@ -68,6 +76,19 @@ struct UiNodeView: View {
         } else {
             Section {
                 rows(children)
+            }
+        }
+    }
+
+    private func sectionHeader(_ section: UiSection) -> some View {
+        HStack(spacing: 8) {
+            Text(section.title ?? "")
+            Spacer(minLength: 8)
+            if let status = section.status {
+                UiStatusBadgeView(status: status)
+            }
+            if let actions = section.actions {
+                UiActionSetView(items: actions)
             }
         }
     }
@@ -119,14 +140,22 @@ private struct UiTabsView: View {
     private var current: UiTab? { tabs.first { $0.id == (picked ?? value) } ?? tabs.first }
 
     var body: some View {
-        Picker("", selection: Binding(get: { current?.id ?? "" }, set: { pick($0) })) {
-            ForEach(tabs) { Text($0.label).tag($0.id) }
+        // До 5 вкладок — сегмент, більше — випадний список: довгий сегмент не влазить у ширину.
+        if tabs.count > 5 {
+            picker.pickerStyle(.menu)
+        } else {
+            picker.pickerStyle(.segmented)
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
         if let current {
             ForEach(current.children) { UiNodeView(node: $0) }
         }
+    }
+
+    private var picker: some View {
+        Picker("", selection: Binding(get: { current?.id ?? "" }, set: { pick($0) })) {
+            ForEach(tabs) { Text($0.label).tag($0.id) }
+        }
+        .labelsHidden()
     }
 
     private func pick(_ id: String) {
@@ -134,5 +163,26 @@ private struct UiTabsView: View {
         if let setting {
             model.sendUiEvent(.setting(module: setting.module, key: setting.key, value: .string(id)))
         }
+    }
+}
+
+/// Роздільна лінія; зі словом — лінія, слово, лінія.
+private struct UiSeparatorView: View {
+    let word: String?
+
+    var body: some View {
+        if let word {
+            HStack(spacing: 8) {
+                line
+                Text(word).font(.callout).foregroundStyle(.secondary)
+                line
+            }
+        } else {
+            Divider()
+        }
+    }
+
+    private var line: some View {
+        Rectangle().fill(.separator).frame(height: 1)
     }
 }
