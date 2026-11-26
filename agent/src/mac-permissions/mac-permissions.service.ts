@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { distinctUntilChanged, map, type Subscription } from 'rxjs';
-import type { PermissionClick, PermissionsSnapshot } from '@awake/contracts';
+import { distinctUntilChanged, map, Subject, type Subscription } from 'rxjs';
+import type { PermissionsSnapshot } from '@awake/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
 import { MacHelperService } from '../mac-helper/mac-helper.service';
@@ -15,12 +15,14 @@ type Denied = PermissionsSnapshot['denied'];
 
 /**
  * Дозволи належать серверу (режим standalone). Чи видано дозвіл у системі, перевіряє помічник; що вимкнено
- * окремим модулям, зберігає сервер у своїй базі. Клієнти (аппка, веб) отримують знімок при кожній зміні
- * і шлють лише натискання. Перевірка перед дією — `allowed()`.
+ * окремим модулям, зберігає сервер у своїй базі. Клієнти бачать їх на сторінці «Дозволи» з дерева і шлють
+ * лише натискання (дії модуля `permissions`). Перевірка перед дією — `allowed()`.
  */
 @Injectable()
 export class MacPermissionsService implements OnModuleInit, OnModuleDestroy {
   private readonly _logger = new Logger(MacPermissionsService.name);
+  /** Знімок змінився: дерево треба перебудувати. */
+  readonly changed$ = new Subject<void>();
   private readonly _subscriptions: Subscription[] = [];
   private _denied: Denied = [];
   private _granted: string[] = [];
@@ -47,7 +49,6 @@ export class MacPermissionsService implements OnModuleInit, OnModuleDestroy {
           this._granted = granted;
           this._publish();
         }),
-      this._bridge.permissionClicks$.subscribe((click) => void this._apply(click)),
     );
     this._publish();
   }
@@ -65,29 +66,31 @@ export class MacPermissionsService implements OnModuleInit, OnModuleDestroy {
     return this._granted.includes(permission) && !this._isDenied(module, permission);
   }
 
-  private async _apply(click: PermissionClick) {
-    if (click.action === 'setModule') {
-      const rest = this._denied.filter((entry) => !(entry.module === click.module && entry.permission === click.permission));
-      this._denied = click.allowed ? rest : [...rest, { module: click.module, permission: click.permission }];
-      this._settings.set(STORE, DENIED_KEY, JSON.stringify(this._denied));
-      this._log(`Дозвіл «${click.permission}» для модуля ${click.module}: ${click.allowed ? 'дозволено' : 'вимкнено'}`);
-      this._publish();
-      return;
-    }
+  /** Перемикач «Дозволено модулю». */
+  setModule(module: string, permission: string, allowed: boolean) {
+    const rest = this._denied.filter((entry) => !(entry.module === module && entry.permission === permission));
+    this._denied = allowed ? rest : [...rest, { module, permission }];
+    this._settings.set(STORE, DENIED_KEY, JSON.stringify(this._denied));
+    this._log(`Дозвіл «${permission}» для модуля ${module}: ${allowed ? 'дозволено' : 'вимкнено'}`);
+    this._publish();
+  }
+
+  /** Видати або відкликати дозвіл у системі: помічник показує вікно пароля macOS на екрані Mac. */
+  async change(action: 'grant' | 'revoke', permission: string) {
     // Сесія Awake тримає сон вимкненим цим самим правилом: без нього сон уже не повернути.
-    if (click.action === 'revoke' && click.permission === 'sleepControl' && this._bridge.state?.active) {
+    if (action === 'revoke' && permission === 'sleepControl' && this._bridge.state?.active) {
       this._log('Дозвіл «sleepControl» не відкликано: іде сесія Awake');
       return;
     }
-    const action = click.action === 'grant' ? 'permissionGrant' : 'permissionRevoke';
-    const result = await this._helper.run(action, undefined, click.permission, PROMPT_TIMEOUT_MS);
-    const verb = click.action === 'grant' ? 'надано' : 'відкликано';
-    if (result.ok) this._log(`Дозвіл «${click.permission}» ${verb}`);
+    const result = await this._helper.run(action === 'grant' ? 'permissionGrant' : 'permissionRevoke', undefined, permission, PROMPT_TIMEOUT_MS);
+    if (result.ok) this._log(`Дозвіл «${permission}» ${action === 'grant' ? 'надано' : 'відкликано'}`);
     else this._log(result.error === 'cancelled' ? 'Скасовано' : `Помилка: ${result.error ?? 'помічник не відповів'}`);
   }
 
   private _publish() {
+    // Знімок окремим рядком потрібен меню-бару аппки; сторінку «Дозволи» клієнти отримують у дереві.
     this._bridge.sendPermissions(this.snapshot());
+    this.changed$.next();
   }
 
   private _isDenied(module: string, permission: string): boolean {

@@ -1,65 +1,23 @@
 import SwiftUI
 
-/// Дозволи на двох рівнях. «Система»: що macOS дозволила самій аппці (правило sudoers), це видає лише користувач.
-/// «Модулі»: що з цього кожен модуль агента просить і чи користувач лишив йому це. Список модулів і їхні
-/// декларації приходять із сервера (агента), Mac-аппка їх не вигадує.
+/// Рідна секція на сторінці «Дозволи», яку дає сервер. Тут лише те, що macOS досі видає самій аппці:
+/// геолокація (назва Wi-Fi) і Bluetooth. Правила sudoers і перемикачі модулів — секції сервера на тій самій сторінці.
 struct PermissionSection: View {
     @EnvironmentObject private var model: AwakeModel
 
     var body: some View {
         Section {
-            ForEach(AppPermission.allCases) { permission in
-                SystemPermissionRow(permission: permission)
-            }
             LocationPermissionRow()
             BluetoothPermissionRow()
         } header: {
-            Text("Система")
+            Text("Аппка на Mac")
         } footer: {
-            Text("Керування сном і температура — окремі правила sudoers із фіксованими командами без пароля, macOS попросить пароль при видачі й відкликанні. Геолокація потрібна лише щоб бачити назву мережі Wi-Fi, Bluetooth — щоб модуль «Поруч» бачив ваш iPhone чи Apple Watch. Модулі не можуть отримати більше, ніж видано тут.")
+            Text("Геолокація потрібна лише щоб бачити назву мережі Wi-Fi, Bluetooth — щоб модуль «Поруч» бачив ваш iPhone чи Apple Watch.")
         }
         .onAppear {
             model.refreshWifi()
             model.refreshBluetooth()
         }
-
-        // Лише модулі, що просять хоч один системний дозвіл: решті тут нічого видавати.
-        if let modules = model.uiTree?.modules.filter({ !($0.permissions ?? []).isEmpty }) {
-            ForEach(modules) { module in
-                ModuleSection(module: module)
-            }
-        } else {
-            Section {
-                Text("Агент не підключений. Список модулів і дозволи, які вони просять, приходять із сервера.")
-                    .foregroundStyle(.secondary)
-            } header: {
-                Text("Модулі")
-            }
-        }
-    }
-}
-
-/// Що система дозволила аппці: стан одного дозволу і дія для нього, як у дозволах Mia.
-private struct SystemPermissionRow: View {
-    @EnvironmentObject private var model: AwakeModel
-    let permission: AppPermission
-
-    var body: some View {
-        let granted = model.isGranted(permission)
-        SettingsRow(title: permission.title, symbol: permission.symbol, color: granted ? .green : .gray) {
-            HStack(spacing: 8) {
-                StatusDot(color: granted ? .green : .gray)
-                Text(granted ? "Видано" : "Не видано").foregroundStyle(.secondary)
-                if granted {
-                    Button("Відкликати…") { model.revoke(permission) }
-                        .disabled(model.permissions == nil || (permission == .sleepControl && model.isRunning))
-                } else {
-                    Button("Надати…") { model.grant(permission) }
-                        .disabled(model.permissions == nil)
-                }
-            }
-        }
-        .help("\(permission.purpose)\n\n" + permission.commands.joined(separator: "\n"))
     }
 }
 
@@ -104,56 +62,5 @@ private struct BluetoothPermissionRow: View {
             }
         }
         .help("Дозвіл Bluetooth macOS. Потрібен модулю «Поруч»: без нього Mac не бачить ваш iPhone чи Apple Watch і не блокується, коли ви відходите.")
-    }
-}
-
-/// Модуль від сервера і дозволи, які він декларує.
-private struct ModuleSection: View {
-    @EnvironmentObject private var model: AwakeModel
-    let module: UiModuleInfo
-
-    var body: some View {
-        let requested = module.permissions ?? []
-        let known = requested.compactMap(AppPermission.init(rawValue:))
-        let unknown = requested.filter { AppPermission(rawValue: $0) == nil }
-        Section {
-            ForEach(known) { permission in
-                ModulePermissionRow(module: module.id, permission: permission, systemGranted: model.isGranted(permission))
-            }
-            ForEach(unknown, id: \.self) { name in
-                SettingsRow(title: name, symbol: "questionmark.circle", color: .gray,
-                            text: "Не підтримується цією версією")
-            }
-        } header: {
-            Label(module.title, systemImage: module.icon.symbol)
-        }
-    }
-}
-
-/// Перемикач «Дозволено модулю» і для чого потрібен дозвіл. Значення — зі знімка сервера, зміна — натискання до нього.
-private struct ModulePermissionRow: View {
-    @EnvironmentObject private var model: AwakeModel
-    let module: String
-    let permission: AppPermission
-    let systemGranted: Bool
-
-    var body: some View {
-        let allowed = model.isAllowed(permission, module: module)
-        VStack(alignment: .leading, spacing: 6) {
-            SettingsRow(title: permission.title, symbol: permission.symbol,
-                        color: allowed && systemGranted ? .blue : .gray) {
-                Toggle("Дозволено модулю", isOn: Binding(
-                    get: { model.isAllowed(permission, module: module) },
-                    set: { model.setAllowed($0, permission, module: module) }
-                ))
-                .toggleStyle(.switch)
-                .labelsHidden()
-                .disabled(model.permissions == nil)
-            }
-            Text(systemGranted ? permission.purpose : "\(permission.purpose) Не діє, поки систему не дозволено вище.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
     }
 }

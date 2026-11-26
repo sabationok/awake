@@ -10,7 +10,6 @@ import type {
   UiEvent,
   UiTree,
   CommandRequest,
-  PermissionClick,
   PermissionsSnapshot,
   HelperAction,
   HelperState,
@@ -59,7 +58,6 @@ const CLIENT_TYPES: ReadonlySet<MacToAgentMessage['type']> = new Set([
   'serverCharts',
   'proximity',
   'wifi',
-  'permission',
 ]);
 
 const NO_SESSIONS: MacSessionFields = { active: false, until: null, startedAt: null, duration: null, sleepStartedAt: null, sleepAt: null };
@@ -106,8 +104,6 @@ export class MacBridgeService implements OnModuleInit {
    * Зі старим транспортом вони йдуть в аппку.
    */
   readonly serverCommands$ = new Subject<ServerCommand>();
-  /** Натискання в «Дозволах» клієнта: виконує MacPermissionsService. */
-  readonly permissionClicks$ = new Subject<PermissionClick>();
   private _helperState: HelperState | null = null;
   private _sessionFields: MacSessionFields = NO_SESSIONS;
   /** Назва Wi-Fi від аппки-клієнта: помічник її поки не бачить. */
@@ -251,9 +247,6 @@ export class MacBridgeService implements OnModuleInit {
     }
     if (allowed && !allowed.has(message.type)) return;
     switch (message.type) {
-      case 'permission':
-        this.permissionClicks$.next(message.data);
-        return;
       case 'wifi':
         if (this._clientSsid === message.data.ssid) return;
         this._clientSsid = message.data.ssid;

@@ -48,12 +48,12 @@ struct MainView: View {
     }
 
     /// Бічне меню: головний пункт модуля — його назва (Awake), він відкриває першу сторінку модуля з керуванням;
-    /// решта сторінок вкладені під ним. Далі системні сторінки дерева і нативні «Підключення», «Пристрої» та «Дозвіл».
+    /// решта сторінок вкладені під ним. Далі системні сторінки дерева і нативні «Підключення» та «Пристрої».
     /// Без дерева (агент не запущений) лишаються лише нативні.
     private var sections: [SidebarSection<MainPage>] {
         // Статистика сервера — окрема вкладена сторінка, як «Статистика» в модулів.
         let native = [SidebarNode(item: MainPage.server, children: [.serverStats])]
-            + [MainPage.connection, .devices, .permission].map { SidebarNode(item: $0) }
+            + [MainPage.connection, .devices].map { SidebarNode(item: $0) }
         guard let tree = model.uiTree else { return [SidebarSection(nodes: native)] }
         let modules = tree.modules.compactMap { module -> SidebarNode<MainPage>? in
             // Вимкнений модуль: сірий пункт без дітей і без сторінки.
@@ -76,7 +76,7 @@ struct MainView: View {
     }
 
     /// Динамічні сторінки, у які аппка вшиває власну секцію (токени й ключі живуть лише на Mac).
-    private static let mixedPages: Set<String> = ["telegram", "relay"]
+    private static let mixedPages: Set<String> = ["telegram", "relay", "permissions"]
 
     private func treePage(_ id: String) -> UiPage? {
         model.uiTree?.pages.first { $0.id == id }
@@ -95,7 +95,6 @@ struct MainView: View {
         switch page {
         case .remote(let id): moduleOwning(id)?.title ?? treePage(id)?.title ?? ""
         case .disabledModule(let id): treeModule(id)?.title ?? id
-        case .permission: "Дозвіл"
         case .connection: "Підключення"
         case .devices: "Пристрої"
         case .server: "Сервер"
@@ -107,7 +106,6 @@ struct MainView: View {
         switch page {
         case .remote(let id): moduleOwning(id)?.icon.symbol ?? treePage(id)?.icon.symbol ?? "questionmark.circle"
         case .disabledModule(let id): treeModule(id)?.icon.symbol ?? "questionmark.circle"
-        case .permission: "lock.fill"
         case .connection: "antenna.radiowaves.left.and.right"
         case .devices: "laptopcomputer.and.iphone"
         case .server: "server.rack"
@@ -131,6 +129,9 @@ struct MainView: View {
                             WebhooksSection().originHighlight(.native, scope: .section)
                         }
                         ForEach(uiPage.children) { UiNodeView(node: $0).originHighlight(.agent, scope: .section) }
+                        if uiPage.id == "permissions" {
+                            PermissionSection().originHighlight(.native, scope: .section)
+                        }
                     }
                     .formStyle(.grouped)
                 } else {
@@ -178,12 +179,6 @@ struct MainView: View {
             .originHighlight(.native, scope: .page)
         case .disabledModule:
             EmptyView()
-        case .permission:
-            Form {
-                PermissionSection()
-            }
-            .formStyle(.grouped)
-            .originHighlight(.native, scope: .page)
         }
     }
 }

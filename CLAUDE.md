@@ -30,8 +30,10 @@ One direction: clients → server → helper → macOS. Answers and events come 
   the server when none is running, or when a different build is running, and then connects to it over the local
   socket `~/Library/Application Support/MaControl/server.sock` (same JSON lines as the old stdin / stdout link).
 - Permissions belong to the server: the helper checks and installs the sudoers rules (it shows the macOS password
-  window), the server stores the per-module switches and checks them before acting, and sends the snapshot to the
-  clients on every change. Clients show it and send clicks.
+  window), the server stores the per-module switches and checks them before acting. Clients get them as the
+  server page «Дозволи» (`agent/src/mac-permissions`, scope local): the web shows the system grants and toggles the
+  per-module switches; grant / revoke buttons exist only in the Mac app (scope mac) and the server refuses those
+  actions from any other source.
 - Not moved yet, and not an agreed exception: the app still reads the Wi-Fi name and scans Bluetooth and sends them
   to the server (macOS grants those two to a bundle with an Info.plist; the helper must become a background bundle
   to take them over). The server reads `pmset -g assertions` itself for Keepers.

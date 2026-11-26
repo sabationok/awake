@@ -3,7 +3,6 @@ enum MainPage: Hashable, Identifiable {
     case remote(id: String)
     /// Вимкнений модуль дерева: сірий пункт без сторінки, вибрати його не можна.
     case disabledModule(id: String)
-    case permission
     case connection
     case devices
     case server
@@ -17,7 +16,6 @@ enum MainPage: Hashable, Identifiable {
         switch self {
         case .remote(let id): "remote:\(id)"
         case .disabledModule(let id): "module:\(id)"
-        case .permission: "permission"
         case .connection: "connection"
         case .devices: "devices"
         case .server: "server"
@@ -27,7 +25,8 @@ enum MainPage: Hashable, Identifiable {
 
     init?(storageKey: String) {
         switch storageKey {
-        case "permission": self = .permission
+        // Рідної сторінки «Дозвіл» більше немає: її замінила серверна «Дозволи».
+        case "permission": self = .remote(id: "permissions")
         case "connection": self = .connection
         case "devices": self = .devices
         case "server": self = .server

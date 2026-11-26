@@ -27,6 +27,9 @@ import { BotMacModule } from './bot/bot.mac-module';
 import { BotEventsListener } from './bot/listeners/bot-events.listener';
 import { BotJournalListener } from './bot/listeners/bot-journal.listener';
 import { SleepTimerEventsListener } from './sleep/listeners/sleep-timer-events.listener';
+import { PermissionsTreeListener } from '../mac-permissions/listeners/permissions-tree.listener';
+import { MacPermissionsModule } from '../mac-permissions/mac-permissions.module';
+import { PermissionsMacModule } from '../mac-permissions/permissions.mac-module';
 import { ModulesService } from './modules.service';
 import { LiveChartsService } from './live-charts.service';
 import { MacUiListener } from './mac-ui.listener';
@@ -35,7 +38,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
 
 @Global()
 @Module({
-  imports: [BotModule, SettingsModule, SessionsModule, SleepTimersModule, LogsModule, GroupsModule],
+  imports: [BotModule, SettingsModule, SessionsModule, SleepTimersModule, LogsModule, GroupsModule, MacPermissionsModule],
   controllers: [UiController],
   providers: [
     ModulesService,
@@ -47,6 +50,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
     KeepersService,
     KeepersMacModule,
     KeepersListener,
+    PermissionsTreeListener,
     MediaMacModule,
     MacStateMacModule,
     TelegramMacModule,
@@ -67,7 +71,7 @@ import { MAC_MODULES, type MacModule } from './types/mac-module';
       provide: MAC_MODULES,
       useFactory: (...modules: MacModule[]) => modules,
       // GroupsMacModule і бот /groups живуть у GroupsModule (імпорт вище): тут лише місце модуля в списку.
-      inject: [AwakeMacModule, SleepMacModule, KeepersMacModule, MediaMacModule, MacStateMacModule, TelegramMacModule, GroupsMacModule, BotMacModule, RelayMacModule, TailscaleMacModule, ProximityMacModule],
+      inject: [AwakeMacModule, SleepMacModule, KeepersMacModule, MediaMacModule, MacStateMacModule, TelegramMacModule, GroupsMacModule, BotMacModule, RelayMacModule, TailscaleMacModule, ProximityMacModule, PermissionsMacModule],
     },
   ],
   exports: [ModulesService],
