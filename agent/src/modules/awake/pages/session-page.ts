@@ -16,8 +16,11 @@ import { thermalPresentation } from '../helpers/thermal-presentation';
  */
 export function buildSessionPage(ctx: ModuleContext): UiPage {
   const mac = ctx.mac;
-  const card = sessionCard(ctx, mac, new Date());
+  // Без дозволу на керування сном сесію не почати: кажемо чому, а не лишаємо кнопку, яка нічого не зробить.
+  const blocked = ctx.missingPermission('sleepControl');
+  const card: SessionCard = { ...sessionCard(ctx, mac, new Date()), blocked };
   const session: UiNode[] = [
+    ...(blocked ? [noPermissionRow(blocked)] : []),
     sessionTimerNode(card),
     planTabsNode(
       ctx,
@@ -95,6 +98,10 @@ function planChanged(ctx: ModuleContext, mac: MacState): boolean {
     return !mac.until || formatClock(mac.until) !== ctx.setting<string>('until');
   }
   return mac.duration !== ctx.setting<string>('duration');
+}
+
+function noPermissionRow(reason: string): UiRow {
+  return { id: 'no-permission', type: 'row', label: 'Сесію не запустити', dot: { tone: 'red' }, hint: reason };
 }
 
 function sleepBlockedRow(): UiRow {

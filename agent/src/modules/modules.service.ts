@@ -1,3 +1,4 @@
+import { MacPermissionsService } from '../mac-permissions/mac-permissions.service';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { Subject } from 'rxjs';
 import type {
@@ -44,6 +45,7 @@ export class ModulesService {
     private readonly _router: BotRouterService,
     private readonly _journal: BotJournalService,
     private readonly _liveCharts: LiveChartsService,
+    private readonly _permissions: MacPermissionsService,
     notifications: TelegramNotificationsService,
   ) {
     this._byId = new Map(modules.map((module) => [module.id, module]));
@@ -73,6 +75,7 @@ export class ModulesService {
         return buildSettingNode(owner.id, this._definition(owner, key), this._readSetting(owner, key));
       },
       liveChart: (spec) => this._liveCharts.build(spec, charts),
+      missingPermission: (permission) => this._permissions.missing(module.id, permission),
       sendToMac: (command, source) => {
         bridge.sendCommand(command, source);
       },

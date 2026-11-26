@@ -1,7 +1,8 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { distinctUntilChanged, map, Subject, type Subscription } from 'rxjs';
-import type { PermissionsSnapshot } from '@awake/contracts';
+import type { MacPermission, PermissionsSnapshot } from '@awake/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
+import { PERMISSION_INFO } from './constants/permissions';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
 import { MacHelperService } from '../mac-helper/mac-helper.service';
 import { SettingsService } from '../settings/settings.service';
@@ -64,6 +65,16 @@ export class MacPermissionsService implements OnModuleInit, OnModuleDestroy {
   /** Дозвіл видано в системі і власник не вимкнув його цьому модулю. */
   allowed(module: string, permission: string): boolean {
     return this._granted.includes(permission) && !this._isDenied(module, permission);
+  }
+
+  /** Чому модуль не може користуватись дозволом, словами для його сторінки; null — може. */
+  missing(module: string, permission: MacPermission): string | null {
+    // Зі старим транспортом дозволи перевіряє аппка.
+    if (!this._config.standalone) return null;
+    const title = PERMISSION_INFO[permission].title;
+    if (!this._granted.includes(permission)) return `Дозвіл «${title}» не видано в системі. Видати його можна лише в аппці на Mac, на сторінці «Дозволи».`;
+    if (this._isDenied(module, permission)) return `Дозвіл «${title}» вимкнено для цього модуля на сторінці «Дозволи».`;
+    return null;
   }
 
   /** Перемикач «Дозволено модулю». */

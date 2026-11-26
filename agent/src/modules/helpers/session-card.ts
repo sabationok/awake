@@ -19,6 +19,8 @@ export interface SessionCard {
   tone: UiTone;
   timerId: string;
   buttonsId: string;
+  /** Чому сесію зараз не почати (бракує дозволу): «Старт» тоді неактивний. Зупинити можна завжди. */
+  blocked?: string | null;
   texts: {
     running: string;
     /** Підпис під відліком, коли сесія йде. */
@@ -61,7 +63,7 @@ export function sessionButtons(card: SessionCard): UiButtons {
     id: 'start',
     label,
     variant: 'filled',
-    disabled: mac === null,
+    disabled: mac === null || Boolean(card.blocked),
     action: { module, name: 'start' },
   });
   const stop: UiButton = { id: 'stop', label: card.texts.stop, variant: 'destructive', action: { module, name: 'stop' } };

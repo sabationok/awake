@@ -23,6 +23,11 @@ export interface ModuleContext {
    * (LiveChartsService). id вузла має бути унікальним у всьому дереві.
    */
   liveChart(spec: LiveChartSpec): UiChart;
+  /**
+   * Чому цей модуль зараз не може користуватись системним дозволом: не видано в системі або вимкнено модулю
+   * на сторінці «Дозволи». null — дозвіл є. Модуль показує причину на своїй сторінці.
+   */
+  missingPermission(permission: MacPermission): string | null;
   /** Команда для Mac-аппки (сон, блокування, екран). */
   sendToMac(command: CommandRequest, source: ModuleSource): void;
   /** Спільний стан для /status: кожен модуль під своїм id, у порядку модулів. */
