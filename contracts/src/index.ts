@@ -168,8 +168,20 @@ export type MacToAgentMessage =
   | { type: 'webhooks'; data: import('./webhooks').WebhookAction }
   /** Сторінка «Сервер» відкрилась або змінився період: агент шле графіки й далі live-тіки цього періоду. */
   | { type: 'serverCharts'; data: { period: StatsPeriod } }
+  /**
+   * Дозволи, як їх виставив власник у «Дозволах» аппки: що видано в системі і що вимкнено окремим модулям.
+   * Сервер зберігає знімок і сам перевіряє його перед дією, тож правило діє й без аппки.
+   */
+  | { type: 'permissions'; data: PermissionsSnapshot }
   /** Тимчасово, поки помічник не має дозволу геолокації: назву Wi-Fi знає лише аппка. */
   | { type: 'wifi'; data: { ssid: string | null } };
+
+export interface PermissionsSnapshot {
+  /** Дозволи, видані в системі (правила sudoers): `sleepControl`, `thermalRead`. */
+  granted: string[];
+  /** Вимкнені перемикачі «Дозволено модулю». */
+  denied: { module: string; permission: string }[];
+}
 
 /** Стан Bluetooth на Mac. `unauthorized` — macOS не дала аппці доступ. */
 export type BluetoothState = 'on' | 'off' | 'unauthorized' | 'unsupported' | 'unknown';

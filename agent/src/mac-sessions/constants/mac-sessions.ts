@@ -2,6 +2,8 @@
 export const MAC_SESSIONS_STORE = 'mac-sessions';
 export const AWAKE_SESSION_KEY = 'awake';
 export const SLEEPER_SESSION_KEY = 'sleeper';
+/** Знімок дозволів від аппки: діє й тоді, коли аппка закрита. */
+export const PERMISSIONS_KEY = 'permissions';
 
 /** Як часто перевіряється кінець сесії Awake і час Sleeper. */
 export const SESSION_TICK_MS = 1_000;

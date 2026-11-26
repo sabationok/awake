@@ -158,6 +158,7 @@ private struct ModulePermissionRow: View {
         }
         .onChange(of: allowed) { _, value in
             PermissionGate.setModuleAllowed(value, permission, module: module)
+            AwakeModel.shared.sendPermissions()
         }
     }
 }

@@ -105,7 +105,11 @@ final class AwakeModel: ObservableObject {
     // MARK: оновлення стану
 
     func refresh() {
-        grantedPermissions = PermissionService.granted()
+        let granted = PermissionService.granted()
+        guard granted != grantedPermissions else { return }
+        grantedPermissions = granted
+        // Сервер перевіряє дозволи сам, тож дізнається про зміну одразу.
+        sendPermissions()
     }
 
     private func tick() {
