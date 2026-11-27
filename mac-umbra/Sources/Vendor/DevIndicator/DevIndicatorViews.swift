@@ -3,22 +3,54 @@ import SwiftUI
 
 // MARK: - Floating button
 
+/// Neutral on purpose (spec §3): it belongs to dev tooling, not to the host app's design.
+/// The stage colour is not used here; it only shows in the panel badge and the strip dot.
 struct DevFloatingButton: View {
-    let build: DevBuild
     let palette: DevPalette
+    let dragging: Bool
+
+    @State private var hovered = false
 
     var body: some View {
-        let stage = palette.stage(build.stage)
         ZStack {
-            Circle().fill(palette.surface2)
-            Circle().strokeBorder(stage, lineWidth: 1.5)
+            Circle().fill(palette.buttonFill)
+            Circle().strokeBorder(palette.buttonRing, lineWidth: 1)
             Image(systemName: "chevron.left.forwardslash.chevron.right")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(stage)
+                .foregroundStyle(palette.buttonIcon)
         }
         .frame(width: 36, height: 36)
         .contentShape(Circle())
-        .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
+        // Two shadows, as on the web: a tight contact one and a soft drop.
+        // Hover lifts 1 pt and makes the drop a little stronger.
+        .shadow(color: .black.opacity(0.2), radius: 1.5, x: 0, y: hovered ? 2 : 1)
+        .shadow(color: .black.opacity(hovered ? 0.26 : 0.22), radius: hovered ? 11 : 8, x: 0, y: hovered ? 10 : 6)
+        .offset(y: hovered ? -1 : 0)
+        .animation(.easeOut(duration: 0.12), value: hovered)
+        .onHover { inside in
+            hovered = inside
+            if !dragging { DevCursor.set(inside ? .pointingHand : nil) }
+        }
+        .onChange(of: dragging) { _, isDragging in
+            DevCursor.set(isDragging ? .closedHand : (hovered ? .pointingHand : nil))
+        }
+    }
+}
+
+/// Keeps a single cursor pushed at a time, so `push` and `pop` always balance.
+@MainActor
+enum DevCursor {
+    private static var pushed = false
+
+    static func set(_ cursor: NSCursor?) {
+        if pushed {
+            NSCursor.pop()
+            pushed = false
+        }
+        if let cursor {
+            cursor.push()
+            pushed = true
+        }
     }
 }
 

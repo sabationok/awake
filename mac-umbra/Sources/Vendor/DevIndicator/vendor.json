@@ -1,13 +1,13 @@
 {
   "kit": "dev-indicator-kit",
   "part": "swift",
-  "sourceCommit": "f3f3c128d78647cfa5a0d007a849bd639fb91406",
+  "sourceCommit": "eabd9182a4510dc2a5602bbe2ada469762bf7b58",
   "files": {
     "DevBuild.swift": "e0936b81311266a3529762721a8fa82126daf91c32834f28660566b3e2b94350",
-    "DevIndicatorModifier.swift": "80a0c86d72fe677f7b6e8a8b6c9016f3e39c24157c6c0e691a991d9b6e2005fa",
+    "DevIndicatorModifier.swift": "612d22eb1d4b5918669f9c0b0b11cd3ce51b8592b3b83b5f1726baca3f145401",
     "DevIndicatorPrefs.swift": "98177d96774678e1d9a555d2ef375d6e054e3ddaa8230e22d61cf41b64f81482",
-    "DevIndicatorViews.swift": "fed952aa9fd95faf1bf0994f069289f1d6e3ccdc870f9cb4efd4cba0edca908d",
-    "DevPalette.swift": "fae60ac01d92832bfbae328c01591e9ee557b608bc10e966c61064a5b2a76a7b",
+    "DevIndicatorViews.swift": "7ec007adf214c26a3f2c7ad6cb0be93217c9011ecdbd12c828e3726b95a30f35",
+    "DevPalette.swift": "1fe9460bcf4853127d9a833cb8ee1cda727289899ef539eef3a0152e502517c8",
     "DevTools.swift": "e9dfa7c8f1b6069a0a768270ca784a811815672aaef9f4bfc863b1bef16c1241"
   }
 }

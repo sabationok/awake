@@ -16,6 +16,7 @@ struct DevIndicatorModifier: ViewModifier {
     @State private var prefs: DevIndicatorPrefs
     @State private var panelOpen: Bool
     @State private var dragOffset: CGSize = .zero
+    @State private var isDragging = false
     @State private var escMonitor: Any?
 
     private let inset: CGFloat = 16
@@ -88,16 +89,18 @@ struct DevIndicatorModifier: ViewModifier {
     }
 
     private func floatingButton(build: DevBuild, palette: DevPalette, size: CGSize) -> some View {
-        DevFloatingButton(build: build, palette: palette)
+        DevFloatingButton(palette: palette, dragging: isDragging)
             .offset(dragOffset)
             .onTapGesture { panelOpen.toggle() }
             .gesture(
                 DragGesture(minimumDistance: 4)
                     .onChanged { value in
                         panelOpen = false
+                        isDragging = true
                         dragOffset = value.translation
                     }
                     .onEnded { value in
+                        isDragging = false
                         let corner = prefs.corner
                         let anchorX = corner.isLeading ? inset + buttonSize / 2 : size.width - inset - buttonSize / 2
                         let anchorY = corner.isTop ? inset + buttonSize / 2 : size.height - inset - buttonSize / 2
