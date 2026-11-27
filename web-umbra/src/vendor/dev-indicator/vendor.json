@@ -1,13 +1,13 @@
 {
   "kit": "dev-indicator-kit",
   "part": "web",
-  "sourceCommit": "b32771164fd3d6c5af57d191e1b19373abc11663",
+  "sourceCommit": "3ae291af39825c40e0f5259c717bb110d90452fb",
   "files": {
-    "DevIndicator.tsx": "b5b0462b0a40f8269baea0010e1be4fbe4677ca5f20749c806e9e3bd7ade16f7",
+    "DevIndicator.tsx": "cdba02eafecfcd97bc7ba8031e828fbbd7d10e177acec11de64c3456ccb1f423",
     "contract/index.ts": "4da1bdda8c2d2dcb12e9226b54d931e650f1933680eb7fd90e4117a7bd133e50",
-    "dev-indicator.css": "ad882117cb1fc0da724fcd48da67634fba619672233b517714dd7aaaa0eb5f4a",
+    "dev-indicator.css": "3bce210fde871bb18a6f87ec438d70e7e0cc9aa51dbbfae063d2fbc6c7cc523e",
     "gen-dev-build.mjs": "2feb0e9017c47ff93d9042471fc91dcd963beac3c668ec061700338370162e53",
-    "index.ts": "dd9484d052fbc1e99aa1cfaa562c05b2cb593b9734d1625952b9d12946c7f2c3",
+    "index.ts": "f12f818573daeb250b009a86aabfc48ccdbfa52865ccc3a84c6eaaa66b7f7fff",
     "tools.ts": "1a57107fe46070b169fe63e62428300d248def67ae1860efb08c3e14012ac8ab",
     "types.ts": "1b55450c4131bb0f533341304abcfb68b908e0800ba78bc21e44db147f0137c0"
   }

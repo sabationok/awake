@@ -1,9 +1,16 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import type { DevBuild } from './types'; // TEMP until contracts/ts lands
 import { useDevTools, type DevTool } from './tools';
 
 export type IndicatorMode = 'floating' | 'strip';
-export type Corner = 'tl' | 'tr' | 'bl' | 'br';
+export type Side = 'left' | 'right';
 export type StripEdge = 'top' | 'bottom';
 
 export interface DevIndicatorProps {
@@ -16,27 +23,52 @@ export interface DevIndicatorProps {
 
 interface Prefs {
   mode: IndicatorMode;
-  corner: Corner;
+  /** Floating button: which viewport side it sticks to. */
+  side: Side;
+  /** Floating button: vertical position, 0 = top (16px), 1 = bottom (16px). */
+  y: number;
   stripEdge: StripEdge;
 }
 
 const STORAGE_PREFIX = 'dev-indicator:';
 const GAP = 8;
 const FAB_SIZE = 36;
+const EDGE = 16;
 const DRAG_THRESHOLD = 4;
 
 const STRIP_HEIGHT = 24;
 const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
-function readPrefs(key: string): Partial<Prefs> {
+function readPrefs(key: string): Record<string, unknown> {
   try {
     const raw = window.localStorage.getItem(key);
     if (!raw) return {};
     const v: unknown = JSON.parse(raw);
-    return typeof v === 'object' && v !== null ? (v as Partial<Prefs>) : {};
+    return typeof v === 'object' && v !== null ? (v as Record<string, unknown>) : {};
   } catch {
     return {};
   }
+}
+
+/**
+ * Floating position from saved prefs. Migrates the corner-based prefs (`corner`: tl → left/0, bl → left/1, tr → right/0,
+ * br → right/1). Unknown or missing values fall back to bottom-left.
+ */
+export function parseFloatingPrefs(saved: Record<string, unknown>): { side: Side; y: number } {
+  const side = saved.side === 'left' || saved.side === 'right' ? saved.side : undefined;
+  const y = typeof saved.y === 'number' && saved.y >= 0 && saved.y <= 1 ? saved.y : undefined;
+  if (side !== undefined && y !== undefined) return { side, y };
+  const c = saved.corner;
+  if (c === 'tl' || c === 'tr' || c === 'bl' || c === 'br') {
+    return { side: c.endsWith('r') ? 'right' : 'left', y: c.startsWith('t') ? 0 : 1 };
+  }
+  return { side: side ?? 'left', y: y ?? 1 };
+}
+
+/** Viewport fraction (0..1) for a button top edge in px, clamped so the button stays 16px from top and bottom. */
+function fractionFromTop(top: number): number {
+  const range = Math.max(1, window.innerHeight - FAB_SIZE - 2 * EDGE);
+  return Math.min(1, Math.max(0, (top - EDGE) / range));
 }
 
 function writePrefs(key: string, prefs: Prefs): void {
@@ -48,7 +80,6 @@ function writePrefs(key: string, prefs: Prefs): void {
 }
 
 const isMode = (v: unknown): v is IndicatorMode => v === 'floating' || v === 'strip';
-const isCorner = (v: unknown): v is Corner => v === 'tl' || v === 'tr' || v === 'bl' || v === 'br';
 const isEdge = (v: unknown): v is StripEdge => v === 'top' || v === 'bottom';
 
 function pad(n: number): string {
@@ -110,22 +141,33 @@ export function DevIndicator({
 
   // The first render uses the defaults on the server and the client alike (SSR hydration); the saved choice is
   // applied right after mount, before paint.
-  const [prefs, setPrefs] = useState<Prefs>({ mode: defaultMode, corner: 'bl', stripEdge: defaultStripEdge });
+  const [prefs, setPrefs] = useState<Prefs>({ mode: defaultMode, side: 'left', y: 1, stripEdge: defaultStripEdge });
   useIsoLayoutEffect(() => {
     const saved = readPrefs(key);
+    const floating = parseFloatingPrefs(saved);
     setPrefs((p) => ({
       mode: isMode(saved.mode) ? saved.mode : p.mode,
-      corner: isCorner(saved.corner) ? saved.corner : p.corner,
+      side: floating.side,
+      y: floating.y,
       stripEdge: isEdge(saved.stripEdge) ? saved.stripEdge : p.stripEdge,
     }));
   }, [key]);
   const [open, setOpen] = useState(defaultOpen);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [snap, setSnap] = useState(false);
   const [placement, setPlacement] = useState<'above' | 'below'>('above');
+
+  // Animate only the snap that follows a release, for a moment.
+  useEffect(() => {
+    if (!snap) return;
+    const t = setTimeout(() => setSnap(false), 160);
+    return () => clearTimeout(t);
+  }, [snap]);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ sx: number; sy: number; ox: number; oy: number; moved: boolean } | null>(null);
+  const lastDrag = useRef<{ x: number; y: number } | null>(null);
   const suppressClick = useRef(false);
   const touched = useRef(false);
 
@@ -176,7 +218,7 @@ export function DevIndicator({
     const top = rootRef.current.getBoundingClientRect().top;
     const next = top >= panelRef.current.offsetHeight + GAP ? 'above' : 'below';
     setPlacement((p) => (p === next ? p : next));
-  }, [open, prefs.mode, prefs.corner, prefs.stripEdge]);
+  }, [open, prefs.mode, prefs.side, prefs.y, prefs.stripEdge]);
 
   if (build.stage === 'production') return null;
 
@@ -202,18 +244,28 @@ export function DevIndicator({
     const dy = e.clientY - d.sy;
     if (!d.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
     d.moved = true;
-    setDragPos({ x: d.ox + dx, y: d.oy + dy });
+    // Keep the button on screen while dragging; the clamp to 16px applies on release.
+    const x = Math.min(Math.max(0, d.ox + dx), window.innerWidth - FAB_SIZE);
+    const y = Math.min(Math.max(0, d.oy + dy), window.innerHeight - FAB_SIZE);
+    lastDrag.current = { x, y };
+    setDragPos({ x, y });
   };
 
   const onPointerEnd = (e: ReactPointerEvent<HTMLButtonElement>, cancelled: boolean) => {
     const d = drag.current;
     drag.current = null;
+    const at = lastDrag.current;
+    lastDrag.current = null;
     if (!d) return;
-    if (d.moved && !cancelled) {
-      // Snap to the nearest viewport corner; the click that follows a drag is swallowed.
-      const top = e.clientY < window.innerHeight / 2;
-      const left = e.clientX < window.innerWidth / 2;
-      update({ corner: top ? (left ? 'tl' : 'tr') : left ? 'bl' : 'br' });
+    if (d.moved && !cancelled && at) {
+      // Snap to the nearest side (by the button's centre), keep the height it was dropped at.
+      const centreX = at.x + FAB_SIZE / 2;
+      update({
+        side: centreX < window.innerWidth / 2 ? 'left' : 'right',
+        y: fractionFromTop(at.y),
+      });
+      setSnap(true);
+      // The click that follows a drag is swallowed.
       suppressClick.current = true;
     }
     setDragPos(null);
@@ -240,22 +292,30 @@ export function DevIndicator({
 
   const { project, stage, version, buildNumber, git, builtAt, extra, sdks } = build;
   const isFloating = prefs.mode === 'floating';
-  const alignRight = isFloating && prefs.corner.endsWith('r');
-  const align = !isFloating ? 'strip' : alignRight ? 'right' : 'left';
+  const align = !isFloating ? 'strip' : prefs.side;
   const stageLabel = stage === 'preview' ? 'preview' : 'dev';
   const commitLine = `${git.branch} · ${git.commit}`;
+  // data-corner is kept for consumers that style [data-corner='bl'] (derived: y > .5 is the bottom).
+  const corner = `${prefs.y > 0.5 ? 'b' : 't'}${prefs.side === 'left' ? 'l' : 'r'}`;
 
-  const rootStyle = dragPos ? { left: dragPos.x, top: dragPos.y } : undefined;
+  // While dragging the button follows the pointer in px; otherwise it sits at its saved side and height (CSS).
+  const rootStyle: CSSProperties | undefined = !isFloating
+    ? undefined
+    : dragPos
+      ? { left: dragPos.x, top: dragPos.y }
+      : ({ '--dvi-y': prefs.y } as CSSProperties);
 
   return (
     <div
       ref={rootRef}
       className="dvi-root"
       data-mode={prefs.mode}
-      data-corner={isFloating ? prefs.corner : undefined}
+      data-side={isFloating ? prefs.side : undefined}
+      data-corner={isFloating ? corner : undefined}
       data-edge={isFloating ? undefined : prefs.stripEdge}
       data-stage={stage}
       data-dragging={dragPos ? '' : undefined}
+      data-snap={snap ? '' : undefined}
       style={rootStyle}
     >
       {isFloating ? (

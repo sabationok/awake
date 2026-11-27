@@ -62,16 +62,21 @@
   outline-offset: 2px;
 }
 
-/* ---------- Floating button (36px, snaps to a corner, 16px from the edges) ---------- */
+/* ---------- Floating button (36px, snaps to the nearest side, 16px from it; keeps its height) ----------
+   Position is percentage-based on the fixed root (percent of the viewport): left = side edge, top = --dvi-y
+   (0..1) of the range 16px..(100% - 52px). A resize needs no JS. data-corner is kept for consumers only. */
 .dvi-root[data-mode="floating"] {
   width: 36px;
   height: 36px;
+  top: calc(16px + var(--dvi-y, 1) * (100% - 68px));
 }
-.dvi-root[data-corner="bl"] { left: 16px; bottom: 16px; }
-.dvi-root[data-corner="br"] { right: 16px; bottom: 16px; }
-.dvi-root[data-corner="tl"] { left: 16px; top: 16px; }
-.dvi-root[data-corner="tr"] { right: 16px; top: 16px; }
-.dvi-root[data-dragging] { right: auto; bottom: auto; }
+.dvi-root[data-side="left"] { left: 16px; }
+.dvi-root[data-side="right"] { left: calc(100% - 52px); }
+/* The transition runs only for a snap (data-snap, set for ~160ms after release), never while dragging. */
+.dvi-root[data-mode="floating"][data-snap] {
+  transition: left 0.15s ease, top 0.15s ease;
+}
+.dvi-root[data-dragging] { transition: none; }
 
 .dvi-fab {
   /* Neutral on purpose: the button belongs to the dev tooling, not to the host app's design. Stage colour lives in the panel. */
