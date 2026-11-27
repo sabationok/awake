@@ -60,6 +60,7 @@ struct AppShell: View {
         .environmentObject(runner)
         .runActionDialog(runner)
         .umbraTheme(.dark, translucent: !options.render)
+        .devIndicator(build: AppInfo.devBuild(options), preview: AppInfo.devPreview(options))
     }
 
     /// `.s-host`: app title, then «host · онлайн/офлайн»; the icon is accent while the Mac is online.
@@ -70,21 +71,19 @@ struct AppShell: View {
                                 online: online)
     }
 
-    /// `.s-demo`: where the tree comes from and whether clicks reach the server. The app's name sits under it.
+    /// `.s-demo`: where the tree comes from and whether clicks reach the server. The build's name and version are in
+    /// the dev indicator, not here.
     @ViewBuilder
     private var source: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            switch server.origin {
-            case .socket where server.connected:
-                UmbraSidebarSource("Живі дані · server.sock", detail: "Дії йдуть на сервер", symbol: "bolt.horizontal",
-                                   tone: .green)
-            case .socket:
-                UmbraSidebarSource("Сервер недоступний", detail: "Перепідключення щосекунди", symbol: "bolt.horizontal",
-                                   tone: .red)
-            case .file:
-                UmbraSidebarSource("Знімок дерева з файлу", detail: "Дії не надсилаються на сервер")
-            }
-            UmbraSidebarFooter(AppInfo.displayName).padding(.top, -12)
+        switch server.origin {
+        case .socket where server.connected:
+            UmbraSidebarSource("Живі дані · server.sock", detail: "Дії йдуть на сервер", symbol: "bolt.horizontal",
+                               tone: .green)
+        case .socket:
+            UmbraSidebarSource("Сервер недоступний", detail: "Перепідключення щосекунди", symbol: "bolt.horizontal",
+                               tone: .red)
+        case .file:
+            UmbraSidebarSource("Знімок дерева з файлу", detail: "Дії не надсилаються на сервер")
         }
     }
 

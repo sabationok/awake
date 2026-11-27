@@ -3,11 +3,15 @@ import SwiftUI
 
 /// `--page <id> --snapshot <png> --render --width N --height N [--tree <json>]` for scripted screenshots.
 /// `--tree` renders a saved tree (the parity script passes the one web-umbra shows) instead of the socket's.
+/// `--dev-build <json>` reads the dev passport from a file (the bare snapshot binary has no bundle resources);
+/// `--dev-indicator floating|panel|strip` forces the indicator's state for a shot.
 struct LaunchOptions {
     var page: String?
     var snapshot: String?
     var tree: String?
     var render = false
+    var devBuild: String?
+    var devIndicator: String?
     var width: CGFloat = 1180
     var height: CGFloat = 800
 
@@ -20,6 +24,8 @@ struct LaunchOptions {
             case "--snapshot": o.snapshot = args.next()
             case "--tree": o.tree = args.next()
             case "--render": o.render = true
+            case "--dev-build": o.devBuild = args.next()
+            case "--dev-indicator": o.devIndicator = args.next()
             case "--width": o.width = args.next().flatMap(Double.init).map { CGFloat($0) } ?? o.width
             case "--height": o.height = args.next().flatMap(Double.init).map { CGFloat($0) } ?? o.height
             default: break
@@ -33,6 +39,22 @@ enum AppInfo {
     /// Variant display name: `<Product> (<Variant>)`.
     static let displayName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
         ?? "MaControl (Umbra Dev)"
+
+    /// The dev passport `Resources/dev-build.json` written by the build (`gen-dev-build.mjs`), or `--dev-build`.
+    static func devBuild(_ o: LaunchOptions) -> DevBuild? {
+        if let file = o.devBuild { return try? DevBuild.load(url: URL(fileURLWithPath: file)) }
+        return DevBuild.load()
+    }
+
+    /// `--dev-indicator` for shots: nil in normal runs (mode and corner come from UserDefaults).
+    static func devPreview(_ o: LaunchOptions) -> DevIndicatorPreview? {
+        switch o.devIndicator {
+        case "floating": DevIndicatorPreview(mode: .floating)
+        case "panel": DevIndicatorPreview(mode: .floating, panelOpen: true)
+        case "strip": DevIndicatorPreview(mode: .strip)
+        default: nil
+        }
+    }
 }
 
 @main

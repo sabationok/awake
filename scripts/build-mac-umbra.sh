@@ -9,10 +9,18 @@ SRC="$ROOT/mac-umbra/Sources"
 OUT="$ROOT/mac-umbra/build"
 ID="dev.vitalii.macontrol.umbra"; NAME="MaControl (Umbra)"
 [ "${RELEASE:-0}" = "1" ] || { ID="$ID.dev"; NAME="MaControl (Umbra Dev)"; }
+# Dev passport for the dev indicator (~/projects/dev-indicator-kit): version of the `macontrol` package, git of this
+# checkout, build time. Stage dev; the server (agent-dev or bundled) is not known at build time, so no extra row.
+KIT="${DEV_INDICATOR_KIT:-$HOME/projects/dev-indicator-kit}"
+passport() {
+  (cd "$ROOT" && STAGE=dev node "$KIT/scripts/gen-dev-build.mjs" --out "$1" --project-id macontrol-umbra \
+    --name MaControl --variant "Umbra Dev" --package "$ROOT/app/package.json" >/dev/null)
+}
 if [ "${BIN_ONLY:-0}" = "1" ]; then
   mkdir -p "$OUT/render"
   find "$SRC" -name '*.swift' -print0 | xargs -0 swiftc -swift-version 5 -O -parse-as-library \
     -target arm64-apple-macos14 -o "$OUT/render/mac-umbra"
+  passport "$OUT/render/dev-build.json"
   echo "$OUT/render/mac-umbra"; exit 0
 fi
 APP="$OUT/$NAME.app"
@@ -34,5 +42,6 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
 PLIST
+passport "$APP/Contents/Resources/dev-build.json"
 codesign --force --sign - "$APP" >/dev/null 2>&1 || true
 echo "$APP"

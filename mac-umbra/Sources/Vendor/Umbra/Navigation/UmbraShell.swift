@@ -58,7 +58,8 @@ public struct UmbraShell<Sidebar: View, Header: View, Bar: View, Content: View>:
             }
             .onChange(of: compact) { _, isCompact in if !isCompact { sidebarOpen = false } }
         }
-        .ignoresSafeArea()
+        // Only the title bar: a bottom inset (e.g. the dev indicator strip) must push the shell up, not sit over it.
+        .ignoresSafeArea(edges: .top)
         .umbraWindowChrome(chrome)
     }
 
