@@ -51,7 +51,7 @@ export function buildSessionPage(ctx: ModuleContext): UiPage {
   return {
     id: 'session',
     module: 'awake',
-    title: 'Сесія',
+    title: 'Awake',
     icon: { symbol: 'cup.and.saucer.fill', tone: 'orange' },
     group: 'modules',
     children,

@@ -83,7 +83,7 @@ function awakeSwitch(key: string, label: string, value: boolean, icon: UiIcon, h
   };
 }
 
-// ───────────────────────── Awake: «Сесія» ─────────────────────────
+// ───────────────────────── Awake: «Awake» ─────────────────────────
 
 function awakeSessionPage(): UiPage {
   const until = inMinutes(80);
@@ -91,7 +91,7 @@ function awakeSessionPage(): UiPage {
   return {
     id: 'session',
     module: 'awake',
-    title: 'Сесія',
+    title: 'Awake',
     icon: { symbol: 'cup.and.saucer.fill', tone: 'orange' },
     group: 'modules',
     children: [
