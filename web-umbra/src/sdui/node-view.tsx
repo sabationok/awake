@@ -1,4 +1,5 @@
 'use client';
+import qrcode from 'qrcode-generator';
 import type {
   UiButtons,
   UiChart,
@@ -16,7 +17,7 @@ import type {
   UiTimer,
 } from '@awake/contracts';
 import { Check, Copy, Inbox, Info, TriangleAlert, X, CircleX } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDemo } from '@/demo/demo-store';
 import { findSymbolIcon } from '@/lib/icons';
 import { Badge, Button, Chip, Dot, DotMenu, EmptyState, IconButton, Segmented, Select, Slider, Switch, SymbolIcon, toneStyle, toneVar } from '@/ui/primitives';
@@ -589,19 +590,38 @@ function NoticeNode({ node }: { node: UiNotice }) {
 }
 
 /** Декоративний QR-подібний візерунок: справжній код одноразовий і з Mac не виходить. */
+/**
+ * QR-код у стилі MaControl, як `QrCodeImage.swift` у Mac-аппці: заокруглені кути-маркери і крапки-модулі на білому.
+ * Матриця справжня (рівень корекції M), тож код сканується; у Umbra значення — демо з фікстур.
+ */
 function QrNode({ node }: { node: UiQr }) {
-  let seed = [...node.value].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
-  const cells: string[] = [];
-  for (let y = 0; y < 21; y++)
-    for (let x = 0; x < 21; x++) {
-      const finder = (x < 7 && y < 7) || (x > 13 && y < 7) || (x < 7 && y > 13);
-      seed = (seed * 1103515245 + 12345) >>> 0;
-      if (finder ? x % 6 === 0 || y % 6 === 0 || (x % 7 > 1 && x % 7 < 5 && y % 7 > 1 && y % 7 < 5) || x === 20 || x === 14 || y === 14 || y === 20 : seed % 3 === 0) cells.push(`M${x} ${y}h1v1h-1z`);
-    }
+  const svg = useMemo(() => {
+    const qr = qrcode(0, 'M');
+    qr.addData(node.value, 'Byte');
+    qr.make();
+    const n = qr.getModuleCount();
+    const quiet = 4;
+    const total = n + quiet * 2;
+    const finder = (r: number, c: number) => (r < 7 && (c < 7 || c >= n - 7)) || (r >= n - 7 && c < 7);
+    let dots = '';
+    for (let r = 0; r < n; r++)
+      for (let c = 0; c < n; c++)
+        if (qr.isDark(r, c) && !finder(r, c)) dots += `M${c + quiet + 0.06} ${r + quiet + 0.5}a.44 .44 0 1 0 .88 0a.44 .44 0 1 0 -.88 0`;
+    const eyes = [[0, 0], [0, n - 7], [n - 7, 0]].map(([r, c]) => ({ x: (c ?? 0) + quiet, y: (r ?? 0) + quiet }));
+    return { total, dots, eyes };
+  }, [node.value]);
   return (
     <div className="u-qr">
-      <svg viewBox="0 0 21 21" role="img" aria-label="QR-код">
-        <path d={cells.join('')} fill="#000" />
+      <svg viewBox={`0 0 ${svg.total} ${svg.total}`} role="img" aria-label="QR-код">
+        <rect width={svg.total} height={svg.total} fill="#fff" />
+        {svg.eyes.map(({ x, y }) => (
+          <g key={`${x}-${y}`}>
+            <rect x={x} y={y} width={7} height={7} rx={2.2} fill="#000" />
+            <rect x={x + 1} y={y + 1} width={5} height={5} rx={1.2} fill="#fff" />
+            <rect x={x + 2} y={y + 2} width={3} height={3} rx={0.8} fill="#000" />
+          </g>
+        ))}
+        <path d={svg.dots} fill="#000" />
       </svg>
       <small>Демо-код. Справжній показує лише Mac.</small>
     </div>
