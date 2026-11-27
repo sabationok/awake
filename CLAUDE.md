@@ -30,7 +30,7 @@ split or merged) starts with a mockup shown to the owner in the chat, before any
 
 ## Screens only from the lib
 
-- Web Umbra (`web-umbra/src/ui`) and Mac Umbra (swift-umbra-lib, module `Umbra`) are the component catalogs. A screen
+- The web lib (`web/src/ui`) and swift-umbra-lib (module `Umbra`, the Mac app's components) are the component catalogs. A screen
   or a client shell is composed only from their components; no ad hoc markup, styles or one-off views in a page.
 - A missing component goes into the lib first (web: `src/ui`; Mac: the swift-umbra-lib session), then the screen
   uses it. Components carry no lib prefix (`Segmented`, not `UmbraSegmented`).

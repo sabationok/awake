@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { LoginFormPage } from '@/features/web-auth/login-form-page';
+import { LoginFormPage } from '@/live/web-auth/login-form-page';
 
 export default function Page() {
   return (

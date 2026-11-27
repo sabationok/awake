@@ -3,31 +3,27 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3217",
-    "dev:local": "BUILD_TARGET=local next dev -p 3211",
-    "build": "next build && node scripts/stub-route-manifests.mjs",
-    "build:local": "BUILD_TARGET=local next build",
-    "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "gen:dev-build": "node src/vendor/dev-indicator/gen-dev-build.mjs --out src/generated/dev-build.json --project-id macontrol-web --name MaControl --variant Dev --package ../app/package.json",
+    "dev": "pnpm gen:dev-build && next dev -p 3218",
+    "build": "pnpm gen:dev-build && next build",
+    "build:local": "pnpm gen:dev-build && BUILD_TARGET=local next build",
+    "typecheck": "pnpm gen:dev-build && tsc --noEmit",
+    "deploy": "../scripts/deploy-web.sh"
   },
   "dependencies": {
     "@awake/contracts": "workspace:*",
-    "@envify/sdk": "file:vendor/envify-sdk-0.1.0.tgz",
-    "@radix-ui/react-dropdown-menu": "2.2.1",
     "clsx": "2.1.1",
     "lucide-react": "1.70.0",
     "next": "15.5.29",
+    "qrcode-generator": "1.4.4",
     "react": "19.1.10",
     "react-dom": "19.1.10",
-    "server-only": "0.0.1",
-    "socket.io-client": "4.8.1"
+    "server-only": "0.0.1"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "4.3.5",
     "@types/node": "22.15.3",
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",
-    "tailwindcss": "4.3.5",
     "typescript": "5.9.3"
   },
   "engines": {

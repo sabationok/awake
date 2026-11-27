@@ -12,7 +12,7 @@
     "server:dev": "scripts/server-dev.sh",
     "build:web:local": "pnpm --filter @awake/web build:local",
     "dev:web": "pnpm --filter @awake/web dev",
-    "deploy:web": "scripts/deploy-web-dev.sh",
+    "deploy:web": "scripts/deploy-web.sh",
     "changeset": "changeset",
     "release:version": "changeset version"
   },

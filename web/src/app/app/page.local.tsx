@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
-import { LocalSduiPage } from '@/features/sdui/pages/local-sdui-page';
+import { LocalApp } from '@/live/local-app';
 
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <LocalSduiPage />
+      <LocalApp />
     </Suspense>
   );
 }
