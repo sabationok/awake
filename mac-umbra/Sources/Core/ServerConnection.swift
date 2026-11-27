@@ -18,6 +18,14 @@ final class ServerConnection: ObservableObject {
     private struct Envelope: Decodable { let type: String }
     private struct TreeEnvelope: Decodable { let data: UiTree }
     private struct Outgoing: Encodable { let type = "event"; let data: UiEvent }
+    private struct WifiLine: Encodable {
+        struct Data: Encodable { let ssid: String? }
+        let type = "wifi"
+        let data: Data
+    }
+    private let wifi = WifiService()
+    private var sentSSID: String??
+    private var timer: Timer?
 
     /// `launch: false` only reads (scripted snapshots): it never starts a server, it waits for the running one.
     func start(launch: Bool = true) {
@@ -29,13 +37,38 @@ final class ServerConnection: ObservableObject {
             lastLine = line
             Task { @MainActor in self?.apply(decoded, line: line) }
         }
-        link.onState = { [weak self] up in Task { @MainActor in self?.connected = up } }
+        link.onState = { [weak self] up in
+            Task { @MainActor in
+                self?.connected = up
+                // A (re)started server knows no Wi-Fi yet: send it on every connect.
+                if up { self?.sentSSID = nil; self?.reportWifi() }
+            }
+        }
         link.onConnectFailed = { [weak self] in
             guard launch else { return }
             let note = ServerLauncher.launchIfNeeded()
             Task { @MainActor in if let note { self?.problem = note } }
         }
         link.start()
+        guard launch else { return }
+        wifi.onChange = { [weak self] in self?.reportWifi() }
+        wifi.requestAccess()
+        timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                if let note = ServerLauncher.checkRunning() { self?.problem = note }
+                self?.reportWifi()
+            }
+        }
+    }
+
+    /// Sends the Wi-Fi name when it changed since the last line (or after a connect). The server decides the rest.
+    private func reportWifi() {
+        guard connected else { return }
+        let ssid = wifi.currentSSID()
+        if let sentSSID, sentSSID == ssid { return }
+        guard let data = try? JSONEncoder().encode(WifiLine(data: .init(ssid: ssid))) else { return }
+        link.send(data)
+        sentSSID = .some(ssid)
     }
 
     /// Snapshot only: a tree saved as plain `UiTree` JSON, no socket. Sends go nowhere.
