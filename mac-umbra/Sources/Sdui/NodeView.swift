@@ -54,7 +54,7 @@ struct NodeView: View {
         case .tabs(_, let tabs, let value, let setting):
             TabsNode(tabs: tabs, value: value, setting: setting, send: send, page: false)
         case .timer(let t): TimerNode(node: t)
-        case .chart(let c): ChartNode(node: c)
+        case .chart(let c): ChartNode(node: c).equatable()
         case .item(let i): ItemNode(node: i, send: send)
         case .notice(let n): NoticeNode(node: n, send: send)
         // `.u-sep`, padding 10 14
@@ -347,23 +347,34 @@ struct TabsNode: View {
     let setting: UiSettingRef?
     let send: SendEvent
     let page: Bool
+    /// The segment the thumb shows: set at once, animated.
     @State private var value: String
+    /// The tab whose content is drawn: follows `value` one frame later, so the thumb moves before the new tab's
+    /// charts are built and laid out (the same transaction made the thumb wait for them).
+    @State private var shown: String
 
     init(tabs: [UiTab], value: String?, setting: UiSettingRef?, send: @escaping SendEvent, page: Bool) {
         self.tabs = tabs
         self.setting = setting
         self.send = send
         self.page = page
-        _value = State(initialValue: value ?? tabs.first?.id ?? "")
+        let initial = value ?? tabs.first?.id ?? ""
+        _value = State(initialValue: initial)
+        _shown = State(initialValue: initial)
     }
 
-    private var active: UiTab? { tabs.first { $0.id == value } ?? tabs.first }
+    private var active: UiTab? { tabs.first { $0.id == shown } ?? tabs.first }
+
+    private func select(_ next: String) {
+        withAnimation(.snappy(duration: 0.18)) { value = next }
+        if let setting { send(.setting(module: setting.module, key: setting.key, value: .string(next))) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 / 60) { if value == next { shown = next } }
+    }
 
     private var segmented: some View {
-        UmbraSegmented(selection: Binding(get: { active?.id ?? "" }, set: { next in
-            value = next
-            if let setting { send(.setting(module: setting.module, key: setting.key, value: .string(next))) }
-        }), options: tabs.map { UmbraOption($0.id, $0.label) })
+        UmbraSegmented(selection: Binding(get: { tabs.contains { $0.id == value } ? value : tabs.first?.id ?? "" },
+                                          set: select),
+                       options: tabs.map { UmbraOption($0.id, $0.label) })
         .fixedSize()
         .frame(maxWidth: .infinity)
     }
@@ -373,6 +384,9 @@ struct TabsNode: View {
             VStack(alignment: .leading, spacing: 18) {
                 segmented
                 PageNodes(nodes: active?.children ?? [], send: send)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: PerfProbe.tabSwitch)) { note in
+                if let next = note.object as? String, tabs.contains(where: { $0.id == next }) { value = next; shown = next }
             }
         } else {
             UmbraDivided {
@@ -443,7 +457,8 @@ func formatBucket(_ date: Date, _ unit: UiChart.Unit) -> String {
 }
 
 /// `ChartNode` → `UmbraChart` (`.u-chart`): head with the hovered bucket, bars, axis, legend.
-struct ChartNode: View {
+/// Equatable: a tree pushed again with the same points skips the chart's body (`.equatable()` at the call site).
+struct ChartNode: View, Equatable {
     let node: UiChart
 
     var body: some View {

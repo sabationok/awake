@@ -8,6 +8,7 @@ import SwiftUI
 /// `--translucent --wallpaper <png>` keeps the window materials in a render and draws them over that image
 /// (offscreen there is no desktop behind the window), to compare the sidebar and content tints on a shot.
 /// `--theme system|light|dark` overrides the stored client theme for a shot (nothing is written).
+/// `--perf <page>` times period-tab switches and the server's tree echo on that page offscreen (`PerfProbe`).
 struct LaunchOptions {
     var page: String?
     var snapshot: String?
@@ -18,6 +19,7 @@ struct LaunchOptions {
     var translucent = false
     var wallpaper: String?
     var theme: String?
+    var perf: String?
     var width: CGFloat = 1180
     var height: CGFloat = 800
 
@@ -35,6 +37,7 @@ struct LaunchOptions {
             case "--translucent": o.translucent = true
             case "--wallpaper": o.wallpaper = args.next()
             case "--theme": o.theme = args.next()
+            case "--perf": o.perf = args.next()
             case "--width": o.width = args.next().flatMap(Double.init).map { CGFloat($0) } ?? o.width
             case "--height": o.height = args.next().flatMap(Double.init).map { CGFloat($0) } ?? o.height
             default: break
@@ -79,6 +82,10 @@ final class MacUmbraDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let o = LaunchOptions.current
+        if o.perf != nil {
+            perf(o)
+            return
+        }
         if o.snapshot != nil {
             snapshot(o)
             return
@@ -124,6 +131,20 @@ final class MacUmbraDelegate: NSObject, NSApplicationDelegate {
                 .map { (try? $0.write(to: URL(fileURLWithPath: o.snapshot!))) != nil } ?? false
             exit(ok ? 0 : 3)
         }
+    }
+
+    /// `--perf`: like `snapshot`, offscreen and read-only on the socket, then `PerfProbe` times the page.
+    private func perf(_ o: LaunchOptions) {
+        NSApp.setActivationPolicy(.prohibited)
+        var o = o
+        o.page = o.perf
+        o.render = true
+        o.translucent = true
+        server.start(launch: false)
+        let window = makeWindow(o)
+        window.setFrameOrigin(NSPoint(x: -30000, y: -30000))
+        self.window = window
+        Task { @MainActor in await PerfProbe.run(server: server, window: window) }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }

@@ -348,9 +348,47 @@ enum UiTreeDecoder {
         let plain = ISO8601DateFormatter()
         decoder.dateDecodingStrategy = .custom { decoder in
             let text = try decoder.singleValueContainer().decode(String.self)
-            if let date = withFraction.date(from: text) ?? plain.date(from: text) { return date }
+            if let date = fastISO(text) ?? withFraction.date(from: text) ?? plain.date(from: text) { return date }
             throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "bad date \(text)"))
         }
         return decoder
     }()
+
+    /// JavaScript's `toISOString()` form, `YYYY-MM-DDTHH:MM:SS[.fff]Z`, parsed by hand. `ISO8601DateFormatter` goes
+    /// through ICU and reloads its locale symbols on every call: ~95 µs a date, ~200 ms for the 2 000 chart points
+    /// of one tree. Anything else (an offset, no `Z`) returns nil and falls back to the formatters.
+    static func fastISO(_ text: String) -> Date? {
+        var utf8 = text.utf8
+        return utf8.withContiguousStorageIfAvailable { u -> Date? in
+            let count = u.count
+            guard count >= 20, u[4] == 0x2D, u[7] == 0x2D, u[10] == 0x54, u[13] == 0x3A, u[16] == 0x3A,
+                  u[count - 1] == 0x5A else { return nil }
+            func number(_ from: Int, _ to: Int) -> Int? {
+                var value = 0
+                for i in from..<to {
+                    let digit = Int(u[i]) - 0x30
+                    guard digit >= 0 && digit <= 9 else { return nil }
+                    value = value * 10 + digit
+                }
+                return value
+            }
+            guard var year = number(0, 4), let month = number(5, 7), let day = number(8, 10),
+                  let hour = number(11, 13), let minute = number(14, 16), let second = number(17, 19),
+                  (1...12).contains(month), (1...31).contains(day), hour < 24, minute < 60, second < 61 else { return nil }
+            var fraction = 0.0
+            if count > 20 {
+                guard u[19] == 0x2E, count > 21, let f = number(20, count - 1) else { return nil }
+                fraction = Double(f) / pow(10, Double(count - 21))
+            }
+            // Days from the civil date (H. Hinnant's algorithm), proleptic Gregorian, UTC.
+            year -= month <= 2 ? 1 : 0
+            let era = (year >= 0 ? year : year - 399) / 400
+            let yoe = year - era * 400
+            let doy = (153 * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1
+            let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+            let days = era * 146_097 + doe - 719_468
+            let seconds = Double(days * 86_400 + hour * 3_600 + minute * 60 + second) + fraction
+            return Date(timeIntervalSince1970: seconds)
+        } ?? nil
+    }
 }

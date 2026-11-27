@@ -49,17 +49,24 @@ public struct UmbraChart: View {
         return seen
     }
 
-    private func toneOf(_ s: String) -> UmbraTone {
+    private func toneOf(_ s: String, in series: [String]) -> UmbraTone {
         if let t = tones[s] { return t }
         guard !s.isEmpty, let i = series.firstIndex(of: s) else { return tone }
         return Self.fallback[i % Self.fallback.count]
+    }
+
+    private static func totals(_ points: [UmbraChartPoint], _ index: [Date: Int], _ count: Int) -> [Double] {
+        var sums = [Double](repeating: 0, count: count)
+        for point in points { if let i = index[point.start] { sums[i] += point.value } }
+        return sums
     }
 
     public var body: some View {
         let p = theme.palette
         let starts = starts
         let index = Dictionary(uniqueKeysWithValues: starts.enumerated().map { ($1, $0) })
-        let totals = starts.map { s in points.filter { $0.start == s }.reduce(0) { $0 + $1.value } }
+        // One pass over the points (was a filter per bucket); series once, not per bar.
+        let totals = Self.totals(points, index, starts.count)
         let top = max(1, limit ?? 0, totals.max() ?? 0) * 1.04
         let shown = hover ?? (starts.isEmpty ? nil : starts.count - 1)
         let series = series
@@ -82,7 +89,7 @@ public struct UmbraChart: View {
                 ForEach(points, id: \.self) { point in
                     let i = index[point.start] ?? 0
                     BarMark(x: .value("bucket", String(i)), y: .value("value", point.value), width: .ratio(0.62))
-                        .foregroundStyle(toneOf(point.series).color(p))
+                        .foregroundStyle(toneOf(point.series, in: series).color(p))
                         .cornerRadius(1.5)
                         .opacity(hover == nil || hover == i ? 1 : 0.45)
                 }
@@ -119,7 +126,7 @@ public struct UmbraChart: View {
                 HStack(spacing: 12) {
                     ForEach(series, id: \.self) { s in
                         HStack(spacing: 6) {
-                            Circle().fill(toneOf(s).color(p)).frame(width: 7, height: 7)
+                            Circle().fill(toneOf(s, in: series).color(p)).frame(width: 7, height: 7)
                             Text(s)
                         }
                     }
