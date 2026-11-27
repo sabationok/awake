@@ -93,6 +93,19 @@
 .s-content { --page-sticky-top: 58px; display: grid; gap: 18px; width: 100%; max-width: 760px; padding: 22px 28px 64px; }
 .s-scrim { display: none; }
 
+/* ---------- встановлений PWA: кнопки вікна поверх сторінки (Window Controls Overlay) і статус-бар iOS ---------- */
+.s-top { padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
+.s-content { --page-sticky-top: calc(58px + env(safe-area-inset-top, 0px)); }
+.s-side { padding-top: env(safe-area-inset-top, 0px); }
+@media (display-mode: window-controls-overlay) {
+  /* Смуга заголовка тепер наша: шапка й верх сайдбара тягнуть вікно, кнопки в них — ні. */
+  .s-top, .s-host { -webkit-app-region: drag; app-region: drag; }
+  .s-top button, .s-top a, .s-host button { -webkit-app-region: no-drag; app-region: no-drag; }
+  /* Світлофор macOS лежить зліва вгорі, над сайдбаром: опускаємо блок хоста під нього. */
+  .s-side { padding-top: env(titlebar-area-height, 0px); }
+  .s-top { min-height: max(58px, env(titlebar-area-height, 0px)); }
+}
+
 /* ---------- mobile ---------- */
 @media (max-width: 820px) {
   .s-app { grid-template-columns: minmax(0, 1fr); }
@@ -103,7 +116,7 @@
   .s-app[data-drawer] .s-side { transform: none; }
   .s-app[data-drawer] .s-scrim { display: block; position: fixed; inset: 0; z-index: 20; background: var(--scrim); }
   .s-close, .s-burger { display: grid; }
-  .s-top { padding: 12px 16px; }
+  .s-top { padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px; }
   .s-tabs { padding: 0 16px; gap: 18px; }
   .s-content { padding: 16px 16px 56px; }
   .s-crumb { display: none; }
