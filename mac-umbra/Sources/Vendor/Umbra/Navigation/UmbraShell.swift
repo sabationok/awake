@@ -11,11 +11,15 @@ public struct UmbraShellContext {
 /// - compact: the sidebar slides over the content with a scrim; the header shows a burger.
 /// Chrome B puts the header in the traffic-light row and starts the sidebar under the lights; chrome A keeps a
 /// 28 pt transparent title bar above everything.
-public struct UmbraShell<Sidebar: View, Header: View, Content: View>: View {
+/// Content column as `.s-main`: the header band (`.s-top`, 28 pt sides, no rule under it), an optional full-width
+/// `bar` under it (`.s-tabs`: page NavTabs), then the scrolling content (`.s-content`: 22 / 28 pt padding, at most
+/// 760 pt wide INCLUDING the padding, left-aligned, not centred).
+public struct UmbraShell<Sidebar: View, Header: View, Bar: View, Content: View>: View {
     private let chrome: UmbraWindowChrome
     private let glow: UmbraBackdrop.Glow
     private let sidebar: Sidebar
     private let header: (UmbraShellContext) -> Header
+    private let bar: (UmbraShellContext) -> Bar
     private let content: (UmbraShellContext) -> Content
     @State private var sidebarOpen = false
     @Environment(\.umbra) private var theme
@@ -24,11 +28,13 @@ public struct UmbraShell<Sidebar: View, Header: View, Content: View>: View {
     public init(chrome: UmbraWindowChrome = .unifiedToolbar, glow: UmbraBackdrop.Glow = .none,
                 @ViewBuilder sidebar: () -> Sidebar,
                 @ViewBuilder header: @escaping (UmbraShellContext) -> Header,
+                @ViewBuilder bar: @escaping (UmbraShellContext) -> Bar,
                 @ViewBuilder content: @escaping (UmbraShellContext) -> Content) {
         self.chrome = chrome
         self.glow = glow
         self.sidebar = sidebar()
         self.header = header
+        self.bar = bar
         self.content = content
     }
 
@@ -80,16 +86,20 @@ public struct UmbraShell<Sidebar: View, Header: View, Content: View>: View {
             if chrome == .transparentTitlebar {
                 UmbraWindowDragArea().frame(height: chrome.titlebarHeight)
             }
+            let side: CGFloat = context.compact ? 16 : 28
             header(context)
-                .padding(.leading, 16 + leadingInset)
-                .padding(.trailing, 16)
-            Rectangle().fill(theme.palette.line).frame(height: 1)
+                .padding(.leading, side + leadingInset)
+                .padding(.trailing, side)
+            bar(context)
+                .padding(.horizontal, side)
             ScrollView {
                 content(context)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .padding(.horizontal, side)
+                    .padding(.top, context.compact ? 16 : 22)
+                    .padding(.bottom, context.compact ? 56 : 64)
                     .frame(maxWidth: UmbraLayout.contentMaxWidth, alignment: .topLeading)
-                    .padding(.horizontal, context.compact ? 16 : 28)
-                    .padding(.vertical, 22)
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -97,7 +107,7 @@ public struct UmbraShell<Sidebar: View, Header: View, Content: View>: View {
 
     private func compactLayout(_ context: UmbraShellContext) -> some View {
         // Chrome B: the header shares the row with the traffic lights, so it starts after them.
-        let inset = chrome == .unifiedToolbar ? UmbraWindowChrome.trafficLightsWidth - 16 : 0
+        let inset = chrome == .unifiedToolbar ? max(UmbraWindowChrome.trafficLightsWidth - 16, 0) : 0
         return ZStack(alignment: .leading) {
             contentColumn(context, leadingInset: inset)
             if sidebarOpen {
@@ -111,5 +121,15 @@ public struct UmbraShell<Sidebar: View, Header: View, Content: View>: View {
                     .transition(.move(edge: .leading))
             }
         }
+    }
+}
+
+public extension UmbraShell where Bar == EmptyView {
+    init(chrome: UmbraWindowChrome = .unifiedToolbar, glow: UmbraBackdrop.Glow = .none,
+         @ViewBuilder sidebar: () -> Sidebar,
+         @ViewBuilder header: @escaping (UmbraShellContext) -> Header,
+         @ViewBuilder content: @escaping (UmbraShellContext) -> Content) {
+        self.init(chrome: chrome, glow: glow, sidebar: sidebar, header: header, bar: { _ in EmptyView() },
+                  content: content)
     }
 }

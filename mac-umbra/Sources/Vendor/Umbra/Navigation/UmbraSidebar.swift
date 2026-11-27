@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// One entry of the sidebar tree. The consumer builds it from its own data (e.g. the SDUI navigation).
@@ -164,7 +165,7 @@ struct UmbraSidebarNode: View {
         } label: {
             HStack(spacing: 10) {
                 if let symbol = item.symbol {
-                    Image(systemName: symbol)
+                    Image(systemName: UmbraSymbol.outline(symbol))
                         .font(.system(size: 14, weight: .regular))
                         .foregroundStyle(active || inside ? p.accent : p.fg3)
                         .frame(width: 16, height: 16)
@@ -295,5 +296,15 @@ public struct UmbraSidebarHost: View {
         .padding(.horizontal, 14)
         .padding(.top, 16)
         .padding(.bottom, 14)
+    }
+}
+
+/// Menu icons are outline, like the web's lucide set: a `.fill` symbol from the host is drawn as its outline
+/// sibling when one exists (`cup.and.saucer.fill` → `cup.and.saucer`).
+public enum UmbraSymbol {
+    public static func outline(_ name: String) -> String {
+        guard name.contains(".fill") else { return name }
+        let base = name.replacingOccurrences(of: ".fill", with: "")
+        return NSImage(systemSymbolName: base, accessibilityDescription: nil) == nil ? name : base
     }
 }

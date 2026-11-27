@@ -8,11 +8,14 @@ public struct UmbraSlider: View {
     private let step: Double?
     private let label: String
     private let onCommit: (Double) -> Void
+    private let showsValue: Bool
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.umbra) private var theme
 
+    /// `showsValue`: the rounded value right of the track (`.u-slider-value`).
     public init(_ label: String, value: Binding<Double>, in range: ClosedRange<Double>, step: Double? = nil,
-                onCommit: @escaping (Double) -> Void = { _ in }) {
+                showsValue: Bool = false, onCommit: @escaping (Double) -> Void = { _ in }) {
+        self.showsValue = showsValue
         self.label = label
         _value = value
         self.range = range
@@ -21,8 +24,20 @@ public struct UmbraSlider: View {
     }
 
     public var body: some View {
+        HStack(spacing: 10) {
+            track
+            if showsValue {
+                Text("\(Int(value.rounded()))")
+                    .font(UmbraFont.sm.monospacedDigit())
+                    .foregroundStyle(theme.palette.fg2)
+                    .frame(width: 34, alignment: .trailing)
+            }
+        }
+    }
+
+    private var track: some View {
         let p = theme.palette
-        GeometryReader { geo in
+        return GeometryReader { geo in
             let width = geo.size.width
             let span = max(range.upperBound - range.lowerBound, .ulpOfOne)
             let fraction = (value - range.lowerBound) / span

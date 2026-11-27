@@ -284,11 +284,14 @@ struct UiStatus: Decodable, Hashable {
 
 struct UiPage: Decodable, Hashable, Identifiable {
     enum Group: String, Decodable { case modules, system }
+    /// `UiScope`: who may see and use the page. `local` — the web shows it only on the local network.
+    enum Scope: String, Decodable { case all, local, mac }
     var id: String
     var module: String
     var title: String
     var icon: UiIcon
     var group: Group
+    var scope: Scope?
     var children: [UiNode]
 }
 

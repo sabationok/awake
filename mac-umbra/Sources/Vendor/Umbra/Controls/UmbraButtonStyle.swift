@@ -6,7 +6,8 @@ public enum UmbraButtonVariant: String, CaseIterable {
 }
 
 public enum UmbraButtonSize {
-    case regular, small
+    /// `large`: 44 pt, for action buttons that span a card (SDUI `buttons`).
+    case large, regular, small
 }
 
 /// `Button("Увімкнути") { … }.buttonStyle(.umbra(.accent))`. Use `Label` for an icon.
@@ -44,10 +45,10 @@ private struct UmbraButtonBody: View {
         let active = hovering || configuration.isPressed
         configuration.label
             .labelStyle(UmbraButtonLabelStyle())
-            .font(.system(size: size == .small ? 11 : 12, weight: .semibold))
+            .font(.system(size: size == .small ? 11 : size == .large ? 13 : 12, weight: .semibold))
             .lineLimit(1)
-            .padding(.horizontal, size == .small ? 10 : 14)
-            .frame(height: size == .small ? 26 : 34)
+            .padding(.horizontal, size == .small ? 10 : size == .large ? 16 : 14)
+            .frame(height: size == .small ? 26 : size == .large ? 44 : 34)
             .foregroundStyle(foreground(p))
             .background(background(p, active: active), in: shape)
             .overlay(shape.strokeBorder(border(p), lineWidth: 1))

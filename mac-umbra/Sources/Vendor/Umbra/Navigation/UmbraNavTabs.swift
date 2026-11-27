@@ -1,7 +1,9 @@
 import SwiftUI
 
-/// Tabs (`.s-tabs`): 13.5 pt text tabs, 22 pt apart, fg-3 / fg when active, with a 2 pt accent underline under the active one and a hairline under the row.
-public struct UmbraTabs<Value: Hashable>: View {
+/// NavTabs (`.s-tabs`): navigation between sibling pages ONLY. A mode switch inside a page (an SDUI `tabs` node,
+/// Період / Час, День / Тиждень) is never NavTabs: use `UmbraSegmented`.
+/// 13.5 pt text tabs, 22 pt apart, fg-3 / fg when active, with a 2 pt accent underline under the active one and a hairline under the row.
+public struct UmbraNavTabs<Value: Hashable>: View {
     @Binding private var selection: Value
     private let options: [UmbraOption<Value>]
     @Namespace private var underline

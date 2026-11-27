@@ -19,7 +19,7 @@ public struct UmbraRowIcon: View {
         let base = tone?.color(p) ?? p.fg3
         ZStack {
             RoundedRectangle(cornerRadius: size * 0.27, style: .continuous).fill(base.opacity(0.14))
-            Image(systemName: symbol)
+            Image(systemName: UmbraSymbol.outline(symbol))
                 .font(.system(size: (size * 0.52).rounded(), weight: .medium))
                 .foregroundStyle(color)
         }
@@ -59,7 +59,7 @@ public struct UmbraRow<Control: View>: View {
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(label)
-                    .font(.system(size: prominent ? 15 : 12, weight: prominent ? .semibold : .medium))
+                    .font(.system(size: prominent ? 15 : 12, weight: prominent ? .semibold : .regular))
                     .foregroundStyle(p.fg)
                 if let hint {
                     Text(hint).font(UmbraFont.xs).foregroundStyle(p.fg3).lineSpacing(2)
@@ -134,7 +134,7 @@ public struct UmbraListRow<Trailing: View>: View {
         HStack(spacing: 12) {
             if let dot { UmbraDot(dot) }
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 12, weight: .medium))
+                Text(title).font(.system(size: 12))
                 if let subtitle { Text(subtitle).font(UmbraFont.xs).foregroundStyle(p.fg3) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

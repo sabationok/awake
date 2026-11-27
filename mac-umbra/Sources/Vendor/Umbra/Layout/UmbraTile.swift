@@ -64,12 +64,15 @@ public struct UmbraTile: View {
                 case .bad: p.danger
                 case .flat: p.fg3
                 }
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(compare.deltaText(newText: newText)).foregroundStyle(color)
-                    Text("\(previousPrefix) \(compare.previous)").foregroundStyle(p.fg3)
+                // `.u-tile-compare`: delta 11 pt, «минулий» as `small` (~9 pt); wraps to a second line like flex-wrap.
+                let delta = Text(compare.deltaText(newText: newText)).foregroundStyle(color)
+                    .font(.system(size: 11).monospacedDigit())
+                let previous = Text("\(previousPrefix) \(compare.previous)").foregroundStyle(p.fg3)
+                    .font(.system(size: 9.5).monospacedDigit())
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) { delta; previous }.lineLimit(1)
+                    VStack(alignment: .leading, spacing: 2) { delta; previous.lineLimit(2) }
                 }
-                .font(.system(size: 11).monospacedDigit())
-                .lineLimit(1)
             }
             Spacer(minLength: 0)
             Text(label)
