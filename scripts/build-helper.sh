@@ -20,6 +20,7 @@ swiftc -swift-version 5 -O \
   Helper/SudoersRules.swift \
   Helper/System/AppPermission.swift \
   Helper/System/Shell.swift \
+  Helper/System/PrivacyAccess.swift \
   Helper/System/Responsibility.swift \
   Helper/System/PowerService.swift \
   Helper/System/PowerStatus.swift \

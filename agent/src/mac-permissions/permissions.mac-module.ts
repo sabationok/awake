@@ -32,6 +32,6 @@ export class PermissionsMacModule implements MacModule {
   pages(ctx: ModuleContext): UiPage[] {
     // ModulesService сам отримує цей модуль у списку, тож беремо його при потребі, а не в конструкторі.
     const modules = this._moduleRef.get(ModulesService, { strict: false }).list();
-    return [buildPermissionsPage(this._permissions.snapshot(), modules, ctx.mac?.active ?? false)];
+    return [buildPermissionsPage(this._permissions.snapshot(), this._permissions.privacyAccess(), modules, ctx.mac?.active ?? false)];
   }
 }

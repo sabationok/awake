@@ -57,7 +57,10 @@ One direction: clients → server → helper → macOS. Answers and events come 
   window), the server stores the per-module switches and checks them before acting. Clients get them as the
   server page «Дозволи» (`agent/src/mac-permissions`, scope local): the web shows the system grants and toggles the
   per-module switches; grant / revoke buttons exist only in the Mac app (scope mac) and the server refuses those
-  actions from any other source.
+  actions from any other source. The helper's macOS grants (Wi-Fi / геолокація, Bluetooth) are the section
+  «Приватність macOS» right after «Система», same rule: the status shows everywhere, «Надати…» / «Відкрити
+  налаштування…» only in the Mac app, the server passes it to the helper (`requestAccess`). Nothing asks on its own:
+  not at launch, build or install, and Bluetooth scanning never creates the prompt as a side effect.
 - Agreed exception (owner, 2026-11-27): the theme (Системна | Світла | Темна) belongs to each client, not the server.
   Each client stores it itself (web: localStorage `macontrol:theme`; Mac: UserDefaults `theme`) and draws the
   section «Вигляд» first on the server page «Налаштування»; the server knows nothing about it.
@@ -93,5 +96,5 @@ running server writes.
 - In standalone mode the server owns the Awake and Sleeper sessions (`agent/src/mac-sessions`): timers, the
   one-session rule, battery / thermal / lid reactions, history and Telegram. The helper only runs primitives
   (`sleepDisabled`, `sleepNow`, lock, display off). The bash script `Resources/awake` belonged to the old app.
-- Wi-Fi name and «Поруч» work without the app: the grants dialogs show «MaControl Helper» (Location at the
-  helper's first start, Bluetooth when «Поруч» is turned on).
+- Wi-Fi name and «Поруч» work without the app once the grants are given: the dialogs show «MaControl Helper» and
+  appear only after «Надати…» on the page «Дозволи» in the Mac app.

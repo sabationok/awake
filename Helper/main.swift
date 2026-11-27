@@ -58,6 +58,8 @@ func sendState() {
         "brightness": orNull(BrightnessService.brightness()),
         "idleSeconds": Int(DisplayService.idleSeconds()),
         "granted": grantedPermissions.map(\.rawValue).sorted(),
+        // Дозволи macOS помічника; запит — лише через requestAccess.
+        "access": ["location": wifi.access, "bluetooth": BluetoothScanner.access],
     ])
 }
 
@@ -122,6 +124,13 @@ func perform(_ request: Request.Body) -> String? {
         return result.succeeded ? nil : "no sudoers rule for pmset disablesleep"
     case "sleepNow":
         _ = Shell.run("/usr/bin/pmset", ["sleepnow"])
+        return nil
+    case "requestAccess":
+        switch request.name {
+        case "location": wifi.requestAccess()
+        case "bluetooth": bluetooth.requestAccess()
+        default: return "requestAccess needs location or bluetooth"
+        }
         return nil
     case "bluetoothScan":
         guard let enabled = request.value?.flag else { return "bluetoothScan needs true or false" }
@@ -190,8 +199,9 @@ func handle(_ line: String) {
 // MARK: старт
 
 send(type: "hello", data: ["version": helperVersion, "pid": Int(ProcessInfo.processInfo.processIdentifier)])
+// Дозволів тут не питаємо: лише кнопка «Надати…» (requestAccess).
 wifi.onChange = { sendState() }
-wifi.requestAccess()
+bluetooth.onAccessChange = { sendState() }
 bluetooth.onReport = { report in send(type: "proximity", data: report.json) }
 sendState()
 

@@ -2,8 +2,9 @@ import CoreBluetooth
 import Foundation
 
 /// Bluetooth-пристрої поруч для модуля «Поруч». Помічник лише бачить і згладжує сигнал; сканувати чи ні і коли
-/// блокувати, вирішує сервер (запит `bluetoothScan`). CBCentralManager створюється на першому ввімкненні:
-/// саме він показує системний запит доступу до Bluetooth (один раз, поки дозвіл не визначено).
+/// блокувати, вирішує сервер (запит `bluetoothScan`). CBCentralManager сам показує системний запит доступу, тому
+/// створюється лише коли дозвіл уже є, або з кнопки «Надати…» (`requestAccess`). Без дозволу сканування не стартує
+/// і звіт каже `unauthorized`.
 /// Працює на main-черзі, як і решта помічника.
 final class BluetoothScanner: NSObject, CBCentralManagerDelegate {
     struct Device: Equatable {
@@ -41,6 +42,21 @@ final class BluetoothScanner: NSObject, CBCentralManagerDelegate {
     /// Id вибраного пристрою (`proximity.device`): потрапляє у звіт, навіть якщо в нього немає назви.
     private var target: String?
     var onReport: ((Report) -> Void)?
+    /// Дозвіл міг змінитись (після «Надати…»): стан помічника треба надіслати знову.
+    var onAccessChange: (() -> Void)?
+
+    /// `granted` | `denied` | `restricted` | `notDetermined` (PrivacyAccess). Читання запиту не показує.
+    static var access: String { PrivacyAccess.name(CBManager.authorization) }
+
+    /// Лише з кнопки «Надати…»: поки не визначено — створити менеджер (macOS покаже вікно), після відмови —
+    /// розділ Bluetooth у «Приватність і безпека».
+    func requestAccess() {
+        switch CBManager.authorization {
+        case .notDetermined: if central == nil { central = CBCentralManager(delegate: self, queue: .main) }
+        case .denied, .restricted: PrivacyAccess.openSettings("Privacy_Bluetooth")
+        default: break
+        }
+    }
 
     /// Увімкнути або вимкнути сканування. `target` — id вибраного пристрою, nil — не вибрано.
     func set(enabled: Bool, target: String?) {
@@ -48,7 +64,9 @@ final class BluetoothScanner: NSObject, CBCentralManagerDelegate {
         guard enabled != isEnabled else { return }
         isEnabled = enabled
         if enabled {
-            if central == nil { central = CBCentralManager(delegate: self, queue: .main) }
+            if central == nil, CBManager.authorization == .allowedAlways {
+                central = CBCentralManager(delegate: self, queue: .main)
+            }
             startScanning()
             let timer = DispatchSource.makeTimerSource(queue: .main)
             timer.schedule(deadline: .now() + Self.reportEvery, repeating: Self.reportEvery)
@@ -109,6 +127,7 @@ final class BluetoothScanner: NSObject, CBCentralManagerDelegate {
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        onAccessChange?()
         startScanning()
         if isEnabled { report() }
     }

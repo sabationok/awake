@@ -302,8 +302,12 @@ export class MacBridgeService implements OnModuleInit {
   }
 }
 
-/** Сканування Bluetooth вмикає лише сервер (ProximityListener), клієнт його не замовляє. */
-const CLIENT_HELPER_ACTIONS: readonly HelperAction[] = HELPER_ACTIONS.filter((action) => action !== 'bluetoothScan');
+/**
+ * Лише сервер: сканування Bluetooth вмикає ProximityListener, запит дозволу macOS — сторінка «Дозволи»
+ * (дія `permissions.requestAccess`, тільки з аппки на Mac). Клієнт їх напряму не замовляє.
+ */
+const SERVER_ONLY_HELPER_ACTIONS: readonly HelperAction[] = ['bluetoothScan', 'requestAccess'];
+const CLIENT_HELPER_ACTIONS: readonly HelperAction[] = HELPER_ACTIONS.filter((action) => !SERVER_ONLY_HELPER_ACTIONS.includes(action));
 
 /** Дії клієнтів, які є примітивом помічника; решту (сесії, налаштування) виконує сервер. */
 function isHelperAction(action: CommandRequest['action']): action is CommandRequest['action'] & HelperAction {

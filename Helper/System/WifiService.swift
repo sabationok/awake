@@ -15,9 +15,17 @@ final class WifiService: NSObject, CLLocationManagerDelegate {
         location.delegate = self
     }
 
-    /// Системне вікно macOS показує лише поки дозвіл не визначено; далі виклик нічого не робить.
+    /// `granted` | `denied` | `restricted` | `notDetermined` (PrivacyAccess).
+    var access: String { PrivacyAccess.name(location.authorizationStatus) }
+
+    /// Лише з кнопки «Надати…» (запит сервера `requestAccess`): поки не визначено — системне вікно macOS,
+    /// після відмови — розділ «Служби локації» в налаштуваннях.
     func requestAccess() {
-        if location.authorizationStatus == .notDetermined { location.requestWhenInUseAuthorization() }
+        switch location.authorizationStatus {
+        case .notDetermined: location.requestWhenInUseAuthorization()
+        case .denied, .restricted: PrivacyAccess.openSettings("Privacy_LocationServices")
+        default: break
+        }
     }
 
     var ssid: String? { CWWiFiClient.shared().interface()?.ssid() }

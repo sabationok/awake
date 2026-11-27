@@ -1,4 +1,4 @@
-import type { MacPermission, UiIcon } from '@awake/contracts';
+import type { MacPermission, PrivacyAccessKind, UiIcon } from '@awake/contracts';
 
 export const PERMISSIONS_MODULE = 'permissions';
 
@@ -26,4 +26,22 @@ export const MAC_PERMISSIONS = Object.keys(PERMISSION_INFO) as MacPermission[];
 
 export function isMacPermission(value: unknown): value is MacPermission {
   return typeof value === 'string' && value in PERMISSION_INFO;
+}
+
+/** Дозволи macOS помічника (MaControl Helper): назва й пояснення для секції «Приватність macOS». */
+export const PRIVACY_ACCESS_INFO: Record<PrivacyAccessKind, PermissionInfo> = {
+  location: {
+    title: 'Wi-Fi (геолокація)',
+    icon: { symbol: 'wifi', tone: 'accent' },
+    purpose: 'Назва мережі Wi-Fi для довірених мереж. macOS дає її лише з дозволом геолокації; координати не зберігаються.',
+  },
+  bluetooth: {
+    title: 'Bluetooth',
+    icon: { symbol: 'dot.radiowaves.left.and.right', tone: 'accent' },
+    purpose: 'Сигнал iPhone чи Apple Watch для модуля «Поруч».',
+  },
+};
+
+export function isPrivacyAccessKind(value: unknown): value is PrivacyAccessKind {
+  return typeof value === 'string' && value in PRIVACY_ACCESS_INFO;
 }

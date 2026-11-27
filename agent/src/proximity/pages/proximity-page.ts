@@ -7,7 +7,7 @@ import type { ProximityState } from '../types/proximity-state.types';
 const BLUETOOTH: Record<BluetoothState, { label: string; tone: UiTone }> = {
   on: { label: 'Увімкнено', tone: 'green' },
   off: { label: 'Вимкнено на Mac', tone: 'orange' },
-  unauthorized: { label: 'Немає дозволу: Системні параметри → Приватність і безпека → Bluetooth → MaControl Helper', tone: 'red' },
+  unauthorized: { label: 'Немає дозволу Bluetooth: «Надати…» на сторінці «Дозволи» в аппці на Mac', tone: 'red' },
   unsupported: { label: 'Mac не підтримує Bluetooth LE', tone: 'red' },
   unknown: { label: 'Запускається…', tone: 'gray' },
 };

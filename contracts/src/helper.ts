@@ -3,6 +3,14 @@
 // Напрямок один: сервер просить, помічник виконує і звітує. Рішень помічник не приймає.
 import type { PowerSource, ProximityReport, ThermalLevel } from './index';
 
+/** Стан дозволу macOS (TCC) помічника. Запит показується лише за `requestAccess`, тобто з кнопки «Надати…». */
+export type PrivacyAccess = 'granted' | 'denied' | 'restricted' | 'notDetermined';
+
+/** Дозволи macOS, які належать помічнику (MaControl Helper). */
+export type PrivacyAccessKind = 'location' | 'bluetooth';
+
+export const PRIVACY_ACCESS_KINDS: readonly PrivacyAccessKind[] = ['location', 'bluetooth'];
+
 /** Системна частина стану Mac: те, що помічник читає з macOS. Сесій тут немає, вони належать серверу. */
 export interface HelperState {
   host: string;
@@ -23,6 +31,8 @@ export interface HelperState {
   idleSeconds: number;
   /** Дозволи, видані в системі (правила sudoers): `sleepControl`, `thermalRead`. */
   granted: string[];
+  /** Дозволи macOS помічника: геолокація (назва Wi-Fi) і Bluetooth («Поруч»). Немає у помічника 0.1.0. */
+  access?: Record<PrivacyAccessKind, PrivacyAccess>;
 }
 
 /** Примітиви, які помічник уміє виконати. */
@@ -46,18 +56,23 @@ export type HelperAction =
   | 'authenticate'
   /**
    * Сканувати Bluetooth для «Поруч»: `value` true / false, `name` — id вибраного пристрою ('' — не вибрано).
-   * Поки ввімкнено, помічник раз на 2 с шле `proximity`. Перше ввімкнення показує системний запит доступу до Bluetooth.
+   * Поки ввімкнено, помічник раз на 2 с шле `proximity`. Без дозволу Bluetooth не сканує і запиту не показує.
    */
-  | 'bluetoothScan';
+  | 'bluetoothScan'
+  /**
+   * Попросити дозвіл macOS `name` (PrivacyAccessKind): поки не визначено — системне вікно, після відмови — розділ
+   * «Приватність і безпека». Лише з кнопки «Надати…» в аппці на Mac; сам помічник дозволів не питає.
+   */
+  | 'requestAccess';
 
-export const HELPER_ACTIONS: readonly HelperAction[] = ['lock', 'displayOff', 'volume', 'mute', 'brightness', 'sleepDisabled', 'sleepNow', 'permissionGrant', 'permissionRevoke', 'authenticate', 'bluetoothScan'];
+export const HELPER_ACTIONS: readonly HelperAction[] = ['lock', 'displayOff', 'volume', 'mute', 'brightness', 'sleepDisabled', 'sleepNow', 'permissionGrant', 'permissionRevoke', 'authenticate', 'bluetoothScan', 'requestAccess'];
 
 export interface HelperRequest {
   id: string;
   action: HelperAction;
   /** volume / brightness — 0…100, mute / sleepDisabled / bluetoothScan — boolean. */
   value?: number | boolean;
-  /** permissionGrant / permissionRevoke — назва дозволу; authenticate — причина для вікна Touch ID; bluetoothScan — id пристрою. */
+  /** permissionGrant / permissionRevoke — назва дозволу; authenticate — причина для вікна Touch ID; bluetoothScan — id пристрою; requestAccess — location | bluetooth. */
   name?: string;
 }
 

@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { distinctUntilChanged, map, Subject, type Subscription } from 'rxjs';
-import type { MacPermission, PermissionsSnapshot } from '@awake/contracts';
+import type { MacPermission, PermissionsSnapshot, PrivacyAccess, PrivacyAccessKind } from '@awake/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 import { PERMISSION_INFO } from './constants/permissions';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
@@ -27,6 +27,8 @@ export class MacPermissionsService implements OnModuleInit, OnModuleDestroy {
   private readonly _subscriptions: Subscription[] = [];
   private _denied: Denied = [];
   private _granted: string[] = [];
+  /** Дозволи macOS помічника; null — помічник ще не сказав (або це помічник 0.1.0). */
+  private _access: Record<PrivacyAccessKind, PrivacyAccess> | null = null;
 
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
@@ -50,6 +52,16 @@ export class MacPermissionsService implements OnModuleInit, OnModuleDestroy {
           this._granted = granted;
           this._publish();
         }),
+      this._helper.state$
+        .pipe(
+          map((state) => state?.access ?? null),
+          distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+        )
+        .subscribe((access) => {
+          if (!access) return;
+          this._access = access;
+          this.changed$.next();
+        }),
     );
     this._publish();
   }
@@ -60,6 +72,20 @@ export class MacPermissionsService implements OnModuleInit, OnModuleDestroy {
 
   snapshot(): PermissionsSnapshot {
     return { granted: this._granted, denied: this._denied };
+  }
+
+  /** Дозволи macOS помічника (геолокація, Bluetooth) для сторінки «Дозволи». */
+  privacyAccess(): Record<PrivacyAccessKind, PrivacyAccess> | null {
+    return this._access;
+  }
+
+  /**
+   * Кнопка «Надати…»: помічник показує системне вікно macOS (або відкриває налаштування після відмови).
+   * Інших шляхів до запиту немає: ні старт, ні збірка, ні сканування його не показують.
+   */
+  async requestAccess(kind: PrivacyAccessKind) {
+    const result = await this._helper.run('requestAccess', undefined, kind);
+    if (!result.ok) this._log(`Запит дозволу «${kind}» не вдався: ${result.error ?? 'помічник не відповів'}`);
   }
 
   /** Дозвіл видано в системі і власник не вимкнув його цьому модулю. */
