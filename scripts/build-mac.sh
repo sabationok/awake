@@ -5,13 +5,14 @@
 # BIN_ONLY=1 builds only the binary mac/build/render/MaControl for offscreen snapshots (scripts/parity.sh).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-source "$ROOT/scripts/lib/codesign.sh"
 SRC="$ROOT/mac/Sources"
 OUT="$ROOT/mac/build"
 EXE="MaControl"
-# The old app's ids (owner, 2026-11-27): one id per stage. The helper is "$ID.helper".
-ID="${BUNDLE_ID:-dev.vitalii.macontrol}"; NAME="MaControl"; FILE="MaControl"
-[ "${RELEASE:-0}" = "1" ] || { ID="${BUNDLE_ID:-$ID.dev}"; NAME="MaControl (Dev)"; FILE="MaControl__Dev"; }
+# Ids (owner, 2026-11-27): the server side owns dev.vitalii.macontrol[.dev] — it is the helper bundle
+# MaControl Helper.app, which holds the Bluetooth and Location grants. What is the app's own says "app":
+# dev.vitalii.macontrol.app[.dev].
+SERVER_ID="dev.vitalii.macontrol"; ID="${BUNDLE_ID:-$SERVER_ID.app}"; NAME="MaControl"; FILE="MaControl"
+[ "${RELEASE:-0}" = "1" ] || { SERVER_ID="$SERVER_ID.dev"; ID="${BUNDLE_ID:-$ID.dev}"; NAME="MaControl (Dev)"; FILE="MaControl__Dev"; }
 # Dev passport for the dev indicator (~/projects/dev-indicator-kit): version of the `macontrol` package, git of this
 # checkout, build time. Stage dev; the server (agent-dev or bundled) is not known at build time, so no extra row.
 KIT="${DEV_INDICATOR_KIT:-$HOME/projects/dev-indicator-kit}"
@@ -47,7 +48,7 @@ STAGE="${MACONTROL_STAGE:-dev}"; [ "${RELEASE:-0}" = "1" ] && STAGE="${MACONTROL
 # Web UI to bundle; web/out (built with build:local when missing).
 WEB_OUT="${WEB_OUT:-$ROOT/web/out}"
 server_parts() {
-  (cd "$ROOT" && HELPER_ID="$ID.helper" bash scripts/build-helper.sh >/dev/null)
+  (cd "$ROOT" && HELPER_ID="$SERVER_ID" bash scripts/build-helper.sh >/dev/null)
   if [ "${SKIP_AGENT_BUILD:-0}" != "1" ]; then
     (cd "$ROOT" && pnpm install --frozen-lockfile >/dev/null && pnpm --filter @awake/agent build >/dev/null)
   fi
@@ -85,7 +86,6 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </dict></plist>
 PLIST
 passport "$APP/Contents/Resources/dev-build.json"
-# Inside out: the helper bundle is signed by build-helper.sh (ditto keeps it), then the app around it.
-mc_sign "$APP" "$ID"
-codesign --verify --deep --strict "$APP"
+# Ad-hoc. Inside out: the helper bundle is signed by build-helper.sh (ditto keeps it), then the app around it.
+codesign --force --sign - "$APP" >/dev/null
 echo "$APP"

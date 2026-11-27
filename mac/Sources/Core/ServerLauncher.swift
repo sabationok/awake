@@ -35,13 +35,13 @@ enum ServerLauncher {
         return url
     }
 
-    /// The old MaControl app still running (its bundle ids, at any path other than this app's own bundle): it
-    /// restarts any server that is not its own, so while it runs this app only connects and never sends SIGTERM
-    /// (no ping-pong of restarts). The path check keeps it right once this app takes over the old ids.
+    /// The old MaControl app still running (its bundle ids): it restarts any server that is not its own, so while it
+    /// runs this app only connects and never sends SIGTERM (no ping-pong of restarts). The server side (MaControl
+    /// Helper) now carries the same ids, so a bundle named MaControlHelper.app does not count.
     static var oldAppRunning: Bool {
         ["dev.vitalii.macontrol", "dev.vitalii.macontrol.dev"].contains { id in
             NSRunningApplication.runningApplications(withBundleIdentifier: id).contains {
-                $0.bundleURL?.standardizedFileURL != Bundle.main.bundleURL.standardizedFileURL
+                $0.bundleURL?.lastPathComponent != "MaControlHelper.app"
             }
         }
     }

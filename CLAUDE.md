@@ -67,10 +67,10 @@ One direction: clients → server → helper → macOS. Answers and events come 
 - The Wi-Fi name and Bluetooth «Поруч» come from the helper and work without the app. TODO(cutover): the server
   still accepts the old app's (`archive/mac-old`) `wifi` / `proximity` lines as a fallback; remove them once the old
   app is gone. The server reads `pmset -g assertions` itself for Keepers.
-- Bundle ids and signing: the app is `dev.vitalii.macontrol.dev` (dev), the helper `<app id>.helper`. Both build
-  scripts sign through `scripts/lib/codesign.sh`: with the «MaControl Dev» certificate (`scripts/dev-signing-cert.sh`,
-  once per Mac) the designated requirement is `certificate leaf` and grants survive rebuilds; without it they fall back
-  to ad-hoc (cdhash) with a warning, and every build asks for the grants again.
+- Bundle ids (owner, 2026-11-27): the server side owns `dev.vitalii.macontrol.dev` (dev) / `dev.vitalii.macontrol` —
+  that is the helper bundle MaControl Helper.app, which holds the Bluetooth and Location grants. Anything that is
+  specifically the app's says "app": the Mac app is `dev.vitalii.macontrol.app.dev` / `dev.vitalii.macontrol.app`,
+  and so are its UserDefaults suites and log subsystems. Both are signed ad-hoc for now (no stable certificate).
 - The app bundles its own server: `Contents/Library/Helpers/MaControlHelper.app` and `Contents/Resources/agent/{agent.cjs,web,
   build-info.json}`. While the old MaControl app (branch `archive/mac-old`) still runs, the new one only connects
   and never restarts a server of another build.

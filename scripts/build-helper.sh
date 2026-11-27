@@ -7,8 +7,8 @@
 # HELPER_ID перевизначає bundle id; build-mac.sh кладе бандл у MaControl.app/Contents/Library/Helpers/.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-source scripts/lib/codesign.sh
-HELPER_ID="${HELPER_ID:-dev.vitalii.macontrol.dev.helper}"
+# Серверний id (власник, 2026-11-27): помічник тримає дозволи Bluetooth і геолокації. Аппка — …macontrol.app.dev.
+HELPER_ID="${HELPER_ID:-dev.vitalii.macontrol.dev}"
 APP="build/MaControlHelper.app"
 rm -rf "$APP" build/mc-helper
 mkdir -p "$APP/Contents/MacOS"
@@ -52,5 +52,5 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>NSBluetoothAlwaysUsageDescription</key><string>$BT</string>
 </dict></plist>
 PLIST
-mc_sign "$APP" "$HELPER_ID"
+codesign --force --sign - "$APP" >/dev/null
 echo "Зібрано: $APP"
