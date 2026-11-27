@@ -188,5 +188,11 @@
 
 /* ---------- qr ---------- */
 .u-qr { display: grid; justify-items: center; gap: 8px; padding: 18px; }
-.u-qr svg { width: 160px; height: 160px; border-radius: var(--r-sm); background: #fff; padding: 10px; }
+.u-qr-thumb { padding: 0; border: 0; background: none; border-radius: var(--r-sm); cursor: zoom-in; transition: transform .15s var(--ease); }
+.u-qr-thumb:hover { transform: scale(1.03); }
+.u-qr-thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.u-qr-thumb svg, .u-qr-zoom svg { display: block; border-radius: var(--r-sm); background: #fff; padding: 10px; }
+.u-qr-thumb svg { width: 160px; height: 160px; }
+.u-qr-zoom { display: grid; place-items: center; }
+.u-qr-zoom svg { width: min(340px, 100%); height: auto; aspect-ratio: 1; padding: 14px; }
 .u-qr small { color: var(--fg-3); font-size: var(--fs-xs); }

@@ -18,9 +18,10 @@ import type {
 } from '@awake/contracts';
 import { Check, Copy, Inbox, Info, TriangleAlert, X, CircleX } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useDemo } from '@/demo/demo-store';
 import { findSymbolIcon } from '@/lib/icons';
-import { Badge, Button, Chip, Dot, DotMenu, EmptyState, IconButton, Segmented, Select, Slider, Switch, SymbolIcon, toneStyle, toneVar } from '@/ui/primitives';
+import { Badge, Button, Chip, Dialog, Dot, DotMenu, EmptyState, IconButton, Segmented, Select, Slider, Switch, SymbolIcon, toneStyle, toneVar } from '@/ui/primitives';
 import { fromButton, fromMenuItem, useRunAction } from './use-run-action';
 
 /* ---------- time ---------- */
@@ -610,20 +611,32 @@ function QrNode({ node }: { node: UiQr }) {
     const eyes = [[0, 0], [0, n - 7], [n - 7, 0]].map(([r, c]) => ({ x: (c ?? 0) + quiet, y: (r ?? 0) + quiet }));
     return { total, dots, eyes };
   }, [node.value]);
+  const [zoomed, setZoomed] = useState(false);
+  const code = (
+    <svg viewBox={`0 0 ${svg.total} ${svg.total}`} role="img" aria-label="QR-код">
+      <rect width={svg.total} height={svg.total} fill="#fff" />
+      {svg.eyes.map(({ x, y }) => (
+        <g key={`${x}-${y}`}>
+          <rect x={x} y={y} width={7} height={7} rx={2.2} fill="#000" />
+          <rect x={x + 1} y={y + 1} width={5} height={5} rx={1.2} fill="#fff" />
+          <rect x={x + 2} y={y + 2} width={3} height={3} rx={0.8} fill="#000" />
+        </g>
+      ))}
+      <path d={svg.dots} fill="#000" />
+    </svg>
+  );
   return (
     <div className="u-qr">
-      <svg viewBox={`0 0 ${svg.total} ${svg.total}`} role="img" aria-label="QR-код">
-        <rect width={svg.total} height={svg.total} fill="#fff" />
-        {svg.eyes.map(({ x, y }) => (
-          <g key={`${x}-${y}`}>
-            <rect x={x} y={y} width={7} height={7} rx={2.2} fill="#000" />
-            <rect x={x + 1} y={y + 1} width={5} height={5} rx={1.2} fill="#fff" />
-            <rect x={x + 2} y={y + 2} width={3} height={3} rx={0.8} fill="#000" />
-          </g>
-        ))}
-        <path d={svg.dots} fill="#000" />
-      </svg>
-      <small>Демо-код. Справжній показує лише Mac.</small>
+      <button type="button" className="u-qr-thumb" aria-label="Збільшити QR-код" onClick={() => setZoomed(true)}>
+        {code}
+      </button>
+      <small>Натисни, щоб збільшити · демо-код, справжній показує лише Mac.</small>
+      {zoomed ? createPortal(
+        <Dialog title="QR-код" onClose={() => setZoomed(false)} actions={<Button onClick={() => setZoomed(false)}>Закрити</Button>}>
+          <div className="u-qr-zoom">{code}</div>
+        </Dialog>,
+        document.body,
+      ) : null}
     </div>
   );
 }
