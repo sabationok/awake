@@ -13,6 +13,8 @@ const DASHBOARD_SUB = 'dashboard';
  * null — relay для цього деплою не налаштований (немає URL stage, ключа чи кімнати).
  */
 export async function getRelayAccess(): Promise<RelayViewerAccess | null> {
+  // Preview: webhooxyUrl там null, тож relay вимкнений і без цього рядка; тут — щоб це було видно.
+  if (readStageConfig().stage === 'preview') return null;
   if (!(await isValidSession((await cookies()).get(SESSION_COOKIE)?.value))) return null;
   const { webhooxyUrl } = readStageConfig();
   // Ключ JWT аппки; старе ім'я — поки його не перейменували в Envify і Vercel.

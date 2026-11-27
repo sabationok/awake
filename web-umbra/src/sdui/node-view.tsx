@@ -1,0 +1,571 @@
+'use client';
+import type {
+  UiButtons,
+  UiChart,
+  UiControl,
+  UiItem,
+  UiList,
+  UiMenuItem,
+  UiNode,
+  UiNotice,
+  UiQr,
+  UiRow,
+  UiSection,
+  UiStatus,
+  UiTabs,
+  UiTimer,
+} from '@awake/contracts';
+import { Check, Copy, Inbox, Info, TriangleAlert, X, CircleX } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useDemo } from '@/demo/demo-store';
+import { findSymbolIcon } from '@/lib/icons';
+import { Badge, Button, Chip, Dot, DotMenu, EmptyState, IconButton, Segmented, Select, Slider, Switch, SymbolIcon, toneStyle, toneVar } from '@/ui/primitives';
+import { fromButton, fromMenuItem, useRunAction } from './use-run-action';
+
+/* ---------- time ---------- */
+
+function useNow(active: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [active]);
+  return now;
+}
+
+function remaining(until: string | null | undefined, now: number): string | null {
+  if (!until) return null;
+  const s = Math.floor((new Date(until).getTime() - now) / 1000);
+  if (s <= 0) return null;
+  return `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/* ---------- dispatcher ---------- */
+
+/** Вузли, які малюються як блок панелі (з роздільником), а не як окремий рядок поза нею. */
+export function NodeView({ node }: { node: UiNode }) {
+  switch (node.type) {
+    case 'section': return <SectionNode node={node} />;
+    case 'row': return <RowNode node={node} />;
+    case 'status': return <StatusNode node={node} />;
+    case 'switch': return <SettingSwitchNode node={node} />;
+    case 'select': return <SettingSelectNode node={node} />;
+    case 'buttons': return <ButtonsNode node={node} />;
+    case 'list': return <ListNode node={node} />;
+    case 'text': return <p className="u-section-foot" style={{ padding: '12px 14px', color: node.tone ? toneVar(node.tone) : undefined }}>{node.text}</p>;
+    case 'tabs': return <TabsNode node={node} />;
+    case 'timer': return <TimerNode node={node} />;
+    case 'chart': return <ChartNode node={node} />;
+    case 'item': return <ItemNode node={node} />;
+    case 'notice': return <NoticeNode node={node} />;
+    case 'separator': return <div className="u-sep" data-word={node.word ? 'true' : undefined} style={{ padding: '10px 14px' }}>{node.word}</div>;
+    case 'qr': return <QrNode node={node} />;
+  }
+}
+
+/** Вузли верхнього рівня сторінки: секції — як є, решта — у власній панелі. */
+export function PageNodes({ nodes }: { nodes: UiNode[] }) {
+  return (
+    <>
+      {nodes.map((node) =>
+        node.type === 'section' || node.type === 'notice' ? (
+          <NodeView key={node.id} node={node} />
+        ) : (
+          <div key={node.id} className="u-panel">
+            <NodeView node={node} />
+          </div>
+        ),
+      )}
+    </>
+  );
+}
+
+/* ---------- section ---------- */
+
+function SectionActions({ actions }: { actions: UiMenuItem[] }) {
+  const [run, dialog] = useRunAction();
+  if (actions.length === 0) return null;
+  const [first] = actions;
+  return (
+    <>
+      {actions.length === 1 && first ? (
+        <Button size="sm" variant={first.variant} disabled={first.disabled || first.scope === 'mac'} title={first.hint} onClick={() => run(fromMenuItem(first))}>
+          {first.label}
+        </Button>
+      ) : (
+        <MenuOf items={actions} run={(item) => run(fromMenuItem(item))} />
+      )}
+      {dialog}
+    </>
+  );
+}
+
+function MenuOf({ items, run }: { items: UiMenuItem[]; run: (item: UiMenuItem) => void }) {
+  return (
+    <DotMenu
+      entries={items.map((item) => ({
+        id: item.id,
+        label: item.label,
+        icon: item.icon ? findSymbolIcon(item.icon.symbol) : undefined,
+        variant: item.variant,
+        disabled: item.disabled || item.scope === 'mac',
+        hint: item.scope === 'mac' ? (item.hint ?? 'Лише в аппці на Mac') : item.hint,
+        onSelect: () => run(item),
+      }))}
+    />
+  );
+}
+
+function SectionNode({ node }: { node: UiSection }) {
+  const children = node.children;
+  const hasHead = node.title || node.status || node.actions?.length;
+  return (
+    <section className="u-section">
+      {hasHead ? (
+        <div className="u-section-head">
+          <h3>{node.title}</h3>
+          {node.status ? <Badge {...node.status} /> : null}
+          {node.actions?.length ? <SectionActions actions={node.actions} /> : null}
+        </div>
+      ) : null}
+      {children.length ? (
+        <div className="u-panel">
+          {children.map((child) =>
+            child.type === 'section' ? (
+              <div key={child.id} style={{ padding: 12 }}>
+                <NodeView node={child} />
+              </div>
+            ) : child.type === 'notice' ? (
+              <div key={child.id} style={{ padding: 10 }}>
+                <NodeView node={child} />
+              </div>
+            ) : (
+              <NodeView key={child.id} node={child} />
+            ),
+          )}
+        </div>
+      ) : null}
+      {node.footer ? <p className="u-section-foot">{node.footer}</p> : null}
+    </section>
+  );
+}
+
+/* ---------- rows & controls ---------- */
+
+function ControlView({ id, control, label }: { id: string; control: UiControl; label: string }) {
+  const demo = useDemo();
+  const [run, dialog] = useRunAction();
+  switch (control.type) {
+    case 'switch': {
+      const value = control.setting ? demo.setting(control.setting.module, control.setting.key, control.value) : demo.local(id, control.value);
+      return (
+        <Switch
+          label={label}
+          checked={value}
+          disabled={control.disabled}
+          onChange={(next) => {
+            if (control.setting) return demo.send({ type: 'setting', change: { ...control.setting, value: next } }, label);
+            demo.setLocal(id, next);
+            const action = next ? control.on : control.off;
+            if (action) demo.send({ type: 'action', action }, `${label}: ${next ? 'увімк.' : 'вимк.'}`);
+          }}
+        />
+      );
+    }
+    case 'select': {
+      const value = control.setting ? demo.setting(control.setting.module, control.setting.key, control.value) : demo.local(id, control.value);
+      return (
+        <Select
+          id={`ctl-${id}`}
+          label={label}
+          value={value}
+          options={control.options}
+          disabled={control.disabled}
+          onChange={(next) => {
+            if (control.setting) return demo.send({ type: 'setting', change: { ...control.setting, value: next } }, label);
+            demo.setLocal(id, next);
+            if (control.action) demo.send({ type: 'action', action: { ...control.action, params: { ...control.action.params, value: next } } }, label);
+          }}
+        />
+      );
+    }
+    case 'slider': {
+      const value = demo.local(id, control.value);
+      return (
+        <>
+          <Slider
+            label={label}
+            value={value}
+            min={control.min}
+            max={control.max}
+            step={control.step}
+            disabled={control.disabled}
+            onChange={(v) => demo.setLocal(id, v)}
+            onCommit={(v) => demo.send({ type: 'action', action: { ...control.action, params: { ...control.action.params, value: v } } }, label)}
+          />
+          <span className="u-row-value" style={{ width: 34 }}>{value}</span>
+        </>
+      );
+    }
+    case 'button': {
+      const item = fromButton(control.button);
+      return (
+        <>
+          <Button size="sm" variant={item.variant} disabled={control.button.disabled} onClick={() => run(item)}>
+            {control.button.label}
+          </Button>
+          {dialog}
+        </>
+      );
+    }
+  }
+}
+
+function RowNode({ node }: { node: UiRow }) {
+  const now = useNow(Boolean(node.countdownTo));
+  const left = remaining(node.countdownTo, now);
+  const hint = [node.hint, left].filter(Boolean).join(' · ');
+  return (
+    <div className="u-row" data-prominent={node.prominent ? 'true' : undefined}>
+      {node.icon ? <SymbolIcon symbol={node.icon.symbol} tone={node.icon.tone} /> : null}
+      <div className="u-row-text">
+        <span className="u-row-label">{node.label}</span>
+        {hint || node.dot ? (
+          <span className="u-row-hint">
+            {node.dot ? <Dot tone={node.dot.tone} pulse={node.dot.pulse} /> : null}
+            <span className="tnum">{hint}</span>
+          </span>
+        ) : null}
+      </div>
+      {node.control ? (
+        <div className="u-row-control">
+          <ControlView id={node.id} control={node.control} label={node.label} />
+        </div>
+      ) : node.value ? (
+        <span className="u-row-value">{node.value}</span>
+      ) : null}
+    </div>
+  );
+}
+
+function StatusNode({ node }: { node: UiStatus }) {
+  const now = useNow(Boolean(node.countdownTo));
+  const left = remaining(node.countdownTo, now);
+  return (
+    <div className="u-row" data-prominent="true" style={toneStyle(node.tone)}>
+      {node.icon ? <SymbolIcon symbol={node.icon.symbol} tone={node.icon.tone} /> : <Dot tone={node.tone} pulse={node.pulse} />}
+      <div className="u-row-text">
+        <span className="u-row-label">{node.label}</span>
+        {node.hint ? <span className="u-row-hint">{node.hint}</span> : null}
+      </div>
+      {left || node.value ? (
+        <span className="u-row-value tnum" style={{ fontSize: 'var(--fs-xl)', color: 'var(--tone)', fontWeight: 500 }}>
+          {left ?? node.value}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function SettingSwitchNode({ node }: { node: Extract<UiNode, { type: 'switch' }> }) {
+  return (
+    <RowNode
+      node={{
+        id: node.id,
+        type: 'row',
+        label: node.label,
+        hint: node.hint,
+        icon: node.icon,
+        control: { type: 'switch', value: node.value, disabled: node.disabled, setting: { module: node.module, key: node.key } },
+      }}
+    />
+  );
+}
+
+function SettingSelectNode({ node }: { node: Extract<UiNode, { type: 'select' }> }) {
+  return (
+    <RowNode
+      node={{
+        id: node.id,
+        type: 'row',
+        label: node.label,
+        hint: node.hint,
+        icon: node.icon,
+        control: { type: 'select', value: node.value, options: node.options, disabled: node.disabled, setting: { module: node.module, key: node.key } },
+      }}
+    />
+  );
+}
+
+function ButtonsNode({ node }: { node: UiButtons }) {
+  const [run, dialog] = useRunAction();
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(120px, 1fr))`, gap: 8, padding: 12 }}>
+      {node.buttons.map((button) => {
+        const item = fromButton(button);
+        return (
+          <Button key={button.id} variant={item.variant} disabled={button.disabled} onClick={() => run(item)}>
+            {button.label}
+          </Button>
+        );
+      })}
+      {dialog}
+    </div>
+  );
+}
+
+function ListNode({ node }: { node: UiList }) {
+  if (node.items.length === 0) return <EmptyState icon={Inbox} text={node.empty ?? 'Поки порожньо'} />;
+  return (
+    <div>
+      {node.items.map((item, index) => (
+        <div key={item.id} className="u-list-row" style={index ? { borderTop: '1px solid var(--line)' } : undefined}>
+          <div className="u-row-text">
+            <span className="u-row-label" style={{ fontWeight: 400 }}>{item.label}</span>
+            {item.hint ? <span className="u-row-hint">{item.hint}</span> : null}
+          </div>
+          {item.value ? <span className="u-row-value">{item.value}</span> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TabsNode({ node }: { node: UiTabs }) {
+  const demo = useDemo();
+  const fallback = node.value ?? node.tabs[0]?.id ?? '';
+  const value = node.setting ? demo.setting(node.setting.module, node.setting.key, fallback) : demo.local(node.id, fallback);
+  const active = node.tabs.find((tab) => tab.id === value) ?? node.tabs[0];
+  return (
+    <div>
+      <div style={{ padding: 12, display: 'flex', justifyContent: 'center', position: node.sticky ? 'sticky' : undefined, top: 0, zIndex: 2, background: 'var(--surface-1)' }}>
+        <Segmented
+          value={active?.id ?? ''}
+          options={node.tabs.map((tab) => ({ value: tab.id, label: tab.label }))}
+          onChange={(next) => (node.setting ? demo.send({ type: 'setting', change: { ...node.setting, value: next } }) : demo.setLocal(node.id, next))}
+        />
+      </div>
+      {active?.children.map((child) => (
+        <div key={child.id} style={{ borderTop: '1px solid var(--line)' }}>
+          <NodeView node={child} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TimerNode({ node }: { node: UiTimer }) {
+  const now = useNow(Boolean(node.until));
+  const left = remaining(node.until, now);
+  let fraction: number | null = null;
+  if (left && node.from && node.until) {
+    const from = new Date(node.from).getTime();
+    const until = new Date(node.until).getTime();
+    fraction = Math.min(1, Math.max(0, (until - now) / (until - from || 1)));
+  }
+  // Від зеленого до червоного за часткою часу, що лишилась; без відліку — тон вузла.
+  const color = fraction === null ? toneVar(node.tone) : `color-mix(in oklab, var(--ok) ${Math.round(fraction * 100)}%, var(--danger))`;
+  return (
+    <div className="u-big" style={{ ['--tone' as string]: color }}>
+      <span className="u-big-value">{left ?? node.value}</span>
+      {fraction !== null ? (
+        <span className="u-progress">
+          <i style={{ width: `${fraction * 100}%` }} />
+        </span>
+      ) : null}
+      {node.caption ? <span className="u-big-caption">{node.caption}</span> : null}
+    </div>
+  );
+}
+
+/* ---------- chart ---------- */
+
+function formatValue(value: number, format: UiChart['format']): string {
+  switch (format) {
+    case 'duration': {
+      const h = Math.floor(value / 3600);
+      const m = Math.round((value % 3600) / 60);
+      return h ? `${h} год ${m} хв` : `${m} хв`;
+    }
+    case 'bytes': return value > 1e6 ? `${(value / 1e6).toFixed(1)} МБ` : `${Math.round(value / 1e3)} КБ`;
+    case 'percent': return `${Math.round(value)}%`;
+    case 'number': return value.toFixed(1);
+    default: return String(Math.round(value));
+  }
+}
+
+function formatBucket(iso: string, unit: UiChart['unit']): string {
+  const d = new Date(iso);
+  if (unit === 'minute' || unit === 'hour') return d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+  if (unit === 'month') return d.toLocaleDateString('uk-UA', { month: 'short' });
+  return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
+}
+
+const SERIES_FALLBACK = ['accent', 'indigo', 'green', 'yellow', 'red'] as const;
+
+function ChartNode({ node }: { node: UiChart }) {
+  const starts = [...new Set(node.points.map((p) => p.start))].sort();
+  const series = [...new Set(node.points.map((p) => p.series ?? ''))];
+  const colorOf = (s: string, i: number) => toneVar(node.tones?.[s] ?? (s ? SERIES_FALLBACK[i % SERIES_FALLBACK.length] : (node.tone ?? 'accent')));
+  const totals = starts.map((start) => node.points.filter((p) => p.start === start).reduce((sum, p) => sum + p.value, 0));
+  const max = Math.max(1, node.limit ?? 0, ...totals);
+  const total = totals.reduce((a, b) => a + b, 0);
+  const W = 100;
+  const H = 100;
+  const slot = W / Math.max(1, starts.length);
+  const bar = Math.max(0.6, slot * 0.62);
+  const [hover, setHover] = useState<number | null>(null);
+  const shown = hover ?? starts.length - 1;
+
+  return (
+    <div className="u-chart">
+      <div className="u-chart-head">
+        <b>{node.title}</b>
+        <span>
+          {starts[shown] ? `${formatBucket(starts[shown], node.unit)} · ${formatValue(totals[shown] ?? 0, node.format)}` : formatValue(total, node.format)}
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={node.title} onPointerLeave={() => setHover(null)}>
+        {[0.25, 0.5, 0.75].map((f) => (
+          <line key={f} x1="0" x2={W} y1={H * f} y2={H * f} stroke="var(--line)" strokeWidth="0.4" vectorEffect="non-scaling-stroke" />
+        ))}
+        {starts.map((start, i) => {
+          let y = H;
+          return (
+            <g key={start} onPointerEnter={() => setHover(i)} opacity={hover === null || hover === i ? 1 : 0.45}>
+              <rect x={i * slot} y="0" width={slot} height={H} fill="transparent" />
+              {series.map((s, si) => {
+                const value = node.points.find((p) => p.start === start && (p.series ?? '') === s)?.value ?? 0;
+                const h = (value / max) * (H - 4);
+                y -= h;
+                return h > 0 ? <rect key={s} x={i * slot + (slot - bar) / 2} y={y} width={bar} height={h} rx="0.6" fill={colorOf(s, si)} /> : null;
+              })}
+            </g>
+          );
+        })}
+        {node.limit ? (
+          <line x1="0" x2={W} y1={H - (node.limit / max) * (H - 4)} y2={H - (node.limit / max) * (H - 4)} stroke="var(--danger)" strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+        ) : null}
+      </svg>
+      <div className="u-chart-axis">
+        <span>{starts[0] ? formatBucket(starts[0], node.unit) : ''}</span>
+        <span>{starts.at(-1) ? formatBucket(starts.at(-1) as string, node.unit) : ''}</span>
+      </div>
+      {series.length > 1 ? (
+        <div className="u-legend">
+          {series.map((s, i) => (
+            <span key={s}>
+              <span className="u-dot" style={{ background: colorOf(s, i) }} />
+              {s}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ---------- item ---------- */
+
+function CopyValue({ value, label }: { value: string; label?: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <div className="u-copy">
+      {label ? <small>{label}</small> : null}
+      <code>{value}</code>
+      <IconButton
+        icon={done ? Check : Copy}
+        label="Копіювати"
+        onClick={() => {
+          navigator.clipboard?.writeText(value).then(
+            () => setDone(true),
+            () => setDone(false),
+          );
+          setTimeout(() => setDone(false), 1500);
+        }}
+      />
+    </div>
+  );
+}
+
+function ItemNode({ node }: { node: UiItem }) {
+  const [run, dialog] = useRunAction();
+  const actions = node.actions ?? [];
+  const [single] = actions;
+  return (
+    <div className="u-item">
+      <div className="u-item-head">
+        {node.icon ? <SymbolIcon symbol={node.icon.symbol} tone={node.icon.tone} /> : null}
+        <span className="u-item-title">{node.title}</span>
+        {node.status ? <Badge {...node.status} /> : null}
+        {node.control ? <ControlView id={node.id} control={node.control} label={node.title} /> : null}
+        {actions.length === 1 && single ? (
+          <Button size="sm" variant={single.variant} disabled={single.disabled || single.scope === 'mac'} title={single.scope === 'mac' ? (single.hint ?? 'Лише в аппці на Mac') : single.hint} onClick={() => run(fromMenuItem(single))}>
+            {single.label}
+          </Button>
+        ) : actions.length > 1 ? (
+          <MenuOf items={actions} run={(item) => run(fromMenuItem(item))} />
+        ) : null}
+      </div>
+      {node.tags?.length ? (
+        <div className="u-item-tags">
+          {node.tags.map((tag) => (
+            <Chip key={tag.label} label={tag.label} tone={tag.tone} />
+          ))}
+        </div>
+      ) : null}
+      {node.copy ? <CopyValue value={node.copy.value} label={node.copy.label} /> : null}
+      {node.comment ? <p className="u-item-comment">{node.comment}</p> : null}
+      {dialog}
+    </div>
+  );
+}
+
+/* ---------- notice / qr ---------- */
+
+function NoticeNode({ node }: { node: UiNotice }) {
+  const demo = useDemo();
+  if (demo.dismissed(node.id)) return null;
+  const tone = node.variant === 'error' ? 'red' : node.variant === 'warn' ? 'yellow' : 'accent';
+  const Icon = node.icon ? (findSymbolIcon(node.icon.symbol) ?? Info) : node.variant === 'error' ? CircleX : node.variant === 'warn' ? TriangleAlert : Info;
+  return (
+    <div className="u-notice" data-sticky={node.sticky} style={toneStyle(tone)}>
+      <Icon />
+      <div className="u-notice-body">
+        {node.title ? <b>{node.title}</b> : null}
+        <span>{node.text}</span>
+      </div>
+      {node.dismiss ? (
+        <IconButton
+          icon={X}
+          label="Закрити"
+          onClick={() => {
+            demo.dismiss(node.id);
+            if (node.dismiss) demo.send({ type: 'action', action: node.dismiss }, 'Сповіщення закрито');
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/** Декоративний QR-подібний візерунок: справжній код одноразовий і з Mac не виходить. */
+function QrNode({ node }: { node: UiQr }) {
+  let seed = [...node.value].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+  const cells: string[] = [];
+  for (let y = 0; y < 21; y++)
+    for (let x = 0; x < 21; x++) {
+      const finder = (x < 7 && y < 7) || (x > 13 && y < 7) || (x < 7 && y > 13);
+      seed = (seed * 1103515245 + 12345) >>> 0;
+      if (finder ? x % 6 === 0 || y % 6 === 0 || (x % 7 > 1 && x % 7 < 5 && y % 7 > 1 && y % 7 < 5) || x === 20 || x === 14 || y === 14 || y === 20 : seed % 3 === 0) cells.push(`M${x} ${y}h1v1h-1z`);
+    }
+  return (
+    <div className="u-qr">
+      <svg viewBox="0 0 21 21" role="img" aria-label="QR-код">
+        <path d={cells.join('')} fill="#000" />
+      </svg>
+      <small>Демо-код. Справжній показує лише Mac.</small>
+    </div>
+  );
+}

@@ -7,7 +7,8 @@ import { PageFrame } from '@/components/page-frame';
 import { login, type LoginState } from '@/server/auth-actions';
 import { DEFAULT_IDLE_MINUTES, IDLE_OPTIONS_MINUTES } from '@/server/session-cookie';
 
-export function LoginPage({ next }: { next: string }) {
+/** `previewPassword` — лише в preview stage: тестовий пароль уже у формі, достатньо натиснути «Увійти». */
+export function LoginPage({ next, previewPassword }: { next: string; previewPassword?: string }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(login, { error: null });
 
   return (
@@ -15,10 +16,18 @@ export function LoginPage({ next }: { next: string }) {
       <form action={action}>
         <input type="hidden" name="next" value={next} />
         <FlexBox gap="md">
-          <Group footer={state.error ?? 'Пароль задається в DASHBOARD_PASSWORD на Vercel, щонайменше 12 символів.'}>
+          <Group
+            footer={
+              state.error ??
+              (previewPassword
+                ? 'Preview: тестовий пароль уже підставлено. Запитів до Mac тут немає, дані — лише для перегляду.'
+                : 'Пароль задається в DASHBOARD_PASSWORD на Vercel, щонайменше 12 символів.')
+            }
+          >
             <input
               name="password"
               type="password"
+              defaultValue={previewPassword}
               autoComplete="current-password"
               placeholder="Пароль"
               aria-label="Пароль"

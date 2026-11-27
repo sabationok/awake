@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { RELAY_COOKIE_PREFIX } from '@awake/contracts';
 import { readStageConfig } from '@/server/stage-config';
+import { isPreviewStage } from '@/server/stage';
 import { SESSION_COOKIE, isValidSession } from '@/server/session-cookie';
 
 /** Сегмент шляху до Mac: лише безпечні символи, без `..` і кодованих слешів. */
@@ -14,6 +15,8 @@ const MAX_BODY_BYTES = 16 * 1024;
  * сесія Web UI в webhooxy не потрапляє. Що робити із запитом, вирішує Mac.
  */
 async function proxy(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  // Preview stage не ходить до агента зовсім.
+  if (isPreviewStage()) return error(503, 'PREVIEW_STAGE');
   const { path } = await params;
   if (path.length > MAX_SEGMENTS || !path.every((segment) => SEGMENT.test(segment))) return error(404, 'NOT_FOUND');
   // Запит з чужого сайту: браузер шле Origin, і він має збігатися з нашим.

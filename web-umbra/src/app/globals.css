@@ -1,0 +1,53 @@
+/* Umbra: темний hi-fi стиль. Три шари фону замість рамок, один теплий акцент лише для поточного стану. */
+:root {
+  color-scheme: dark;
+  --bg: #000000;
+  --bg-app: #0c0c0d;
+  --surface-1: #141415;
+  --surface-2: #1a1a1c;
+  --surface-3: #232326;
+  --line: #222225;
+  --line-strong: #303034;
+  --fg: #ededef;
+  --fg-2: #a3a3aa;
+  --fg-3: #6c6c73;
+  --accent: #ff9b2f;
+  --accent-2: #ffb766;
+  --accent-soft: rgba(255, 155, 47, 0.12);
+  --accent-ink: #1c1000;
+  --violet: #7d6bff;
+  --ok: #3fcf8e;
+  --warn: #f5c542;
+  --danger: #ff5f5f;
+  --orange: #ff7a45;
+
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 15px;
+  --fs-xl: 20px;
+  --fs-display: 44px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --row-h: 36px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sidebar-w: 232px;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: var(--fs-md);
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+.tnum { font-variant-numeric: tabular-nums; }

@@ -3,5 +3,6 @@ packages:
   - contracts
   - agent
   - web
+  - web-umbra
 allowBuilds:
   esbuild: true

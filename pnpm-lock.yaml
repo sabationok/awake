@@ -108,6 +108,43 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  web-umbra:
+    dependencies:
+      '@awake/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      clsx:
+        specifier: 2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: 1.70.0
+        version: 1.70.0(@types/react@19.1.12)(react@19.1.10)
+      next:
+        specifier: 15.5.29
+        version: 15.5.29(@types/node@22.15.3)(react-dom@19.1.10(react@19.1.10))(react@19.1.10)
+      react:
+        specifier: 19.1.10
+        version: 19.1.10
+      react-dom:
+        specifier: 19.1.10
+        version: 19.1.10(react@19.1.10)
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
+    devDependencies:
+      '@types/node':
+        specifier: 22.15.3
+        version: 22.15.3
+      '@types/react':
+        specifier: 19.1.12
+        version: 19.1.12
+      '@types/react-dom':
+        specifier: 19.1.9
+        version: 19.1.9(@types/react@19.1.12)
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
 packages:
 
   '@alloc/quick-lru@5.3.0':

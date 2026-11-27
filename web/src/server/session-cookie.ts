@@ -12,10 +12,14 @@ export const IDLE_OPTIONS_MINUTES = [2, 5, 10] as const;
 export type IdleMinutes = (typeof IDLE_OPTIONS_MINUTES)[number];
 export const DEFAULT_IDLE_MINUTES: IdleMinutes = 5;
 
+import { PREVIEW_PASSWORD, PREVIEW_SESSION_SECRET } from './preview-access';
+import { isPreviewStage } from './stage';
+
 const encoder = new TextEncoder();
 
 async function hmac(value: string): Promise<string> {
-  const secret = process.env.SESSION_SECRET;
+  // Preview без SESSION_SECRET підписує тестовим секретом: там немає даних агента.
+  const secret = process.env.SESSION_SECRET || (isPreviewStage() ? PREVIEW_SESSION_SECRET : undefined);
   if (!secret || secret.length < 32) throw new Error('SESSION_SECRET must be at least 32 characters');
   const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(value));
@@ -66,7 +70,8 @@ export async function isValidSession(value: string | undefined): Promise<boolean
 export const MIN_PASSWORD_LENGTH = 12;
 
 export async function isValidPassword(password: string): Promise<boolean> {
-  const expected = process.env.DASHBOARD_PASSWORD;
+  // У preview — лише тестовий пароль, навіть якщо DASHBOARD_PASSWORD задано: справжній пароль туди не потрапляє.
+  const expected = isPreviewStage() ? PREVIEW_PASSWORD : process.env.DASHBOARD_PASSWORD;
   if (!expected || expected.length < MIN_PASSWORD_LENGTH) return false;
   // Хешуємо обидва, щоб порівнювати рядки однакової довжини.
   const [a, b] = await Promise.all([hmac(`pw:${password}`), hmac(`pw:${expected}`)]);
