@@ -17,7 +17,7 @@ struct SidebarSection<Item: Hashable>: Hashable {
 /// Меню розділів і сторінка.
 /// Широке вікно: повне меню поруч зі сторінкою. Вузьке: сторінка на всю ширину, а повне меню (з групами й
 /// вкладеними пунктами) відкривається поверх неї кнопкою в тулбарі і закривається вибором пункту чи кліком поза ним.
-/// У заголовку вікна — назва модуля; на вкладеній сторінці замість неї крихти «Модуль › Сторінка» в тулбарі.
+/// Над усім — власний хедер на всю ширину (AppHeader): назва модуля або крихти «Модуль › Сторінка».
 /// Універсальний: не знає про конкретні розділи, лише отримує секції і замикання.
 struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: View>: View {
     @Binding var selection: Item
@@ -46,7 +46,38 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
     var body: some View {
         GeometryReader { geo in
             let compact = geo.size.width < pinnedWidth
-            ZStack(alignment: .topLeading) {
+            VStack(spacing: 0) {
+                AppHeader(sidebarWidth: compact ? 0 : expandedWidth) { headerLeading(compact: compact) }
+                workspace(compact: compact, width: geo.size.width)
+            }
+        }
+        .ignoresSafeArea(.container, edges: .top)
+    }
+
+    /// Ліва частина хедера: кнопка меню (вузьке вікно), далі назва модуля або крихти вкладеної сторінки.
+    private func headerLeading(compact: Bool) -> some View {
+        HStack(spacing: 10) {
+            if compact {
+                Button {
+                    overlayOpen.toggle()
+                } label: {
+                    Image(systemName: "sidebar.left")
+                }
+                .buttonStyle(.borderless)
+                .help(overlayOpen ? "Сховати меню" : "Показати меню")
+            }
+            if parentNode == nil {
+                // Головна сторінка модуля: модуль синім і жирним — він і є активний пункт.
+                Text(title(selection)).font(.headline).fontWeight(.bold).foregroundStyle(Color.accentColor)
+            } else {
+                breadcrumbs
+            }
+        }
+    }
+
+    /// Під хедером: сайдбар поруч зі сторінкою або (вузьке вікно) сторінка з меню-оверлеєм.
+    private func workspace(compact: Bool, width geoWidth: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
                 HStack(spacing: 0) {
                     if !compact {
                         panel.frame(width: expandedWidth)
@@ -62,7 +93,7 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
                         .contentShape(Rectangle())
                         .allowsHitTesting(overlayOpen)
                         .onTapGesture { overlayOpen = false }
-                    let width = min(overlayWidth, geo.size.width - 40)
+                    let width = min(overlayWidth, geoWidth - 40)
                     panel
                         .frame(width: width)
                         .shadow(color: .black.opacity(overlayOpen ? 0.25 : 0), radius: 16, x: 4)
@@ -79,42 +110,26 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
                 }
             }
             .onChange(of: compact) { _, isCompact in if !isCompact { overlayOpen = false } }
-            .toolbar {
-                if compact {
-                    ToolbarItem(placement: .navigation) {
-                        Button {
-                            overlayOpen.toggle()
-                        } label: {
-                            Image(systemName: "sidebar.left")
-                        }
-                        .help(overlayOpen ? "Сховати меню" : "Показати меню")
-                    }
-                }
-                // Після кнопки меню: шлях вкладеної сторінки в рядку заголовка.
-                ToolbarItem(placement: .navigation) { breadcrumbs }
-            }
-        }
-        .navigationTitle(windowTitle)
     }
+
 
     /// Модуль вибраної сторінки (батько в меню); nil — вибрано головний пункт.
     private var parentNode: SidebarNode<Item>? {
         sections.lazy.flatMap(\.nodes).first { $0.children.contains(selection) }
     }
 
-    /// Заголовок вікна: на головній сторінці модуля — його назва; на вкладеній порожній, шлях показують крихти в тулбарі.
-    private var windowTitle: String { parentNode == nil ? title(selection) : "" }
-
     /// Крихти «Модуль › Сторінка» в рядку заголовка; модуль клікабельний.
     @ViewBuilder
     private var breadcrumbs: some View {
         if let parent = parentNode {
             HStack(spacing: 6) {
+                // Модуль — синім, звичайної ваги; активна дочірня сторінка — кольором тексту і жирніше.
                 Button(title(parent.item)) { selection = parent.item }
                     .buttonStyle(.plain)
+                    .fontWeight(.regular)
                     .foregroundStyle(Color.accentColor)
                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
-                Text(title(selection)).fontWeight(.semibold)
+                Text(title(selection)).fontWeight(.bold).foregroundStyle(.primary)
             }
             .font(.headline)
             .fixedSize()

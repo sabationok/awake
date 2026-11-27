@@ -16,8 +16,7 @@ struct AwakeApp: App {
         }
         .windowResizability(.contentMinSize)
         .defaultSize(width: 720, height: 520)
-        // Назва сторінки — у заголовку вікна поруч із його кнопками, а не на самій сторінці.
-        .windowToolbarStyle(.unified)
+        // Заголовок вікна прозорий і без тексту (AppHeader → WindowChrome): його місце займає власний хедер.
 
         MenuBarExtra {
             MenuBarContent().environmentObject(model).environmentObject(delegate.updates)
