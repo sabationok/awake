@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
@@ -66,7 +67,38 @@ export interface AgentConfig {
 
 export const AGENT_CONFIG = Symbol('AGENT_CONFIG');
 
-export function readAgentConfig(env: NodeJS.ProcessEnv = process.env): AgentConfig {
+/** Старі назви ключів у agent.env, які досі пише стара аппка. */
+const LEGACY_KEYS: Record<string, string> = {
+  AWAKE_AGENT_TOKEN: 'MACONTROL_AGENT_TOKEN',
+  AWAKE_AGENT_PORT: 'MACONTROL_AGENT_PORT',
+};
+
+/**
+ * Ключі сервера з `~/.config/awake/agent.env` (`MACONTROL_AGENT_ENV` міняє шлях). Сервер читає їх сам, тож будь-який
+ * клієнт, що його запускає (стара аппка, Mac Umbra, скрипт), не носить токен. Значення з process.env мають перевагу.
+ */
+export function withAgentEnvFile(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const file = env.MACONTROL_AGENT_ENV || join(homedir(), '.config/awake/agent.env');
+  let text: string;
+  try {
+    text = readFileSync(file, 'utf8');
+  } catch {
+    return env;
+  }
+  const fromFile: NodeJS.ProcessEnv = {};
+  for (const line of text.split('\n')) {
+    const match = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(line);
+    if (!match) continue;
+    const value = match[2].trim().replace(/^(['"])(.*)\1$/, '$2');
+    fromFile[match[1]] = value;
+    const modern = LEGACY_KEYS[match[1]];
+    if (modern && fromFile[modern] === undefined) fromFile[modern] = value;
+  }
+  return { ...fromFile, ...Object.fromEntries(Object.entries(env).filter(([, v]) => v !== undefined && v !== '')) };
+}
+
+export function readAgentConfig(rawEnv: NodeJS.ProcessEnv = process.env): AgentConfig {
+  const env = withAgentEnvFile(rawEnv);
   const token = env.MACONTROL_AGENT_TOKEN ?? '';
   if (token.length < 16) throw new Error('MACONTROL_AGENT_TOKEN missing or shorter than 16 characters');
   const listedOrigins = (env.MACONTROL_DASHBOARD_ORIGINS ?? '').split(',').map((origin) => origin.trim()).filter(Boolean);

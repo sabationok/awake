@@ -40,7 +40,7 @@ function remoteAccessNodes(ctx: ModuleContext, available: Record<RemotePath, boo
 }
 
 /**
- * «Огляд» Агента: вмикач агента, «Віддалений доступ» (перемикачі шляхів поза домашньою Wi-Fi — Tailscale, webhooxy;
+ * Головна сторінка модуля «Агент» (у меню й крихтах — назва модуля, як Awake): вмикач агента, «Віддалений доступ» (перемикачі шляхів поза домашньою Wi-Fi — Tailscale, webhooxy;
  * сірий, коли модуль шляху вимкнено) і транспорти з проксі. Сповіщення Агента — у Telegram → Сповіщення.
  */
 export function buildBotOverviewPage(
@@ -53,7 +53,7 @@ export function buildBotOverviewPage(
   return {
     id: BOT_OVERVIEW_PAGE,
     module: 'bot',
-    title: 'Огляд',
+    title: 'Агент',
     icon: { symbol: 'gauge.with.dots.needle.67percent', tone: 'accent' },
     group: 'modules',
     children: [

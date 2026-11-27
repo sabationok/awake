@@ -83,7 +83,7 @@ function awakeSwitch(key: string, label: string, value: boolean, icon: UiIcon, h
   };
 }
 
-// ───────────────────────── Awake: «Сесія» ─────────────────────────
+// ───────────────────────── Awake: «Awake» ─────────────────────────
 
 function awakeSessionPage(): UiPage {
   const until = inMinutes(80);
@@ -91,7 +91,7 @@ function awakeSessionPage(): UiPage {
   return {
     id: 'session',
     module: 'awake',
-    title: 'Сесія',
+    title: 'Awake',
     icon: { symbol: 'cup.and.saucer.fill', tone: 'orange' },
     group: 'modules',
     children: [
@@ -155,21 +155,7 @@ function awakeSessionPage(): UiPage {
           },
         ],
       },
-      {
-        id: 'screen',
-        type: 'section',
-        children: [
-          {
-            id: 'display-off-now',
-            type: 'row',
-            label: 'Погасити екран зараз',
-            control: {
-              type: 'button',
-              button: { id: 'display-off', label: 'Погасити', variant: 'plain', disabled: false, action: { module: 'awake', name: 'displayOff' } },
-            },
-          },
-        ],
-      },
+      // Рядка «Погасити екран зараз» тут нема: під час сесії ця дія вже є в картці (session-display-off-now).
       {
         id: 'state',
         type: 'section',

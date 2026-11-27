@@ -1,11 +1,12 @@
 'use client';
-import type { UiPage } from '@awake/contracts';
+import type { UiPage, UiTree } from '@awake/contracts';
 import { ChevronLeft, ChevronRight, CircleAlert, CircleCheck, DatabaseZap, FlaskConical, Info, Menu, Power, TriangleAlert, X, type LucideIcon } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { DemoProvider, useDemo, type LogType } from '@/demo/demo-store';
 import type { TreeOrigin, TreeResponse } from '@/app/api/tree/route';
 import { levelOf, pathTo, sidebarPages, sidebarSections, type SidebarNode } from '@/lib/sidebar-sections';
 import { PageNodes } from '@/sdui/node-view';
+import { AppearanceSection } from './appearance';
 import { IconButton, SymbolIcon } from '@/ui/primitives';
 
 function useHash(): [string, (id: string) => void] {
@@ -72,6 +73,7 @@ function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
   const path = useMemo(() => pathTo(sections, page?.id), [sections, page?.id]);
   const [open, setOpen] = useState<Set<string>>(() => new Set(path.slice(0, -1).map((n) => n.page.id)));
   const disabledOf = (p: UiPage) => tree.modules.find((m) => m.id === p.module)?.disabled;
+  const labelOf = useMemo(() => moduleLabels(tree, sections), [tree, sections]);
   const pathKey = path.map((n) => n.page.id).join('/');
 
   // Предки поточної сторінки в меню завжди розгорнуті.
@@ -113,7 +115,7 @@ function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
             <div key={section.key} className="s-group">
               {section.key === 'system' ? <span className="s-group-title">Система</span> : null}
               {section.nodes.map((n) => (
-                <NavNode key={n.page.id} node={n} current={page?.id} path={path} open={open} disabledOf={disabledOf} onToggle={toggle} onNavigate={navigate} />
+                <NavNode key={n.page.id} node={n} current={page?.id} path={path} open={open} disabledOf={disabledOf} labelOf={labelOf} onToggle={toggle} onNavigate={navigate} />
               ))}
             </div>
           ))}
@@ -132,17 +134,17 @@ function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
         <header className="s-top">
           <IconButton className="u-icon-btn s-burger" icon={Menu} label="Меню" onClick={() => setDrawer(true)} />
           {parent ? (
-            <IconButton className="u-icon-btn s-back" icon={ChevronLeft} label={`Назад: ${parent.page.title}`} onClick={() => navigate(parent.page.id)} />
+            <IconButton className="u-icon-btn s-back" icon={ChevronLeft} label={`Назад: ${labelOf(parent.page)}`} onClick={() => navigate(parent.page.id)} />
           ) : null}
           {crumbs.map((c) => (
             <span key={c.page.id} className="s-crumb">
               <button type="button" onClick={() => navigate(c.page.id)}>
-                {c.page.title}
+                {labelOf(c.page)}
               </button>
               <ChevronRight />
             </span>
           ))}
-          <h1>{page?.title}</h1>
+          <h1>{page ? labelOf(page) : null}</h1>
           {page?.scope === 'local' ? <span className="u-chip">лише в локальній мережі</span> : null}
           <span className="u-badge s-demo-badge" style={{ ['--tone' as string]: live ? 'var(--ok)' : 'var(--accent)' }}>
             {live ? 'Live · демо-дії' : 'Демо'}
@@ -159,6 +161,7 @@ function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
         ) : null}
         <SourceBanner data={data} offline={offline} />
         <div className="s-content" key={page?.id}>
+          {page?.id === 'settings' ? <AppearanceSection /> : null}
           {page ? <PageNodes nodes={page.children} /> : null}
         </div>
       </main>
@@ -173,13 +176,14 @@ interface NavProps {
   path: SidebarNode[];
   open: Set<string>;
   disabledOf: (page: UiPage) => string | undefined;
+  labelOf: (page: UiPage) => string;
   onToggle: (id: string) => void;
   onNavigate: (id: string) => void;
 }
 
 /** Пункт верхнього рівня меню (модуль або системна сторінка). */
 function NavNode({ node, ...props }: NavProps) {
-  const { current, path, open, disabledOf, onToggle, onNavigate } = props;
+  const { current, path, open, disabledOf, labelOf, onToggle, onNavigate } = props;
   const active = node.page.id === current;
   const inside = !active && path.some((n) => n.page.id === node.page.id);
   const disabled = disabledOf(node.page);
@@ -189,7 +193,7 @@ function NavNode({ node, ...props }: NavProps) {
       <div className="s-item" data-active={active ? 'true' : undefined} data-inside={inside ? 'true' : undefined} data-disabled={disabled ? 'true' : undefined} title={disabled}>
         <button type="button" className="s-item-main" disabled={Boolean(disabled)} onClick={() => onNavigate(node.page.id)}>
           <SymbolIcon symbol={node.page.icon.symbol} className="s-item-icon" />
-          <span>{node.page.title}</span>
+          <span>{labelOf(node.page)}</span>
         </button>
         {node.children.length && !disabled ? (
           <button type="button" className="s-chevron" aria-label={expanded ? 'Згорнути' : 'Розгорнути'} aria-expanded={expanded} onClick={() => onToggle(node.page.id)}>
@@ -204,7 +208,7 @@ function NavNode({ node, ...props }: NavProps) {
 
 /** Вкладений пункт меню; якщо в нього свої діти (Групи під Telegram), розгортається глибше з відступом. */
 function SubNode({ node, depth, ...props }: NavProps & { depth: number }) {
-  const { current, path, open, onToggle, onNavigate } = props;
+  const { current, path, open, labelOf, onToggle, onNavigate } = props;
   const active = node.page.id === current;
   const inside = !active && path.some((n) => n.page.id === node.page.id);
   const expanded = open.has(node.page.id);
@@ -212,7 +216,7 @@ function SubNode({ node, depth, ...props }: NavProps & { depth: number }) {
     <Fragment>
       <div className="s-sub-row" style={{ ['--depth' as string]: depth }}>
         <button type="button" className="s-sub" data-active={active || inside ? 'true' : undefined} onClick={() => onNavigate(node.page.id)}>
-          {node.page.title}
+          {labelOf(node.page)}
         </button>
         {node.children.length ? (
           <button type="button" className="s-chevron" aria-label={expanded ? 'Згорнути' : 'Розгорнути'} aria-expanded={expanded} onClick={() => onToggle(node.page.id)}>
@@ -262,4 +266,25 @@ function Toasts() {
       ))}
     </div>
   );
+}
+
+/**
+ * Назва пункту меню, крихти й заголовка. Сторінка, з якої починається модуль (верхній рівень або вкладений модуль на
+ * кшталт Груп під Telegram), зветься назвою модуля з `tree.modules`, а не своїм `title`: так пункт меню не
+ * перейменовується, коли сервер міняє заголовок сторінки (Awake → «Сесія», «Огляд»). Системні сторінки й підсторінки
+ * модуля лишаються зі своїм `title`.
+ */
+function moduleLabels(tree: UiTree, sections: { nodes: SidebarNode[] }[]): (page: UiPage) => string {
+  const parentModule = new Map<string, string | undefined>();
+  const walk = (nodes: SidebarNode[], parent?: UiPage) =>
+    nodes.forEach((n) => {
+      parentModule.set(n.page.id, parent?.module);
+      walk(n.children, n.page);
+    });
+  sections.forEach((s) => walk(s.nodes));
+  const titles = new Map(tree.modules.map((m) => [m.id, m.title]));
+  return (page) => {
+    const startsModule = page.group === 'modules' && parentModule.get(page.id) !== page.module;
+    return (startsModule ? titles.get(page.module) : undefined) ?? page.title;
+  };
 }

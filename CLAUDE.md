@@ -28,6 +28,15 @@ split or merged) starts with a mockup shown to the owner in the chat, before any
 - Code starts only after the owner approves the mockup. A change to one row or one label on an existing page
   needs none.
 
+## Screens only from the lib
+
+- Web Umbra (`web-umbra/src/ui`) and Mac Umbra (swift-umbra-lib, module `Umbra`) are the component catalogs. A screen
+  or a client shell is composed only from their components; no ad hoc markup, styles or one-off views in a page.
+- A missing component goes into the lib first (web: `src/ui`; Mac: the swift-umbra-lib session), then the screen
+  uses it. Components carry no lib prefix (`Segmented`, not `UmbraSegmented`).
+- Labels come from the server tree, never from the client: a module's entry in the menu, crumbs and title is
+  `tree.modules[].title`; other pages use `page.title`. A client never renames or hard-codes a label.
+
 ## Who owns what
 
 One direction: clients → server → helper → macOS. Answers and events come back.
@@ -46,6 +55,9 @@ One direction: clients → server → helper → macOS. Answers and events come 
   server page «Дозволи» (`agent/src/mac-permissions`, scope local): the web shows the system grants and toggles the
   per-module switches; grant / revoke buttons exist only in the Mac app (scope mac) and the server refuses those
   actions from any other source.
+- Agreed exception (owner, 2026-11-27): the theme (Системна | Світла | Темна) belongs to each client, not the server.
+  Each client stores it itself (web: localStorage `macontrol:theme`; Mac Umbra: UserDefaults `theme`) and draws the
+  section «Вигляд» first on the server page «Налаштування»; the server knows nothing about it.
 - Not moved yet, and not an agreed exception: the app still reads the Wi-Fi name and scans Bluetooth and sends them
   to the server (macOS grants those two to a bundle with an Info.plist; the helper must become a background bundle
   to take them over). The server reads `pmset -g assertions` itself for Keepers.

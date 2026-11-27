@@ -43,15 +43,18 @@ export function buildSessionPage(ctx: ModuleContext): UiPage {
       footer: 'Mac не засинає навіть із закритою кришкою. Сон повертається сам після таймера, при низькому заряді або перегріві, і коли ти виходиш з аппки.',
       children: session,
     },
-    { id: 'screen', type: 'section', children: [displayOffNowRow(mac)] },
   ];
+  // Під час сесії «Погасити зараз» уже є в картці: окремий рядок був би дублем.
+  if (!nowButtons.some((b) => b.id === 'session-display-off-now')) {
+    children.push({ id: 'screen', type: 'section', children: [displayOffNowRow(mac)] });
+  }
   if (mac !== null) {
     children.push({ id: 'state', type: 'section', title: 'Стан', children: stateRows(mac) });
   }
   return {
     id: 'session',
     module: 'awake',
-    title: 'Сесія',
+    title: 'Awake',
     icon: { symbol: 'cup.and.saucer.fill', tone: 'orange' },
     group: 'modules',
     children,

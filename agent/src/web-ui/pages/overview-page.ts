@@ -13,7 +13,8 @@ const ADDRESS_SECTIONS = [
     ids: ['mac', 'lan'],
     footer: 'У локальній мережі сервер відповідає лише в довіреній Wi-Fi. Список мереж — на сторінці «Мережі».',
   },
-  { id: 'priv', title: 'Priv · Tailscale', ids: ['tailnet'], footer: 'Лише пристрої твого tailnet, з будь-якої мережі.' },
+  // Назву каналу й опис уже несе картка Tailscale: заголовок і футер секції їх не повторюють.
+  { id: 'priv', title: 'Priv', ids: ['tailnet'] },
   { id: 'proxy', title: 'Proxy · Vercel', ids: ['vercel'], footer: 'Перегляд стану з будь-якої мережі; керування — через канали вище.' },
 ];
 

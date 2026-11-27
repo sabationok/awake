@@ -5,6 +5,8 @@ import { join } from 'node:path';
 const config: NextConfig = {
   outputFileTracingRoot: join(__dirname, '..'),
   transpilePackages: ['@awake/contracts'],
+  // Лівий нижній кут займає наш dev-індикатор (src/shell/dev-build-indicator.tsx); значок Next — праворуч.
+  devIndicators: { position: 'bottom-right' },
 };
 
 export default config;

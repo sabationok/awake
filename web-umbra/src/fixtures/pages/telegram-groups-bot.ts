@@ -720,7 +720,7 @@ function botOverviewPage(): UiPage {
   return {
     id: 'bot-overview',
     module: 'bot',
-    title: 'Огляд',
+    title: 'Агент',
     icon: { symbol: 'gauge.with.dots.needle.67percent', tone: 'accent' },
     group: 'modules',
     children: [
