@@ -1,0 +1,8 @@
+{
+  "name": "swift-umbra-lib",
+  "source": "~/projects/swift-umbra-lib",
+  "path": "Sources/Umbra",
+  "sourceCommit": "",
+  "note": "The lib repo has no commits yet. Re-sync with rsync --exclude vendor.json and fill sourceCommit after its first commit on dev.",
+  "syncedAt": "2026-11-27"
+}
