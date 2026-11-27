@@ -160,6 +160,12 @@
 .u-toast { display: flex; align-items: flex-start; gap: 10px; max-width: min(380px, calc(100vw - 32px)); padding: 10px 14px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line-strong); box-shadow: 0 12px 32px rgba(0,0,0,.55); font-size: var(--fs-sm); animation: u-rise .2s var(--ease); pointer-events: auto; }
 .u-toast svg { width: 15px; height: 15px; color: var(--accent); flex: none; margin-top: 1px; }
 .u-toast div { display: grid; gap: 2px; min-width: 0; }
+.u-toast small { color: var(--fg-3); font-size: var(--fs-xs); }
+.u-toast { --tone: var(--accent); }
+.u-toast[data-type='success'] { --tone: var(--ok); }
+.u-toast[data-type='warning'] { --tone: var(--warn); }
+.u-toast[data-type='error'] { --tone: var(--danger); border-color: color-mix(in oklab, var(--danger) 45%, transparent); }
+.u-toast svg { color: var(--tone); }
 .u-toast code { font-family: var(--mono); font-size: 10.5px; color: var(--fg-3); overflow-wrap: anywhere; }
 
 /* ---------- qr ---------- */

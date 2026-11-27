@@ -1,12 +1,17 @@
 'use client';
-import type { UiAction, UiEvent } from '@awake/contracts';
+import type { UiEvent } from '@awake/contracts';
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 
 type Value = string | number | boolean;
 
+/** Тип запису: від нього тон і іконка тоста. */
+export type LogType = 'info' | 'success' | 'warning' | 'error';
+
 export interface DemoToast {
   id: number;
+  type: LogType;
   title: string;
+  /** Коментар під заголовком, людською мовою (без JSON і технічних ключів). */
   detail: string;
 }
 
@@ -25,11 +30,6 @@ interface DemoStore {
 
 const DemoContext = createContext<DemoStore | null>(null);
 
-function describe(action: UiAction): string {
-  const params = action.params ? ` ${JSON.stringify(action.params)}` : '';
-  return `${action.module}.${action.name}${params}`;
-}
-
 /**
  * Демо-режим Umbra: усі контролки живі, але жодна подія не виходить з браузера.
  * Налаштування і локальні значення живуть у пам'яті вкладки й скидаються при перезавантаженні.
@@ -41,9 +41,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<DemoToast[]>([]);
   const seq = useRef(0);
 
-  const toast = useCallback((title: string, detail: string) => {
+  const toast = useCallback((type: LogType, title: string, detail: string) => {
     const id = ++seq.current;
-    setToasts((list) => [...list.slice(-2), { id, title, detail }]);
+    setToasts((list) => [...list.slice(-2), { id, type, title, detail }]);
     setTimeout(() => setToasts((list) => list.filter((item) => item.id !== id)), 3200);
   }, []);
 
@@ -52,9 +52,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       if (event.type === 'setting') {
         const { module, key, value } = event.change;
         setSettings((prev) => ({ ...prev, [`${module}:${key}`]: value }));
-        toast(label ?? 'Налаштування змінено', `${module}.${key} = ${String(value)} · демо, не надіслано`);
+        toast('success', label ?? 'Налаштування змінено', 'Демо: змінено лише тут, на Mac не надіслано');
       } else {
-        toast(label ?? 'Дію виконано', `${describe(event.action)} · демо, не надіслано`);
+        toast('info', label ?? 'Дію виконано', 'Демо: дію показано, на Mac не надіслано');
       }
     },
     [toast],

@@ -1,8 +1,8 @@
 'use client';
 import type { UiPage } from '@awake/contracts';
-import { ChevronRight, DatabaseZap, FlaskConical, Menu, Power, X } from 'lucide-react';
+import { ChevronRight, CircleAlert, CircleCheck, DatabaseZap, FlaskConical, Info, Menu, Power, TriangleAlert, X, type LucideIcon } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { DemoProvider, useDemo } from '@/demo/demo-store';
+import { DemoProvider, useDemo, type LogType } from '@/demo/demo-store';
 import type { TreeOrigin, TreeResponse } from '@/app/api/tree/route';
 import { sidebarPages, sidebarSections, type SidebarNode } from '@/lib/sidebar-sections';
 import { PageNodes } from '@/sdui/node-view';
@@ -209,14 +209,22 @@ function SourceBanner({ data, offline }: { data: TreeResponse; offline: boolean 
   );
 }
 
+const LOG_ICON: Record<LogType, LucideIcon> = { info: Info, success: CircleCheck, warning: TriangleAlert, error: CircleAlert };
+
 function Toasts() {
   const { toasts } = useDemo();
   return (
     <div className="u-toasts" aria-live="polite">
       {toasts.map((t) => (
-        <div key={t.id} className="u-toast">
-          <b>{t.title}</b>
-          <small>{t.detail}</small>
+        <div key={t.id} className="u-toast" data-type={t.type} role={t.type === 'error' ? 'alert' : undefined}>
+          {(() => {
+            const Icon = LOG_ICON[t.type];
+            return <Icon />;
+          })()}
+          <div>
+            <b>{t.title}</b>
+            <small>{t.detail}</small>
+          </div>
         </div>
       ))}
     </div>
