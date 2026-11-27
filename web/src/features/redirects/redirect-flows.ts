@@ -15,7 +15,7 @@ export const STEP_PATH: Record<RedirectStep, string> = { login: `${APP_PREFIX}/l
 export type RedirectResult = { ok: true; step: RedirectStep; params: Record<string, string> } | { ok: false; error: string; status: number };
 
 const CODE = /^[A-Za-z0-9_-]{8,128}$/;
-
+// TODO new MAp()
 export function resolveRedirect(query: URLSearchParams): RedirectResult {
   const type = query.get('type') ?? '';
   const action = query.get('action') ?? '';
