@@ -13,7 +13,7 @@ struct AppShell: View {
     let options: LaunchOptions
     @State private var hash: String?
     @StateObject private var runner = RunAction()
-    @AppStorage(ThemeSetting.key) private var storedTheme = ThemeSetting.fallback.rawValue
+    @AppStorage(ThemeChoice.key) private var storedTheme = ThemeChoice.defaultTheme.rawValue
 
     init(server: ServerConnection, options: LaunchOptions) {
         self.server = server
@@ -74,8 +74,8 @@ struct AppShell: View {
     }
 
     /// The stored client theme; `--theme` (screenshots) wins over it.
-    private var theme: ThemeSetting {
-        options.theme.flatMap(ThemeSetting.init(rawValue:)) ?? ThemeSetting.stored(storedTheme)
+    private var theme: ThemeChoice {
+        options.theme.flatMap(ThemeChoice.init(rawValue:)) ?? ThemeChoice.stored(storedTheme)
     }
 
     /// `.s-host`: app title, then «host · онлайн/офлайн»; the icon is accent while the Mac is online.

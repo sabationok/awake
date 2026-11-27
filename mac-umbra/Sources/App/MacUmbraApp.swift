@@ -99,8 +99,8 @@ final class MacUmbraDelegate: NSObject, NSApplicationDelegate {
             backing: .buffered, defer: false)
         window.title = AppInfo.displayName
         // The theme's appearance before the first layout: a later switch leaves SF Symbols shifted.
-        NSApp.appearance = (o.theme.flatMap(ThemeSetting.init(rawValue:))
-            ?? ThemeSetting.stored(UserDefaults.standard.string(forKey: ThemeSetting.key))).appearance
+        NSApp.appearance = (o.theme.flatMap(ThemeChoice.init(rawValue:))
+            ?? ThemeChoice.stored(UserDefaults.standard.string(forKey: ThemeChoice.key))).appearance
         window.minSize = NSSize(width: 420, height: 480)
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: AppShell(server: server, options: o))
