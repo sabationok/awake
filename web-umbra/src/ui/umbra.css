@@ -42,9 +42,10 @@
 .u-select svg { position: absolute; right: 8px; width: 13px; height: 13px; color: var(--fg-3); pointer-events: none; }
 
 /* ---------- segmented ---------- */
-.u-seg { display: inline-flex; padding: 2px; border-radius: var(--r-sm); background: var(--surface-1); border: 1px solid var(--line); max-width: 100%; overflow-x: auto; }
+.u-seg { display: inline-flex; padding: 2px; border-radius: var(--r-sm); background: var(--seg-track); max-width: 100%; overflow-x: auto; }
 .u-seg button { border: 0; background: transparent; color: var(--fg-2); font-size: var(--fs-sm); font-weight: 500; height: 28px; padding: 0 14px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
-.u-seg button[aria-pressed='true'] { background: var(--surface-3); color: var(--fg); }
+.u-seg button:hover:not([aria-pressed='true']) { color: var(--fg); }
+.u-seg button[aria-pressed='true'] { background: var(--seg-thumb); color: var(--fg); box-shadow: var(--seg-thumb-shadow); }
 
 /* ---------- slider ---------- */
 .u-slider { --p: 50%; flex: 1; min-width: 80px; appearance: none; -webkit-appearance: none; height: 18px; background: transparent; cursor: pointer; }
