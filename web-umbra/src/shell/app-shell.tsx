@@ -6,6 +6,7 @@ import { DemoProvider, useDemo, type LogType } from '@/demo/demo-store';
 import type { TreeOrigin, TreeResponse } from '@/app/api/tree/route';
 import { levelOf, pathTo, sidebarPages, sidebarSections, type SidebarNode } from '@/lib/sidebar-sections';
 import { PageNodes } from '@/sdui/node-view';
+import { AppearanceSection } from './appearance';
 import { IconButton, SymbolIcon } from '@/ui/primitives';
 
 function useHash(): [string, (id: string) => void] {
@@ -159,6 +160,7 @@ function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
         ) : null}
         <SourceBanner data={data} offline={offline} />
         <div className="s-content" key={page?.id}>
+          {page?.id === 'settings' ? <AppearanceSection /> : null}
           {page ? <PageNodes nodes={page.children} /> : null}
         </div>
       </main>
