@@ -101,7 +101,7 @@
     transform: translateX(-100%); transition: transform .2s ease;
   }
   .s-app[data-drawer] .s-side { transform: none; }
-  .s-app[data-drawer] .s-scrim { display: block; position: fixed; inset: 0; z-index: 20; background: rgb(0 0 0 / .6); }
+  .s-app[data-drawer] .s-scrim { display: block; position: fixed; inset: 0; z-index: 20; background: var(--scrim); }
   .s-close, .s-burger { display: grid; }
   .s-top { padding: 12px 16px; }
   .s-tabs { padding: 0 16px; gap: 18px; }

@@ -20,6 +20,9 @@
   --warn: #f5c542;
   --danger: #ff5f5f;
   --orange: #ff7a45;
+  --switch-knob: #e8e8ea;
+  --shadow: rgba(0, 0, 0, 0.6);
+  --scrim: rgba(0, 0, 0, 0.6);
 
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
   --mono: ui-monospace, 'SF Mono', Menlo, monospace;
@@ -35,6 +38,37 @@
   --row-h: 36px;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --sidebar-w: 232px;
+}
+
+/*
+ * Світла тема (пробна): ті самі ролі токенів. Шари йдуть навпаки: сторінка сіра, панелі білі, сайдбар трохи темніший
+ * за сторінку, як у macOS. Акцент темніший, щоб дрібний помаранчевий текст читався на білому.
+ * Поки вмикається лише `?theme=light`; перемикача в інтерфейсі ще немає.
+ */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f2f2f4;
+  --bg-app: #e8e8eb;
+  --surface-1: #ffffff;
+  --surface-2: #f6f6f8;
+  --surface-3: #ececef;
+  --line: #e6e6e9;
+  --line-strong: #d6d6db;
+  --fg: #17171a;
+  --fg-2: #4f4f57;
+  --fg-3: #85858d;
+  --accent: #d96a00;
+  --accent-2: #f08a1c;
+  --accent-soft: rgba(217, 106, 0, 0.12);
+  --accent-ink: #ffffff;
+  --violet: #6150e8;
+  --ok: #119a63;
+  --warn: #b98200;
+  --danger: #dc3c42;
+  --orange: #e0581f;
+  --switch-knob: #ffffff;
+  --shadow: rgba(20, 20, 30, 0.16);
+  --scrim: rgba(20, 20, 30, 0.35);
 }
 
 * { box-sizing: border-box; }
