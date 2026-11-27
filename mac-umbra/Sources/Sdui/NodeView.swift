@@ -35,6 +35,7 @@ struct Ticking<Content: View>: View {
 struct NodeView: View {
     let node: UiNode
     let send: SendEvent
+    @Environment(\.sduiSkeleton) private var skeleton
 
     var body: some View {
         switch node {
@@ -54,7 +55,8 @@ struct NodeView: View {
         case .tabs(_, let tabs, let value, let setting):
             TabsNode(tabs: tabs, value: value, setting: setting, send: send, page: false)
         case .timer(let t): TimerNode(node: t)
-        case .chart(let c): ChartNode(node: c).equatable()
+        case .chart(let c):
+            if skeleton { UmbraChartSkeleton(c.title) } else { ChartNode(node: c).equatable() }
         case .item(let i): ItemNode(node: i, send: send)
         case .notice(let n): NoticeNode(node: n, send: send)
         // `.u-sep`, padding 10 14
@@ -347,11 +349,11 @@ struct TabsNode: View {
     let setting: UiSettingRef?
     let send: SendEvent
     let page: Bool
-    /// The segment the thumb shows: set at once, animated.
+    /// The segment the thumb shows and whose content is drawn: set at once, the thumb animates.
     @State private var value: String
-    /// The tab whose content is drawn: follows `value` one frame later, so the thumb moves before the new tab's
-    /// charts are built and laid out (the same transaction made the thumb wait for them).
-    @State private var shown: String
+    /// The tab whose charts are built. Lags `value` by one frame: on the first frame the new tab draws its sections
+    /// with `UmbraChartSkeleton` in place of the charts, so the switch never waits for the chart build.
+    @State private var built: String
 
     init(tabs: [UiTab], value: String?, setting: UiSettingRef?, send: @escaping SendEvent, page: Bool) {
         self.tabs = tabs
@@ -360,15 +362,22 @@ struct TabsNode: View {
         self.page = page
         let initial = value ?? tabs.first?.id ?? ""
         _value = State(initialValue: initial)
-        _shown = State(initialValue: initial)
+        _built = State(initialValue: initial)
     }
 
-    private var active: UiTab? { tabs.first { $0.id == shown } ?? tabs.first }
+    private var active: UiTab? { tabs.first { $0.id == value } ?? tabs.first }
+    private var pending: Bool { value != built }
 
     private func select(_ next: String) {
-        withAnimation(.snappy(duration: 0.18)) { value = next }
+        show(next)
         if let setting { send(.setting(module: setting.module, key: setting.key, value: .string(next))) }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 / 60) { if value == next { shown = next } }
+    }
+
+    /// Thumb and sections now, charts on the next frame. Only the thumb animates: the content swaps without a
+    /// transaction animation (Charts would otherwise morph every bar from the old tab to the new one). Local only (`--perf` switches through here, it never sends).
+    private func show(_ next: String) {
+        withAnimation(.snappy(duration: 0.18)) { value = next }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 / 60) { if value == next { built = next } }
     }
 
     private var segmented: some View {
@@ -384,14 +393,18 @@ struct TabsNode: View {
             VStack(alignment: .leading, spacing: 18) {
                 segmented
                 PageNodes(nodes: active?.children ?? [], send: send)
+                    .environment(\.sduiSkeleton, pending)
+                    .transaction { $0.animation = nil }
             }
             .onReceive(NotificationCenter.default.publisher(for: PerfProbe.tabSwitch)) { note in
-                if let next = note.object as? String, tabs.contains(where: { $0.id == next }) { value = next; shown = next }
+                if let next = note.object as? String, tabs.contains(where: { $0.id == next }) { show(next) }
             }
         } else {
             UmbraDivided {
                 segmented.padding(12)
                 ForEach(active?.children ?? []) { NodeView(node: $0, send: send) }
+                    .environment(\.sduiSkeleton, pending)
+                    .transaction { $0.animation = nil }
             }
         }
     }
@@ -521,4 +534,14 @@ struct NoticeNode: View {
 struct QrNode: View {
     let value: String
     var body: some View { UmbraQrCard(value) }
+}
+
+/// True while a tab's content is on its first frame: heavy nodes (charts) draw a skeleton of their size instead.
+private struct SduiSkeletonKey: EnvironmentKey { static let defaultValue = false }
+
+extension EnvironmentValues {
+    var sduiSkeleton: Bool {
+        get { self[SduiSkeletonKey.self] }
+        set { self[SduiSkeletonKey.self] = newValue }
+    }
 }

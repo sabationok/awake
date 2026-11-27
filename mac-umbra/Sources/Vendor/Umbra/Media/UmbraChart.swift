@@ -138,3 +138,30 @@ public struct UmbraChart: View {
         .padding(14)
     }
 }
+
+/// `UmbraChart`'s frame with `UmbraSkeleton` in place of the bars and the bucket labels: the title is real, the
+/// height is the chart's, so the page does not jump when the chart replaces it.
+public struct UmbraChartSkeleton: View {
+    private let title: String
+    @Environment(\.umbra) private var theme
+
+    public init(_ title: String) { self.title = title }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.palette.fg)
+                Spacer(minLength: 0)
+                UmbraSkeleton(height: 10, width: 72)
+            }
+            UmbraSkeleton(height: 120)
+            HStack {
+                UmbraSkeleton(height: 8, width: 36)
+                Spacer()
+                UmbraSkeleton(height: 8, width: 36)
+            }
+            .frame(height: 13)
+        }
+        .padding(14)
+    }
+}
