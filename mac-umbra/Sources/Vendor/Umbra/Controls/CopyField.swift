@@ -23,14 +23,14 @@ public struct CopyField: View {
         let p = theme.palette
         HStack(spacing: 8) {
             Text(value)
-                .font(UmbraFont.mono)
+                .font(Font.mono)
                 .foregroundStyle(p.fg2)
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if let caption = copied ? copiedText : caption {
-                Text(caption).font(UmbraFont.xs).foregroundStyle(copied ? p.ok : p.fg3)
+                Text(caption).font(Font.xs).foregroundStyle(copied ? p.ok : p.fg3)
             }
             IconButton(copied ? "checkmark" : "doc.on.doc", label: "Скопіювати") { copy() }
         }

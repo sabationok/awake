@@ -40,7 +40,7 @@ public struct Item<Tags: View, Trailing: View>: View {
             }
             if let copy { CopyField(copy, caption: copyCaption) }
             if let comment {
-                Text(comment).font(UmbraFont.xs).foregroundStyle(p.fg3).lineSpacing(2)
+                Text(comment).font(Font.xs).foregroundStyle(p.fg3).lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

@@ -17,7 +17,7 @@ public struct Backdrop: View {
     public var body: some View {
         ZStack {
             if theme.translucent {
-                UmbraVisualEffect(.underWindowBackground)
+                VisualEffect(.underWindowBackground)
                 theme.palette.windowTint
             } else {
                 theme.palette.bgSolid

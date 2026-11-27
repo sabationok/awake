@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Section (`.u-section`): uppercase title with optional trailing actions, content, muted footer.
-public struct UmbraSection<Content: View, Trailing: View>: View {
+public struct Section<Content: View, Trailing: View>: View {
     private let title: String?
     private let footer: String?
     private let content: Content
@@ -23,7 +23,7 @@ public struct UmbraSection<Content: View, Trailing: View>: View {
                 HStack(spacing: 10) {
                     if let title {
                         Text(title.uppercased())
-                            .font(UmbraFont.caps)
+                            .font(Font.caps)
                             .tracking(0.9)
                             .foregroundStyle(p.fg2)
                             .lineLimit(1)
@@ -37,7 +37,7 @@ public struct UmbraSection<Content: View, Trailing: View>: View {
             content
             if let footer {
                 Text(footer)
-                    .font(UmbraFont.xs)
+                    .font(Font.xs)
                     .foregroundStyle(p.fg3)
                     .lineSpacing(2)
                     .padding(.horizontal, 4)
@@ -47,7 +47,7 @@ public struct UmbraSection<Content: View, Trailing: View>: View {
     }
 }
 
-public extension UmbraSection where Trailing == EmptyView {
+public extension Section where Trailing == EmptyView {
     init(_ title: String? = nil, footer: String? = nil, @ViewBuilder content: () -> Content) {
         self.init(title, footer: footer, content: content) { EmptyView() }
     }

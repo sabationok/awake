@@ -17,7 +17,7 @@ public struct ChartPoint: Hashable {
 /// Bar chart over time (`.u-chart`): title with the hovered (or last) bucket and its total on the right, bars 120 pt
 /// high with hairlines at 25 / 50 / 75 %, an optional dashed limit, the first and last bucket under the bars and a
 /// legend for stacked series. The host formats bucket labels and values; the chart only draws.
-public struct UmbraChart: View {
+public struct Chart: View {
     private let title: String
     private let points: [ChartPoint]
     private let tones: [String: Tone]
@@ -77,10 +77,10 @@ public struct UmbraChart: View {
                 Spacer(minLength: 0)
                 Text(shown.map { "\(bucketLabel(starts[$0])) · \(valueLabel(totals[$0]))" }
                      ?? valueLabel(totals.reduce(0, +)))
-                    .font(UmbraFont.xs.monospacedDigit())
+                    .font(Font.xs.monospacedDigit())
                     .foregroundStyle(p.fg3)
             }
-            Chart {
+            Charts.Chart {
                 ForEach([0.25, 0.5, 0.75], id: \.self) { f in
                     RuleMark(y: .value("grid", top * f))
                         .lineStyle(StrokeStyle(lineWidth: 0.5))
@@ -131,7 +131,7 @@ public struct UmbraChart: View {
                         }
                     }
                 }
-                .font(UmbraFont.xs)
+                .font(Font.xs)
                 .foregroundStyle(p.fg2)
             }
         }
@@ -139,7 +139,7 @@ public struct UmbraChart: View {
     }
 }
 
-/// `UmbraChart`'s frame with `Skeleton` in place of the bars and the bucket labels: the title is real, the
+/// `Chart`'s frame with `Skeleton` in place of the bars and the bucket labels: the title is real, the
 /// height is the chart's, so the page does not jump when the chart replaces it.
 public struct ChartSkeleton: View {
     private let title: String

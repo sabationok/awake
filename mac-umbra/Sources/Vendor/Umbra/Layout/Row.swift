@@ -62,7 +62,7 @@ public struct Row<Control: View>: View {
                     .font(.system(size: prominent ? 15 : 12, weight: prominent ? .semibold : .regular))
                     .foregroundStyle(p.fg)
                 if let hint {
-                    Text(hint).font(UmbraFont.xs).foregroundStyle(p.fg3).lineSpacing(2)
+                    Text(hint).font(Font.xs).foregroundStyle(p.fg3).lineSpacing(2)
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
@@ -77,7 +77,7 @@ public struct Row<Control: View>: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, prominent ? 14 : 8)
-        .frame(minHeight: UmbraLayout.rowMinHeight)
+        .frame(minHeight: Layout.rowMinHeight)
     }
 }
 
@@ -135,7 +135,7 @@ public struct ListRow<Trailing: View>: View {
             if let dot { Dot(dot) }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.system(size: 12))
-                if let subtitle { Text(subtitle).font(UmbraFont.xs).foregroundStyle(p.fg3) }
+                if let subtitle { Text(subtitle).font(Font.xs).foregroundStyle(p.fg3) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             trailing

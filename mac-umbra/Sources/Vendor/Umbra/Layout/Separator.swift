@@ -12,7 +12,7 @@ public struct Separator: View {
         HStack(spacing: 12) {
             Rectangle().fill(p.line).frame(height: 1)
             if let word {
-                Text(word).font(UmbraFont.xs).foregroundStyle(p.fg3)
+                Text(word).font(Font.xs).foregroundStyle(p.fg3)
                 Rectangle().fill(p.line).frame(height: 1)
             }
         }

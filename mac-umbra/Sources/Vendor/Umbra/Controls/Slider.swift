@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Slider (`.u-slider`): 3 pt track with the accent fill and a 13 pt knob. `onCommit` fires on release,
 /// matching the contract rule «action on release».
-public struct UmbraSlider: View {
+public struct Slider: View {
     @Binding private var value: Double
     private let range: ClosedRange<Double>
     private let step: Double?
@@ -28,7 +28,7 @@ public struct UmbraSlider: View {
             track
             if showsValue {
                 Text("\(Int(value.rounded()))")
-                    .font(UmbraFont.sm.monospacedDigit())
+                    .font(Font.sm.monospacedDigit())
                     .foregroundStyle(theme.palette.fg2)
                     .frame(width: 34, alignment: .trailing)
             }

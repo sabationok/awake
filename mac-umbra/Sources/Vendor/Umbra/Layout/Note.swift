@@ -13,7 +13,7 @@ public struct Note: View {
 
     public var body: some View {
         Text(text)
-            .font(UmbraFont.xs)
+            .font(Font.xs)
             .lineSpacing(2)
             .foregroundStyle(tone.map { $0.color(theme.palette) } ?? theme.palette.fg3)
             .frame(maxWidth: .infinity, alignment: .leading)

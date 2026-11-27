@@ -118,7 +118,7 @@ struct MenuOf: View {
     @EnvironmentObject private var runner: RunAction
 
     var body: some View {
-        UmbraMenuButton(items.map { item in
+        MenuButton(items.map { item in
             MenuEntry(id: item.id, title: item.label, symbol: item.icon?.symbol, variant: item.variant.umbra,
                            hint: item.hint, disabled: item.disabled ?? false) { runner.run(fromMenuItem(item), send: send) }
         })
@@ -141,14 +141,14 @@ struct SectionNode: View {
 
     var body: some View {
         if hasHead {
-            UmbraSection(node.title, footer: node.footer) { content } trailing: {
+            Section(node.title, footer: node.footer) { content } trailing: {
                 HStack(spacing: 8) {
                     if let s = node.status { Badge(s.label, tone: s.tone.umbra, pulse: s.pulse ?? false) }
                     if let actions = node.actions, !actions.isEmpty { SectionActions(actions: actions, send: send) }
                 }
             }
         } else {
-            UmbraSection(nil, footer: node.footer) { content }
+            Section(nil, footer: node.footer) { content }
         }
     }
 
@@ -236,7 +236,7 @@ struct SliderControl: View {
     }
 
     var body: some View {
-        UmbraSlider(label, value: $value, in: range, step: step, showsValue: true) { v in
+        Slider(label, value: $value, in: range, step: step, showsValue: true) { v in
             var a = action
             a.params = (a.params ?? [:]).merging(["value": .number(v)]) { $1 }
             send(.action(a))
@@ -469,13 +469,13 @@ func formatBucket(_ date: Date, _ unit: UiChart.Unit) -> String {
     }
 }
 
-/// `ChartNode` → `UmbraChart` (`.u-chart`): head with the hovered bucket, bars, axis, legend.
+/// `ChartNode` → `Chart` (`.u-chart`): head with the hovered bucket, bars, axis, legend.
 /// Equatable: a tree pushed again with the same points skips the chart's body (`.equatable()` at the call site).
 struct ChartNode: View, Equatable {
     let node: UiChart
 
     var body: some View {
-        UmbraChart(node.title,
+        Chart(node.title,
                    points: node.points.map { ChartPoint(start: $0.start, value: $0.value, series: $0.series ?? "") },
                    tone: node.tone?.umbra ?? .accent,
                    tones: (node.tones ?? [:]).mapValues(\.umbra),

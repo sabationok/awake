@@ -23,7 +23,7 @@ public struct MenuEntry: Identifiable {
 }
 
 /// «⋯» button that opens the themed menu in a popover.
-public struct UmbraMenuButton: View {
+public struct MenuButton: View {
     private let entries: [MenuEntry]
     private let label: String
     private let symbol: String
@@ -39,14 +39,14 @@ public struct UmbraMenuButton: View {
     public var body: some View {
         IconButton(symbol, label: label) { open.toggle() }
             .popover(isPresented: $open, arrowEdge: .bottom) {
-                UmbraMenu(entries) { open = false }
+                Menu(entries) { open = false }
                     .umbraThemed(theme)
             }
     }
 }
 
 /// The menu list itself, for use in your own popover or overlay.
-public struct UmbraMenu: View {
+public struct Menu: View {
     private let entries: [MenuEntry]
     private let dismiss: () -> Void
 

@@ -7,7 +7,7 @@ struct AppearanceSection: View {
     @Binding var theme: ThemeChoice
 
     var body: some View {
-        UmbraSection("Вигляд") {
+        Section("Вигляд") {
             Panel {
                 Row("Тема") {
                     Segmented(selection: $theme,

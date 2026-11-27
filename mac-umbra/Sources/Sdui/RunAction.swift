@@ -127,13 +127,13 @@ private struct FormFields: View {
                 let binding = Binding(get: { values[f.name] ?? "" }, set: { values[f.name] = $0 })
                 if f.kind == "select" {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(f.label).font(UmbraFont.xs).foregroundStyle(.secondary)
+                        Text(f.label).font(Umbra.Font.xs).foregroundStyle(.secondary)
                         Select(f.label, selection: binding, options: (f.options ?? []).map {
                             Option($0.value, $0.label, disabled: $0.disabled ?? false)
                         })
                     }
                 } else {
-                    UmbraTextField(f.label, text: binding, placeholder: f.placeholder ?? "", hint: f.hint, error: error,
+                    TextField(f.label, text: binding, placeholder: f.placeholder ?? "", hint: f.hint, error: error,
                                    secure: f.kind == "password")
                 }
             }

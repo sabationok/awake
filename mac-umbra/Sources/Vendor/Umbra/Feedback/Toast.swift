@@ -48,7 +48,7 @@ public struct ToastView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(toast.title).font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg)
                 if let detail = toast.detail {
-                    Text(detail).font(UmbraFont.xs).foregroundStyle(p.fg3)
+                    Text(detail).font(Font.xs).foregroundStyle(p.fg3)
                 }
                 if let code = toast.code {
                     Text(code).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(p.fg3)

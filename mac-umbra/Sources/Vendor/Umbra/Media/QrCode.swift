@@ -141,7 +141,7 @@ public struct QrCard: View {
             }
             .accessibilityLabel("Збільшити QR-код")
             if let caption {
-                Text(caption).font(UmbraFont.xs).foregroundStyle(p.fg3).multilineTextAlignment(.center)
+                Text(caption).font(Font.xs).foregroundStyle(p.fg3).multilineTextAlignment(.center)
             }
         }
         .frame(maxWidth: .infinity)

@@ -64,7 +64,7 @@ public struct Header<Trailing: View>: View {
             WindowDragArea().frame(maxWidth: .infinity, maxHeight: .infinity)
             trailing
         }
-        .frame(height: UmbraLayout.headerHeight)
+        .frame(height: Layout.headerHeight)
     }
 }
 

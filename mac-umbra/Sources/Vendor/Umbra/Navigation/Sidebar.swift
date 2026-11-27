@@ -87,7 +87,7 @@ public struct Sidebar<Top: View, Footer: View>: View {
                                     .padding(.bottom, 6)
                             }
                             ForEach(group.items) { item in
-                                UmbraSidebarNode(item: item, depth: 0, selection: $selection, open: $open)
+                                SidebarNode(item: item, depth: 0, selection: $selection, open: $open)
                             }
                         }
                     }
@@ -121,7 +121,7 @@ public extension Sidebar where Top == EmptyView, Footer == EmptyView {
 }
 
 /// One node with its children; recursion goes through `AnyView` so the type stays finite.
-struct UmbraSidebarNode: View {
+struct SidebarNode: View {
     let item: SidebarItem
     let depth: Int
     @Binding var selection: String?
@@ -148,7 +148,7 @@ struct UmbraSidebarNode: View {
 
             if expanded {
                 ForEach(item.children) { child in
-                    AnyView(UmbraSidebarNode(item: child, depth: depth + 1, selection: $selection, open: $open))
+                    AnyView(SidebarNode(item: child, depth: depth + 1, selection: $selection, open: $open))
                 }
             }
         }

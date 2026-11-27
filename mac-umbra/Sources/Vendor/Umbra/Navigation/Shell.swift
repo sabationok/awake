@@ -40,7 +40,7 @@ public struct Shell<Sidebar: View, Header: View, Bar: View, Content: View>: View
 
     public var body: some View {
         GeometryReader { geo in
-            let compact = geo.size.width < UmbraLayout.compactWidth
+            let compact = geo.size.width < Layout.compactWidth
             let context = ShellContext(compact: compact) {
                 withAnimation(reduceMotion ? nil : Motion.ease) { sidebarOpen.toggle() }
             }
@@ -71,11 +71,11 @@ public struct Shell<Sidebar: View, Header: View, Bar: View, Content: View>: View
             WindowDragArea().frame(height: chrome.titlebarHeight)
             sidebar
         }
-        .frame(width: UmbraLayout.sidebarWidth)
+        .frame(width: Layout.sidebarWidth)
         .frame(maxHeight: .infinity)
         .background {
             if theme.translucent {
-                UmbraVisualEffect(.sidebar).overlay(theme.palette.bgApp.opacity(0.35))
+                VisualEffect(.sidebar).overlay(theme.palette.bgApp.opacity(0.35))
             } else {
                 theme.palette.bgApp
             }
@@ -99,7 +99,7 @@ public struct Shell<Sidebar: View, Header: View, Bar: View, Content: View>: View
                     .padding(.horizontal, side)
                     .padding(.top, context.compact ? 16 : 22)
                     .padding(.bottom, context.compact ? 56 : 64)
-                    .frame(maxWidth: UmbraLayout.contentMaxWidth, alignment: .topLeading)
+                    .frame(maxWidth: Layout.contentMaxWidth, alignment: .topLeading)
                     .frame(maxWidth: .infinity, alignment: .center)
             }
         }

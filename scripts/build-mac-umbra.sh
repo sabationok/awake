@@ -19,17 +19,30 @@ passport() {
   (cd "$ROOT" && STAGE=dev node "$KIT/scripts/gen-dev-build.mjs" --out "$1" --project-id macontrol-umbra \
     --name MaControl --variant "Umbra Dev" --package "$ROOT/app/package.json" >/dev/null)
 }
+# Two steps: the vendored lib first, as its own module `Umbra` (a static library plus its .swiftmodule), then the app
+# against it. The app sees Umbra only through Sources/Ui/Umbra.swift (`@_exported import Umbra` + the aliases).
+UMBRA="$SRC/Vendor/Umbra"; MOD="$OUT/umbra-module"
+umbra_module() {
+  rm -rf "$MOD"; mkdir -p "$MOD"
+  find "$UMBRA" -name '*.swift' -print0 | xargs -0 swiftc -swift-version 5 -O -parse-as-library \
+    -target arm64-apple-macos14 -module-name Umbra -emit-module -emit-module-path "$MOD/Umbra.swiftmodule" \
+    -emit-library -static -o "$MOD/libUmbra.a"
+}
+app_swiftc() {
+  find "$SRC" -name '*.swift' -not -path "$UMBRA/*" -print0 | xargs -0 swiftc -swift-version 5 -O -parse-as-library \
+    -target arm64-apple-macos14 -module-name mac_umbra -I "$MOD" -L "$MOD" -lUmbra "$@"
+}
 if [ "${BIN_ONLY:-0}" = "1" ]; then
   mkdir -p "$OUT/render"
-  find "$SRC" -name '*.swift' -print0 | xargs -0 swiftc -swift-version 5 -O -parse-as-library \
-    -target arm64-apple-macos14 -o "$OUT/render/mac-umbra"
+  umbra_module
+  app_swiftc -o "$OUT/render/mac-umbra"
   passport "$OUT/render/dev-build.json"
   echo "$OUT/render/mac-umbra"; exit 0
 fi
 APP="$OUT/$FILE.app"
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-find "$SRC" -name '*.swift' -print0 | xargs -0 swiftc -swift-version 5 -O -parse-as-library \
-  -target arm64-apple-macos14 -o "$APP/Contents/MacOS/mac-umbra"
+umbra_module
+app_swiftc -o "$APP/Contents/MacOS/mac-umbra"
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

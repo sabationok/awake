@@ -11,7 +11,7 @@ public enum ButtonSize {
 }
 
 /// `Button("Увімкнути") { … }.buttonStyle(.umbra(.accent))`. Use `Label` for an icon.
-public struct UmbraButtonStyle: ButtonStyle {
+public struct ButtonStyle: SwiftUI.ButtonStyle {
     public var variant: ButtonVariant
     public var size: ButtonSize
 
@@ -25,14 +25,14 @@ public struct UmbraButtonStyle: ButtonStyle {
     }
 }
 
-public extension ButtonStyle where Self == UmbraButtonStyle {
-    static func umbra(_ variant: ButtonVariant = .default, size: ButtonSize = .regular) -> UmbraButtonStyle {
-        UmbraButtonStyle(variant, size: size)
+public extension SwiftUI.ButtonStyle where Self == ButtonStyle {
+    static func umbra(_ variant: ButtonVariant = .default, size: ButtonSize = .regular) -> ButtonStyle {
+        ButtonStyle(variant, size: size)
     }
 }
 
 private struct ButtonBody: View {
-    let configuration: ButtonStyle.Configuration
+    let configuration: SwiftUI.ButtonStyle.Configuration
     let variant: ButtonVariant
     let size: ButtonSize
     @State private var hovering = false

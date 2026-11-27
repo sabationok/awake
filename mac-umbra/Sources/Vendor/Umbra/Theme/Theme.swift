@@ -61,7 +61,7 @@ private struct ThemeModifier: ViewModifier {
             .environment(\.umbra, theme)
             .tint(theme.palette.accent)
             .foregroundStyle(theme.palette.fg)
-            .font(UmbraFont.body)
+            .font(Font.body)
             .preferredColorScheme(mode == .system ? nil : scheme)
     }
 }

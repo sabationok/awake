@@ -14,7 +14,7 @@ public enum WindowChrome: String, CaseIterable, Identifiable {
     public var titlebarHeight: CGFloat {
         switch self {
         case .transparentTitlebar: 28
-        case .unifiedToolbar: UmbraLayout.headerHeight
+        case .unifiedToolbar: Layout.headerHeight
         }
     }
 

@@ -3,7 +3,7 @@ import SwiftUI
 /// CSS `grid-template-columns: repeat(auto-fit, minmax(<minimum>, 1fr))`: as many equal columns as fit at
 /// `minimum`, but never more than there are items, so one or two items stretch over the whole width (SwiftUI's
 /// `GridItem(.adaptive)` keeps the empty columns and leaves the items narrow). Items wrap to the next line.
-public struct FitGrid: Layout {
+public struct FitGrid: SwiftUI.Layout {
     public var minimum: CGFloat
     public var spacing: CGFloat
 

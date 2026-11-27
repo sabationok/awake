@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Field (`.u-field` + `.u-input`): small label above, inset input, hint or error below.
-public struct UmbraTextField: View {
+public struct TextField: View {
     private let label: String
     @Binding private var text: String
     private let placeholder: String
@@ -26,12 +26,12 @@ public struct UmbraTextField: View {
         let shape = RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
         let border = error != nil ? p.danger : focused ? p.accent : p.lineStrong
         VStack(alignment: .leading, spacing: 6) {
-            Text(label).font(UmbraFont.xs).foregroundStyle(p.fg3)
+            Text(label).font(Font.xs).foregroundStyle(p.fg3)
             Group {
                 if secure {
                     SecureField(placeholder, text: $text)
                 } else {
-                    TextField(placeholder, text: $text)
+                    SwiftUI.TextField(placeholder, text: $text)
                 }
             }
             .textFieldStyle(.plain)
@@ -43,7 +43,7 @@ public struct UmbraTextField: View {
             .overlay(shape.strokeBorder(border, lineWidth: 1))
             .background(shape.stroke(focused && error == nil ? p.accentSoft : .clear, lineWidth: 6))
             if let note = error ?? hint {
-                Text(note).font(UmbraFont.xs).foregroundStyle(error != nil ? p.danger : p.fg3)
+                Text(note).font(Font.xs).foregroundStyle(error != nil ? p.danger : p.fg3)
             }
         }
     }

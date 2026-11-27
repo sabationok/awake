@@ -8,7 +8,7 @@ import SwiftUI
 /// (`cacheDisplay`) has nothing there. For such renders `umbraVibrancyPreview(_:)` puts a stand-in desktop image
 /// into the environment: every effect view draws its own slice of that image, blurred and dimmed like the material,
 /// so the layers' tints can be compared on screenshots. Without it (every normal run) this is `NSVisualEffectView`.
-public struct UmbraVisualEffect: View {
+public struct VisualEffect: View {
     public var material: NSVisualEffectView.Material
     public var blending: NSVisualEffectView.BlendingMode
     /// `.active` keeps the window translucent when it is not key; `.followsWindowActiveState` greys it out.
@@ -65,7 +65,7 @@ private struct VibrancyPreviewKey: EnvironmentKey {
 }
 
 public extension EnvironmentValues {
-    /// Stand-in desktop for offscreen renders; see `UmbraVisualEffect`.
+    /// Stand-in desktop for offscreen renders; see `VisualEffect`.
     var umbraVibrancyPreview: NSImage? {
         get { self[VibrancyPreviewKey.self] }
         set { self[VibrancyPreviewKey.self] = newValue }

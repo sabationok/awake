@@ -102,11 +102,11 @@ public struct BigValue: View {
         let ink = color ?? tone?.color(p) ?? p.fg
         VStack(spacing: 8) {
             Text(value)
-                .font(UmbraFont.display)
+                .font(Font.display)
                 .tracking(-0.9)
                 .foregroundStyle(ink)
             if let progress {
-                UmbraProgress(progress, color: color ?? tone?.color(p)).frame(maxWidth: 320)
+                Progress(progress, color: color ?? tone?.color(p)).frame(maxWidth: 320)
             }
             if let caption {
                 Text(caption).font(.system(size: 13)).foregroundStyle(p.fg3)
@@ -120,7 +120,7 @@ public struct BigValue: View {
 }
 
 /// Thin progress bar (`.u-progress`).
-public struct UmbraProgress: View {
+public struct Progress: View {
     private let value: Double
     private let tone: Tone?
     private let color: Color?
