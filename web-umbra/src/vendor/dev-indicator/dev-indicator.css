@@ -74,18 +74,31 @@
 .dvi-root[data-dragging] { right: auto; bottom: auto; }
 
 .dvi-fab {
+  /* Neutral on purpose: the button belongs to the dev tooling, not to the host app's design. Stage colour lives in the panel. */
+  --dvi-fab-bg: #ffffff;
+  --dvi-fab-fg: #3a3a3c;
+  --dvi-fab-ring: rgba(0, 0, 0, 0.12);
   width: 36px;
   height: 36px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--dvi-surface-2);
-  color: var(--dvi-stage);
-  box-shadow: 0 0 0 1.5px var(--dvi-stage), 0 2px 8px rgba(0, 0, 0, 0.18);
-  cursor: grab;
+  background: var(--dvi-fab-bg);
+  color: var(--dvi-fab-fg);
+  box-shadow: 0 0 0 1px var(--dvi-fab-ring), 0 1px 3px rgba(0, 0, 0, 0.2), 0 6px 16px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
   touch-action: none;
   user-select: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
+.dvi-fab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px var(--dvi-fab-ring), 0 2px 4px rgba(0, 0, 0, 0.22), 0 10px 22px rgba(0, 0, 0, 0.26);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .dvi-fab { --dvi-fab-bg: #2c2c2e; --dvi-fab-fg: #e5e5e7; --dvi-fab-ring: rgba(255, 255, 255, 0.14); }
+}
+:root[data-theme="dark"] .dvi-fab { --dvi-fab-bg: #2c2c2e; --dvi-fab-fg: #e5e5e7; --dvi-fab-ring: rgba(255, 255, 255, 0.14); }
 .dvi-root[data-dragging] .dvi-fab { cursor: grabbing; }
 
 /* ---------- Strip (24px, full width, top or bottom of the body) ---------- */

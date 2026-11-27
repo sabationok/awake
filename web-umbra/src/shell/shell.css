@@ -137,3 +137,6 @@
 .s-banner b { font-size: 13px; font-weight: 600; }
 .s-banner small { color: var(--fg-3); font-size: 12px; overflow-wrap: anywhere; }
 @media (max-width: 820px) { .s-banner { margin: 12px auto 0; width: calc(100% - 32px); } }
+
+/* ---------- кнопка dev-індикатора в лівому нижньому куті: низ сайдбару звільняє їй місце ---------- */
+:root:has(.dvi-root[data-mode='floating'][data-corner='bl']) .s-side { padding-bottom: 60px; }
