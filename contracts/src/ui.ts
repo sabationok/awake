@@ -42,6 +42,11 @@ export interface UiOption {
 interface UiNodeBase {
   id: string;
   scope?: UiScope;
+  /**
+   * Стан вузла з AppState (contracts/src/state.ts). Є — клієнт бере стан звідси, а не зі значень вузла; немає —
+   * рендерить значення з вузла, як раніше. Обидва шляхи живуть разом до кінця переходу.
+   */
+  bind?: import('./state').UiBind | import('./state').UiValueBind;
 }
 
 /** Група рядків з заголовком і підписом, як у «Системних параметрах». */

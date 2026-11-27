@@ -1,0 +1,9 @@
+{
+  "type": "state.patch",
+  "rev": 2,
+  "ops": [
+    { "path": "permissions.location", "value": "granted" },
+    { "path": "sessions.awake", "value": null },
+    { "path": "modules.awake.lowBatteryStop", "value": false }
+  ]
+}
