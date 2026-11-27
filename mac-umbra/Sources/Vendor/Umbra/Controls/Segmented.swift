@@ -14,12 +14,14 @@ public struct Option<Value: Hashable>: Identifiable {
     }
 }
 
-/// Segmented control (`.u-seg`): a track with the selected segment raised.
+/// Segmented control (`.u-seg`): a borderless track (`segTrack`) with the selected segment as a thumb (`segThumb`,
+/// shadow and ring from the palette). Inactive labels are `fg2`, `fg` on hover.
 public struct Segmented<Value: Hashable>: View {
     @Binding private var selection: Value
     private let options: [Option<Value>]
     @Environment(\.umbra) private var theme
     @Namespace private var thumb
+    @State private var hovered: Value?
 
     public init(selection: Binding<Value>, options: [Option<Value>]) {
         _selection = selection
@@ -37,26 +39,31 @@ public struct Segmented<Value: Hashable>: View {
                     Text(option.label)
                         .font(.system(size: 12, weight: .medium))
                         .lineLimit(1)
-                        .foregroundStyle(selected ? p.fg : p.fg2)
+                        .foregroundStyle(selected || hovered == option.value ? p.fg : p.fg2)
                         .padding(.horizontal, 14)
                         .frame(height: 28)
                         .background {
                             if selected {
                                 RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                    .fill(p.surface3)
+                                    .fill(p.segThumb)
+                                    .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                        .strokeBorder(p.segThumbRing, lineWidth: p.segThumbRingWidth))
+                                    .shadow(color: p.segThumbShadow, radius: 1, y: 1)
                                     .matchedGeometryEffect(id: "thumb", in: thumb)
                             }
                         }
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .onHover { inside in
+                    if inside { hovered = option.value } else if hovered == option.value { hovered = nil }
+                }
                 .disabled(option.disabled)
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
         .padding(2)
-        .background(p.surface1, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous).strokeBorder(p.line))
+        .background(p.segTrack, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
         .animation(Motion.ease, value: selection)
     }
 }

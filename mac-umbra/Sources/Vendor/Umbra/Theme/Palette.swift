@@ -31,6 +31,15 @@ public struct Palette {
     public var danger: Color
     public var orange: Color
     public var switchKnob: Color
+    /// Segmented control (`--seg-track`, `--seg-thumb`, `--seg-thumb-shadow`): the track has no border; the thumb
+    /// stands out by fill and shadow. Light: grey track, white thumb. Dark: inverted, lighter track, darker thumb.
+    public var segTrack: Color
+    public var segThumb: Color
+    /// Drop shadow under the thumb (y 1, blur 2).
+    public var segThumbShadow: Color
+    /// Thin ring on the thumb: inset highlight in dark, hairline in light.
+    public var segThumbRing: Color
+    public var segThumbRingWidth: CGFloat
     public var shadow: Color
     public var scrim: Color
 }
@@ -61,6 +70,11 @@ public extension Palette {
             danger: Color(umbraHex: 0xFF5F5F),
             orange: Color(umbraHex: 0xFF7A45),
             switchKnob: Color(umbraHex: 0xE8E8EA),
+            segTrack: Color.white.opacity(0.09),
+            segThumb: Color.black.opacity(0.55),
+            segThumbShadow: Color.black.opacity(0.45),
+            segThumbRing: Color.white.opacity(0.06),
+            segThumbRingWidth: 1,
             shadow: Color.black.opacity(0.6),
             scrim: Color.black.opacity(0.6)
         )
@@ -91,6 +105,11 @@ public extension Palette {
             danger: Color(umbraHex: 0xDC3C42),
             orange: Color(umbraHex: 0xE0581F),
             switchKnob: Color.white,
+            segTrack: Color.black.opacity(0.07),
+            segThumb: Color.white,
+            segThumbShadow: Color.black.opacity(0.14),
+            segThumbRing: Color.black.opacity(0.06),
+            segThumbRingWidth: 0.5,
             shadow: Color(umbraHex: 0x14141E, alpha: 0.16),
             scrim: Color(umbraHex: 0x14141E, alpha: 0.35)
         )
