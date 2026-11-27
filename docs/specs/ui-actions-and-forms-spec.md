@@ -112,7 +112,7 @@ function permissionActions(p: { granted: boolean }): UiMenuItem[] {
 Мапінг: `UiMenuItem.variant` → `MenuItem` (`danger` → `danger: true`, `accent` / `warn` → новий клас рядка, `default` → звичайний `item`). Сервер віддає пункти, клієнт передає їх у `DropdownMenu` без логіки.
 
 Swift (`Sources/Features/Remote/UiTree.swift`, SDUI-декодер):
-- `UiMenuItem` декодується як `Codable`, нові поля `optional` (правило awake-contract-keeper).
+- `UiMenuItem` декодується як `Codable`, нові поля `optional` (правило macontrol-contract-keeper).
 - Меню: SwiftUI `Menu { … } label: { Image(systemName: "ellipsis") }`. Пункт — `Button(role: .destructive)` для danger, `.tint(.accent)` для accent, `Label(title, systemImage: icon.symbol)` для SF Symbol. Розділювач — `Divider()`.
 - Підтвердження — `.confirmationDialog` зі `confirm` з JSON.
 - Форма: одне поле — `TextField` з Cancel/OK інлайн; два і більше — `.sheet` з `Form`.
@@ -397,7 +397,7 @@ interface UiNotice {
 - **SwiftUI app** (`Sources/Features/Agent/`, `Sources/Features/Devices/`, `Sources/Features/Permission/`): ті самі компоненти у SwiftUI (`UiTree.swift` тощо). Пункт «SPEC RULE – swift ui template» я прочитав як «правило має діяти і для SwiftUI-шаблону». Якщо мав на увазі інше (наприклад, шаблон файлу `swiftui` скілу), скажіть.
 - **Telegram-бот**: дії з того самого `UiActionSet`, коли вони мають сенс у чаті; інакше пропускаються.
 
-Контракт `contracts/src/ui.ts` міняється першим; `awake-contract-keeper` синхронізує агента, web і Swift.
+Контракт `contracts/src/ui.ts` міняється першим; `macontrol-contract-keeper` синхронізує агента, web і Swift.
 
 ## 9. Виконання (після погодження)
 

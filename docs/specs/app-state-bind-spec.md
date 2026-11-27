@@ -91,11 +91,35 @@ function bindSwitch<P extends Path<AppState>>(
 2. Сервер виконує, змінює стейт, шле патч → клієнт знімає `pending`, стан з `bind`.
 3. Помилка або таймаут (10 с) → `pending` знімається, стан з поточного стейту, помилка — як зараз.
 
+## Клієнт: стор ≠ стейт (web)
+
+**Стор** — усе, що тримає клієнт. **`AppState`** — лише одна його гілка: серверна копія того, що стосується UI
+(дозволи, що активне, сесії, системні значення). Owner, 2026-11-27.
+
+```ts
+interface ClientStore {
+  appState: AppState | null;   // копія з сервера; змінює лише `state.full` / `state.patch`
+  rev: number;
+  layout: UiTree | null;       // розмітка з `bind`
+  connection: 'connecting' | 'online' | 'offline';
+  pending: Record<string, true>; // node id → чекає патча після кліку (лише клієнт)
+  // клієнтські речі: тема (`macontrol:theme`) тощо
+}
+```
+
+- Стор живе поза React (`subscribe` / `getSnapshot`), не в Context value.
+- Поки що компоненти підписуються на **весь стор** (`useSyncExternalStore(store.subscribe, store.get)`); точкові
+  селектори — пізніше, коли буде видно потребу. `applyStatePatch` уже зберігає посилання незмінених гілок.
+- **`<Bound bind={…}>`** — обгортка в `web/src/sdui`, як `Controller` у React Hook Form: читає стор, рахує стан
+  через `resolveBind`, накладає `pending` і передає компоненту ліби звичайний проп `state`. Компоненти `src/ui`
+  нічого не знають про стор, шляхи й сервер.
+- Mac — той самий поділ: `@Observable` стор з гілкою `appState`, `Bound` у `mac/Sources/Sdui`.
+
 ## Mac (Swift)
 
 - `AppState` декодується вручну за `contracts/src/state.ts`; патч застосовується за шляхом до `[String: JSON]`
   копії плюс типізовані геттери. Невідомий шлях / значення → `fallback`.
-- Відповідність перевіряє awake-contract-keeper і тест-фікстури (`contracts/fixtures/state/*.json`), які
+- Відповідність перевіряє macontrol-contract-keeper і тест-фікстури (`contracts/fixtures/state/*.json`), які
   декодують і TS, і Swift.
 
 ## Перехід

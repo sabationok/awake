@@ -1,5 +1,5 @@
 ---
-name: awake-pattern-guard
+name: macontrol-pattern-guard
 description: |
   Read-only reviewer of the NestJS agent (`agent/src`) in this repo against the project's data-layer and module
   patterns: named DTO / query classes instead of inline types, state columns as nullable timestamps, no raw SQL
@@ -10,7 +10,7 @@ description: |
 
   <example>
   user: "Review the sqlite-orm refactor before I commit."
-  assistant: "awake-pattern-guard on the working tree diff of agent/src."
+  assistant: "macontrol-pattern-guard on the working tree diff of agent/src."
   </example>
 tools: Read, Grep, Glob, Bash
 ---

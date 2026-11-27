@@ -126,6 +126,6 @@ export function menuItem(id: string, label: string, action: UiAction, opts?: Par
 
 - Кожен `item` має не більше одного набору дій; дозвіл «видано» дає лише `danger`.
 - mac-дії приходять у web вимкненими з `hint` і відхиляються сервером з не-Mac джерела.
-- `awake-contract-keeper` після кожного кроку: агент / web / Swift узгоджені.
-- `awake-pattern-guard` на нові repository / entity / migration (`notices`, `connections`).
+- `macontrol-contract-keeper` після кожного кроку: агент / web / Swift узгоджені.
+- `macontrol-pattern-guard` на нові repository / entity / migration (`notices`, `connections`).
 - Changeset `"macontrol": minor` на кожен крок, що власник помітить.

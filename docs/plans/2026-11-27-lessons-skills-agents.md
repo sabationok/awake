@@ -33,16 +33,16 @@
 
 | # | Агент | Звідки | Що зробити |
 |---|---|---|---|
-| C1 | **`contract-parity-keeper`** (global) | `awake-contract-keeper` | Узагальнити: один TS-контракт, кілька споживачів, рукописні Swift / Kotlin дзеркала; правила version skew (нові поля optional, невідомий вузол деградує). Мапа споживачів — параметр brief. awake лишає короткий overlay |
+| C1 | **`contract-parity-keeper`** (global) | `macontrol-contract-keeper` | Узагальнити: один TS-контракт, кілька споживачів, рукописні Swift / Kotlin дзеркала; правила version skew (нові поля optional, невідомий вузол деградує). Мапа споживачів — параметр brief. awake лишає короткий overlay |
 | C2 | **`sdui-developer`** (global) | новий, на B1 | Додає вузол / сторінку / bind наскрізь: контракт → сервер → web renderer → Swift renderer → decode-тест |
-| C3 | **`nestjs-pattern-guard`** (global) | `awake-pattern-guard` (~90% копія `nestjs` skill) | Глобальний reviewer, що вантажить `nestjs` skill; локально лишається `check:sql` і timestamp-колонки |
-| C4 | **`swift-reviewer`** (global) | `awake-swift-reviewer` | Загальні правила зі `swiftui` + «нічого не зникає непрошено»; SDUI-рендерер і permission-гейт — overlay |
+| C3 | **`nestjs-pattern-guard`** (global) | `macontrol-pattern-guard` (~90% копія `nestjs` skill) | Глобальний reviewer, що вантажить `nestjs` skill; локально лишається `check:sql` і timestamp-колонки |
+| C4 | **`swift-reviewer`** (global) | `macontrol-swift-reviewer` | Загальні правила зі `swiftui` + «нічого не зникає непрошено»; SDUI-рендерер і permission-гейт — overlay |
 | C5 | **`swift-umbra-lib-maintainer`** | вимагає правило lib naming | Власник `~/projects/swift-umbra-lib` (README / CHANGELOG / CONSUMERS / spec, гілка `dev`) |
 | C6 | `module-manifest-developer` | лишається project-агентом | Ядро → у скіл B2; сам агент вирівняти з кодом (див. D2) |
 
 ## D. Виправити першим (борг, який заважає всьому вище)
 
-1. Project-агенти посилаються на мертві шляхи старої аппки: `Sources/Features/Remote/UiTree.swift`, `AwakeModel`, `PermissionGate`, `scripts/build.sh`, `web/src/features/sdui` (`awake-contract-keeper`, `awake-swift-reviewer`).
+1. Project-агенти посилаються на мертві шляхи старої аппки: `Sources/Features/Remote/UiTree.swift`, `AwakeModel`, `PermissionGate`, `scripts/build.sh`, `web/src/features/sdui` (`macontrol-contract-keeper`, `macontrol-swift-reviewer`).
 2. `module-manifest-developer` описує API, якого в коді немає (`@UiModule`, `@BuildUiPage`, `@OnUiSetting`, `*.ui-provider.ts`); код — `MacModule` + `pages(ctx)`.
 3. `swiftui` skill має приклади зі старого layout awake (`Features/`, `AwakeModel+Telegram`) — оновити через нову структуру `mac/Sources/{App,Contract,Core,Sdui,Shell,Ui}`.
 4. Swift-дзеркало `mac/Sources/Contract/UiTree.swift` ніхто не перевіряє: decode-тест на фікстурах (як `contracts/fixtures/state`).
