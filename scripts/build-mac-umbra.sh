@@ -1,14 +1,17 @@
 #!/bin/bash
-# Builds "MaControl (Umbra Dev).app" (the new Mac client on the Umbra library) into mac-umbra/build/.
-# Dev by default (bundle id dev.vitalii.macontrol.umbra.dev); RELEASE=1 for "MaControl (Umbra)", dev.vitalii.macontrol.umbra.
+# Builds the new Mac client on the Umbra library into mac-umbra/build/MaControl__Umbra_Dev.app.
+# The file name has no spaces or brackets; the name shown by macOS (CFBundleName / CFBundleDisplayName) stays
+# "MaControl (Umbra Dev)". Install as /Applications/MaControl__Umbra_Dev.app.
+# Dev by default (bundle id dev.vitalii.macontrol.umbra.dev); RELEASE=1 for MaControl__Umbra.app,
+# "MaControl (Umbra)", dev.vitalii.macontrol.umbra.
 # BIN_ONLY=1 builds only the binary mac-umbra/build/render/mac-umbra for offscreen snapshots (scripts/parity.sh):
 # screens are compared first, the .app is built only after they match.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="$ROOT/mac-umbra/Sources"
 OUT="$ROOT/mac-umbra/build"
-ID="dev.vitalii.macontrol.umbra"; NAME="MaControl (Umbra)"
-[ "${RELEASE:-0}" = "1" ] || { ID="$ID.dev"; NAME="MaControl (Umbra Dev)"; }
+ID="dev.vitalii.macontrol.umbra"; NAME="MaControl (Umbra)"; FILE="MaControl__Umbra"
+[ "${RELEASE:-0}" = "1" ] || { ID="$ID.dev"; NAME="MaControl (Umbra Dev)"; FILE="MaControl__Umbra_Dev"; }
 # Dev passport for the dev indicator (~/projects/dev-indicator-kit): version of the `macontrol` package, git of this
 # checkout, build time. Stage dev; the server (agent-dev or bundled) is not known at build time, so no extra row.
 KIT="${DEV_INDICATOR_KIT:-$HOME/projects/dev-indicator-kit}"
@@ -23,7 +26,7 @@ if [ "${BIN_ONLY:-0}" = "1" ]; then
   passport "$OUT/render/dev-build.json"
   echo "$OUT/render/mac-umbra"; exit 0
 fi
-APP="$OUT/$NAME.app"
+APP="$OUT/$FILE.app"
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 find "$SRC" -name '*.swift' -print0 | xargs -0 swiftc -swift-version 5 -O -parse-as-library \
   -target arm64-apple-macos14 -o "$APP/Contents/MacOS/mac-umbra"
