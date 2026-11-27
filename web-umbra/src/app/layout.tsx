@@ -6,9 +6,12 @@ import '../shell/shell.css';
 import { DevBuildIndicator } from '../shell/dev-build-indicator';
 import { THEME_BOOT_SCRIPT } from '../shell/theme-boot';
 
+const LOCAL = process.env.NEXT_PUBLIC_BUILD_TARGET === 'local';
+
 export const metadata: Metadata = {
-  title: 'MaControl · Umbra',
-  description: 'Демо Web UI MaControl у стилі Umbra. Дії не надсилаються.',
+  // Локальна збірка — справжній Web UI на Mac: без демо-тексту. Vercel — перегляд у стилі Umbra.
+  title: LOCAL ? 'MaControl' : 'MaControl · Umbra',
+  description: LOCAL ? 'Стан і керування Mac' : 'Web UI MaControl у стилі Umbra, лише перегляд.',
   // iOS: контент заходить під статус-бар, тож підкладка видна до самого верху (відступи — safe-area у shell.css).
   appleWebApp: { capable: true, title: 'MaControl', statusBarStyle: 'black-translucent' },
   icons: { icon: '/icon-192.png', apple: '/apple-touch-icon.png' },

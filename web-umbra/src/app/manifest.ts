@@ -12,7 +12,8 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'MaControl',
     short_name: 'MaControl',
     description: 'Стан і керування Mac',
-    start_url: '/',
+    // Локально UI живе під `/app` (корінь лише переводить туди); на Vercel — у корені.
+    start_url: process.env.NEXT_PUBLIC_BUILD_TARGET === 'local' ? '/app' : '/',
     display: 'standalone',
     display_override: ['window-controls-overlay', 'standalone'],
     background_color: '#060403',
