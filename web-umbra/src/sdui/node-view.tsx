@@ -166,7 +166,6 @@ function TileNode({ node }: { node: UiRow }) {
     delta == null || delta === 0 || !compare?.goodWhen ? 'flat' : (delta > 0) === (compare.goodWhen === 'up') ? 'good' : 'bad';
   return (
     <div className="u-tile">
-      <span className="u-tile-label">{node.label}</span>
       <b className="u-tile-value tnum">{node.value ?? '—'}</b>
       {compare ? (
         <span className="u-tile-compare tnum" data-tone={tone}>
@@ -174,6 +173,7 @@ function TileNode({ node }: { node: UiRow }) {
           <small>минулий: {compare.previous}</small>
         </span>
       ) : null}
+      <span className="u-tile-label" title={node.label}>{node.label}</span>
     </div>
   );
 }
