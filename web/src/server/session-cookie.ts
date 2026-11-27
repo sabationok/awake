@@ -13,11 +13,16 @@ export type IdleMinutes = (typeof IDLE_OPTIONS_MINUTES)[number];
 export const DEFAULT_IDLE_MINUTES: IdleMinutes = 5;
 
 import { PREVIEW_PASSWORD, PREVIEW_SESSION_SECRET } from './preview-access';
-import { isPreviewStage } from './stage';
+import { isPreviewStage, readStage } from './stage';
 
 const encoder = new TextEncoder();
 
+/** Stage входить у підпис: кука з preview (публічний тестовий пароль) не дійсна в dev / production навіть з тим самим секретом. */
 async function hmac(value: string): Promise<string> {
+  return hmacRaw(`${readStage()}:${value}`);
+}
+
+async function hmacRaw(value: string): Promise<string> {
   // Preview без SESSION_SECRET підписує тестовим секретом: там немає даних агента.
   const secret = process.env.SESSION_SECRET || (isPreviewStage() ? PREVIEW_SESSION_SECRET : undefined);
   if (!secret || secret.length < 32) throw new Error('SESSION_SECRET must be at least 32 characters');

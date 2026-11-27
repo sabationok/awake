@@ -36,4 +36,7 @@ const f=".vercel/project.json", p=require("fs"), j=JSON.parse(p.readFileSync(f))
 Object.assign(j.settings, { rootDirectory: "web-umbra", framework: "nextjs", nodeVersion: "26.x" });
 p.writeFileSync(f, JSON.stringify(j, null, 2));'
 vercel build
-vercel deploy --prebuilt --target=preview --env STAGE=dev
+url=$(vercel deploy --prebuilt --target=preview --env STAGE=dev | grep -oE 'https://macontrol-umbra-[a-z0-9]+-[a-z0-9-]+\.vercel\.app' | head -1)
+echo "$url"
+# Стабільна адреса dev-збірки Web Umbra.
+vercel alias set "$url" macontrol-umbra-dev.vercel.app

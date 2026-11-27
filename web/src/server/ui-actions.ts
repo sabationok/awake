@@ -2,6 +2,7 @@
 import { cookies } from 'next/headers';
 import { RELAY_DEVICE_COOKIE, UI_TREE_KEY, type UiTree } from '@awake/contracts';
 import { SESSION_COOKIE, isValidSession } from './session-cookie';
+import { toPublicUiTree } from './public-tree';
 import { isPreviewStage } from './stage';
 import { isUpstashConfigured, upstashCommand } from './upstash';
 
@@ -13,7 +14,6 @@ export async function getUiTree(): Promise<{ tree: UiTree | null; authorized: bo
   if (!isUpstashConfigured()) return { tree: null, authorized: true };
   const raw = await upstashCommand<string | null>(['GET', UI_TREE_KEY]);
   const tree = raw ? (JSON.parse(raw) as UiTree) : null;
-  // Без app.local браузер не піде до агента напряму: у preview лише перегляд дерева з Upstash.
-  if (tree && isPreviewStage()) delete tree.app.local;
-  return { tree, authorized: true };
+  // Preview пускає з публічним тестовим паролем, тож віддає не більше, ніж публічний роут: без app.local, QR і copy.
+  return { tree: tree && isPreviewStage() ? toPublicUiTree(tree) : tree, authorized: true };
 }

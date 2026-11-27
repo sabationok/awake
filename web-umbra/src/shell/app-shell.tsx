@@ -1,10 +1,9 @@
 'use client';
-import type { UiPage, UiTree } from '@awake/contracts';
-import { ChevronRight, FlaskConical, Menu, Power, X } from 'lucide-react';
+import type { UiPage } from '@awake/contracts';
+import { ChevronRight, DatabaseZap, FlaskConical, Menu, Power, X } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { DemoProvider, useDemo } from '@/demo/demo-store';
-import { fixtureTree } from '@/fixtures/tree';
-import type { TreeResponse } from '@/app/api/tree/route';
+import type { TreeOrigin, TreeResponse } from '@/app/api/tree/route';
 import { sidebarPages, sidebarSections, type SidebarNode } from '@/lib/sidebar-sections';
 import { PageNodes } from '@/sdui/node-view';
 import { IconButton, SymbolIcon } from '@/ui/primitives';
@@ -20,23 +19,26 @@ function useHash(): [string, (id: string) => void] {
   return [hash, (id) => (window.location.hash = id)];
 }
 
-type TreeSource = { kind: 'live' } | { kind: 'fixtures'; reason: string };
-
 const POLL_MS = 5000;
 
-/** Живе дерево з `/api/tree` (Upstash) раз на 5 с; без нього — фікстури, щоб демо працювало й без агента. */
-function useTree(): { tree: UiTree | null; source: TreeSource | null } {
-  const [state, setState] = useState<{ tree: UiTree | null; source: TreeSource | null }>({ tree: null, source: null });
+const ORIGIN_LABEL: Record<TreeOrigin, string> = { upstash: 'Upstash', 'web-swift': 'Web Swift', fixtures: 'вбудовані фікстури' };
+
+/**
+ * Дерево з `/api/tree` раз на 5 с. Джерело (Upstash → Web Swift → фікстури) вибирає сервер; браузер нічого не підміняє.
+ * Якщо сервер Umbra не відповів, лишається останнє отримане дерево, а `offline` каже про це банеру.
+ */
+function useTree(): { data: TreeResponse | null; offline: boolean } {
+  const [state, setState] = useState<{ data: TreeResponse | null; offline: boolean }>({ data: null, offline: false });
   useEffect(() => {
     let alive = true;
     const load = async () => {
       try {
-        const res = (await fetch('/api/tree', { cache: 'no-store' }).then((r) => r.json())) as TreeResponse;
-        if (!alive) return;
-        if (res.source === 'live') setState({ tree: res.tree, source: { kind: 'live' } });
-        else setState((prev) => (prev.source?.kind === 'live' ? prev : { tree: fixtureTree(), source: { kind: 'fixtures', reason: res.reason } }));
+        const res = await fetch('/api/tree', { cache: 'no-store' });
+        if (!res.ok) throw new Error(String(res.status));
+        const data = (await res.json()) as TreeResponse;
+        if (alive) setState({ data, offline: false });
       } catch {
-        if (alive) setState((prev) => (prev.tree ? prev : { tree: fixtureTree(), source: { kind: 'fixtures', reason: 'Сервер Umbra недоступний' } }));
+        if (alive) setState((prev) => ({ ...prev, offline: true }));
       }
     };
     void load();
@@ -50,11 +52,18 @@ function useTree(): { tree: UiTree | null; source: TreeSource | null } {
 }
 
 export function AppShell() {
-  const { tree, source } = useTree();
-  return <DemoProvider>{tree && source ? <Shell tree={tree} source={source} /> : <div className="s-loading">MaControl…</div>}</DemoProvider>;
+  const { data, offline } = useTree();
+  if (!data) return <div className="s-loading">{offline ? 'Сервер Web Umbra недоступний' : 'MaControl…'}</div>;
+  return (
+    <DemoProvider>
+      <Shell data={data} offline={offline} />
+    </DemoProvider>
+  );
 }
 
-function Shell({ tree, source }: { tree: UiTree; source: TreeSource }) {
+function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
+  const { tree, origin } = data;
+  const live = origin !== 'fixtures';
   const sections = useMemo(() => sidebarSections(tree), [tree]);
   const all = useMemo(() => sidebarPages(sections), [sections]);
   const [hash, go] = useHash();
@@ -115,7 +124,7 @@ function Shell({ tree, source }: { tree: UiTree; source: TreeSource }) {
         <div className="s-demo">
           <FlaskConical />
           <span>
-            {source.kind === 'live' ? 'Живі дані з Mac' : `Фікстури: ${source.reason}`}
+            {live ? `Живі дані · ${ORIGIN_LABEL[origin]}` : 'Демо-дерево'}
             <br />
             Дії не надсилаються на сервер
           </span>
@@ -133,8 +142,8 @@ function Shell({ tree, source }: { tree: UiTree; source: TreeSource }) {
           ) : null}
           <h1>{page?.title}</h1>
           {page?.scope === 'local' ? <span className="u-chip">лише в локальній мережі</span> : null}
-          <span className="u-badge s-demo-badge" style={{ ['--tone' as string]: source.kind === 'live' ? 'var(--ok)' : 'var(--accent)' }}>
-            {source.kind === 'live' ? 'Live · демо-дії' : 'Демо'}
+          <span className="u-badge s-demo-badge" style={{ ['--tone' as string]: live ? 'var(--ok)' : 'var(--accent)' }}>
+            {live ? 'Live · демо-дії' : 'Демо'}
           </span>
         </header>
         {tabs.length ? (
@@ -146,6 +155,7 @@ function Shell({ tree, source }: { tree: UiTree; source: TreeSource }) {
             ))}
           </div>
         ) : null}
+        <SourceBanner data={data} offline={offline} />
         <div className="s-content" key={page?.id}>
           {page ? <PageNodes nodes={page.children} /> : null}
         </div>
@@ -179,6 +189,23 @@ function NavNode({ node, current, open, disabled, onToggle, onNavigate }: { node
           ))
         : null}
     </Fragment>
+  );
+}
+
+/** Банер, коли дерево не живе (фікстури) або сервер Umbra перестав відповідати: звідки дані і чому не свіжі. */
+function SourceBanner({ data, offline }: { data: TreeResponse; offline: boolean }) {
+  if (data.origin !== 'fixtures' && !offline) return null;
+  return (
+    <div className="s-banner" role="status">
+      <DatabaseZap />
+      <div>
+        <b>{offline ? 'Сервер Web Umbra не відповідає — показую останнє отримане дерево' : `Живого дерева немає — показую вбудований зразок від ${data.sampledAt}`}</b>
+        {data.misses.length ? (
+          <small>{data.misses.map((m) => `${ORIGIN_LABEL[m.origin]}: ${m.reason}`).join(' · ')}</small>
+        ) : null}
+        <small>Структура сторінок та сама, що в агента; значення вигадані, дії не надсилаються.</small>
+      </div>
+    </div>
   );
 }
 
