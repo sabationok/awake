@@ -66,7 +66,7 @@
 .s-main { min-width: 0; display: flex; flex-direction: column; }
 .s-top {
   position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 10px;
-  padding: 14px 28px; background: color-mix(in oklab, var(--bg) 88%, transparent); backdrop-filter: blur(12px);
+  padding: 14px 28px; background: color-mix(in oklab, var(--bg-solid) 55%, transparent); backdrop-filter: blur(16px) saturate(140%);
 }
 .s-top h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
 .s-crumb { display: inline-flex; align-items: center; gap: 4px; color: var(--fg-3); font-size: 14px; }
@@ -98,7 +98,7 @@
   .s-app { grid-template-columns: minmax(0, 1fr); }
   .s-side {
     position: fixed; inset: 0 auto 0 0; z-index: 30; width: min(300px, 86vw);
-    transform: translateX(-100%); transition: transform .2s ease;
+    transform: translateX(-100%); transition: transform .2s ease; backdrop-filter: var(--glass-blur);
   }
   .s-app[data-drawer] .s-side { transform: none; }
   .s-app[data-drawer] .s-scrim { display: block; position: fixed; inset: 0; z-index: 20; background: var(--scrim); }

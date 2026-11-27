@@ -378,7 +378,7 @@ function TabsNode({ node, page }: { node: UiTabs; page?: boolean }) {
   }
   return (
     <div>
-      <div style={{ padding: 12, display: 'flex', justifyContent: 'center', position: node.sticky ? 'sticky' : undefined, top: 0, zIndex: 2, background: 'var(--surface-1)' }}>
+      <div style={{ padding: 12, display: 'flex', justifyContent: 'center', position: node.sticky ? 'sticky' : undefined, top: 0, zIndex: 2, background: 'var(--surface-1)', backdropFilter: 'var(--glass-blur)' }}>
         <Segmented
           value={active?.id ?? ''}
           options={node.tabs.map((tab) => ({ value: tab.id, label: tab.label }))}

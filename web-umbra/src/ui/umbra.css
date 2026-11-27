@@ -143,7 +143,7 @@
 
 /* ---------- menu ---------- */
 .u-menu-wrap { position: relative; }
-.u-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 200px; padding: 4px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line-strong); box-shadow: 0 16px 40px var(--shadow); display: grid; }
+.u-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 200px; padding: 4px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line-strong); box-shadow: 0 16px 40px var(--shadow); display: grid;  backdrop-filter: var(--glass-blur);}
 .u-menu button { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: transparent; font-size: var(--fs-sm); text-align: left; cursor: pointer; color: var(--fg); }
 .u-menu button:hover:not(:disabled) { background: var(--surface-3); }
 .u-menu button svg { width: 14px; height: 14px; color: var(--fg-2); }
@@ -155,7 +155,7 @@
 
 /* ---------- dialog ---------- */
 .u-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: var(--scrim); backdrop-filter: blur(6px); animation: u-fade .15s ease-out; }
-.u-dialog { width: min(420px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; padding: 22px; border-radius: var(--r-lg); background: var(--surface-1); border: 1px solid var(--line-strong); box-shadow: 0 30px 80px var(--shadow); display: grid; gap: 16px; animation: u-rise .18s var(--ease); }
+.u-dialog { width: min(420px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; padding: 22px; border-radius: var(--r-lg); background: var(--surface-1); border: 1px solid var(--line-strong); box-shadow: 0 30px 80px var(--shadow); display: grid; gap: 16px; animation: u-rise .18s var(--ease);  backdrop-filter: var(--glass-blur);}
 .u-dialog h2 { margin: 0; font-size: var(--fs-lg); font-weight: 600; }
 .u-dialog p { margin: 0; color: var(--fg-2); font-size: var(--fs-sm); line-height: 1.55; }
 .u-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
@@ -175,7 +175,7 @@
 
 /* ---------- toast ---------- */
 .u-toasts { position: fixed; z-index: 60; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; justify-items: end; pointer-events: none; }
-.u-toast { display: flex; align-items: flex-start; gap: 10px; max-width: min(380px, calc(100vw - 32px)); padding: 10px 14px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line-strong); box-shadow: 0 12px 32px var(--shadow); font-size: var(--fs-sm); animation: u-rise .2s var(--ease); pointer-events: auto; }
+.u-toast { display: flex; align-items: flex-start; gap: 10px; max-width: min(380px, calc(100vw - 32px)); padding: 10px 14px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line-strong); box-shadow: 0 12px 32px var(--shadow); font-size: var(--fs-sm); animation: u-rise .2s var(--ease); pointer-events: auto;  backdrop-filter: var(--glass-blur);}
 .u-toast svg { width: 15px; height: 15px; color: var(--accent); flex: none; margin-top: 1px; }
 .u-toast div { display: grid; gap: 2px; min-width: 0; }
 .u-toast small { color: var(--fg-3); font-size: var(--fs-xs); }
