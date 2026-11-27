@@ -256,7 +256,7 @@ struct UmbraChevronButton: View {
 }
 
 /// Host block on top of the sidebar (`.s-host`): a symbol in a 30 pt rounded square (accent with a thin accent ring
-/// when online, fg-3 otherwise), the title and a subtitle. No card behind it.
+/// when online, fg-3 otherwise), the title and a subtitle (fg-2), on a panel card (`umbraSurface(.panel)`).
 public struct UmbraSidebarHost: View {
     private let name: String
     private let subtitle: String?
@@ -293,9 +293,11 @@ public struct UmbraSidebarHost: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 14)
-        .padding(.top, 16)
-        .padding(.bottom, 14)
+        .padding(10)
+        .umbraSurface(.panel)
+        .padding(.horizontal, 10)
+        .padding(.top, 4)
+        .padding(.bottom, 6)
     }
 }
 
