@@ -13,7 +13,7 @@ public struct UmbraShellContext {
 /// 28 pt transparent title bar above everything.
 /// Content column as `.s-main`: the header band (`.s-top`, 28 pt sides, no rule under it), an optional full-width
 /// `bar` under it (`.s-tabs`: page NavTabs), then the scrolling content (`.s-content`: 22 / 28 pt padding, at most
-/// 760 pt wide INCLUDING the padding, left-aligned, not centred).
+/// 760 pt wide INCLUDING the padding, centred in the column: `margin-inline: auto`).
 public struct UmbraShell<Sidebar: View, Header: View, Bar: View, Content: View>: View {
     private let chrome: UmbraWindowChrome
     private let glow: UmbraBackdrop.Glow
@@ -99,7 +99,7 @@ public struct UmbraShell<Sidebar: View, Header: View, Bar: View, Content: View>:
                     .padding(.top, context.compact ? 16 : 22)
                     .padding(.bottom, context.compact ? 56 : 64)
                     .frame(maxWidth: UmbraLayout.contentMaxWidth, alignment: .topLeading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
