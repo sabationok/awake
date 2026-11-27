@@ -29,9 +29,10 @@ struct AppShell: View {
         let tabs = levelOf(path).tabs
         let crumbs = Array(path.dropLast())
         let parent = crumbs.last
+        let labelOf = moduleLabels(server.tree, sections)
 
         Shell(chrome: .unifiedToolbar) {
-            Sidebar(groups: navGroups(sections), selection: $hash) {
+            Sidebar(groups: navGroups(sections, labelOf), selection: $hash) {
                 host
             } footer: {
                 // The dev indicator's floating button sits bottom-left (the kit's default corner, no API to change
@@ -39,8 +40,8 @@ struct AppShell: View {
                 source.padding(.bottom, AppInfo.devBuild(options) == nil ? 0 : 52)
             }
         } header: { ctx in
-            Header(page?.title ?? "MaControl",
-                        crumbs: crumbs.map { Crumb(id: $0.page.id, title: $0.page.title) },
+            Header(page.map(labelOf) ?? "MaControl",
+                        crumbs: crumbs.map { Crumb(id: $0.page.id, title: labelOf($0.page)) },
                         onBack: parent.map { p in { hash = p.page.id } },
                         onMenu: ctx.compact ? ctx.toggleSidebar : nil,
                         onCrumb: { hash = $0.id },
@@ -103,12 +104,12 @@ struct AppShell: View {
     }
 
     /// `NavNode` / `SubNode`: a disabled module stays visible, greyed, with the reason as a hint; it does not expand.
-    private func navGroups(_ sections: [SidebarSection]) -> [SidebarGroup] {
+    private func navGroups(_ sections: [SidebarSection], _ labelOf: (UiPage) -> String) -> [SidebarGroup] {
         let disabledOf = Dictionary((server.tree?.modules ?? []).compactMap { m in m.disabled.map { (m.id, $0) } },
                                     uniquingKeysWith: { a, _ in a })
         func item(_ node: SidebarNode, top: Bool) -> SidebarItem {
             let disabled = top ? disabledOf[node.page.module] : nil
-            return SidebarItem(id: node.page.id, title: node.page.title,
+            return SidebarItem(id: node.page.id, title: labelOf(node.page),
                                     symbol: top ? node.page.icon.symbol : nil,
                                     disabled: disabled != nil, hint: disabled,
                                     children: disabled == nil ? node.children.map { item($0, top: false) } : [])
@@ -133,5 +134,25 @@ struct SourceBanner: View {
         } else if let problem = server.problem {
             Notice(tone: .yellow, symbol: "exclamationmark.triangle", title: "Дерево не розібралось", text: problem)
         }
+    }
+}
+
+/// Port of `moduleLabels` in `web-umbra/src/shell/app-shell.tsx`: the name of a menu item, crumb and title. A page
+/// that starts a module (top level, or a nested module like Групи under Telegram) is named by the module's title from
+/// `tree.modules`, not by its own `title`, so the menu item does not change when the server renames the page
+/// (Awake → «Сесія», «Огляд»). System pages and a module's subpages keep their own `title`. Tabs are not touched.
+func moduleLabels(_ tree: UiTree?, _ sections: [SidebarSection]) -> (UiPage) -> String {
+    var parentModule: [String: String?] = [:]
+    func walk(_ nodes: [SidebarNode], _ parent: UiPage?) {
+        for node in nodes {
+            parentModule[node.page.id] = .some(parent?.module)
+            walk(node.children, node.page)
+        }
+    }
+    sections.forEach { walk($0.nodes, nil) }
+    let titles = Dictionary((tree?.modules ?? []).map { ($0.id, $0.title) }, uniquingKeysWith: { a, _ in a })
+    return { page in
+        let startsModule = page.group == .modules && (parentModule[page.id] ?? nil) != page.module
+        return (startsModule ? titles[page.module] : nil) ?? page.title
     }
 }
