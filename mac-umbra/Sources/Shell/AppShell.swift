@@ -33,7 +33,9 @@ struct AppShell: View {
             UmbraSidebar(groups: navGroups(sections), selection: $hash) {
                 host
             } footer: {
-                source
+                // The dev indicator's floating button sits bottom-left (the kit's default corner, no API to change
+                // it): lift the source plaque above it (16 inset + 36 button + a gap).
+                source.padding(.bottom, AppInfo.devBuild(options) == nil ? 0 : 52)
             }
         } header: { ctx in
             UmbraHeader(page?.title ?? "MaControl",
@@ -60,7 +62,7 @@ struct AppShell: View {
         }
         .environmentObject(runner)
         .runActionDialog(runner)
-        .umbraTheme(.dark, translucent: !options.render || options.translucent)
+        .umbraTheme(options.theme == "light" ? .light : .dark, translucent: !options.render || options.translucent)
         .umbraVibrancyPreview(options.wallpaper.flatMap { NSImage(contentsOfFile: $0) })
         .devIndicator(build: AppInfo.devBuild(options), preview: AppInfo.devPreview(options))
     }

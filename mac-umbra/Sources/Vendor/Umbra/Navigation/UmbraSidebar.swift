@@ -288,7 +288,7 @@ public struct UmbraSidebarHost: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(name).font(.system(size: 14, weight: .semibold)).foregroundStyle(p.fg).lineLimit(1)
                 if let subtitle {
-                    Text(subtitle).font(.system(size: 12)).foregroundStyle(p.fg3).lineLimit(1).truncationMode(.tail)
+                    Text(subtitle).font(.system(size: 12)).foregroundStyle(p.fg2).lineLimit(1).truncationMode(.tail)
                 }
             }
             Spacer(minLength: 0)

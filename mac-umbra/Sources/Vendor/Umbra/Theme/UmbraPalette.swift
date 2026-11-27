@@ -49,7 +49,8 @@ public extension UmbraPalette {
             lineStrong: translucent ? Color.white.opacity(0.12) : Color(umbraHex: 0x303034),
             fg: Color(umbraHex: 0xEDEDEF),
             fg2: Color(umbraHex: 0xA3A3AA),
-            fg3: Color(umbraHex: 0x6C6C73),
+            // Translucent: a step lighter, so icons and group titles hold over a busy desktop.
+            fg3: translucent ? Color(umbraHex: 0x7E7E86) : Color(umbraHex: 0x6C6C73),
             accent: Color(umbraHex: 0xFF9B2F),
             accent2: Color(umbraHex: 0xFFB766),
             accentSoft: Color(umbraHex: 0xFF9B2F, alpha: 0.12),
@@ -78,7 +79,8 @@ public extension UmbraPalette {
             lineStrong: translucent ? Color.black.opacity(0.12) : Color(umbraHex: 0xD6D6DB),
             fg: Color(umbraHex: 0x17171A),
             fg2: Color(umbraHex: 0x4F4F57),
-            fg3: Color(umbraHex: 0x85858D),
+            // Translucent: a step darker, so icons and group titles hold over a pale desktop.
+            fg3: translucent ? Color(umbraHex: 0x66666E) : Color(umbraHex: 0x85858D),
             accent: Color(umbraHex: 0xD96A00),
             accent2: Color(umbraHex: 0xF08A1C),
             accentSoft: Color(umbraHex: 0xD96A00, alpha: 0.12),

@@ -7,6 +7,7 @@ import SwiftUI
 /// `--dev-indicator floating|panel|strip` forces the indicator's state for a shot.
 /// `--translucent --wallpaper <png>` keeps the window materials in a render and draws them over that image
 /// (offscreen there is no desktop behind the window), to compare the sidebar and content tints on a shot.
+/// `--theme light|dark` overrides the app's dark theme for a shot.
 struct LaunchOptions {
     var page: String?
     var snapshot: String?
@@ -16,6 +17,7 @@ struct LaunchOptions {
     var devIndicator: String?
     var translucent = false
     var wallpaper: String?
+    var theme: String?
     var width: CGFloat = 1180
     var height: CGFloat = 800
 
@@ -32,6 +34,7 @@ struct LaunchOptions {
             case "--dev-indicator": o.devIndicator = args.next()
             case "--translucent": o.translucent = true
             case "--wallpaper": o.wallpaper = args.next()
+            case "--theme": o.theme = args.next()
             case "--width": o.width = args.next().flatMap(Double.init).map { CGFloat($0) } ?? o.width
             case "--height": o.height = args.next().flatMap(Double.init).map { CGFloat($0) } ?? o.height
             default: break
