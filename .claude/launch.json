@@ -2,21 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "web-local",
+      "name": "web",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
         "--filter",
         "@awake/web",
-        "dev:local"
-      ],
-      "port": 3211
-    },
-    {
-      "name": "web-umbra",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "--filter",
-        "@awake/web-umbra",
         "dev"
       ],
       "port": 3218

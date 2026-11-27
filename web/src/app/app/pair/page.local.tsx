@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { TailnetPairingPage } from '@/features/pairing/tailnet-pairing-page';
+import { TailnetPairingPage } from '@/live/pairing/tailnet-pairing-page';
 
 export default function Page() {
   return (

@@ -10,6 +10,5 @@ Resources/agent/
 *.tsbuildinfo
 .env*.local
 .vercel
-web-umbra/.next/
-web-umbra/.vercel/
-web-umbra/src/generated/
+web/.vercel/
+web/src/generated/

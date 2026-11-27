@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { RedirectsPage } from '@/features/redirects/redirects-page';
+import { RedirectsPage } from '@/live/redirects/redirects-page';
 
 export default function Page() {
   return (
