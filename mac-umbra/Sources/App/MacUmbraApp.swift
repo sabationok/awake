@@ -7,7 +7,7 @@ import SwiftUI
 /// `--dev-indicator floating|panel|strip` forces the indicator's state for a shot.
 /// `--translucent --wallpaper <png>` keeps the window materials in a render and draws them over that image
 /// (offscreen there is no desktop behind the window), to compare the sidebar and content tints on a shot.
-/// `--theme light|dark` overrides the app's dark theme for a shot.
+/// `--theme system|light|dark` overrides the stored client theme for a shot (nothing is written).
 struct LaunchOptions {
     var page: String?
     var snapshot: String?
@@ -98,8 +98,9 @@ final class MacUmbraDelegate: NSObject, NSApplicationDelegate {
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered, defer: false)
         window.title = AppInfo.displayName
-        // Dark before the first layout: a later switch leaves SF Symbols shifted.
-        window.appearance = NSAppearance(named: .darkAqua)
+        // The theme's appearance before the first layout: a later switch leaves SF Symbols shifted.
+        NSApp.appearance = (o.theme.flatMap(ThemeSetting.init(rawValue:))
+            ?? ThemeSetting.stored(UserDefaults.standard.string(forKey: ThemeSetting.key))).appearance
         window.minSize = NSSize(width: 420, height: 480)
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: AppShell(server: server, options: o))

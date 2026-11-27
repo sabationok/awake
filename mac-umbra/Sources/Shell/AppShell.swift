@@ -13,6 +13,7 @@ struct AppShell: View {
     let options: LaunchOptions
     @State private var hash: String?
     @StateObject private var runner = RunAction()
+    @AppStorage(ThemeSetting.key) private var storedTheme = ThemeSetting.fallback.rawValue
 
     init(server: ServerConnection, options: LaunchOptions) {
         self.server = server
@@ -52,6 +53,9 @@ struct AppShell: View {
         } content: { _ in
             VStack(alignment: .leading, spacing: 18) {
                 SourceBanner(server: server)
+                if page?.id == "settings" {
+                    AppearanceSection(theme: Binding(get: { theme }, set: { storedTheme = $0.rawValue }))
+                }
                 if let page {
                     PageNodes(nodes: page.children, send: server.send)
                 } else if server.connected {
@@ -62,9 +66,16 @@ struct AppShell: View {
         }
         .environmentObject(runner)
         .runActionDialog(runner)
-        .umbraTheme(options.theme == "light" ? .light : .dark, translucent: !options.render || options.translucent)
+        .umbraTheme(UmbraThemeMode(rawValue: theme.rawValue) ?? .dark,
+                    translucent: !options.render || options.translucent)
+        .onChange(of: theme) { NSApp.appearance = $0.appearance }
         .umbraVibrancyPreview(options.wallpaper.flatMap { NSImage(contentsOfFile: $0) })
         .devIndicator(build: AppInfo.devBuild(options), preview: AppInfo.devPreview(options))
+    }
+
+    /// The stored client theme; `--theme` (screenshots) wins over it.
+    private var theme: ThemeSetting {
+        options.theme.flatMap(ThemeSetting.init(rawValue:)) ?? ThemeSetting.stored(storedTheme)
     }
 
     /// `.s-host`: app title, then «host · онлайн/офлайн»; the icon is accent while the Mac is online.
