@@ -5,6 +5,8 @@ import SwiftUI
 /// `--tree` renders a saved tree (the parity script passes the one web-umbra shows) instead of the socket's.
 /// `--dev-build <json>` reads the dev passport from a file (the bare snapshot binary has no bundle resources);
 /// `--dev-indicator floating|panel|strip` forces the indicator's state for a shot.
+/// `--translucent --wallpaper <png>` keeps the window materials in a render and draws them over that image
+/// (offscreen there is no desktop behind the window), to compare the sidebar and content tints on a shot.
 struct LaunchOptions {
     var page: String?
     var snapshot: String?
@@ -12,6 +14,8 @@ struct LaunchOptions {
     var render = false
     var devBuild: String?
     var devIndicator: String?
+    var translucent = false
+    var wallpaper: String?
     var width: CGFloat = 1180
     var height: CGFloat = 800
 
@@ -26,6 +30,8 @@ struct LaunchOptions {
             case "--render": o.render = true
             case "--dev-build": o.devBuild = args.next()
             case "--dev-indicator": o.devIndicator = args.next()
+            case "--translucent": o.translucent = true
+            case "--wallpaper": o.wallpaper = args.next()
             case "--width": o.width = args.next().flatMap(Double.init).map { CGFloat($0) } ?? o.width
             case "--height": o.height = args.next().flatMap(Double.init).map { CGFloat($0) } ?? o.height
             default: break

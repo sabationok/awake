@@ -40,7 +40,7 @@ public extension UmbraPalette {
     static func dark(translucent: Bool) -> UmbraPalette {
         UmbraPalette(
             bgSolid: Color(umbraHex: 0x000000),
-            windowTint: Color(umbraHex: 0x060403, alpha: 0.62),
+            windowTint: Color(umbraHex: 0x060403, alpha: 0.42),
             bgApp: translucent ? Color(umbraHex: 0x080707, alpha: 0.38) : Color(umbraHex: 0x0C0C0D),
             surface1: translucent ? Color(umbraHex: 0x141212, alpha: 0.5) : Color(umbraHex: 0x141415),
             surface2: translucent ? Color(umbraHex: 0x202024, alpha: 0.78) : Color(umbraHex: 0x1A1A1C),
@@ -69,7 +69,7 @@ public extension UmbraPalette {
     static func light(translucent: Bool) -> UmbraPalette {
         UmbraPalette(
             bgSolid: Color(umbraHex: 0xF2F2F4),
-            windowTint: Color(umbraHex: 0xF4F3F6, alpha: 0.5),
+            windowTint: Color(umbraHex: 0xF4F3F6, alpha: 0.36),
             bgApp: translucent ? Color.white.opacity(0.35) : Color(umbraHex: 0xE8E8EB),
             surface1: translucent ? Color.white.opacity(0.62) : Color(umbraHex: 0xFFFFFF),
             surface2: translucent ? Color.white.opacity(0.85) : Color(umbraHex: 0xF6F6F8),

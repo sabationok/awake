@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Port of `web-umbra/src/shell/app-shell.tsx`. Same parts in the same order:
@@ -59,7 +60,8 @@ struct AppShell: View {
         }
         .environmentObject(runner)
         .runActionDialog(runner)
-        .umbraTheme(.dark, translucent: !options.render)
+        .umbraTheme(.dark, translucent: !options.render || options.translucent)
+        .umbraVibrancyPreview(options.wallpaper.flatMap { NSImage(contentsOfFile: $0) })
         .devIndicator(build: AppInfo.devBuild(options), preview: AppInfo.devPreview(options))
     }
 
