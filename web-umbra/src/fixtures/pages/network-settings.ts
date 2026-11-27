@@ -54,8 +54,7 @@ function webUiOverviewPage(): UiPage {
       {
         id: 'webui-addresses-priv',
         type: 'section',
-        title: 'Priv · Tailscale',
-        footer: 'Лише пристрої твого tailnet, з будь-якої мережі.',
+        title: 'Priv',
         children: [addressItem('tailnet', 'Tailnet', 'point.3.connected.trianglepath.dotted', 'https://mac.tail1234.ts.net')],
       },
       {
