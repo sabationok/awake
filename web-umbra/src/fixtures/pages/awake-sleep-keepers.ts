@@ -1,4 +1,5 @@
 import type { SessionRecord, SleepTimerRecord, UiChart, UiChartPoint, UiIcon, UiList, UiNode, UiOption, UiPage, UiRow, UiTone } from '@awake/contracts';
+import { fixtureCompare } from '../compare';
 import { bucketsAgo, inMinutes } from '../time';
 
 // Стан для фікстур: Awake-сесія йде (ще 80 хв, від батареї 78%, сон заблоковано), Sleeper без таймера,
@@ -330,6 +331,7 @@ function trackingPage(spec: TrackingSpec): UiPage {
           type: 'row',
           label: typeof chart.total === 'string' ? chart.total : chart.title,
           value: chart.format === 'duration' ? duration(sum * 1000) : String(sum),
+          compare: fixtureCompare(`${spec.id}-${chart.id}-${period}`, sum, (n) => (chart.format === 'duration' ? duration(n * 1000) : String(n))),
         });
       }
       return {
@@ -346,7 +348,7 @@ function trackingPage(spec: TrackingSpec): UiPage {
     const extra = spec.summary(totals, period).map((row) => ({ ...row, id: `${spec.id}-${row.id}-${period}` }));
     const rows = [...totalRows, ...extra];
     const summary: UiNode[] = rows.length
-      ? [{ id: `${spec.id}-summary-${period}`, type: 'section', title: 'Підсумок', footer: spec.footer, children: rows }]
+      ? [{ id: `${spec.id}-summary-${period}`, type: 'section', title: 'Підсумок', kind: 'summary', footer: spec.footer, children: rows }]
       : [];
     return [...summary, { id: `${spec.id}-charts-${period}`, type: 'section', title: 'Графіки', children: charts }];
   };

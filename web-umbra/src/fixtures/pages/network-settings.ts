@@ -1,4 +1,5 @@
 import type { UiChart, UiChartPoint, UiMenuItem, UiNode, UiPage, UiRow, UiTone } from '@awake/contracts';
+import { fixtureCompare } from '../compare';
 import { bucketsAgo, inMinutes } from '../time';
 
 /*
@@ -567,12 +568,14 @@ function trackingPeriodNodes(period: Period, unit: Unit): UiNode[] {
     type: 'row',
     label: title,
     value: String(sumOf(chart.points)),
+    compare: fixtureCompare(`relay-${id}-${period}`, sumOf(chart.points), String, id === 'errors' ? 'down' : 'up'),
   }));
   return [
     {
       id: `relay-tracking-summary-${period}`,
       type: 'section',
       title: 'Підсумок',
+      kind: 'summary',
       children: totals,
     },
     {

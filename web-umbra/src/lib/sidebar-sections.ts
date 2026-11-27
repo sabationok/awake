@@ -1,9 +1,12 @@
 import type { UiPage, UiTree } from '@awake/contracts';
 
-/** Пункт меню і його вкладені сторінки (модуль Awake → Налаштування сесії, Трекінг…). */
+/**
+ * Вузол навігації: сторінка і її дочірні вузли (модуль Awake → Налаштування сесії, Трекінг…).
+ * Дерево рекурсивне: вкладений модуль (Групи під Telegram) — дочірній вузол зі своїми сторінками.
+ */
 export interface SidebarNode {
   page: UiPage;
-  children: UiPage[];
+  children: SidebarNode[];
 }
 
 /** Група пунктів меню, відділена від інших. */
@@ -21,13 +24,12 @@ export function sidebarSections(tree: UiTree | null): SidebarSection[] {
   const modules = tree?.modules ?? [];
   const pagesOf = (id: string) => pages.filter((item) => item.module === id && item.group === 'modules');
   // Модуль з `parent` (Групи → Telegram) не має свого пункту: його сторінки — діти провайдера, після його власних.
-  const nodes = modules
-    .filter((module) => !module.parent)
-    .flatMap((module): SidebarNode[] => {
-      const [page, ...children] = pagesOf(module.id);
-      const nested = modules.filter((child) => child.parent === module.id && !child.disabled).flatMap((child) => pagesOf(child.id));
-      return page ? [{ page, children: [...children, ...nested] }] : [];
-    });
+  const moduleNode = (id: string): SidebarNode[] => {
+    const [page, ...rest] = pagesOf(id);
+    const nested = modules.filter((child) => child.parent === id && !child.disabled).flatMap((child) => moduleNode(child.id));
+    return page ? [{ page, children: [...rest.map((p) => ({ page: p, children: [] })), ...nested] }] : [];
+  };
+  const nodes = modules.filter((module) => !module.parent).flatMap((module) => moduleNode(module.id));
   const system = pages.filter((item) => item.group === 'system').map((page) => ({ page, children: [] }));
   return [
     { key: 'modules', nodes },
@@ -35,7 +37,35 @@ export function sidebarSections(tree: UiTree | null): SidebarSection[] {
   ].filter((section) => section.nodes.length > 0);
 }
 
-/** Усі сторінки меню по порядку: батько, далі його діти. */
+/** Усі сторінки меню по порядку: батько, далі його діти (вглиб). */
 export function sidebarPages(sections: SidebarSection[]): UiPage[] {
-  return sections.flatMap((section) => section.nodes.flatMap((node) => [node.page, ...node.children]));
+  const walk = (node: SidebarNode): UiPage[] => [node.page, ...node.children.flatMap(walk)];
+  return sections.flatMap((section) => section.nodes.flatMap(walk));
+}
+
+/** Шлях від кореня до сторінки `id`: [модуль, …, сама сторінка]; порожній, якщо сторінки немає. */
+export function pathTo(sections: SidebarSection[], id: string | undefined): SidebarNode[] {
+  const find = (node: SidebarNode): SidebarNode[] | null => {
+    if (node.page.id === id) return [node];
+    for (const child of node.children) {
+      const rest = find(child);
+      if (rest) return [node, ...rest];
+    }
+    return null;
+  };
+  for (const node of sections.flatMap((section) => section.nodes)) {
+    const path = find(node);
+    if (path) return path;
+  }
+  return [];
+}
+
+/**
+ * Вкладки поточного рівня. Сторінка з дітьми сама є рівнем: вона і її діти. Листова сторінка — рівень її батька.
+ * Повертає вузол-рівень і вкладки; без дітей на рівні вкладок немає.
+ */
+export function levelOf(path: SidebarNode[]): { level: SidebarNode | null; tabs: UiPage[] } {
+  const current = path[path.length - 1];
+  const level = current?.children.length ? current : (path[path.length - 2] ?? null);
+  return { level, tabs: level ? [level.page, ...level.children.map((child) => child.page)] : [] };
 }

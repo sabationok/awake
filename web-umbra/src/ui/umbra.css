@@ -58,6 +58,21 @@
 .u-section-head { display: flex; align-items: center; gap: 10px; padding: 0 4px; min-height: 26px; }
 .u-section-head h3 { margin: 0; font-size: var(--fs-xs); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-2); flex: 1; min-width: 0; }
 .u-section-foot { margin: 0; padding: 0 4px; font-size: var(--fs-xs); color: var(--fg-3); line-height: 1.5; }
+/* ---------- вкладки сторінки (період) ---------- */
+.u-page-tabs { display: flex; justify-content: center; }
+.u-page-tabs[data-sticky] { position: sticky; top: var(--page-sticky-top, 0px); z-index: 4; padding: 6px 0; }
+
+/* ---------- плитки підсумку ---------- */
+.u-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.u-tile { display: grid; gap: 4px; align-content: start; min-width: 0; padding: 12px 14px; border-radius: var(--r-md); background: var(--surface-1); }
+.u-tile-label { color: var(--fg-3); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+.u-tile-value { font-size: 22px; font-weight: 600; letter-spacing: -.01em; color: var(--fg); }
+.u-tile-compare { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; font-size: var(--fs-xs); color: var(--fg-3); }
+.u-tile-compare[data-tone='good'] { color: var(--ok); }
+.u-tile-compare[data-tone='bad'] { color: var(--danger); }
+.u-tile-compare small { color: var(--fg-3); }
+@media (max-width: 480px) { .u-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
 .u-panel { background: var(--surface-1); border-radius: var(--r-md); min-width: 0; }
 .u-panel > * + * { border-top: 1px solid var(--line); }
 .u-panel:empty { display: none; }

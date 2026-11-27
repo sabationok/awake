@@ -71,6 +71,9 @@ export function PageNodes({ nodes }: { nodes: UiNode[] }) {
       {nodes.map((node) =>
         node.type === 'section' || node.type === 'notice' ? (
           <NodeView key={node.id} node={node} />
+        ) : node.type === 'tabs' ? (
+          // Вкладки верхнього рівня (період статистики): кожна секція вкладки — окремий блок із проміжком, не одна панель.
+          <TabsNode key={node.id} node={node} page />
         ) : (
           <div key={node.id} className="u-panel">
             <NodeView node={node} />
@@ -129,7 +132,11 @@ function SectionNode({ node }: { node: UiSection }) {
           {node.actions?.length ? <SectionActions actions={node.actions} /> : null}
         </div>
       ) : null}
-      {children.length ? (
+      {node.kind === 'summary' && children.every((child) => child.type === 'row') ? (
+        <div className="u-tiles">
+          {children.map((child) => (child.type === 'row' ? <TileNode key={child.id} node={child} /> : null))}
+        </div>
+      ) : children.length ? (
         <div className="u-panel">
           {children.map((child) =>
             child.type === 'section' ? (
@@ -148,6 +155,26 @@ function SectionNode({ node }: { node: UiSection }) {
       ) : null}
       {node.footer ? <p className="u-section-foot">{node.footer}</p> : null}
     </section>
+  );
+}
+
+/** Плитка підсумку: назва, велике число і, якщо агент дав, зміна відносно минулого періоду. */
+function TileNode({ node }: { node: UiRow }) {
+  const compare = node.compare;
+  const delta = compare?.deltaPct;
+  const tone =
+    delta == null || delta === 0 || !compare?.goodWhen ? 'flat' : (delta > 0) === (compare.goodWhen === 'up') ? 'good' : 'bad';
+  return (
+    <div className="u-tile">
+      <span className="u-tile-label">{node.label}</span>
+      <b className="u-tile-value tnum">{node.value ?? '—'}</b>
+      {compare ? (
+        <span className="u-tile-compare tnum" data-tone={tone}>
+          {delta == null ? 'нове' : `${delta > 0 ? '↑' : delta < 0 ? '↓' : ''}${Math.abs(Math.round(delta))}%`}
+          <small>минулий: {compare.previous}</small>
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -332,11 +359,22 @@ function ListNode({ node }: { node: UiList }) {
   );
 }
 
-function TabsNode({ node }: { node: UiTabs }) {
+function TabsNode({ node, page }: { node: UiTabs; page?: boolean }) {
   const demo = useDemo();
   const fallback = node.value ?? node.tabs[0]?.id ?? '';
   const value = node.setting ? demo.setting(node.setting.module, node.setting.key, fallback) : demo.local(node.id, fallback);
   const active = node.tabs.find((tab) => tab.id === value) ?? node.tabs[0];
+  const onChange = (next: string) => (node.setting ? demo.send({ type: 'setting', change: { ...node.setting, value: next } }) : demo.setLocal(node.id, next));
+  if (page) {
+    return (
+      <>
+        <div className="u-page-tabs" data-sticky={node.sticky ? 'true' : undefined}>
+          <Segmented value={active?.id ?? ''} options={node.tabs.map((tab) => ({ value: tab.id, label: tab.label }))} onChange={onChange} />
+        </div>
+        <PageNodes nodes={active?.children ?? []} />
+      </>
+    );
+  }
   return (
     <div>
       <div style={{ padding: 12, display: 'flex', justifyContent: 'center', position: node.sticky ? 'sticky' : undefined, top: 0, zIndex: 2, background: 'var(--surface-1)' }}>

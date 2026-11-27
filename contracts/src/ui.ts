@@ -53,7 +53,22 @@ export interface UiSection extends UiNodeBase {
   status?: UiStatusBadge;
   /** Дії блоку в шапці («Створити»): 1 — кнопка, 2+ — меню «⋯». */
   actions?: UiMenuItem[];
+  /**
+   * Що це за секція за змістом, не як її малювати: `summary` — підсумок статистики, рядки «назва — число».
+   * Вигляд вирішує клієнт своїми компонентами (Web Umbra — сітка плиток); клієнт, що не знає `kind`, малює рядки.
+   */
+  kind?: 'summary';
   children: UiNode[];
+}
+
+/** Порівняння значення рядка з минулим періодом (того ж розміру). */
+export interface UiCompare {
+  /** Значення минулого періоду, вже відформатоване, як `value`. */
+  previous: string;
+  /** Зміна у відсотках від минулого (`+12`, `-40`); null, коли минуле 0. */
+  deltaPct: number | null;
+  /** Який напрям добрий: `up` — більше краще, `down` — менше (помилки). Без нього зміна нейтральна. */
+  goodWhen?: 'up' | 'down';
 }
 
 /**
@@ -98,6 +113,8 @@ export interface UiRow extends UiNodeBase {
   countdownTo?: string | null;
   /** Елемент праворуч замість value. */
   control?: UiControl;
+  /** Порівняння з минулим періодом; опційне. */
+  compare?: UiCompare;
 }
 
 /** Головний рядок стану: крапка, підпис, великий текст або зворотний відлік. */

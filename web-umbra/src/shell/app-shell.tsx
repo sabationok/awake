@@ -1,10 +1,10 @@
 'use client';
 import type { UiPage } from '@awake/contracts';
-import { ChevronRight, CircleAlert, CircleCheck, DatabaseZap, FlaskConical, Info, Menu, Power, TriangleAlert, X, type LucideIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleAlert, CircleCheck, DatabaseZap, FlaskConical, Info, Menu, Power, TriangleAlert, X, type LucideIcon } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { DemoProvider, useDemo, type LogType } from '@/demo/demo-store';
 import type { TreeOrigin, TreeResponse } from '@/app/api/tree/route';
-import { sidebarPages, sidebarSections, type SidebarNode } from '@/lib/sidebar-sections';
+import { levelOf, pathTo, sidebarPages, sidebarSections, type SidebarNode } from '@/lib/sidebar-sections';
 import { PageNodes } from '@/sdui/node-view';
 import { IconButton, SymbolIcon } from '@/ui/primitives';
 
@@ -69,19 +69,31 @@ function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
   const [hash, go] = useHash();
   const [drawer, setDrawer] = useState(false);
   const page = all.find((p) => p.id === hash) ?? all[0];
-  const node = sections.flatMap((s) => s.nodes).find((n) => n.page.id === page?.id || n.children.some((c) => c.id === page?.id));
-  const [open, setOpen] = useState<Set<string>>(() => new Set(node ? [node.page.id] : []));
+  const path = useMemo(() => pathTo(sections, page?.id), [sections, page?.id]);
+  const [open, setOpen] = useState<Set<string>>(() => new Set(path.slice(0, -1).map((n) => n.page.id)));
   const disabledOf = (p: UiPage) => tree.modules.find((m) => m.id === p.module)?.disabled;
+  const pathKey = path.map((n) => n.page.id).join('/');
 
+  // Предки поточної сторінки в меню завжди розгорнуті.
   useEffect(() => {
-    if (node) setOpen((prev) => (prev.has(node.page.id) ? prev : new Set(prev).add(node.page.id)));
-  }, [node]);
+    const ids = pathKey.split('/').slice(0, -1).filter(Boolean);
+    setOpen((prev) => (ids.every((id) => prev.has(id)) ? prev : new Set([...prev, ...ids])));
+  }, [pathKey]);
 
   const navigate = (id: string) => {
     go(id);
     setDrawer(false);
   };
-  const tabs = node && node.children.length ? [node.page, ...node.children] : [];
+  const toggle = (id: string) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const { tabs } = levelOf(path);
+  const crumbs = path.slice(0, -1);
+  const parent = crumbs[crumbs.length - 1];
 
   return (
     <div className="s-app" data-drawer={drawer ? 'open' : undefined}>
@@ -101,22 +113,7 @@ function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
             <div key={section.key} className="s-group">
               {section.key === 'system' ? <span className="s-group-title">Система</span> : null}
               {section.nodes.map((n) => (
-                <NavNode
-                  key={n.page.id}
-                  node={n}
-                  current={page?.id}
-                  open={open.has(n.page.id)}
-                  disabled={disabledOf(n.page)}
-                  onToggle={() =>
-                    setOpen((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(n.page.id)) next.delete(n.page.id);
-                      else next.add(n.page.id);
-                      return next;
-                    })
-                  }
-                  onNavigate={navigate}
-                />
+                <NavNode key={n.page.id} node={n} current={page?.id} path={path} open={open} disabledOf={disabledOf} onToggle={toggle} onNavigate={navigate} />
               ))}
             </div>
           ))}
@@ -134,12 +131,17 @@ function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
       <main className="s-main">
         <header className="s-top">
           <IconButton className="u-icon-btn s-burger" icon={Menu} label="Меню" onClick={() => setDrawer(true)} />
-          {node && node.page.id !== page?.id ? (
-            <span className="s-crumb">
-              {node.page.title}
+          {parent ? (
+            <IconButton className="u-icon-btn s-back" icon={ChevronLeft} label={`Назад: ${parent.page.title}`} onClick={() => navigate(parent.page.id)} />
+          ) : null}
+          {crumbs.map((c) => (
+            <span key={c.page.id} className="s-crumb">
+              <button type="button" onClick={() => navigate(c.page.id)}>
+                {c.page.title}
+              </button>
               <ChevronRight />
             </span>
-          ) : null}
+          ))}
           <h1>{page?.title}</h1>
           {page?.scope === 'local' ? <span className="u-chip">лише в локальній мережі</span> : null}
           <span className="u-badge s-demo-badge" style={{ ['--tone' as string]: live ? 'var(--ok)' : 'var(--accent)' }}>
@@ -165,9 +167,23 @@ function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
   );
 }
 
-function NavNode({ node, current, open, disabled, onToggle, onNavigate }: { node: SidebarNode; current?: string; open: boolean; disabled?: string; onToggle: () => void; onNavigate: (id: string) => void }) {
+interface NavProps {
+  node: SidebarNode;
+  current?: string;
+  path: SidebarNode[];
+  open: Set<string>;
+  disabledOf: (page: UiPage) => string | undefined;
+  onToggle: (id: string) => void;
+  onNavigate: (id: string) => void;
+}
+
+/** Пункт верхнього рівня меню (модуль або системна сторінка). */
+function NavNode({ node, ...props }: NavProps) {
+  const { current, path, open, disabledOf, onToggle, onNavigate } = props;
   const active = node.page.id === current;
-  const inside = node.children.some((c) => c.id === current);
+  const inside = !active && path.some((n) => n.page.id === node.page.id);
+  const disabled = disabledOf(node.page);
+  const expanded = open.has(node.page.id) && !disabled;
   return (
     <Fragment>
       <div className="s-item" data-active={active ? 'true' : undefined} data-inside={inside ? 'true' : undefined} data-disabled={disabled ? 'true' : undefined} title={disabled}>
@@ -176,18 +192,35 @@ function NavNode({ node, current, open, disabled, onToggle, onNavigate }: { node
           <span>{node.page.title}</span>
         </button>
         {node.children.length && !disabled ? (
-          <button type="button" className="s-chevron" aria-label={open ? 'Згорнути' : 'Розгорнути'} aria-expanded={open} onClick={onToggle}>
+          <button type="button" className="s-chevron" aria-label={expanded ? 'Згорнути' : 'Розгорнути'} aria-expanded={expanded} onClick={() => onToggle(node.page.id)}>
             <ChevronRight />
           </button>
         ) : null}
       </div>
-      {open && !disabled
-        ? node.children.map((child) => (
-            <button key={child.id} type="button" className="s-sub" data-active={child.id === current ? 'true' : undefined} onClick={() => onNavigate(child.id)}>
-              {child.title}
-            </button>
-          ))
-        : null}
+      {expanded ? node.children.map((child) => <SubNode key={child.page.id} node={child} depth={1} {...props} />) : null}
+    </Fragment>
+  );
+}
+
+/** Вкладений пункт меню; якщо в нього свої діти (Групи під Telegram), розгортається глибше з відступом. */
+function SubNode({ node, depth, ...props }: NavProps & { depth: number }) {
+  const { current, path, open, onToggle, onNavigate } = props;
+  const active = node.page.id === current;
+  const inside = !active && path.some((n) => n.page.id === node.page.id);
+  const expanded = open.has(node.page.id);
+  return (
+    <Fragment>
+      <div className="s-sub-row" style={{ ['--depth' as string]: depth }}>
+        <button type="button" className="s-sub" data-active={active || inside ? 'true' : undefined} onClick={() => onNavigate(node.page.id)}>
+          {node.page.title}
+        </button>
+        {node.children.length ? (
+          <button type="button" className="s-chevron" aria-label={expanded ? 'Згорнути' : 'Розгорнути'} aria-expanded={expanded} onClick={() => onToggle(node.page.id)}>
+            <ChevronRight />
+          </button>
+        ) : null}
+      </div>
+      {expanded ? node.children.map((child) => <SubNode key={child.page.id} node={child} depth={depth + 1} {...props} />) : null}
     </Fragment>
   );
 }
