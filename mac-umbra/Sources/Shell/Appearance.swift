@@ -8,10 +8,10 @@ struct AppearanceSection: View {
 
     var body: some View {
         UmbraSection("Вигляд") {
-            UmbraPanel {
-                UmbraRow("Тема") {
-                    UmbraSegmented(selection: $theme,
-                                   options: ThemeChoice.allCases.map { UmbraOption($0, $0.label) })
+            Panel {
+                Row("Тема") {
+                    Segmented(selection: $theme,
+                                   options: ThemeChoice.allCases.map { Option($0, $0.label) })
                 }
             }
         }

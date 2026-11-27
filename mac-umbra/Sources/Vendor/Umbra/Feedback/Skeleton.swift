@@ -3,14 +3,14 @@ import SwiftUI
 /// `.u-skel`: a placeholder block in place of content that is not ready yet (a tab's charts on its first frame, data
 /// on its way from the server). It pulses softly; a host shows it in the content area only, never on the control
 /// that asked for the content (a tab or segmented switch moves at once and is never blocked).
-public struct UmbraSkeleton: View {
+public struct Skeleton: View {
     private let height: CGFloat
     private let width: CGFloat?
     private let radius: CGFloat
     @State private var dim = false
     @Environment(\.umbra) private var theme
 
-    public init(height: CGFloat = 14, width: CGFloat? = nil, radius: CGFloat = UmbraRadius.sm) {
+    public init(height: CGFloat = 14, width: CGFloat? = nil, radius: CGFloat = Radius.sm) {
         self.height = height
         self.width = width
         self.radius = radius

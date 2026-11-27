@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Muted paragraph inside a card (`.u-text`): 11 pt, fg-3 or the tone, 12 / 14 pt padding.
-public struct UmbraNote: View {
+public struct Note: View {
     private let text: String
-    private let tone: UmbraTone?
+    private let tone: Tone?
     @Environment(\.umbra) private var theme
 
-    public init(_ text: String, tone: UmbraTone? = nil) {
+    public init(_ text: String, tone: Tone? = nil) {
         self.text = text
         self.tone = tone
     }

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Separator (`.u-sep`): a hairline, or two hairlines with a muted word between them.
-public struct UmbraSeparator: View {
+public struct Separator: View {
     private let word: String?
     @Environment(\.umbra) private var theme
 

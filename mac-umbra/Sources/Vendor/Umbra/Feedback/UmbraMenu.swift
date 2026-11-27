@@ -1,16 +1,16 @@
 import SwiftUI
 
 /// Entry of the «⋯» menu (`.u-menu`). `variant` colours the text (danger / warn / accent).
-public struct UmbraMenuEntry: Identifiable {
+public struct MenuEntry: Identifiable {
     public var id: String
     public var title: String
     public var symbol: String?
-    public var variant: UmbraButtonVariant?
+    public var variant: ButtonVariant?
     public var hint: String?
     public var disabled: Bool
     public var action: () -> Void
 
-    public init(id: String, title: String, symbol: String? = nil, variant: UmbraButtonVariant? = nil,
+    public init(id: String, title: String, symbol: String? = nil, variant: ButtonVariant? = nil,
                 hint: String? = nil, disabled: Bool = false, action: @escaping () -> Void) {
         self.id = id
         self.title = title
@@ -24,20 +24,20 @@ public struct UmbraMenuEntry: Identifiable {
 
 /// «⋯» button that opens the themed menu in a popover.
 public struct UmbraMenuButton: View {
-    private let entries: [UmbraMenuEntry]
+    private let entries: [MenuEntry]
     private let label: String
     private let symbol: String
     @State private var open = false
     @Environment(\.umbra) private var theme
 
-    public init(_ entries: [UmbraMenuEntry], label: String = "Дії", symbol: String = "ellipsis") {
+    public init(_ entries: [MenuEntry], label: String = "Дії", symbol: String = "ellipsis") {
         self.entries = entries
         self.label = label
         self.symbol = symbol
     }
 
     public var body: some View {
-        UmbraIconButton(symbol, label: label) { open.toggle() }
+        IconButton(symbol, label: label) { open.toggle() }
             .popover(isPresented: $open, arrowEdge: .bottom) {
                 UmbraMenu(entries) { open = false }
                     .umbraThemed(theme)
@@ -47,18 +47,18 @@ public struct UmbraMenuButton: View {
 
 /// The menu list itself, for use in your own popover or overlay.
 public struct UmbraMenu: View {
-    private let entries: [UmbraMenuEntry]
+    private let entries: [MenuEntry]
     private let dismiss: () -> Void
 
-    public init(_ entries: [UmbraMenuEntry], dismiss: @escaping () -> Void = {}) {
+    public init(_ entries: [MenuEntry], dismiss: @escaping () -> Void = {}) {
         self.entries = entries
         self.dismiss = dismiss
     }
 
     public var body: some View {
-        UmbraMenuList {
+        MenuList {
             ForEach(entries) { entry in
-                UmbraMenuItemView(title: entry.title, symbol: entry.symbol, variant: entry.variant,
+                MenuItemView(title: entry.title, symbol: entry.symbol, variant: entry.variant,
                                   hint: entry.hint, disabled: entry.disabled) {
                     dismiss()
                     entry.action()
@@ -68,7 +68,7 @@ public struct UmbraMenu: View {
     }
 }
 
-struct UmbraMenuList<Content: View>: View {
+struct MenuList<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     var body: some View {
@@ -78,10 +78,10 @@ struct UmbraMenuList<Content: View>: View {
     }
 }
 
-struct UmbraMenuItemView: View {
+struct MenuItemView: View {
     let title: String
     let symbol: String?
-    let variant: UmbraButtonVariant?
+    let variant: ButtonVariant?
     let hint: String?
     let disabled: Bool
     let action: () -> Void
@@ -115,7 +115,7 @@ struct UmbraMenuItemView: View {
             .frame(height: 32)
             .padding(.horizontal, 10)
             .background(hovering && !disabled ? p.surface3 : .clear,
-                        in: RoundedRectangle(cornerRadius: UmbraRadius.sm, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

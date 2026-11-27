@@ -1,16 +1,16 @@
 import SwiftUI
 
 /// Select (`.u-select`): a raised field with a chevron; the options open in a themed popover list.
-public struct UmbraSelect<Value: Hashable>: View {
+public struct Select<Value: Hashable>: View {
     @Binding private var selection: Value
-    private let options: [UmbraOption<Value>]
+    private let options: [Option<Value>]
     private let label: String
     private let fullWidth: Bool
     @State private var open = false
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.umbra) private var theme
 
-    public init(_ label: String, selection: Binding<Value>, options: [UmbraOption<Value>], fullWidth: Bool = false) {
+    public init(_ label: String, selection: Binding<Value>, options: [Option<Value>], fullWidth: Bool = false) {
         self.label = label
         _selection = selection
         self.options = options
@@ -19,7 +19,7 @@ public struct UmbraSelect<Value: Hashable>: View {
 
     public var body: some View {
         let p = theme.palette
-        let shape = RoundedRectangle(cornerRadius: UmbraRadius.sm, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
         Button {
             open.toggle()
         } label: {
@@ -47,9 +47,9 @@ public struct UmbraSelect<Value: Hashable>: View {
         .opacity(isEnabled ? 1 : 0.45)
         .accessibilityLabel(label)
         .popover(isPresented: $open, arrowEdge: .bottom) {
-            UmbraMenuList {
+            MenuList {
                 ForEach(options) { option in
-                    UmbraMenuItemView(title: option.label,
+                    MenuItemView(title: option.label,
                                       symbol: option.value == selection ? "checkmark" : nil,
                                       variant: nil, hint: nil, disabled: option.disabled) {
                         selection = option.value
@@ -64,7 +64,7 @@ public struct UmbraSelect<Value: Hashable>: View {
 
 extension View {
     /// Popovers start a new environment; carry the theme into them.
-    func umbraThemed(_ theme: UmbraTheme) -> some View {
+    func umbraThemed(_ theme: Theme) -> some View {
         environment(\.umbra, theme)
             .preferredColorScheme(theme.scheme)
             .foregroundStyle(theme.palette.fg)

@@ -6,7 +6,7 @@ import SwiftUI
 ///   layout starts below it.
 /// - `.unifiedToolbar` (variant B, default): tall unified title bar (52 pt). The Umbra header sits in the same row
 ///   as the traffic lights and the sidebar starts under them, like Window Controls Overlay in Web Umbra.
-public enum UmbraWindowChrome: String, CaseIterable, Identifiable {
+public enum WindowChrome: String, CaseIterable, Identifiable {
     case transparentTitlebar, unifiedToolbar
     public var id: String { rawValue }
 
@@ -25,14 +25,14 @@ public enum UmbraWindowChrome: String, CaseIterable, Identifiable {
 public extension View {
     /// Configures the hosting `NSWindow` for the chosen chrome: transparent title bar, full-size content,
     /// hidden title, and for `.unifiedToolbar` an empty unified toolbar that makes the title bar tall.
-    func umbraWindowChrome(_ chrome: UmbraWindowChrome) -> some View {
-        background(UmbraWindowAccessor { window in UmbraWindowChromeApplier.apply(chrome, to: window) })
+    func umbraWindowChrome(_ chrome: WindowChrome) -> some View {
+        background(WindowAccessor { window in WindowChromeApplier.apply(chrome, to: window) })
     }
 }
 
-enum UmbraWindowChromeApplier {
+enum WindowChromeApplier {
     @MainActor
-    static func apply(_ chrome: UmbraWindowChrome, to window: NSWindow) {
+    static func apply(_ chrome: WindowChrome, to window: NSWindow) {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.styleMask.insert(.fullSizeContentView)
@@ -55,7 +55,7 @@ enum UmbraWindowChromeApplier {
 }
 
 /// Hands the hosting `NSWindow` to a closure once the view is in a window, and again if the window changes.
-struct UmbraWindowAccessor: NSViewRepresentable {
+struct WindowAccessor: NSViewRepresentable {
     let configure: @MainActor (NSWindow) -> Void
 
     func makeNSView(context: Context) -> AccessorView {
@@ -84,7 +84,7 @@ struct UmbraWindowAccessor: NSViewRepresentable {
 }
 
 /// Empty area that drags the window, for the header band that replaces the title bar.
-public struct UmbraWindowDragArea: NSViewRepresentable {
+public struct WindowDragArea: NSViewRepresentable {
     public init() {}
 
     public func makeNSView(context: Context) -> NSView { DragView() }

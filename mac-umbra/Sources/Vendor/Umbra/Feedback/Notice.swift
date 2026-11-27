@@ -1,15 +1,15 @@
 import SwiftUI
 
 /// Notice (`.u-notice`): toned block with an icon, a bold title and text.
-public struct UmbraNotice<Actions: View>: View {
-    private let tone: UmbraTone
+public struct Notice<Actions: View>: View {
+    private let tone: Tone
     private let symbol: String
     private let title: String
     private let text: String?
     private let actions: Actions
     @Environment(\.umbra) private var theme
 
-    public init(tone: UmbraTone, symbol: String = "info.circle", title: String, text: String? = nil,
+    public init(tone: Tone, symbol: String = "info.circle", title: String, text: String? = nil,
                 @ViewBuilder actions: () -> Actions) {
         self.tone = tone
         self.symbol = symbol
@@ -21,7 +21,7 @@ public struct UmbraNotice<Actions: View>: View {
     public var body: some View {
         let p = theme.palette
         let color = tone.color(p)
-        let shape = RoundedRectangle(cornerRadius: UmbraRadius.md, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: symbol).font(.system(size: 14, weight: .medium)).foregroundStyle(color)
                 .frame(width: 18, height: 18)
@@ -41,14 +41,14 @@ public struct UmbraNotice<Actions: View>: View {
     }
 }
 
-public extension UmbraNotice where Actions == EmptyView {
-    init(tone: UmbraTone, symbol: String = "info.circle", title: String, text: String? = nil) {
+public extension Notice where Actions == EmptyView {
+    init(tone: Tone, symbol: String = "info.circle", title: String, text: String? = nil) {
         self.init(tone: tone, symbol: symbol, title: title, text: text) { EmptyView() }
     }
 }
 
 /// Empty state (`.u-empty`): centred muted icon and text.
-public struct UmbraEmptyState: View {
+public struct EmptyState: View {
     private let text: String
     private let symbol: String
     @Environment(\.umbra) private var theme

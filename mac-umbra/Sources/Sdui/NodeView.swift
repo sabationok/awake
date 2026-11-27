@@ -51,16 +51,16 @@ struct NodeView: View {
         case .buttons(_, let buttons): ButtonsNode(buttons: buttons, send: send)
         case .list(_, let items, let empty): ListNode(items: items, empty: empty)
         // `<p class="u-section-foot" style="padding: 12px 14px">`
-        case .text(_, let text, let tone): UmbraNote(text, tone: tone?.umbra)
+        case .text(_, let text, let tone): Note(text, tone: tone?.umbra)
         case .tabs(_, let tabs, let value, let setting):
             TabsNode(tabs: tabs, value: value, setting: setting, send: send, page: false)
         case .timer(let t): TimerNode(node: t)
         case .chart(let c):
-            if skeleton { UmbraChartSkeleton(c.title) } else { ChartNode(node: c).equatable() }
+            if skeleton { ChartSkeleton(c.title) } else { ChartNode(node: c).equatable() }
         case .item(let i): ItemNode(node: i, send: send)
         case .notice(let n): NoticeNode(node: n, send: send)
         // `.u-sep`, padding 10 14
-        case .separator(_, let word): UmbraSeparator(word)
+        case .separator(_, let word): Separator(word)
         case .qr(_, let value, _): QrNode(value: value)
         case .unknown: EmptyView()
         }
@@ -83,7 +83,7 @@ struct PageNodes: View {
                     // Page-level tabs (stats period): each section of the tab is its own block, not one panel.
                     TabsNode(tabs: tabs, value: value, setting: setting, send: send, page: true)
                 default:
-                    UmbraPanel { NodeView(node: node, send: send) }
+                    Panel { NodeView(node: node, send: send) }
                 }
             }
         }
@@ -119,7 +119,7 @@ struct MenuOf: View {
 
     var body: some View {
         UmbraMenuButton(items.map { item in
-            UmbraMenuEntry(id: item.id, title: item.label, symbol: item.icon?.symbol, variant: item.variant.umbra,
+            MenuEntry(id: item.id, title: item.label, symbol: item.icon?.symbol, variant: item.variant.umbra,
                            hint: item.hint, disabled: item.disabled ?? false) { runner.run(fromMenuItem(item), send: send) }
         })
     }
@@ -143,7 +143,7 @@ struct SectionNode: View {
         if hasHead {
             UmbraSection(node.title, footer: node.footer) { content } trailing: {
                 HStack(spacing: 8) {
-                    if let s = node.status { UmbraBadge(s.label, tone: s.tone.umbra, pulse: s.pulse ?? false) }
+                    if let s = node.status { Badge(s.label, tone: s.tone.umbra, pulse: s.pulse ?? false) }
                     if let actions = node.actions, !actions.isEmpty { SectionActions(actions: actions, send: send) }
                 }
             }
@@ -155,9 +155,9 @@ struct SectionNode: View {
     @ViewBuilder
     private var content: some View {
         if let tiles {
-            UmbraTiles { ForEach(tiles, id: \.id) { TileNode(node: $0) } }
+            Tiles { ForEach(tiles, id: \.id) { TileNode(node: $0) } }
         } else if !node.children.isEmpty {
-            UmbraPanel {
+            Panel {
                 ForEach(node.children) { child in
                     switch child {
                     case .section: NodeView(node: child, send: send).padding(12)
@@ -175,8 +175,8 @@ struct TileNode: View {
     let node: UiRow
 
     var body: some View {
-        UmbraTile(value: node.value ?? "—", label: node.label, compare: node.compare.map {
-            UmbraCompare(deltaPct: $0.deltaPct, previous: $0.previous, goodWhen: $0.goodWhen.map { $0 == .up ? .up : .down })
+        Tile(value: node.value ?? "—", label: node.label, compare: node.compare.map {
+            Compare(deltaPct: $0.deltaPct, previous: $0.previous, goodWhen: $0.goodWhen.map { $0 == .up ? .up : .down })
         })
     }
 }
@@ -198,13 +198,13 @@ struct ControlView: View {
                 else if let action = next ? on : off { send(.action(action)) }
             })).toggleStyle(.umbra).labelsHidden().disabled(disabled)
         case .select(let value, let options, let disabled, let setting, let action):
-            UmbraSelect(label, selection: Binding(get: { value }, set: { next in
+            Select(label, selection: Binding(get: { value }, set: { next in
                 if let setting { send(.setting(module: setting.module, key: setting.key, value: .string(next))) }
                 else if var action {
                     action.params = (action.params ?? [:]).merging(["value": .string(next)]) { $1 }
                     send(.action(action))
                 }
-            }), options: options.map { UmbraOption($0.value, $0.label, disabled: $0.disabled ?? false) })
+            }), options: options.map { Option($0.value, $0.label, disabled: $0.disabled ?? false) })
             .disabled(disabled)
         case .slider(let value, let min, let max, let step, let disabled, let action):
             SliderControl(label: label, value: value, range: min...max, step: step, action: action, send: send)
@@ -254,10 +254,10 @@ struct RowNode: View {
         Ticking(active: node.countdownTo != nil) { now in
             let hint = [node.hint, remaining(node.countdownTo, now)].compactMap { $0 }.filter { !$0.isEmpty }
                 .joined(separator: " · ")
-            UmbraRow(node.label, hint: hint.isEmpty ? nil : hint, value: node.control == nil ? node.value : nil,
+            Row(node.label, hint: hint.isEmpty ? nil : hint, value: node.control == nil ? node.value : nil,
                      symbol: node.icon?.symbol, tone: node.icon?.tone.umbra, prominent: node.prominent ?? false) {
                 HStack(spacing: 10) {
-                    if let dot = node.dot { UmbraDot(dot.tone.umbra, pulse: dot.pulse ?? false) }
+                    if let dot = node.dot { Dot(dot.tone.umbra, pulse: dot.pulse ?? false) }
                     if let control = node.control { ControlView(id: node.id, control: control, label: node.label, send: send) }
                 }
             }
@@ -271,9 +271,9 @@ struct StatusNode: View {
 
     var body: some View {
         Ticking(active: node.countdownTo != nil) { now in
-            UmbraRow(node.label, hint: node.hint, value: remaining(node.countdownTo, now) ?? node.value,
+            Row(node.label, hint: node.hint, value: remaining(node.countdownTo, now) ?? node.value,
                      symbol: node.icon?.symbol, tone: node.icon?.tone.umbra ?? node.tone.umbra, prominent: true) {
-                if node.icon == nil { UmbraDot(node.tone.umbra, pulse: node.pulse ?? false) }
+                if node.icon == nil { Dot(node.tone.umbra, pulse: node.pulse ?? false) }
             }
         }
     }
@@ -313,7 +313,7 @@ struct ButtonsNode: View {
     @EnvironmentObject private var runner: RunAction
 
     var body: some View {
-        UmbraFitGrid(minimum: 120, spacing: 8) {
+        FitGrid(minimum: 120, spacing: 8) {
             ForEach(buttons) { button in
                 Button { runner.run(fromButton(button), send: send) } label: {
                     Text(button.label).frame(maxWidth: .infinity)
@@ -333,10 +333,10 @@ struct ListNode: View {
 
     var body: some View {
         if items.isEmpty {
-            UmbraEmptyState(empty ?? "Поки порожньо", symbol: "tray")
+            EmptyState(empty ?? "Поки порожньо", symbol: "tray")
         } else {
-            UmbraDivided {
-                ForEach(items) { UmbraListRow($0.label, subtitle: $0.hint, trailing: $0.value ?? "") }
+            Divided {
+                ForEach(items) { ListRow($0.label, subtitle: $0.hint, trailing: $0.value ?? "") }
             }
         }
     }
@@ -352,7 +352,7 @@ struct TabsNode: View {
     /// The segment the thumb shows and whose content is drawn: set at once, the thumb animates.
     @State private var value: String
     /// The tab whose charts are built. Lags `value` by one frame: on the first frame the new tab draws its sections
-    /// with `UmbraChartSkeleton` in place of the charts, so the switch never waits for the chart build.
+    /// with `ChartSkeleton` in place of the charts, so the switch never waits for the chart build.
     @State private var built: String
 
     init(tabs: [UiTab], value: String?, setting: UiSettingRef?, send: @escaping SendEvent, page: Bool) {
@@ -381,9 +381,9 @@ struct TabsNode: View {
     }
 
     private var segmented: some View {
-        UmbraSegmented(selection: Binding(get: { tabs.contains { $0.id == value } ? value : tabs.first?.id ?? "" },
+        Segmented(selection: Binding(get: { tabs.contains { $0.id == value } ? value : tabs.first?.id ?? "" },
                                           set: select),
-                       options: tabs.map { UmbraOption($0.id, $0.label) })
+                       options: tabs.map { Option($0.id, $0.label) })
         .fixedSize()
         .frame(maxWidth: .infinity)
     }
@@ -400,7 +400,7 @@ struct TabsNode: View {
                 if let next = note.object as? String, tabs.contains(where: { $0.id == next }) { show(next) }
             }
         } else {
-            UmbraDivided {
+            Divided {
                 segmented.padding(12)
                 ForEach(active?.children ?? []) { NodeView(node: $0, send: send) }
                     .environment(\.sduiSkeleton, pending)
@@ -420,7 +420,7 @@ struct TimerNode: View {
         Ticking(active: node.until != nil) { now in
             let left = remaining(node.until, now)
             let fraction = left == nil ? nil : fraction(now)
-            UmbraBigValue(left ?? node.value, caption: node.caption, tone: node.tone?.umbra,
+            BigValue(left ?? node.value, caption: node.caption, tone: node.tone?.umbra,
                           color: fraction.map(color), progress: fraction)
         }
     }
@@ -476,7 +476,7 @@ struct ChartNode: View, Equatable {
 
     var body: some View {
         UmbraChart(node.title,
-                   points: node.points.map { UmbraChartPoint(start: $0.start, value: $0.value, series: $0.series ?? "") },
+                   points: node.points.map { ChartPoint(start: $0.start, value: $0.value, series: $0.series ?? "") },
                    tone: node.tone?.umbra ?? .accent,
                    tones: (node.tones ?? [:]).mapValues(\.umbra),
                    limit: node.limit,
@@ -493,11 +493,11 @@ struct ItemNode: View {
     let send: SendEvent
 
     var body: some View {
-        UmbraItem(node.title, symbol: node.icon?.symbol, tone: node.icon?.tone.umbra, copy: node.copy?.value,
+        Item(node.title, symbol: node.icon?.symbol, tone: node.icon?.tone.umbra, copy: node.copy?.value,
                   copyCaption: node.copy?.label, comment: node.comment) {
-            ForEach(Array((node.tags ?? []).enumerated()), id: \.offset) { UmbraChip($0.element.label, tone: $0.element.tone?.umbra) }
+            ForEach(Array((node.tags ?? []).enumerated()), id: \.offset) { Chip($0.element.label, tone: $0.element.tone?.umbra) }
         } trailing: {
-            if let s = node.status { UmbraBadge(s.label, tone: s.tone.umbra, pulse: s.pulse ?? false) }
+            if let s = node.status { Badge(s.label, tone: s.tone.umbra, pulse: s.pulse ?? false) }
             if let control = node.control { ControlView(id: node.id, control: control, label: node.title, send: send) }
             if let actions = node.actions, !actions.isEmpty { SectionActions(actions: actions, send: send) }
         }
@@ -512,10 +512,10 @@ struct NoticeNode: View {
     let send: SendEvent
 
     var body: some View {
-        UmbraNotice(tone: node.variant.tone, symbol: node.icon?.symbol ?? symbol,
+        Notice(tone: node.variant.tone, symbol: node.icon?.symbol ?? symbol,
                     title: node.title ?? node.text, text: node.title == nil ? nil : node.text) {
             if let dismiss = node.dismiss {
-                UmbraIconButton("xmark", label: "Закрити") { send(.action(dismiss)) }
+                IconButton("xmark", label: "Закрити") { send(.action(dismiss)) }
             }
         }
     }
@@ -533,7 +533,7 @@ struct NoticeNode: View {
 /// enlarged in a dialog. Here the code is real: the Mac is the scope that shows it.
 struct QrNode: View {
     let value: String
-    var body: some View { UmbraQrCard(value) }
+    var body: some View { QrCard(value) }
 }
 
 /// True while a tab's content is on its first frame: heavy nodes (charts) draw a skeleton of their size instead.

@@ -13,7 +13,7 @@ public enum UmbraFont {
     public static let caps = Font.system(size: 11, weight: .semibold)
 }
 
-public enum UmbraRadius {
+public enum Radius {
     public static let sm: CGFloat = 6
     public static let md: CGFloat = 10
     public static let lg: CGFloat = 14
@@ -29,7 +29,7 @@ public enum UmbraLayout {
     public static let headerHeight: CGFloat = 52
 }
 
-public enum UmbraMotion {
+public enum Motion {
     /// `--ease: cubic-bezier(0.2, 0.7, 0.2, 1)`.
     public static let ease = Animation.timingCurve(0.2, 0.7, 0.2, 1, duration: 0.2)
 }

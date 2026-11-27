@@ -23,7 +23,7 @@ public struct UmbraTextField: View {
 
     public var body: some View {
         let p = theme.palette
-        let shape = RoundedRectangle(cornerRadius: UmbraRadius.sm, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
         let border = error != nil ? p.danger : focused ? p.accent : p.lineStrong
         VStack(alignment: .leading, spacing: 6) {
             Text(label).font(UmbraFont.xs).foregroundStyle(p.fg3)

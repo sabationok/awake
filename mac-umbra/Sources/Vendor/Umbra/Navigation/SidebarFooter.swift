@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The small muted line at the bottom of the sidebar (app name and variant, version).
-public struct UmbraSidebarFooter: View {
+public struct SidebarFooter: View {
     private let text: String
     @Environment(\.umbra) private var theme
 
@@ -17,14 +17,14 @@ public struct UmbraSidebarFooter: View {
 }
 
 /// Where the data comes from (`.s-demo`): an accent-tinted plaque at the bottom of the sidebar, icon and two lines.
-public struct UmbraSidebarSource: View {
+public struct SidebarSource: View {
     private let symbol: String
     private let title: String
     private let detail: String?
-    private let tone: UmbraTone
+    private let tone: Tone
     @Environment(\.umbra) private var theme
 
-    public init(_ title: String, detail: String? = nil, symbol: String = "flask", tone: UmbraTone = .accent) {
+    public init(_ title: String, detail: String? = nil, symbol: String = "flask", tone: Tone = .accent) {
         self.title = title
         self.detail = detail
         self.symbol = symbol

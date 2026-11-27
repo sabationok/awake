@@ -1,50 +1,50 @@
 import SwiftUI
 
 /// Button variants of `.u-btn`: accent (main action), default, ghost, warn, danger.
-public enum UmbraButtonVariant: String, CaseIterable {
+public enum ButtonVariant: String, CaseIterable {
     case accent, `default`, ghost, warn, danger
 }
 
-public enum UmbraButtonSize {
+public enum ButtonSize {
     /// `large`: 44 pt, for action buttons that span a card (SDUI `buttons`).
     case large, regular, small
 }
 
 /// `Button("Увімкнути") { … }.buttonStyle(.umbra(.accent))`. Use `Label` for an icon.
 public struct UmbraButtonStyle: ButtonStyle {
-    public var variant: UmbraButtonVariant
-    public var size: UmbraButtonSize
+    public var variant: ButtonVariant
+    public var size: ButtonSize
 
-    public init(_ variant: UmbraButtonVariant = .default, size: UmbraButtonSize = .regular) {
+    public init(_ variant: ButtonVariant = .default, size: ButtonSize = .regular) {
         self.variant = variant
         self.size = size
     }
 
     public func makeBody(configuration: Configuration) -> some View {
-        UmbraButtonBody(configuration: configuration, variant: variant, size: size)
+        ButtonBody(configuration: configuration, variant: variant, size: size)
     }
 }
 
 public extension ButtonStyle where Self == UmbraButtonStyle {
-    static func umbra(_ variant: UmbraButtonVariant = .default, size: UmbraButtonSize = .regular) -> UmbraButtonStyle {
+    static func umbra(_ variant: ButtonVariant = .default, size: ButtonSize = .regular) -> UmbraButtonStyle {
         UmbraButtonStyle(variant, size: size)
     }
 }
 
-private struct UmbraButtonBody: View {
+private struct ButtonBody: View {
     let configuration: ButtonStyle.Configuration
-    let variant: UmbraButtonVariant
-    let size: UmbraButtonSize
+    let variant: ButtonVariant
+    let size: ButtonSize
     @State private var hovering = false
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.umbra) private var theme
 
     var body: some View {
         let p = theme.palette
-        let shape = RoundedRectangle(cornerRadius: UmbraRadius.sm, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
         let active = hovering || configuration.isPressed
         configuration.label
-            .labelStyle(UmbraButtonLabelStyle())
+            .labelStyle(ButtonLabelStyle())
             .font(.system(size: size == .small ? 11 : size == .large ? 13 : 12, weight: .semibold))
             .lineLimit(1)
             .padding(.horizontal, size == .small ? 10 : size == .large ? 16 : 14)
@@ -58,7 +58,7 @@ private struct UmbraButtonBody: View {
             .animation(.easeOut(duration: 0.15), value: active)
     }
 
-    private func foreground(_ p: UmbraPalette) -> Color {
+    private func foreground(_ p: Palette) -> Color {
         switch variant {
         case .accent: p.accentInk
         case .default: p.fg
@@ -68,7 +68,7 @@ private struct UmbraButtonBody: View {
         }
     }
 
-    private func background(_ p: UmbraPalette, active: Bool) -> Color {
+    private func background(_ p: Palette, active: Bool) -> Color {
         switch variant {
         case .accent: active ? p.accent2 : p.accent
         case .default: active ? p.surface3 : p.surface2
@@ -78,7 +78,7 @@ private struct UmbraButtonBody: View {
         }
     }
 
-    private func border(_ p: UmbraPalette) -> Color {
+    private func border(_ p: Palette) -> Color {
         switch variant {
         case .accent, .ghost: .clear
         case .default: p.lineStrong
@@ -88,7 +88,7 @@ private struct UmbraButtonBody: View {
     }
 }
 
-private struct UmbraButtonLabelStyle: LabelStyle {
+private struct ButtonLabelStyle: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 7) {
             configuration.icon
@@ -100,7 +100,7 @@ private struct UmbraButtonLabelStyle: LabelStyle {
 }
 
 /// Square icon-only button (`.u-icon-btn`). The label goes to help and accessibility.
-public struct UmbraIconButton: View {
+public struct IconButton: View {
     private let symbol: String
     private let label: String
     private let action: () -> Void
@@ -121,7 +121,7 @@ public struct UmbraIconButton: View {
                 .font(.system(size: 14, weight: .medium))
                 .frame(width: 30, height: 30)
                 .foregroundStyle(hovering ? p.fg : p.fg2)
-                .background(hovering ? p.surface2 : .clear, in: RoundedRectangle(cornerRadius: UmbraRadius.sm))
+                .background(hovering ? p.surface2 : .clear, in: RoundedRectangle(cornerRadius: Radius.sm))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

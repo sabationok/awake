@@ -30,8 +30,8 @@ struct AppShell: View {
         let crumbs = Array(path.dropLast())
         let parent = crumbs.last
 
-        UmbraShell(chrome: .unifiedToolbar) {
-            UmbraSidebar(groups: navGroups(sections), selection: $hash) {
+        Shell(chrome: .unifiedToolbar) {
+            Sidebar(groups: navGroups(sections), selection: $hash) {
                 host
             } footer: {
                 // The dev indicator's floating button sits bottom-left (the kit's default corner, no API to change
@@ -39,16 +39,16 @@ struct AppShell: View {
                 source.padding(.bottom, AppInfo.devBuild(options) == nil ? 0 : 52)
             }
         } header: { ctx in
-            UmbraHeader(page?.title ?? "MaControl",
-                        crumbs: crumbs.map { UmbraCrumb(id: $0.page.id, title: $0.page.title) },
+            Header(page?.title ?? "MaControl",
+                        crumbs: crumbs.map { Crumb(id: $0.page.id, title: $0.page.title) },
                         onBack: parent.map { p in { hash = p.page.id } },
                         onMenu: ctx.compact ? ctx.toggleSidebar : nil,
                         onCrumb: { hash = $0.id },
                         chip: page?.scope == .local ? "лише в локальній мережі" : nil)
         } bar: { _ in
             if !tabs.isEmpty, let id = page?.id {
-                UmbraNavTabs(selection: Binding(get: { id }, set: { hash = $0 }),
-                             options: tabs.map { UmbraOption($0.id, $0.title) })
+                NavTabs(selection: Binding(get: { id }, set: { hash = $0 }),
+                             options: tabs.map { Option($0.id, $0.title) })
             }
         } content: { _ in
             VStack(alignment: .leading, spacing: 18) {
@@ -59,14 +59,14 @@ struct AppShell: View {
                 if let page {
                     PageNodes(nodes: page.children, send: server.send)
                 } else if server.connected {
-                    UmbraEmptyState("Чекаю дерево від сервера…", symbol: "hourglass")
+                    EmptyState("Чекаю дерево від сервера…", symbol: "hourglass")
                 }
             }
             .id(page?.id)
         }
         .environmentObject(runner)
         .runActionDialog(runner)
-        .umbraTheme(UmbraThemeMode(rawValue: theme.rawValue) ?? .dark,
+        .umbraTheme(ThemeMode(rawValue: theme.rawValue) ?? .dark,
                     translucent: !options.render || options.translucent)
         .onChange(of: theme) { NSApp.appearance = $0.appearance }
         .umbraVibrancyPreview(options.wallpaper.flatMap { NSImage(contentsOfFile: $0) })
@@ -81,7 +81,7 @@ struct AppShell: View {
     /// `.s-host`: app title, then «host · онлайн/офлайн»; the icon is accent while the Mac is online.
     private var host: some View {
         let online = server.connected && (server.tree?.app.online ?? false)
-        return UmbraSidebarHost(server.tree?.app.title ?? "MaControl",
+        return SidebarHost(server.tree?.app.title ?? "MaControl",
                                 subtitle: "\(server.tree?.app.host ?? "Mac") · \(online ? "онлайн" : "офлайн")",
                                 online: online)
     }
@@ -92,29 +92,29 @@ struct AppShell: View {
     private var source: some View {
         switch server.origin {
         case .socket where server.connected:
-            UmbraSidebarSource("Живі дані · server.sock", detail: "Дії йдуть на сервер", symbol: "bolt.horizontal",
+            SidebarSource("Живі дані · server.sock", detail: "Дії йдуть на сервер", symbol: "bolt.horizontal",
                                tone: .green)
         case .socket:
-            UmbraSidebarSource("Сервер недоступний", detail: "Перепідключення щосекунди", symbol: "bolt.horizontal",
+            SidebarSource("Сервер недоступний", detail: "Перепідключення щосекунди", symbol: "bolt.horizontal",
                                tone: .red)
         case .file:
-            UmbraSidebarSource("Знімок дерева з файлу", detail: "Дії не надсилаються на сервер")
+            SidebarSource("Знімок дерева з файлу", detail: "Дії не надсилаються на сервер")
         }
     }
 
     /// `NavNode` / `SubNode`: a disabled module stays visible, greyed, with the reason as a hint; it does not expand.
-    private func navGroups(_ sections: [SidebarSection]) -> [UmbraSidebarGroup] {
+    private func navGroups(_ sections: [SidebarSection]) -> [SidebarGroup] {
         let disabledOf = Dictionary((server.tree?.modules ?? []).compactMap { m in m.disabled.map { (m.id, $0) } },
                                     uniquingKeysWith: { a, _ in a })
-        func item(_ node: SidebarNode, top: Bool) -> UmbraSidebarItem {
+        func item(_ node: SidebarNode, top: Bool) -> SidebarItem {
             let disabled = top ? disabledOf[node.page.module] : nil
-            return UmbraSidebarItem(id: node.page.id, title: node.page.title,
+            return SidebarItem(id: node.page.id, title: node.page.title,
                                     symbol: top ? node.page.icon.symbol : nil,
                                     disabled: disabled != nil, hint: disabled,
                                     children: disabled == nil ? node.children.map { item($0, top: false) } : [])
         }
         return sections.map { section in
-            UmbraSidebarGroup(id: section.key, title: section.key == "system" ? "Система" : nil,
+            SidebarGroup(id: section.key, title: section.key == "system" ? "Система" : nil,
                               items: section.nodes.map { item($0, top: true) })
         }
     }
@@ -126,12 +126,12 @@ struct SourceBanner: View {
 
     var body: some View {
         if !server.connected {
-            UmbraNotice(tone: .yellow, symbol: "externaldrive.badge.exclamationmark",
+            Notice(tone: .yellow, symbol: "externaldrive.badge.exclamationmark",
                         title: server.tree == nil ? "Сервер не відповідає"
                             : "Сервер не відповідає — показую останнє отримане дерево",
                         text: server.problem ?? "Перепідключення щосекунди…")
         } else if let problem = server.problem {
-            UmbraNotice(tone: .yellow, symbol: "exclamationmark.triangle", title: "Дерево не розібралось", text: problem)
+            Notice(tone: .yellow, symbol: "exclamationmark.triangle", title: "Дерево не розібралось", text: problem)
         }
     }
 }

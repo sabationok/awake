@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// What the shell tells the header and content: whether the layout is compact and how to open the sidebar.
-public struct UmbraShellContext {
+public struct ShellContext {
     public var compact: Bool
     public var toggleSidebar: () -> Void
 }
@@ -14,22 +14,22 @@ public struct UmbraShellContext {
 /// Content column as `.s-main`: the header band (`.s-top`, 28 pt sides, no rule under it), an optional full-width
 /// `bar` under it (`.s-tabs`: page NavTabs), then the scrolling content (`.s-content`: 22 / 28 pt padding, at most
 /// 760 pt wide INCLUDING the padding, centred in the column: `margin-inline: auto`).
-public struct UmbraShell<Sidebar: View, Header: View, Bar: View, Content: View>: View {
-    private let chrome: UmbraWindowChrome
-    private let glow: UmbraBackdrop.Glow
+public struct Shell<Sidebar: View, Header: View, Bar: View, Content: View>: View {
+    private let chrome: WindowChrome
+    private let glow: Backdrop.Glow
     private let sidebar: Sidebar
-    private let header: (UmbraShellContext) -> Header
-    private let bar: (UmbraShellContext) -> Bar
-    private let content: (UmbraShellContext) -> Content
+    private let header: (ShellContext) -> Header
+    private let bar: (ShellContext) -> Bar
+    private let content: (ShellContext) -> Content
     @State private var sidebarOpen = false
     @Environment(\.umbra) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(chrome: UmbraWindowChrome = .unifiedToolbar, glow: UmbraBackdrop.Glow = .none,
+    public init(chrome: WindowChrome = .unifiedToolbar, glow: Backdrop.Glow = .none,
                 @ViewBuilder sidebar: () -> Sidebar,
-                @ViewBuilder header: @escaping (UmbraShellContext) -> Header,
-                @ViewBuilder bar: @escaping (UmbraShellContext) -> Bar,
-                @ViewBuilder content: @escaping (UmbraShellContext) -> Content) {
+                @ViewBuilder header: @escaping (ShellContext) -> Header,
+                @ViewBuilder bar: @escaping (ShellContext) -> Bar,
+                @ViewBuilder content: @escaping (ShellContext) -> Content) {
         self.chrome = chrome
         self.glow = glow
         self.sidebar = sidebar()
@@ -41,11 +41,11 @@ public struct UmbraShell<Sidebar: View, Header: View, Bar: View, Content: View>:
     public var body: some View {
         GeometryReader { geo in
             let compact = geo.size.width < UmbraLayout.compactWidth
-            let context = UmbraShellContext(compact: compact) {
-                withAnimation(reduceMotion ? nil : UmbraMotion.ease) { sidebarOpen.toggle() }
+            let context = ShellContext(compact: compact) {
+                withAnimation(reduceMotion ? nil : Motion.ease) { sidebarOpen.toggle() }
             }
             ZStack(alignment: .topLeading) {
-                UmbraBackdrop(glow: glow)
+                Backdrop(glow: glow)
                 if compact {
                     compactLayout(context)
                 } else {
@@ -68,7 +68,7 @@ public struct UmbraShell<Sidebar: View, Header: View, Bar: View, Content: View>:
     private var sidebarColumn: some View {
         VStack(spacing: 0) {
             // The band where the traffic lights live; empty and draggable.
-            UmbraWindowDragArea().frame(height: chrome.titlebarHeight)
+            WindowDragArea().frame(height: chrome.titlebarHeight)
             sidebar
         }
         .frame(width: UmbraLayout.sidebarWidth)
@@ -82,10 +82,10 @@ public struct UmbraShell<Sidebar: View, Header: View, Bar: View, Content: View>:
         }
     }
 
-    private func contentColumn(_ context: UmbraShellContext, leadingInset: CGFloat) -> some View {
+    private func contentColumn(_ context: ShellContext, leadingInset: CGFloat) -> some View {
         VStack(spacing: 0) {
             if chrome == .transparentTitlebar {
-                UmbraWindowDragArea().frame(height: chrome.titlebarHeight)
+                WindowDragArea().frame(height: chrome.titlebarHeight)
             }
             let side: CGFloat = context.compact ? 16 : 28
             header(context)
@@ -106,9 +106,9 @@ public struct UmbraShell<Sidebar: View, Header: View, Bar: View, Content: View>:
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
-    private func compactLayout(_ context: UmbraShellContext) -> some View {
+    private func compactLayout(_ context: ShellContext) -> some View {
         // Chrome B: the header shares the row with the traffic lights, so it starts after them.
-        let inset = chrome == .unifiedToolbar ? max(UmbraWindowChrome.trafficLightsWidth - 16, 0) : 0
+        let inset = chrome == .unifiedToolbar ? max(WindowChrome.trafficLightsWidth - 16, 0) : 0
         return ZStack(alignment: .leading) {
             contentColumn(context, leadingInset: inset)
             if sidebarOpen {
@@ -125,11 +125,11 @@ public struct UmbraShell<Sidebar: View, Header: View, Bar: View, Content: View>:
     }
 }
 
-public extension UmbraShell where Bar == EmptyView {
-    init(chrome: UmbraWindowChrome = .unifiedToolbar, glow: UmbraBackdrop.Glow = .none,
+public extension Shell where Bar == EmptyView {
+    init(chrome: WindowChrome = .unifiedToolbar, glow: Backdrop.Glow = .none,
          @ViewBuilder sidebar: () -> Sidebar,
-         @ViewBuilder header: @escaping (UmbraShellContext) -> Header,
-         @ViewBuilder content: @escaping (UmbraShellContext) -> Content) {
+         @ViewBuilder header: @escaping (ShellContext) -> Header,
+         @ViewBuilder content: @escaping (ShellContext) -> Content) {
         self.init(chrome: chrome, glow: glow, sidebar: sidebar, header: header, bar: { _ in EmptyView() },
                   content: content)
     }

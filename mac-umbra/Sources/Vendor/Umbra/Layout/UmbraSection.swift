@@ -54,7 +54,7 @@ public extension UmbraSection where Trailing == EmptyView {
 }
 
 /// Panel (`.u-panel`): one surface with hairlines between its direct children.
-public struct UmbraPanel<Content: View>: View {
+public struct Panel<Content: View>: View {
     private let content: Content
     @Environment(\.umbra) private var theme
 
@@ -63,16 +63,16 @@ public struct UmbraPanel<Content: View>: View {
     }
 
     public var body: some View {
-        UmbraDivided { content }
+        Divided { content }
             .frame(maxWidth: .infinity, alignment: .leading)
             .umbraSurface(.panel)
-            .clipShape(RoundedRectangle(cornerRadius: UmbraRadius.md, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 }
 
 /// A plain stack with a hairline between its direct children, for a block inside a panel that has its own parts
 /// (a tab bar over the active tab's rows, a list).
-public struct UmbraDivided<Content: View>: View {
+public struct Divided<Content: View>: View {
     private let content: Content
     @Environment(\.umbra) private var theme
 
@@ -81,12 +81,12 @@ public struct UmbraDivided<Content: View>: View {
     }
 
     public var body: some View {
-        _VariadicView.Tree(UmbraDividedLayout(line: theme.palette.line)) { content }
+        _VariadicView.Tree(DividedLayout(line: theme.palette.line)) { content }
     }
 }
 
 /// Puts a hairline between each pair of children (`.u-panel > * + * { border-top }`).
-struct UmbraDividedLayout: _VariadicView_MultiViewRoot {
+struct DividedLayout: _VariadicView_MultiViewRoot {
     let line: Color
 
     @ViewBuilder

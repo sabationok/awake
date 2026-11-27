@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// An option of a segmented control or a select.
-public struct UmbraOption<Value: Hashable>: Identifiable {
+public struct Option<Value: Hashable>: Identifiable {
     public var value: Value
     public var label: String
     public var disabled: Bool
@@ -15,13 +15,13 @@ public struct UmbraOption<Value: Hashable>: Identifiable {
 }
 
 /// Segmented control (`.u-seg`): a track with the selected segment raised.
-public struct UmbraSegmented<Value: Hashable>: View {
+public struct Segmented<Value: Hashable>: View {
     @Binding private var selection: Value
-    private let options: [UmbraOption<Value>]
+    private let options: [Option<Value>]
     @Environment(\.umbra) private var theme
     @Namespace private var thumb
 
-    public init(selection: Binding<Value>, options: [UmbraOption<Value>]) {
+    public init(selection: Binding<Value>, options: [Option<Value>]) {
         _selection = selection
         self.options = options
     }
@@ -55,8 +55,8 @@ public struct UmbraSegmented<Value: Hashable>: View {
             }
         }
         .padding(2)
-        .background(p.surface1, in: RoundedRectangle(cornerRadius: UmbraRadius.sm, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: UmbraRadius.sm, style: .continuous).strokeBorder(p.line))
-        .animation(UmbraMotion.ease, value: selection)
+        .background(p.surface1, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous).strokeBorder(p.line))
+        .animation(Motion.ease, value: selection)
     }
 }

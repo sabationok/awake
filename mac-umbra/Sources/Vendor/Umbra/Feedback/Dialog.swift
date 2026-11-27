@@ -11,7 +11,7 @@ public extension View {
     ) -> some View {
         overlay {
             if isPresented.wrappedValue {
-                UmbraDialogOverlay(isPresented: isPresented, title: title, content: content, actions: actions)
+                DialogOverlay(isPresented: isPresented, title: title, content: content, actions: actions)
                     .transition(.opacity)
             }
         }
@@ -19,7 +19,7 @@ public extension View {
     }
 }
 
-struct UmbraDialogOverlay<Body: View, Actions: View>: View {
+struct DialogOverlay<Body: View, Actions: View>: View {
     @Binding var isPresented: Bool
     let title: String
     let content: () -> Body
@@ -47,7 +47,7 @@ struct UmbraDialogOverlay<Body: View, Actions: View>: View {
             }
             .padding(22)
             .frame(maxWidth: 420, alignment: .leading)
-            .umbraSurface(.overlay, radius: UmbraRadius.lg)
+            .umbraSurface(.overlay, radius: Radius.lg)
             .padding(16)
             .onExitCommand { isPresented = false }
             .accessibilityAddTraits(.isModal)

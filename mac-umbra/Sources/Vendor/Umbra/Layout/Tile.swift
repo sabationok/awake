@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Comparison with the previous period, as the server sends it (`UiRow.compare`).
-public struct UmbraCompare: Equatable {
+public struct Compare: Equatable {
     public enum GoodWhen { case up, down }
 
     /// Change in percent; nil means there was nothing before («нове»).
@@ -32,15 +32,15 @@ public struct UmbraCompare: Equatable {
 }
 
 /// Summary tile (`.u-tile`): big value, optional compare line, label at the bottom (two lines max).
-public struct UmbraTile: View {
+public struct Tile: View {
     private let value: String
     private let label: String
-    private let compare: UmbraCompare?
+    private let compare: Compare?
     private let previousPrefix: String
     private let newText: String
     @Environment(\.umbra) private var theme
 
-    public init(value: String, label: String, compare: UmbraCompare? = nil,
+    public init(value: String, label: String, compare: Compare? = nil,
                 previousPrefix: String = "минулий:", newText: String = "нове") {
         self.value = value
         self.label = label
@@ -90,7 +90,7 @@ public struct UmbraTile: View {
 }
 
 /// Grid of tiles (`.u-tiles`): as many 150 pt+ columns as fit.
-public struct UmbraTiles<Content: View>: View {
+public struct Tiles<Content: View>: View {
     private let content: Content
 
     public init(@ViewBuilder content: () -> Content) {

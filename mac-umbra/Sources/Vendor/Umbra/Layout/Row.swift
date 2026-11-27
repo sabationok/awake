@@ -1,13 +1,13 @@
 import SwiftUI
 
 /// Toned square with an SF Symbol (`.u-row-icon`).
-public struct UmbraRowIcon: View {
+public struct RowIcon: View {
     private let symbol: String
-    private let tone: UmbraTone?
+    private let tone: Tone?
     private let size: CGFloat
     @Environment(\.umbra) private var theme
 
-    public init(_ symbol: String, tone: UmbraTone? = nil, size: CGFloat = 26) {
+    public init(_ symbol: String, tone: Tone? = nil, size: CGFloat = 26) {
         self.symbol = symbol
         self.tone = tone
         self.size = size
@@ -19,7 +19,7 @@ public struct UmbraRowIcon: View {
         let base = tone?.color(p) ?? p.fg3
         ZStack {
             RoundedRectangle(cornerRadius: size * 0.27, style: .continuous).fill(base.opacity(0.14))
-            Image(systemName: UmbraSymbol.outline(symbol))
+            Image(systemName: Symbol.outline(symbol))
                 .font(.system(size: (size * 0.52).rounded(), weight: .medium))
                 .foregroundStyle(color)
         }
@@ -30,18 +30,18 @@ public struct UmbraRowIcon: View {
 
 /// Row (`.u-row`): icon, label with hint, value and/or a trailing control. `prominent` is the large first row
 /// of a module page.
-public struct UmbraRow<Control: View>: View {
+public struct Row<Control: View>: View {
     private let label: String
     private let hint: String?
     private let value: String?
     private let symbol: String?
-    private let tone: UmbraTone?
+    private let tone: Tone?
     private let prominent: Bool
     private let control: Control
     @Environment(\.umbra) private var theme
 
     public init(_ label: String, hint: String? = nil, value: String? = nil, symbol: String? = nil,
-                tone: UmbraTone? = nil, prominent: Bool = false, @ViewBuilder control: () -> Control) {
+                tone: Tone? = nil, prominent: Bool = false, @ViewBuilder control: () -> Control) {
         self.label = label
         self.hint = hint
         self.value = value
@@ -55,7 +55,7 @@ public struct UmbraRow<Control: View>: View {
         let p = theme.palette
         HStack(spacing: 12) {
             if let symbol {
-                UmbraRowIcon(symbol, tone: tone, size: prominent ? 38 : 26)
+                RowIcon(symbol, tone: tone, size: prominent ? 38 : 26)
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(label)
@@ -81,22 +81,22 @@ public struct UmbraRow<Control: View>: View {
     }
 }
 
-public extension UmbraRow where Control == EmptyView {
+public extension Row where Control == EmptyView {
     init(_ label: String, hint: String? = nil, value: String? = nil, symbol: String? = nil,
-         tone: UmbraTone? = nil, prominent: Bool = false) {
+         tone: Tone? = nil, prominent: Bool = false) {
         self.init(label, hint: hint, value: value, symbol: symbol, tone: tone, prominent: prominent) { EmptyView() }
     }
 }
 
 /// Row with a switch on the right: the most common settings row.
-public struct UmbraSwitchRow: View {
+public struct SwitchRow: View {
     private let label: String
     private let hint: String?
     private let symbol: String?
-    private let tone: UmbraTone?
+    private let tone: Tone?
     @Binding private var isOn: Bool
 
-    public init(_ label: String, hint: String? = nil, symbol: String? = nil, tone: UmbraTone? = nil,
+    public init(_ label: String, hint: String? = nil, symbol: String? = nil, tone: Tone? = nil,
                 isOn: Binding<Bool>) {
         self.label = label
         self.hint = hint
@@ -106,22 +106,22 @@ public struct UmbraSwitchRow: View {
     }
 
     public var body: some View {
-        UmbraRow(label, hint: hint, symbol: symbol, tone: tone) {
+        Row(label, hint: hint, symbol: symbol, tone: tone) {
             Toggle(label, isOn: $isOn).toggleStyle(.umbra).labelsHidden()
         }
     }
 }
 
 /// List row (`.u-list-row`): optional dot, title, subtitle, trailing text; highlights on hover.
-public struct UmbraListRow<Trailing: View>: View {
+public struct ListRow<Trailing: View>: View {
     private let title: String
     private let subtitle: String?
-    private let dot: UmbraTone?
+    private let dot: Tone?
     private let trailing: Trailing
     @State private var hovering = false
     @Environment(\.umbra) private var theme
 
-    public init(_ title: String, subtitle: String? = nil, dot: UmbraTone? = nil,
+    public init(_ title: String, subtitle: String? = nil, dot: Tone? = nil,
                 @ViewBuilder trailing: () -> Trailing) {
         self.title = title
         self.subtitle = subtitle
@@ -132,7 +132,7 @@ public struct UmbraListRow<Trailing: View>: View {
     public var body: some View {
         let p = theme.palette
         HStack(spacing: 12) {
-            if let dot { UmbraDot(dot) }
+            if let dot { Dot(dot) }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.system(size: 12))
                 if let subtitle { Text(subtitle).font(UmbraFont.xs).foregroundStyle(p.fg3) }
@@ -147,8 +147,8 @@ public struct UmbraListRow<Trailing: View>: View {
     }
 }
 
-public extension UmbraListRow where Trailing == Text {
-    init(_ title: String, subtitle: String? = nil, dot: UmbraTone? = nil, trailing: String) {
+public extension ListRow where Trailing == Text {
+    init(_ title: String, subtitle: String? = nil, dot: Tone? = nil, trailing: String) {
         self.init(title, subtitle: subtitle, dot: dot) {
             Text(trailing).font(.system(size: 11).monospacedDigit()).foregroundStyle(.secondary)
         }

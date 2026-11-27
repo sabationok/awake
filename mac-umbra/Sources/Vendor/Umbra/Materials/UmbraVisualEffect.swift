@@ -60,15 +60,15 @@ public struct UmbraVisualEffect: View {
     }
 }
 
-private struct UmbraVibrancyPreviewKey: EnvironmentKey {
+private struct VibrancyPreviewKey: EnvironmentKey {
     static let defaultValue: NSImage? = nil
 }
 
 public extension EnvironmentValues {
     /// Stand-in desktop for offscreen renders; see `UmbraVisualEffect`.
     var umbraVibrancyPreview: NSImage? {
-        get { self[UmbraVibrancyPreviewKey.self] }
-        set { self[UmbraVibrancyPreviewKey.self] = newValue }
+        get { self[VibrancyPreviewKey.self] }
+        set { self[VibrancyPreviewKey.self] = newValue }
     }
 }
 

@@ -2,15 +2,15 @@ import SwiftUI
 
 /// Contract values to Umbra values. The server sends structure, the library decides the look.
 extension UiTone {
-    var umbra: UmbraTone { UmbraTone(rawValue: rawValue) ?? .gray }
+    var umbra: Tone { Tone(rawValue: rawValue) ?? .gray }
 }
 
 extension UiActionVariant {
-    var umbra: UmbraButtonVariant { UmbraButtonVariant(rawValue: rawValue) ?? .default }
+    var umbra: ButtonVariant { ButtonVariant(rawValue: rawValue) ?? .default }
 }
 
 extension UiButton.Variant? {
-    var umbra: UmbraButtonVariant {
+    var umbra: ButtonVariant {
         switch self {
         case .filled: .accent
         case .destructive: .danger
@@ -21,7 +21,7 @@ extension UiButton.Variant? {
 }
 
 extension UiNotice.Variant {
-    var tone: UmbraTone {
+    var tone: Tone {
         switch self {
         case .info: .accent
         case .warn: .yellow

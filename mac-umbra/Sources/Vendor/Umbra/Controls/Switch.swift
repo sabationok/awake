@@ -1,20 +1,20 @@
 import SwiftUI
 
 /// `Toggle("Label", isOn: $on).toggleStyle(.umbra)`: the 32×19 switch of `.u-switch`. The label is only for
-/// accessibility; place visible text in an `UmbraRow`.
-public struct UmbraSwitchStyle: ToggleStyle {
+/// accessibility; place visible text in an `Row`.
+public struct SwitchStyle: ToggleStyle {
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {
-        UmbraSwitchBody(configuration: configuration)
+        SwitchBody(configuration: configuration)
     }
 }
 
-public extension ToggleStyle where Self == UmbraSwitchStyle {
-    static var umbra: UmbraSwitchStyle { UmbraSwitchStyle() }
+public extension ToggleStyle where Self == SwitchStyle {
+    static var umbra: SwitchStyle { SwitchStyle() }
 }
 
-private struct UmbraSwitchBody: View {
+private struct SwitchBody: View {
     let configuration: ToggleStyle.Configuration
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.umbra) private var theme
@@ -32,7 +32,7 @@ private struct UmbraSwitchBody: View {
                     .padding(2)
                     .shadow(color: .black.opacity(0.2), radius: 1, y: 0.5)
             }
-            .animation(UmbraMotion.ease, value: on)
+            .animation(Motion.ease, value: on)
             .opacity(isEnabled ? 1 : 0.4)
             .contentShape(Capsule())
             .onTapGesture { if isEnabled { configuration.isOn.toggle() } }

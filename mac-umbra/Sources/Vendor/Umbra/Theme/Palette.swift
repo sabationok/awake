@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Colour roles of Umbra. Same names as the web tokens in `web-umbra/src/app/globals.css`
 /// (`--bg`, `--surface-1`, `--fg-2`, …), so a design change is made once per role on both clients.
-public struct UmbraPalette {
+public struct Palette {
     /// Window base when translucency is off.
     public var bgSolid: Color
     /// Layer over the window material: how much of the desktop shows through.
@@ -35,10 +35,10 @@ public struct UmbraPalette {
     public var scrim: Color
 }
 
-public extension UmbraPalette {
+public extension Palette {
     /// Dark theme (Resend-like: black, thin lines, one warm accent).
-    static func dark(translucent: Bool) -> UmbraPalette {
-        UmbraPalette(
+    static func dark(translucent: Bool) -> Palette {
+        Palette(
             bgSolid: Color(umbraHex: 0x000000),
             windowTint: Color(umbraHex: 0x060403, alpha: 0.42),
             bgApp: translucent ? Color(umbraHex: 0x080707, alpha: 0.38) : Color(umbraHex: 0x0C0C0D),
@@ -67,8 +67,8 @@ public extension UmbraPalette {
     }
 
     /// Light theme (trial on the web): page grey, panels white, darker accent so small orange text reads on white.
-    static func light(translucent: Bool) -> UmbraPalette {
-        UmbraPalette(
+    static func light(translucent: Bool) -> Palette {
+        Palette(
             bgSolid: Color(umbraHex: 0xF2F2F4),
             windowTint: Color(umbraHex: 0xF4F3F6, alpha: 0.36),
             bgApp: translucent ? Color.white.opacity(0.35) : Color(umbraHex: 0xE8E8EB),

@@ -5,37 +5,37 @@ import SwiftUI
 /// QR code of a string (`.u-qr`): rounded finder patterns and dot modules, black on white in both themes so any
 /// camera reads it. The module matrix comes from CIFilter (one pixel per module) and is drawn with Canvas, sharp
 /// at any size. Ported from MaControl `QrCodeImage`.
-public struct UmbraQrCode: View {
-    private let matrix: UmbraQrMatrix?
+public struct QrCode: View {
+    private let matrix: QrMatrix?
     private let padding: CGFloat
 
     /// `padding` is the white margin around the code (10 in a card, 14 when zoomed, as on the web).
     public init(_ text: String, padding: CGFloat = 10) {
-        self.matrix = UmbraQrMatrix.make(from: text)
+        self.matrix = QrMatrix.make(from: text)
         self.padding = padding
     }
 
     public var body: some View {
         if let matrix {
             Canvas { context, size in
-                UmbraQrDrawing.draw(matrix, into: context, size: size)
+                QrDrawing.draw(matrix, into: context, size: size)
             }
             .aspectRatio(1, contentMode: .fit)
             .padding(padding)
-            .background(.white, in: RoundedRectangle(cornerRadius: UmbraRadius.sm, style: .continuous))
+            .background(.white, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
             .accessibilityLabel("QR")
         }
     }
 }
 
 /// Square module grid: `dark[row * size + col]`, row 0 is the top row.
-struct UmbraQrMatrix {
+struct QrMatrix {
     let size: Int
     let dark: [Bool]
 
     func isDark(_ row: Int, _ col: Int) -> Bool { dark[row * size + col] }
 
-    static func make(from text: String) -> UmbraQrMatrix? {
+    static func make(from text: String) -> QrMatrix? {
         let filter = CIFilter.qrCodeGenerator()
         filter.message = Data(text.utf8)
         filter.correctionLevel = "M"
@@ -63,15 +63,15 @@ struct UmbraQrMatrix {
                 dark[row * n + col] = pixels[(memRow * n + col) * 4] < 128
             }
         }
-        return UmbraQrMatrix(size: n, dark: dark)
+        return QrMatrix(size: n, dark: dark)
     }
 }
 
-enum UmbraQrDrawing {
+enum QrDrawing {
     /// Quiet zone in modules around the code, as the QR standard asks.
     private static let quiet = 4
 
-    static func draw(_ matrix: UmbraQrMatrix, into context: GraphicsContext, size: CGSize) {
+    static func draw(_ matrix: QrMatrix, into context: GraphicsContext, size: CGSize) {
         let n = matrix.size
         let total = Double(n + 2 * quiet)
         let cell = min(size.width, size.height) / total
@@ -114,7 +114,7 @@ enum UmbraQrDrawing {
 
 /// QR in a card (`.u-qr`): a 160 pt thumbnail centred with 18 pt around it and a caption; a click opens it at
 /// 340 pt in a sheet with «Закрити» (Escape closes it too). The pointer is a pointing hand over the thumbnail.
-public struct UmbraQrCard: View {
+public struct QrCard: View {
     private let value: String
     private let caption: String?
     @State private var zoomed = false
@@ -130,11 +130,11 @@ public struct UmbraQrCard: View {
         let p = theme.palette
         VStack(spacing: 8) {
             Button { zoomed = true } label: {
-                UmbraQrCode(value).frame(width: 160, height: 160)
+                QrCode(value).frame(width: 160, height: 160)
             }
             .buttonStyle(.plain)
             .scaleEffect(hovering ? 1.03 : 1)
-            .animation(UmbraMotion.ease, value: hovering)
+            .animation(Motion.ease, value: hovering)
             .onHover { inside in
                 hovering = inside
                 if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
@@ -147,13 +147,13 @@ public struct UmbraQrCard: View {
         .frame(maxWidth: .infinity)
         .padding(18)
         .sheet(isPresented: $zoomed) {
-            UmbraQrZoom(value: value) { zoomed = false }
+            QrZoom(value: value) { zoomed = false }
                 .environment(\.umbra, theme)
         }
     }
 }
 
-struct UmbraQrZoom: View {
+struct QrZoom: View {
     let value: String
     let close: () -> Void
     @Environment(\.umbra) private var theme
@@ -161,7 +161,7 @@ struct UmbraQrZoom: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("QR-код").font(.system(size: 15, weight: .semibold)).foregroundStyle(theme.palette.fg)
-            UmbraQrCode(value, padding: 14).frame(width: 340, height: 340)
+            QrCode(value, padding: 14).frame(width: 340, height: 340)
             HStack {
                 Spacer()
                 Button("Закрити", action: close).buttonStyle(.umbra()).keyboardShortcut(.cancelAction)

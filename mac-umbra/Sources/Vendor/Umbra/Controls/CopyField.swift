@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Copy field (`.u-copy`): monospaced value in an inset well with a copy button. «Скопійовано» shows for 1.5 s.
 /// By default copies to the general pasteboard; pass `onCopy` to handle it yourself.
-public struct UmbraCopyField: View {
+public struct CopyField: View {
     private let value: String
     private let caption: String?
     private let copiedText: String
@@ -32,13 +32,13 @@ public struct UmbraCopyField: View {
             if let caption = copied ? copiedText : caption {
                 Text(caption).font(UmbraFont.xs).foregroundStyle(copied ? p.ok : p.fg3)
             }
-            UmbraIconButton(copied ? "checkmark" : "doc.on.doc", label: "Скопіювати") { copy() }
+            IconButton(copied ? "checkmark" : "doc.on.doc", label: "Скопіювати") { copy() }
         }
         .padding(.leading, 10)
         .padding(.trailing, 2)
         .padding(.vertical, 2)
-        .background(p.bgApp, in: RoundedRectangle(cornerRadius: UmbraRadius.sm, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: UmbraRadius.sm, style: .continuous).strokeBorder(p.line))
+        .background(p.bgApp, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous).strokeBorder(p.line))
     }
 
     private func copy() {

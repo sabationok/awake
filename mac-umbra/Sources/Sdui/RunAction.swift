@@ -5,7 +5,7 @@ import SwiftUI
 struct RunnableAction {
     var label: String
     var action: UiAction
-    var variant: UmbraButtonVariant
+    var variant: ButtonVariant
     var confirm: UiConfirm?
     var form: UiForm?
 }
@@ -128,8 +128,8 @@ private struct FormFields: View {
                 if f.kind == "select" {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(f.label).font(UmbraFont.xs).foregroundStyle(.secondary)
-                        UmbraSelect(f.label, selection: binding, options: (f.options ?? []).map {
-                            UmbraOption($0.value, $0.label, disabled: $0.disabled ?? false)
+                        Select(f.label, selection: binding, options: (f.options ?? []).map {
+                            Option($0.value, $0.label, disabled: $0.disabled ?? false)
                         })
                     }
                 } else {

@@ -4,7 +4,7 @@ import SwiftUI
 /// `windowTint` so the Umbra blacks stay black. Solid when «Reduce transparency» is on.
 /// `glow: .accent` adds the soft accent spots of the web backdrop (top, centre, bottom), much weaker here
 /// because the real desktop already gives colour.
-public struct UmbraBackdrop: View {
+public struct Backdrop: View {
     public enum Glow { case none, accent }
 
     private let glow: Glow
@@ -23,14 +23,14 @@ public struct UmbraBackdrop: View {
                 theme.palette.bgSolid
             }
             if glow == .accent {
-                UmbraGlow(dark: theme.scheme == .dark)
+                GlowLayer(dark: theme.scheme == .dark)
             }
         }
         .ignoresSafeArea()
     }
 }
 
-private struct UmbraGlow: View {
+private struct GlowLayer: View {
     let dark: Bool
 
     private struct Spot {

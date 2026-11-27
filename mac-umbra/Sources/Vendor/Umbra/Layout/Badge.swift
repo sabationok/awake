@@ -1,13 +1,13 @@
 import SwiftUI
 
 /// Badge (`.u-badge`): pill with a dot in the tone; `pulse` for a live state.
-public struct UmbraBadge: View {
+public struct Badge: View {
     private let label: String
-    private let tone: UmbraTone
+    private let tone: Tone
     private let pulse: Bool
     @Environment(\.umbra) private var theme
 
-    public init(_ label: String, tone: UmbraTone = .gray, pulse: Bool = false) {
+    public init(_ label: String, tone: Tone = .gray, pulse: Bool = false) {
         self.label = label
         self.tone = tone
         self.pulse = pulse
@@ -17,7 +17,7 @@ public struct UmbraBadge: View {
         let p = theme.palette
         let color = tone == .gray ? p.fg2 : tone.color(p)
         HStack(spacing: 6) {
-            UmbraDot(tone, pulse: pulse, size: 6).foregroundStyle(color)
+            Dot(tone, pulse: pulse, size: 6).foregroundStyle(color)
             Text(label).font(.system(size: 11, weight: .medium)).lineLimit(1)
         }
         .foregroundStyle(color)
@@ -28,15 +28,15 @@ public struct UmbraBadge: View {
 }
 
 /// Dot (`.u-dot`). Pulses at 1.6 s like the web; respects «Reduce motion».
-public struct UmbraDot: View {
-    private let tone: UmbraTone
+public struct Dot: View {
+    private let tone: Tone
     private let pulse: Bool
     private let size: CGFloat
     @State private var dim = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.umbra) private var theme
 
-    public init(_ tone: UmbraTone, pulse: Bool = false, size: CGFloat = 7) {
+    public init(_ tone: Tone, pulse: Bool = false, size: CGFloat = 7) {
         self.tone = tone
         self.pulse = pulse
         self.size = size
@@ -55,12 +55,12 @@ public struct UmbraDot: View {
 }
 
 /// Chip (`.u-chip`): small square tag.
-public struct UmbraChip: View {
+public struct Chip: View {
     private let label: String
-    private let tone: UmbraTone?
+    private let tone: Tone?
     @Environment(\.umbra) private var theme
 
-    public init(_ label: String, tone: UmbraTone? = nil) {
+    public init(_ label: String, tone: Tone? = nil) {
         self.label = label
         self.tone = tone
     }
@@ -78,16 +78,16 @@ public struct UmbraChip: View {
 }
 
 /// Big value (`.u-big`): display number with caption and an optional progress bar (timer, countdown).
-public struct UmbraBigValue: View {
+public struct BigValue: View {
     private let value: String
     private let caption: String?
-    private let tone: UmbraTone?
+    private let tone: Tone?
     private let color: Color?
     private let progress: Double?
     @Environment(\.umbra) private var theme
 
     /// `color` overrides `tone` for the digits and the bar (a session timer goes from green to red).
-    public init(_ value: String, caption: String? = nil, tone: UmbraTone? = nil, color: Color? = nil,
+    public init(_ value: String, caption: String? = nil, tone: Tone? = nil, color: Color? = nil,
                 progress: Double? = nil) {
         self.value = value
         self.caption = caption
@@ -122,11 +122,11 @@ public struct UmbraBigValue: View {
 /// Thin progress bar (`.u-progress`).
 public struct UmbraProgress: View {
     private let value: Double
-    private let tone: UmbraTone?
+    private let tone: Tone?
     private let color: Color?
     @Environment(\.umbra) private var theme
 
-    public init(_ value: Double, tone: UmbraTone? = nil) {
+    public init(_ value: Double, tone: Tone? = nil) {
         self.value = value
         self.tone = tone
         self.color = nil

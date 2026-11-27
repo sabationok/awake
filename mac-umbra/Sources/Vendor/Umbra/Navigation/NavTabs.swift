@@ -1,15 +1,15 @@
 import SwiftUI
 
 /// NavTabs (`.s-tabs`): navigation between sibling pages ONLY. A mode switch inside a page (an SDUI `tabs` node,
-/// Період / Час, День / Тиждень) is never NavTabs: use `UmbraSegmented`.
+/// Період / Час, День / Тиждень) is never NavTabs: use `Segmented`.
 /// 13.5 pt text tabs, 22 pt apart, fg-3 / fg when active, with a 2 pt accent underline under the active one and a hairline under the row.
-public struct UmbraNavTabs<Value: Hashable>: View {
+public struct NavTabs<Value: Hashable>: View {
     @Binding private var selection: Value
-    private let options: [UmbraOption<Value>]
+    private let options: [Option<Value>]
     @Namespace private var underline
     @Environment(\.umbra) private var theme
 
-    public init(selection: Binding<Value>, options: [UmbraOption<Value>]) {
+    public init(selection: Binding<Value>, options: [Option<Value>]) {
         _selection = selection
         self.options = options
     }
@@ -21,7 +21,7 @@ public struct UmbraNavTabs<Value: Hashable>: View {
                 ForEach(options, id: \.value) { option in
                     let active = option.value == selection
                     Button {
-                        withAnimation(UmbraMotion.ease) { selection = option.value }
+                        withAnimation(Motion.ease) { selection = option.value }
                     } label: {
                         Text(option.label)
                             .font(.system(size: 13.5))

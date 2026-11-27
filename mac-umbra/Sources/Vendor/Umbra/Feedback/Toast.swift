@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Typed toast (`.u-toast`). The consumer owns the queue; Umbra only draws it.
-public struct UmbraToast: Identifiable, Equatable {
+public struct Toast: Identifiable, Equatable {
     public enum Kind: String, CaseIterable { case info, success, warning, error }
 
     public var id: String
@@ -20,11 +20,11 @@ public struct UmbraToast: Identifiable, Equatable {
     }
 }
 
-public struct UmbraToastView: View {
-    private let toast: UmbraToast
+public struct ToastView: View {
+    private let toast: Toast
     @Environment(\.umbra) private var theme
 
-    public init(_ toast: UmbraToast) {
+    public init(_ toast: Toast) {
         self.toast = toast
     }
 
@@ -62,7 +62,7 @@ public struct UmbraToastView: View {
         .umbraSurface(.overlay)
         .overlay {
             if toast.kind == .error {
-                RoundedRectangle(cornerRadius: UmbraRadius.md, style: .continuous).strokeBorder(p.danger.opacity(0.45))
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous).strokeBorder(p.danger.opacity(0.45))
             }
         }
         .accessibilityElement(children: .combine)
@@ -70,22 +70,22 @@ public struct UmbraToastView: View {
 }
 
 /// Bottom-trailing stack of toasts; put it in an overlay of the window content.
-public struct UmbraToastStack: View {
-    private let toasts: [UmbraToast]
+public struct ToastStack: View {
+    private let toasts: [Toast]
 
-    public init(_ toasts: [UmbraToast]) {
+    public init(_ toasts: [Toast]) {
         self.toasts = toasts
     }
 
     public var body: some View {
         VStack(alignment: .trailing, spacing: 8) {
             ForEach(toasts) { toast in
-                UmbraToastView(toast)
+                ToastView(toast)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-        .animation(UmbraMotion.ease, value: toasts)
+        .animation(Motion.ease, value: toasts)
     }
 }

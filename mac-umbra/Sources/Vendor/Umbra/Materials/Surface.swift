@@ -4,18 +4,18 @@ import SwiftUI
 /// - `.panel`: `--surface-1` tint over the window material (panels, tiles); no own blur.
 /// - `.raised`: `--surface-2` with a strong hairline (controls, active items).
 /// - `.overlay`: within-window material + `--surface-2` + hairline + shadow (menus, toasts, dialogs).
-public enum UmbraSurfaceLevel {
+public enum SurfaceLevel {
     case panel, raised, overlay
 }
 
 public extension View {
-    func umbraSurface(_ level: UmbraSurfaceLevel = .panel, radius: CGFloat = UmbraRadius.md) -> some View {
-        modifier(UmbraSurfaceModifier(level: level, radius: radius))
+    func umbraSurface(_ level: SurfaceLevel = .panel, radius: CGFloat = Radius.md) -> some View {
+        modifier(SurfaceModifier(level: level, radius: radius))
     }
 }
 
-private struct UmbraSurfaceModifier: ViewModifier {
-    let level: UmbraSurfaceLevel
+private struct SurfaceModifier: ViewModifier {
+    let level: SurfaceLevel
     let radius: CGFloat
     @Environment(\.umbra) private var theme
 

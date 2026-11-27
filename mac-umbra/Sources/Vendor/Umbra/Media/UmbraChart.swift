@@ -2,7 +2,7 @@ import Charts
 import SwiftUI
 
 /// One bar (or a segment of a stacked bar): bucket start, value, series ("" for a single series).
-public struct UmbraChartPoint: Hashable {
+public struct ChartPoint: Hashable {
     public var start: Date
     public var value: Double
     public var series: String
@@ -19,18 +19,18 @@ public struct UmbraChartPoint: Hashable {
 /// legend for stacked series. The host formats bucket labels and values; the chart only draws.
 public struct UmbraChart: View {
     private let title: String
-    private let points: [UmbraChartPoint]
-    private let tones: [String: UmbraTone]
-    private let tone: UmbraTone
+    private let points: [ChartPoint]
+    private let tones: [String: Tone]
+    private let tone: Tone
     private let limit: Double?
     private let bucketLabel: (Date) -> String
     private let valueLabel: (Double) -> String
     @State private var hover: Int?
     @Environment(\.umbra) private var theme
 
-    private static let fallback: [UmbraTone] = [.accent, .indigo, .green, .yellow, .red]
+    private static let fallback: [Tone] = [.accent, .indigo, .green, .yellow, .red]
 
-    public init(_ title: String, points: [UmbraChartPoint], tone: UmbraTone = .accent, tones: [String: UmbraTone] = [:],
+    public init(_ title: String, points: [ChartPoint], tone: Tone = .accent, tones: [String: Tone] = [:],
                 limit: Double? = nil, bucketLabel: @escaping (Date) -> String,
                 valueLabel: @escaping (Double) -> String) {
         self.title = title
@@ -49,13 +49,13 @@ public struct UmbraChart: View {
         return seen
     }
 
-    private func toneOf(_ s: String, in series: [String]) -> UmbraTone {
+    private func toneOf(_ s: String, in series: [String]) -> Tone {
         if let t = tones[s] { return t }
         guard !s.isEmpty, let i = series.firstIndex(of: s) else { return tone }
         return Self.fallback[i % Self.fallback.count]
     }
 
-    private static func totals(_ points: [UmbraChartPoint], _ index: [Date: Int], _ count: Int) -> [Double] {
+    private static func totals(_ points: [ChartPoint], _ index: [Date: Int], _ count: Int) -> [Double] {
         var sums = [Double](repeating: 0, count: count)
         for point in points { if let i = index[point.start] { sums[i] += point.value } }
         return sums
@@ -139,9 +139,9 @@ public struct UmbraChart: View {
     }
 }
 
-/// `UmbraChart`'s frame with `UmbraSkeleton` in place of the bars and the bucket labels: the title is real, the
+/// `UmbraChart`'s frame with `Skeleton` in place of the bars and the bucket labels: the title is real, the
 /// height is the chart's, so the page does not jump when the chart replaces it.
-public struct UmbraChartSkeleton: View {
+public struct ChartSkeleton: View {
     private let title: String
     @Environment(\.umbra) private var theme
 
@@ -152,13 +152,13 @@ public struct UmbraChartSkeleton: View {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.palette.fg)
                 Spacer(minLength: 0)
-                UmbraSkeleton(height: 10, width: 72)
+                Skeleton(height: 10, width: 72)
             }
-            UmbraSkeleton(height: 120)
+            Skeleton(height: 120)
             HStack {
-                UmbraSkeleton(height: 8, width: 36)
+                Skeleton(height: 8, width: 36)
                 Spacer()
-                UmbraSkeleton(height: 8, width: 36)
+                Skeleton(height: 8, width: 36)
             }
             .frame(height: 13)
         }

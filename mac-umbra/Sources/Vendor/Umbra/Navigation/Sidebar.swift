@@ -3,20 +3,20 @@ import SwiftUI
 
 /// One entry of the sidebar tree. The consumer builds it from its own data (e.g. the SDUI navigation).
 /// A disabled item stays visible, greyed, and cannot be picked.
-public struct UmbraSidebarItem: Identifiable, Hashable {
+public struct SidebarItem: Identifiable, Hashable {
     public var id: String
     public var title: String
     public var symbol: String?
-    public var tone: UmbraTone?
+    public var tone: Tone?
     public var badge: String?
     public var disabled: Bool
     /// Why the item is disabled; shown as a tooltip.
     public var hint: String?
-    public var children: [UmbraSidebarItem]
+    public var children: [SidebarItem]
 
     /// `tone` is kept for API compatibility; the menu draws icons monochrome, as the web does.
-    public init(id: String, title: String, symbol: String? = nil, tone: UmbraTone? = nil, badge: String? = nil,
-                disabled: Bool = false, hint: String? = nil, children: [UmbraSidebarItem] = []) {
+    public init(id: String, title: String, symbol: String? = nil, tone: Tone? = nil, badge: String? = nil,
+                disabled: Bool = false, hint: String? = nil, children: [SidebarItem] = []) {
         self.id = id
         self.hint = hint
         self.title = title
@@ -33,12 +33,12 @@ public struct UmbraSidebarItem: Identifiable, Hashable {
 }
 
 /// Group of sidebar items under an optional caps title.
-public struct UmbraSidebarGroup: Identifiable, Hashable {
+public struct SidebarGroup: Identifiable, Hashable {
     public var id: String
     public var title: String?
-    public var items: [UmbraSidebarItem]
+    public var items: [SidebarItem]
 
-    public init(id: String, title: String? = nil, items: [UmbraSidebarItem]) {
+    public init(id: String, title: String? = nil, items: [SidebarItem]) {
         self.id = id
         self.title = title
         self.items = items
@@ -50,15 +50,15 @@ public struct UmbraSidebarGroup: Identifiable, Hashable {
 /// Top-level items have a monochrome icon (accent when active or holding the current page) and a chevron that
 /// expands their children; ancestors of the selection are always expanded. Sub-items have no icon, are indented
 /// and the active one has an accent dot.
-public struct UmbraSidebar<Top: View, Footer: View>: View {
-    private let groups: [UmbraSidebarGroup]
+public struct Sidebar<Top: View, Footer: View>: View {
+    private let groups: [SidebarGroup]
     @Binding private var selection: String?
     private let top: Top
     private let footer: Footer
     @State private var open: Set<String> = []
     @Environment(\.umbra) private var theme
 
-    public init(groups: [UmbraSidebarGroup], selection: Binding<String?>,
+    public init(groups: [SidebarGroup], selection: Binding<String?>,
                 @ViewBuilder top: () -> Top, @ViewBuilder footer: () -> Footer) {
         self.groups = groups
         _selection = selection
@@ -106,7 +106,7 @@ public struct UmbraSidebar<Top: View, Footer: View>: View {
     /// Ancestors of the current page are always expanded.
     private func openAncestors() {
         guard let selection else { return }
-        func walk(_ item: UmbraSidebarItem) {
+        func walk(_ item: SidebarItem) {
             if item.contains(selection) { open.insert(item.id) }
             item.children.forEach(walk)
         }
@@ -114,15 +114,15 @@ public struct UmbraSidebar<Top: View, Footer: View>: View {
     }
 }
 
-public extension UmbraSidebar where Top == EmptyView, Footer == EmptyView {
-    init(groups: [UmbraSidebarGroup], selection: Binding<String?>) {
+public extension Sidebar where Top == EmptyView, Footer == EmptyView {
+    init(groups: [SidebarGroup], selection: Binding<String?>) {
         self.init(groups: groups, selection: selection, top: { EmptyView() }, footer: { EmptyView() })
     }
 }
 
 /// One node with its children; recursion goes through `AnyView` so the type stays finite.
 struct UmbraSidebarNode: View {
-    let item: UmbraSidebarItem
+    let item: SidebarItem
     let depth: Int
     @Binding var selection: String?
     @Binding var open: Set<String>
@@ -165,7 +165,7 @@ struct UmbraSidebarNode: View {
         } label: {
             HStack(spacing: 10) {
                 if let symbol = item.symbol {
-                    Image(systemName: UmbraSymbol.outline(symbol))
+                    Image(systemName: Symbol.outline(symbol))
                         .font(.system(size: 14, weight: .regular))
                         .foregroundStyle(active || inside ? p.accent : p.fg3)
                         .frame(width: 16, height: 16)
@@ -224,14 +224,14 @@ struct UmbraSidebarNode: View {
 
     /// `.s-chevron`: 26 pt, fg-3, turns 90° when expanded.
     private func chevron(_ expanded: Bool) -> some View {
-        UmbraChevronButton(expanded: expanded) {
+        ChevronButton(expanded: expanded) {
             if open.contains(item.id) { open.remove(item.id) } else { open.insert(item.id) }
         }
         .padding(.trailing, 4)
     }
 }
 
-struct UmbraChevronButton: View {
+struct ChevronButton: View {
     let expanded: Bool
     let action: () -> Void
     @State private var hovering = false
@@ -257,7 +257,7 @@ struct UmbraChevronButton: View {
 
 /// Host block on top of the sidebar (`.s-host`): a symbol in a 30 pt rounded square (accent with a thin accent ring
 /// when online, fg-3 otherwise), the title and a subtitle (fg-2), on a panel card (`umbraSurface(.panel)`).
-public struct UmbraSidebarHost: View {
+public struct SidebarHost: View {
     private let name: String
     private let subtitle: String?
     private let symbol: String
@@ -303,7 +303,7 @@ public struct UmbraSidebarHost: View {
 
 /// Menu icons are outline, like the web's lucide set: a `.fill` symbol from the host is drawn as its outline
 /// sibling when one exists (`cup.and.saucer.fill` → `cup.and.saucer`).
-public enum UmbraSymbol {
+public enum Symbol {
     public static func outline(_ name: String) -> String {
         guard name.contains(".fill") else { return name }
         let base = name.replacingOccurrences(of: ".fill", with: "")
