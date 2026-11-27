@@ -28,6 +28,15 @@ split or merged) starts with a mockup shown to the owner in the chat, before any
 - Code starts only after the owner approves the mockup. A change to one row or one label on an existing page
   needs none.
 
+## Screens only from the lib
+
+- Web Umbra (`web-umbra/src/ui`) and Mac Umbra (swift-umbra-lib, module `Umbra`) are the component catalogs. A screen
+  or a client shell is composed only from their components; no ad hoc markup, styles or one-off views in a page.
+- A missing component goes into the lib first (web: `src/ui`; Mac: the swift-umbra-lib session), then the screen
+  uses it. Components carry no lib prefix (`Segmented`, not `UmbraSegmented`).
+- Labels come from the server tree, never from the client: a module's entry in the menu, crumbs and title is
+  `tree.modules[].title`; other pages use `page.title`. A client never renames or hard-codes a label.
+
 ## Who owns what
 
 One direction: clients → server → helper → macOS. Answers and events come back.
