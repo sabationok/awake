@@ -47,6 +47,8 @@ export interface MacModule {
   id: string;
   title: string;
   icon: { symbol: string; tone: import('@awake/contracts').UiTone };
+  /** Модуль-провайдер, під яким сторінки цього модуля стоять у меню (`UiModuleInfo.parent`). */
+  parent?: string;
   /** Одне-два речення для користувача: що робить модуль. Поки що лише в маніфесті, у дерево не йде. */
   description?: string;
   /** Системні дозволи Mac, які модуль просить. Mac показує їх окремо по модулях і дає лише дозволені. */

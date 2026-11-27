@@ -90,7 +90,7 @@ function channelNodes(channel: PairingChannel, snapshot: DevicesSnapshot): UiNod
         },
       ],
     },
-    pairingSection(channel, pairing),
+    pairingSection(channel, pairing, unavailable),
     {
       id: `webui-devices-${channel.mode}-paired`,
       type: 'section',
@@ -154,7 +154,7 @@ function channelNodes(channel: PairingChannel, snapshot: DevicesSnapshot): UiNod
 }
 
 /** «Сполучити новий»: QR, відлік коду з «Новий код» і посилання. Лише на Mac. */
-function pairingSection(channel: PairingChannel, pairing: DevicePairing): UiNode {
+function pairingSection(channel: PairingChannel, pairing: DevicePairing, unavailable: { status: string; text: string } | null): UiNode {
   const id = `webui-devices-${channel.mode}-pair`;
   const children: UiNode[] =
     pairing.url && 'expiresAt' in pairing
@@ -172,7 +172,17 @@ function pairingSection(channel: PairingChannel, pairing: DevicePairing): UiNode
           },
           { id: `${id}-link`, type: 'item', title: 'Посилання', copy: { value: pairing.url } },
         ]
-      : [{ id: `${id}-none`, type: 'text', text: 'Посилання зараз недоступне: причина вище.', tone: 'gray' }];
+      : [
+          // Немає каналу — немає й QR: на його місці видна картка з причиною, а не сірий рядок.
+          {
+            id: `${id}-none`,
+            type: 'item',
+            title: 'QR для сполучення',
+            icon: { symbol: 'qrcode', tone: 'gray' },
+            status: { label: unavailable?.status ?? 'Недоступно', tone: 'orange' },
+            comment: unavailable?.text ?? 'Посилання зараз недоступне.',
+          },
+        ];
   return {
     id,
     type: 'section',

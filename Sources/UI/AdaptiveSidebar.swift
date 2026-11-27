@@ -17,7 +17,7 @@ struct SidebarSection<Item: Hashable>: Hashable {
 /// Меню розділів і сторінка.
 /// Широке вікно: повне меню поруч зі сторінкою. Вузьке: сторінка на всю ширину, а повне меню (з групами й
 /// вкладеними пунктами) відкривається поверх неї кнопкою в тулбарі і закривається вибором пункту чи кліком поза ним.
-/// Назва вибраного розділу йде в заголовок вікна (`navigationTitle`), сторінка свого заголовка не малює.
+/// У заголовку вікна — назва модуля; на вкладеній сторінці замість неї крихти «Модуль › Сторінка» в тулбарі.
 /// Універсальний: не знає про конкретні розділи, лише отримує секції і замикання.
 struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: View>: View {
     @Binding var selection: Item
@@ -52,7 +52,7 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
                         panel.frame(width: expandedWidth)
                         Divider()
                     }
-                    content(selection)
+                    page
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Palette.content)
                 }
@@ -90,10 +90,38 @@ struct AdaptiveSidebar<Item: Identifiable & Hashable, Content: View, Footer: Vie
                         .help(overlayOpen ? "Сховати меню" : "Показати меню")
                     }
                 }
+                // Після кнопки меню: шлях вкладеної сторінки в рядку заголовка.
+                ToolbarItem(placement: .navigation) { breadcrumbs }
             }
         }
-        .navigationTitle(title(selection))
+        .navigationTitle(windowTitle)
     }
+
+    /// Модуль вибраної сторінки (батько в меню); nil — вибрано головний пункт.
+    private var parentNode: SidebarNode<Item>? {
+        sections.lazy.flatMap(\.nodes).first { $0.children.contains(selection) }
+    }
+
+    /// Заголовок вікна: на головній сторінці модуля — його назва; на вкладеній порожній, шлях показують крихти в тулбарі.
+    private var windowTitle: String { parentNode == nil ? title(selection) : "" }
+
+    /// Крихти «Модуль › Сторінка» в рядку заголовка; модуль клікабельний.
+    @ViewBuilder
+    private var breadcrumbs: some View {
+        if let parent = parentNode {
+            HStack(spacing: 6) {
+                Button(title(parent.item)) { selection = parent.item }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.accentColor)
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                Text(title(selection)).fontWeight(.semibold)
+            }
+            .font(.headline)
+            .fixedSize()
+        }
+    }
+
+    private var page: some View { content(selection) }
 
     /// Повне меню: групи, вкладені пункти і футер — однакове поруч зі сторінкою і поверх неї.
     private var panel: some View {

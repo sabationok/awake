@@ -19,14 +19,16 @@ import { buildGroupsTopicsPage } from './pages/groups-topics-page';
 import type { GroupsPageView } from './types/groups-page-view.types';
 
 /**
- * Маніфест модуля «Групи»: сповіщення агента MaControl по топіках прив'язаної групи. Ядро нейтральне до провайдера,
- * тому модуль верхнього рівня, а не частина Telegram. Що вміє конектор, сторінки читають з його маніфесту
- * (`GroupsService.supports`) і нічого не питають у нього по ходу.
+ * Маніфест модуля «Групи»: сповіщення агента MaControl по топіках прив'язаної групи. Ядро нейтральне до провайдера
+ * (окремий модуль), а в меню сторінки стоять під своїм провайдером (`parent`), бо група — це група в Telegram.
+ * Що вміє конектор, сторінки читають з його маніфесту (`GroupsService.supports`) і нічого не питають у нього по ходу.
  */
 @Injectable()
 export class GroupsMacModule implements MacModule {
   readonly id = GROUPS_MODULE;
   readonly title = 'Групи';
+  /** Єдиний провайдер груп зараз — Telegram; з другим провайдером це піде з маніфесту конектора. */
+  readonly parent = 'telegram';
   readonly description = 'Сповіщення агента MaControl по топіках групи, в яку ви дозволили публікацію. Зараз — Telegram.';
   readonly icon = { symbol: 'person.3.fill', tone: 'accent' } as const;
   // Mac модулю нічого не дає.

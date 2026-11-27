@@ -40,7 +40,7 @@ final class BluetoothScanner: NSObject, CBCentralManagerDelegate {
     var isAuthorized: Bool { CBManager.authorization == .allowedAlways }
     var isDenied: Bool { [.denied, .restricted].contains(CBManager.authorization) }
 
-    /// Перший виклик показує системний запит доступу.
+    /// Перший виклик показує системний запит доступу. Кличе його лише кнопка «Надати…» на «Дозволах».
     func requestAccess() {
         if central == nil { central = CBCentralManager(delegate: self, queue: nil) }
     }
@@ -49,7 +49,9 @@ final class BluetoothScanner: NSObject, CBCentralManagerDelegate {
         guard enabled != isEnabled else { return }
         isEnabled = enabled
         if enabled {
-            requestAccess()
+            // Без виданого дозволу Bluetooth не чіпаємо: CBCentralManager сам показав би системний запит на кожному
+            // запуску. Модуль тоді звітує «unauthorized», а дозвіл просять лише з кнопки «Надати…».
+            if isAuthorized { requestAccess() }
             startScanning()
             timer = Timer.scheduledTimer(withTimeInterval: Self.reportEvery, repeats: true) { [weak self] _ in
                 Task { @MainActor in self?.report() }
@@ -69,7 +71,8 @@ final class BluetoothScanner: NSObject, CBCentralManagerDelegate {
     }
 
     private var bluetoothState: String {
-        switch central?.state {
+        guard let central else { return isAuthorized ? "unknown" : "unauthorized" }
+        return switch central.state {
         case .poweredOn: "on"
         case .poweredOff: "off"
         case .unauthorized: "unauthorized"

@@ -56,14 +56,17 @@ struct MainView: View {
         let native = [SidebarNode(item: MainPage.server, children: [.serverStats])]
             + [SidebarNode(item: MainPage.connection)]
         guard let tree = model.uiTree else { return [SidebarSection(nodes: native)] }
-        let modules = tree.modules.compactMap { module -> SidebarNode<MainPage>? in
+        let pagesOf = { (id: String) in
+            tree.pages.filter { $0.module == id && $0.group == .modules }.map { MainPage.remote(id: $0.id) }
+        }
+        // Модуль з `parent` (Групи → Telegram) не має свого пункту: його сторінки — діти провайдера, після його власних.
+        let modules = tree.modules.filter { $0.parent == nil }.compactMap { module -> SidebarNode<MainPage>? in
             // Вимкнений модуль: сірий пункт без дітей і без сторінки.
             if module.disabled != nil { return SidebarNode(item: .disabledModule(id: module.id)) }
-            let pages = tree.pages
-                .filter { $0.module == module.id && $0.group == .modules }
-                .map { MainPage.remote(id: $0.id) }
+            let pages = pagesOf(module.id)
             guard let main = pages.first else { return nil }
-            return SidebarNode(item: main, children: Array(pages.dropFirst()))
+            let nested = tree.modules.filter { $0.parent == module.id && $0.disabled == nil }.flatMap { pagesOf($0.id) }
+            return SidebarNode(item: main, children: Array(pages.dropFirst()) + nested)
         }
         let system = tree.pages.filter { $0.group == .system }.map { SidebarNode(item: MainPage.remote(id: $0.id)) }
         return [SidebarSection(nodes: modules), SidebarSection(nodes: system + native)]

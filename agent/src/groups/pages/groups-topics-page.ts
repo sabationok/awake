@@ -21,7 +21,7 @@ export function buildGroupsTopicsPage(ctx: ModuleContext, view: GroupsPageView):
   return {
     id: GROUPS_TOPICS_PAGE,
     module: GROUPS_MODULE,
-    title: 'Топіки',
+    title: 'Топіки груп',
     icon: { symbol: 'text.bubble.fill', tone: 'accent' },
     group: 'modules',
     scope: 'local',

@@ -291,6 +291,8 @@ struct UiModuleInfo: Decodable, Hashable, Identifiable {
     var permissions: [String]?
     /// Модуль вимкнений: пункт меню сірий, не розгортається і не відкривається. Текст — чому.
     var disabled: String?
+    /// Модуль-провайдер, під яким сторінки цього модуля стоять у меню (Групи → Telegram).
+    var parent: String?
 }
 
 struct UiTree: Decodable, Hashable {

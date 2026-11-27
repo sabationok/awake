@@ -122,7 +122,14 @@ export class ModulesService {
     return {
       modules: this.list().map((module) => {
         const disabled = module.disabled?.(this.context(module.id));
-        return { id: module.id, title: module.title, icon: module.icon, permissions: module.permissions, ...(disabled ? { disabled } : {}) };
+        return {
+          id: module.id,
+          title: module.title,
+          icon: module.icon,
+          permissions: module.permissions,
+          ...(disabled ? { disabled } : {}),
+          ...(module.parent ? { parent: module.parent } : {}),
+        };
       }),
       app: {
         title: 'MaControl',
