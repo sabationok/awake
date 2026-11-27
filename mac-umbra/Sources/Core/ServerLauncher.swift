@@ -13,12 +13,14 @@ enum ServerLauncher {
 
     static var isDevBuild: Bool { Bundle.main.bundleIdentifier?.hasSuffix(".dev") ?? true }
 
-    /// The old MaControl bundle: dev id on a dev build, release id otherwise.
+    /// The old MaControl bundle, only from fixed install paths (never a copy found elsewhere by Spotlight), and
+    /// only when its bundle id matches the build kind (dev id on a dev build, release id otherwise).
     static var oldBundle: URL? {
         let id = isDevBuild ? "dev.vitalii.macontrol.dev" : "dev.vitalii.macontrol"
-        if let url = NSWorkspaceLookup.url(forBundleId: id) { return url }
-        let fallback = URL(fileURLWithPath: "/Applications/MaControl.app")
-        return FileManager.default.fileExists(atPath: fallback.path) ? fallback : nil
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let candidates = [URL(fileURLWithPath: "/Applications/MaControl.app"),
+                          home.appendingPathComponent("Applications/MaControl.app")]
+        return candidates.first { Bundle(url: $0)?.bundleIdentifier == id }
     }
 
     static var serverAlive: Bool {
@@ -64,21 +66,6 @@ enum ServerLauncher {
         }
         do { try process.run() } catch { return "Сервер не запустився: \(error.localizedDescription)" }
         return nil
-    }
-}
-
-/// Bundle lookup without importing AppKit into Core.
-enum NSWorkspaceLookup {
-    static func url(forBundleId id: String) -> URL? {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/mdfind")
-        task.arguments = ["kMDItemCFBundleIdentifier == '\(id)'"]
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        guard (try? task.run()) != nil else { return nil }
-        task.waitUntilExit()
-        let out = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        return out.split(separator: "\n").first.map { URL(fileURLWithPath: String($0)) }
     }
 }
 
