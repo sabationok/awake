@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Mac ↔ web parity screenshots for MaControl (Umbra Dev).
+# Mac ↔ web parity screenshots for MaControl (Dev).
 #
-#   scripts/parity.sh                 every page of the tree web-umbra serves
+#   scripts/parity.sh                 every page of the tree web serves
 #   scripts/parity.sh session tracking
 #
 # Both sides render the SAME tree: the one http://localhost:3218/api/tree returns (live or the web's fixtures) is
@@ -9,25 +9,25 @@
 # the Mac binary runs with the .prohibited activation policy and never orders its window in, Chrome runs headless.
 # The running server, the old app and agent-dev are never touched (no socket either: the tree comes from the file).
 #
-# Out: mac-umbra/build/parity/<id>-mac.png, <id>-web.png and <id>.png (the two side by side).
-# Needs: web-umbra dev server on :3218 (`pnpm --filter @awake/web-umbra dev`), Google Chrome, jq.
+# Out: mac/build/parity/<id>-mac.png, <id>-web.png and <id>.png (the two side by side).
+# Needs: web dev server on :3218 (`pnpm --filter @awake/web dev`), Google Chrome, jq.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WEB="${PARITY_WEB:-http://localhost:3218}"
 W="${PARITY_WIDTH:-1280}" H="${PARITY_HEIGHT:-900}"
 JOBS="${PARITY_JOBS:-4}"
-OUT="$ROOT/mac-umbra/build/parity"
-BIN="$ROOT/mac-umbra/build/render/mac-umbra"
+OUT="$ROOT/mac/build/parity"
+BIN="$ROOT/mac/build/render/MaControl"
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 mkdir -p "$OUT"
 
-curl -fsS "$WEB/api/tree" | jq '.tree' > "$OUT/tree.json" || { echo "web-umbra не відповідає на $WEB" >&2; exit 1; }
+curl -fsS "$WEB/api/tree" | jq '.tree' > "$OUT/tree.json" || { echo "web не відповідає на $WEB" >&2; exit 1; }
 
 if [ $# -gt 0 ]; then ids=("$@"); else ids=($(jq -r '.pages[].id' "$OUT/tree.json")); fi
 
 echo "→ збираю бінарник для знімків"
-BIN_ONLY=1 bash "$ROOT/scripts/build-mac-umbra.sh" >/dev/null
+BIN_ONLY=1 bash "$ROOT/scripts/build-mac.sh" >/dev/null
 
 # Stitcher compiled once (swift scripts are slow to start).
 APPEND="$OUT/.append"

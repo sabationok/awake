@@ -1,7 +1,7 @@
 // Помічник MaControl: маленький процес на чистому Swift (без SwiftUI і AppKit), єдиний, хто звертається до macOS.
 // Його запускає сервер (NestJS). Протокол — JSON-рядки: запити зі stdin, стан і відповіді в stdout
 // (contracts/src/helper.ts). Помічник нічого не вирішує: виконує примітив і звітує стан.
-// Системні сервіси спільні з аппкою (Sources/**), список файлів у scripts/build-helper.sh.
+// Системні сервіси — у Helper/System, список файлів у scripts/build-helper.sh.
 import CoreWLAN
 import Foundation
 import LocalAuthentication

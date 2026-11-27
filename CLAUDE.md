@@ -12,8 +12,8 @@ Changesets keeps its version and `app/CHANGELOG.md`; the workspace packages `@aw
 - Dev builds do not close the entries: `scripts/build-info.mjs` puts the pending ones into
   `Resources/agent/build-info.json`, and the agent announces a newly installed build in Telegram with the entries
   the owner has not seen yet (`agent/src/app-update`).
-- A release closes them: `pnpm release:version`, commit, then `scripts/release.sh` (takes the version from
-  `app/package.json`; the release notes are the CHANGELOG section).
+- A release closes them: `pnpm release:version`, commit, then the release script. The old one (`scripts/release.sh`,
+  Sparkle + appcast) is on the branch `archive/mac-old`; the Mac app on `mac/` has no release script yet.
 - `changeset init` and `changeset add` without flags are interactive and hang without a TTY: write the file by hand.
 
 ## Mockup before UI code
@@ -46,7 +46,7 @@ One direction: clients → server → helper → macOS. Answers and events come 
 - **Helper** (pure Swift, `Helper/`, binary `mc-helper`): the server's subprocess and the only thing that calls
   macOS. Runs primitives (sleep on / off, sleep now, lock, display off, volume, mute, brightness) and reports the
   system state. Decides nothing. Protocol: `contracts/src/helper.ts`.
-- **Clients**: the SwiftUI app (`Sources/`), the Web UI (`web/`), the Telegram bot. They render what the server
+- **Clients**: the SwiftUI app (`mac/`, built by `scripts/build-mac.sh`), the Web UI (`web/`), the Telegram bot. They render what the server
   gives and send clicks; no session logic, no system calls. The app is also the double-click entry point: it starts
   the server when none is running, or when a different build is running, and then connects to it over the local
   socket `~/Library/Application Support/MaControl/server.sock` (same JSON lines as the old stdin / stdout link).
@@ -56,12 +56,14 @@ One direction: clients → server → helper → macOS. Answers and events come 
   per-module switches; grant / revoke buttons exist only in the Mac app (scope mac) and the server refuses those
   actions from any other source.
 - Agreed exception (owner, 2026-11-27): the theme (Системна | Світла | Темна) belongs to each client, not the server.
-  Each client stores it itself (web: localStorage `macontrol:theme`; Mac Umbra: UserDefaults `theme`) and draws the
+  Each client stores it itself (web: localStorage `macontrol:theme`; Mac: UserDefaults `theme`) and draws the
   section «Вигляд» first on the server page «Налаштування»; the server knows nothing about it.
 - Not moved yet, and not an agreed exception: the app still reads the Wi-Fi name and scans Bluetooth and sends them
   to the server (macOS grants those two to a bundle with an Info.plist; the helper must become a background bundle
   to take them over). The server reads `pmset -g assertions` itself for Keepers.
-- The old link (server as a child of the app, `MACONTROL_STANDALONE` unset) is kept only for the e2e harness.
+- The app bundles its own server: `Contents/MacOS/mc-helper` and `Contents/Resources/agent/{agent.cjs,web,
+  build-info.json}`. While the old MaControl app (branch `archive/mac-old`) still runs, the new one only connects
+  and never restarts a server of another build.
 
 ## Server separately from the app in dev
 
@@ -72,16 +74,16 @@ running server writes.
 - `pnpm agent:dev` builds the server and puts it there (Web UI only the first time); `pnpm agent:dev:web` also
   rebuilds the Web UI; `pnpm agent:dev:off` removes the folder, the app goes back to the bundled server.
 - Server-only changes need no reinstall of the app. A reinstall is needed only for Swift changes (app or helper).
-- A production build ignores the folder: `scripts/build-agent.sh` bundles the server into the app as before.
+- A production build ignores the folder: `scripts/build-mac.sh` bundles the server into the app.
 
 ## Server alone, without the app (dev)
 
 - `pnpm server:dev` builds the helper and the server and runs the server with `MACONTROL_STANDALONE=1`: it starts
   the helper itself and takes the state and system actions (lock, display off, volume, mute, brightness) from it.
   Keys come from `~/.config/awake/agent.env`. The app must be closed: same port, same bot.
-- The helper protocol is `contracts/src/helper.ts` (JSON lines over the helper's stdin / stdout). The helper
-  reuses the system services from `Sources/**`; the file list is in `scripts/build-helper.sh`.
+- The helper protocol is `contracts/src/helper.ts` (JSON lines over the helper's stdin / stdout). The helper's
+  system services live in `Helper/System`; the file list is in `scripts/build-helper.sh`.
 - In standalone mode the server owns the Awake and Sleeper sessions (`agent/src/mac-sessions`): timers, the
   one-session rule, battery / thermal / lid reactions, history and Telegram. The helper only runs primitives
-  (`sleepDisabled`, `sleepNow`, lock, display off). The bash script `Resources/awake` is not used there.
+  (`sleepDisabled`, `sleepNow`, lock, display off). The bash script `Resources/awake` belonged to the old app.
 - Without the app there is no Wi-Fi name and no Bluetooth «Поруч» (see the temporary exceptions above).
