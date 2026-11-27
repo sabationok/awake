@@ -14,8 +14,8 @@ extension UiButton.Variant? {
         switch self {
         case .filled: .accent
         case .destructive: .danger
-        case .plain: .ghost
-        case nil: .default
+        // As web-umbra `fromButton`: only filled and destructive differ, the rest is the bordered default.
+        case .plain, nil: .default
         }
     }
 }

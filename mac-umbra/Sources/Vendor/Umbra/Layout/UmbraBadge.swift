@@ -82,28 +82,34 @@ public struct UmbraBigValue: View {
     private let value: String
     private let caption: String?
     private let tone: UmbraTone?
+    private let color: Color?
     private let progress: Double?
     @Environment(\.umbra) private var theme
 
-    public init(_ value: String, caption: String? = nil, tone: UmbraTone? = nil, progress: Double? = nil) {
+    /// `color` overrides `tone` for the digits and the bar (a session timer goes from green to red).
+    public init(_ value: String, caption: String? = nil, tone: UmbraTone? = nil, color: Color? = nil,
+                progress: Double? = nil) {
         self.value = value
         self.caption = caption
         self.tone = tone
+        self.color = color
         self.progress = progress
     }
 
+    /// Order as `.u-big`: value, progress bar, caption.
     public var body: some View {
         let p = theme.palette
+        let ink = color ?? tone?.color(p) ?? p.fg
         VStack(spacing: 8) {
             Text(value)
                 .font(UmbraFont.display)
                 .tracking(-0.9)
-                .foregroundStyle(tone?.color(p) ?? p.fg)
-            if let caption {
-                Text(caption).font(.system(size: 12)).foregroundStyle(p.fg3)
-            }
+                .foregroundStyle(ink)
             if let progress {
-                UmbraProgress(progress, tone: tone).frame(maxWidth: 320)
+                UmbraProgress(progress, color: color ?? tone?.color(p)).frame(maxWidth: 320)
+            }
+            if let caption {
+                Text(caption).font(.system(size: 13)).foregroundStyle(p.fg3)
             }
         }
         .frame(maxWidth: .infinity)
@@ -117,11 +123,19 @@ public struct UmbraBigValue: View {
 public struct UmbraProgress: View {
     private let value: Double
     private let tone: UmbraTone?
+    private let color: Color?
     @Environment(\.umbra) private var theme
 
     public init(_ value: Double, tone: UmbraTone? = nil) {
         self.value = value
         self.tone = tone
+        self.color = nil
+    }
+
+    public init(_ value: Double, color: Color?) {
+        self.value = value
+        self.tone = nil
+        self.color = color
     }
 
     public var body: some View {
@@ -129,7 +143,7 @@ public struct UmbraProgress: View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule().fill(p.lineStrong)
-                Capsule().fill(tone?.color(p) ?? p.accent)
+                Capsule().fill(color ?? tone?.color(p) ?? p.accent)
                     .frame(width: geo.size.width * min(max(value, 0), 1))
             }
         }

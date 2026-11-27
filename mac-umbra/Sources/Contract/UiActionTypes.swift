@@ -111,6 +111,8 @@ struct UiSection: Decodable, Hashable {
     var id: String
     var title: String?
     var footer: String?
+    /// `summary`: rows render as tiles; a client that does not know the kind draws rows.
+    var kind: String?
     var status: UiStatusBadge?
     var actions: [UiMenuItem]?
     var children: [UiNode]

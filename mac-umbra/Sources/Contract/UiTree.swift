@@ -230,6 +230,15 @@ struct UiRow: Decodable, Hashable {
     /// Кінець зворотного відліку (ISO). Рендерер сам рахує H:MM:SS щосекунди.
     var countdownTo: Date?
     var control: UiControl?
+    var compare: UiCompare?
+}
+
+/// Comparison with the previous period of the same size.
+struct UiCompare: Decodable, Hashable {
+    enum GoodWhen: String, Decodable { case up, down }
+    var previous: String
+    var deltaPct: Double?
+    var goodWhen: GoodWhen?
 }
 
 /// Великий таймер: відлік до `until` або `value`, коли відліку немає.

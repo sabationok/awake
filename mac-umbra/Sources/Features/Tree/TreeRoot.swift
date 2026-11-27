@@ -47,7 +47,7 @@ struct TreeRoot: View {
                     UmbraNotice(tone: .yellow, symbol: "exclamationmark.triangle", title: "Проблема", text: problem)
                 }
                 if let current {
-                    NodeStack(nodes: current.children, send: server.send)
+                    PageNodes(nodes: current.children, send: server.send)
                 } else if server.connected {
                     UmbraEmptyState("Чекаю дерево від сервера…", symbol: "hourglass")
                 }

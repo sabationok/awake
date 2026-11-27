@@ -1,4 +1,5 @@
 import CoreImage.CIFilterBuiltins
+import AppKit
 import SwiftUI
 
 /// QR code of a string (`.u-qr`): rounded finder patterns and dot modules, black on white in both themes so any
@@ -6,9 +7,12 @@ import SwiftUI
 /// at any size. Ported from MaControl `QrCodeImage`.
 public struct UmbraQrCode: View {
     private let matrix: UmbraQrMatrix?
+    private let padding: CGFloat
 
-    public init(_ text: String) {
+    /// `padding` is the white margin around the code (10 in a card, 14 when zoomed, as on the web).
+    public init(_ text: String, padding: CGFloat = 10) {
         self.matrix = UmbraQrMatrix.make(from: text)
+        self.padding = padding
     }
 
     public var body: some View {
@@ -17,8 +21,8 @@ public struct UmbraQrCode: View {
                 UmbraQrDrawing.draw(matrix, into: context, size: size)
             }
             .aspectRatio(1, contentMode: .fit)
-            .padding(8)
-            .background(.white, in: RoundedRectangle(cornerRadius: UmbraRadius.md, style: .continuous))
+            .padding(padding)
+            .background(.white, in: RoundedRectangle(cornerRadius: UmbraRadius.sm, style: .continuous))
             .accessibilityLabel("QR")
         }
     }
@@ -105,5 +109,65 @@ enum UmbraQrDrawing {
 
     private static func isInFinder(_ row: Int, _ col: Int, _ n: Int) -> Bool {
         (row < 8 && col < 8) || (row < 8 && col >= n - 8) || (row >= n - 8 && col < 8)
+    }
+}
+
+/// QR in a card (`.u-qr`): a 160 pt thumbnail centred with 18 pt around it and a caption; a click opens it at
+/// 340 pt in a sheet with «Закрити» (Escape closes it too). The pointer is a pointing hand over the thumbnail.
+public struct UmbraQrCard: View {
+    private let value: String
+    private let caption: String?
+    @State private var zoomed = false
+    @State private var hovering = false
+    @Environment(\.umbra) private var theme
+
+    public init(_ value: String, caption: String? = "Натисни, щоб збільшити") {
+        self.value = value
+        self.caption = caption
+    }
+
+    public var body: some View {
+        let p = theme.palette
+        VStack(spacing: 8) {
+            Button { zoomed = true } label: {
+                UmbraQrCode(value).frame(width: 160, height: 160)
+            }
+            .buttonStyle(.plain)
+            .scaleEffect(hovering ? 1.03 : 1)
+            .animation(UmbraMotion.ease, value: hovering)
+            .onHover { inside in
+                hovering = inside
+                if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+            }
+            .accessibilityLabel("Збільшити QR-код")
+            if let caption {
+                Text(caption).font(UmbraFont.xs).foregroundStyle(p.fg3).multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(18)
+        .sheet(isPresented: $zoomed) {
+            UmbraQrZoom(value: value) { zoomed = false }
+                .environment(\.umbra, theme)
+        }
+    }
+}
+
+struct UmbraQrZoom: View {
+    let value: String
+    let close: () -> Void
+    @Environment(\.umbra) private var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("QR-код").font(.system(size: 15, weight: .semibold)).foregroundStyle(theme.palette.fg)
+            UmbraQrCode(value, padding: 14).frame(width: 340, height: 340)
+            HStack {
+                Spacer()
+                Button("Закрити", action: close).buttonStyle(.umbra()).keyboardShortcut(.cancelAction)
+            }
+        }
+        .padding(22)
+        .background(theme.palette.surface1)
     }
 }

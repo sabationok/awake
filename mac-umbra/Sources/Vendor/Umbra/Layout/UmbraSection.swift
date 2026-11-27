@@ -63,10 +63,25 @@ public struct UmbraPanel<Content: View>: View {
     }
 
     public var body: some View {
-        _VariadicView.Tree(UmbraDividedLayout(line: theme.palette.line)) { content }
+        UmbraDivided { content }
             .frame(maxWidth: .infinity, alignment: .leading)
             .umbraSurface(.panel)
             .clipShape(RoundedRectangle(cornerRadius: UmbraRadius.md, style: .continuous))
+    }
+}
+
+/// A plain stack with a hairline between its direct children, for a block inside a panel that has its own parts
+/// (a tab bar over the active tab's rows, a list).
+public struct UmbraDivided<Content: View>: View {
+    private let content: Content
+    @Environment(\.umbra) private var theme
+
+    public init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    public var body: some View {
+        _VariadicView.Tree(UmbraDividedLayout(line: theme.palette.line)) { content }
     }
 }
 
