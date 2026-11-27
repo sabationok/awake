@@ -79,6 +79,7 @@
 .s-crumb button:hover { color: var(--fg); }
 .s-back { margin-left: -6px; }
 .s-demo-badge { margin-left: auto; }
+.s-trailing { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .s-burger { display: none; }
 
 .s-tabs {
@@ -140,3 +141,12 @@
 
 /* ---------- кнопка dev-індикатора в лівому нижньому куті: низ сайдбару звільняє їй місце ---------- */
 :root:has(.dvi-root[data-mode='floating'][data-corner='bl']) .s-side { padding-bottom: 60px; }
+
+/* ---------- сторінка без дерева: вхід, сполучення, «сервер недоступний» ---------- */
+.s-solo {
+  min-height: 100dvh; display: grid; align-content: start; justify-items: center;
+  padding: calc(56px + env(safe-area-inset-top, 0px)) 16px calc(48px + env(safe-area-inset-bottom, 0px));
+}
+.s-solo-head { display: flex; align-items: center; gap: 10px; width: min(440px, 100%); margin-bottom: 22px; font-size: 15px; }
+.s-solo-head b { font-weight: 600; }
+.s-solo-body { display: grid; gap: 18px; width: min(440px, 100%); }

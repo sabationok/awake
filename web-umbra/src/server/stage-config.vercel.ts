@@ -1,5 +1,5 @@
 import 'server-only';
-import { isUpstashConfigured } from './upstash';
+import { isUpstashConfigured } from './upstash.vercel';
 
 /**
  * Stage цього деплою Web Umbra з env (`STAGE`), не з NODE_ENV. Лише `dev` і `production` — справжні stage, усе інше — preview.

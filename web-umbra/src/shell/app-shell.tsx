@@ -1,17 +1,27 @@
 'use client';
 import type { UiPage, UiTree } from '@awake/contracts';
 import { ChevronLeft, ChevronRight, CircleAlert, CircleCheck, DatabaseZap, FlaskConical, Info, Menu, Power, TriangleAlert, X, type LucideIcon } from 'lucide-react';
-import { Fragment, useEffect, useMemo, useState } from 'react';
-import { DemoProvider, useDemo, type LogType } from '@/demo/demo-store';
-import type { TreeOrigin, TreeResponse } from '@/app/api/tree/route';
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { levelOf, pathTo, sidebarPages, sidebarSections, type SidebarNode } from '@/lib/sidebar-sections';
 import { PageNodes } from '@/sdui/node-view';
+import { useRuntime, type LogType } from '@/sdui/runtime';
 import { AppearanceSection } from './appearance';
 import { IconButton, SymbolIcon } from '@/ui/primitives';
 
+/**
+ * Сторінка живе в hash (`#awake`). Старий Web UI тримав її в `?page=<id>`: такі посилання при відкритті
+ * переносимо в hash і прибираємо з адреси.
+ */
 function useHash(): [string, (id: string) => void] {
   const [hash, setHash] = useState('');
   useEffect(() => {
+    const search = new URLSearchParams(window.location.search);
+    const legacy = search.get('page');
+    if (legacy && !window.location.hash) {
+      search.delete('page');
+      const rest = search.toString();
+      history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}#${encodeURIComponent(legacy)}`);
+    }
     const read = () => setHash(decodeURIComponent(window.location.hash.slice(1)));
     read();
     window.addEventListener('hashchange', read);
@@ -20,51 +30,18 @@ function useHash(): [string, (id: string) => void] {
   return [hash, (id) => (window.location.hash = id)];
 }
 
-const POLL_MS = 5000;
-
-const ORIGIN_LABEL: Record<TreeOrigin, string> = { upstash: 'Upstash', 'web-swift': 'Web Swift', fixtures: 'вбудовані фікстури' };
-
-/**
- * Дерево з `/api/tree` раз на 5 с. Джерело (Upstash → Web Swift → фікстури) вибирає сервер; браузер нічого не підміняє.
- * Якщо сервер Umbra не відповів, лишається останнє отримане дерево, а `offline` каже про це банеру.
- */
-function useTree(): { data: TreeResponse | null; offline: boolean } {
-  const [state, setState] = useState<{ data: TreeResponse | null; offline: boolean }>({ data: null, offline: false });
-  useEffect(() => {
-    let alive = true;
-    const load = async () => {
-      try {
-        const res = await fetch('/api/tree', { cache: 'no-store' });
-        if (!res.ok) throw new Error(String(res.status));
-        const data = (await res.json()) as TreeResponse;
-        if (alive) setState({ data, offline: false });
-      } catch {
-        if (alive) setState((prev) => ({ ...prev, offline: true }));
-      }
-    };
-    void load();
-    const timer = setInterval(load, POLL_MS);
-    return () => {
-      alive = false;
-      clearInterval(timer);
-    };
-  }, []);
-  return state;
+export interface ShellProps {
+  tree: UiTree;
+  /** Банер над вмістом сторінки (джерело даних, зв'язок із сервером). */
+  banner?: ReactNode;
+  /** Примітка внизу бічного меню (лише Vercel / demo). */
+  sideNote?: ReactNode;
+  /** Праворуч у шапці: значок режиму (Vercel / demo) або кнопка «Забути пристрій» / «Вийти» (локально). */
+  trailing?: ReactNode;
 }
 
-export function AppShell() {
-  const { data, offline } = useTree();
-  if (!data) return <div className="s-loading">{offline ? 'Сервер Web Umbra недоступний' : 'MaControl…'}</div>;
-  return (
-    <DemoProvider>
-      <Shell data={data} offline={offline} />
-    </DemoProvider>
-  );
-}
-
-function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
-  const { tree, origin } = data;
-  const live = origin !== 'fixtures';
+/** Каркас Umbra: бічне меню з дерева, шапка з крихтами, вкладки рівня і вузли сторінки. Потрібен рантайм вище. */
+export function Shell({ tree, banner, sideNote, trailing }: ShellProps) {
   const sections = useMemo(() => sidebarSections(tree), [tree]);
   const all = useMemo(() => sidebarPages(sections), [sections]);
   const [hash, go] = useHash();
@@ -120,14 +97,12 @@ function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
             </div>
           ))}
         </nav>
-        <div className="s-demo">
-          <FlaskConical />
-          <span>
-            {live ? `Живі дані · ${ORIGIN_LABEL[origin]}` : 'Демо-дерево'}
-            <br />
-            Дії не надсилаються на сервер
-          </span>
-        </div>
+        {sideNote ? (
+          <div className="s-demo">
+            <FlaskConical />
+            <span>{sideNote}</span>
+          </div>
+        ) : null}
       </aside>
       <div className="s-scrim" onClick={() => setDrawer(false)} />
       <main className="s-main">
@@ -146,9 +121,7 @@ function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
           ))}
           <h1>{page ? labelOf(page) : null}</h1>
           {page?.scope === 'local' ? <span className="u-chip">лише в локальній мережі</span> : null}
-          <span className="u-badge s-demo-badge" style={{ ['--tone' as string]: live ? 'var(--ok)' : 'var(--accent)' }}>
-            {live ? 'Live · демо-дії' : 'Демо'}
-          </span>
+          {trailing ? <div className="s-trailing">{trailing}</div> : null}
         </header>
         {tabs.length ? (
           <div className="s-tabs" role="tablist">
@@ -159,7 +132,7 @@ function Shell({ data, offline }: { data: TreeResponse; offline: boolean }) {
             ))}
           </div>
         ) : null}
-        <SourceBanner data={data} offline={offline} />
+        {banner}
         <div className="s-content" key={page?.id}>
           {page?.id === 'settings' ? <AppearanceSection /> : null}
           {page ? <PageNodes nodes={page.children} /> : null}
@@ -229,18 +202,16 @@ function SubNode({ node, depth, ...props }: NavProps & { depth: number }) {
   );
 }
 
-/** Банер, коли дерево не живе (фікстури) або сервер Umbra перестав відповідати: звідки дані і чому не свіжі. */
-function SourceBanner({ data, offline }: { data: TreeResponse; offline: boolean }) {
-  if (data.origin !== 'fixtures' && !offline) return null;
+/** Банер над сторінкою: що не так зі свіжістю даних і чому. */
+export function Banner({ title, details }: { title: string; details?: string[] }) {
   return (
     <div className="s-banner" role="status">
       <DatabaseZap />
       <div>
-        <b>{offline ? 'Сервер Web Umbra не відповідає — показую останнє отримане дерево' : `Живого дерева немає — показую вбудований зразок від ${data.sampledAt}`}</b>
-        {data.misses.length ? (
-          <small>{data.misses.map((m) => `${ORIGIN_LABEL[m.origin]}: ${m.reason}`).join(' · ')}</small>
-        ) : null}
-        <small>Структура сторінок та сама, що в агента; значення вигадані, дії не надсилаються.</small>
+        <b>{title}</b>
+        {details?.map((line) => (
+          <small key={line}>{line}</small>
+        ))}
       </div>
     </div>
   );
@@ -249,7 +220,7 @@ function SourceBanner({ data, offline }: { data: TreeResponse; offline: boolean 
 const LOG_ICON: Record<LogType, LucideIcon> = { info: Info, success: CircleCheck, warning: TriangleAlert, error: CircleAlert };
 
 function Toasts() {
-  const { toasts } = useDemo();
+  const { toasts } = useRuntime();
   return (
     <div className="u-toasts" aria-live="polite">
       {toasts.map((t) => (

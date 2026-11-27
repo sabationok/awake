@@ -19,10 +19,11 @@ import type {
 import { Check, Copy, Inbox, Info, TriangleAlert, X, CircleX } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useDemo } from '@/demo/demo-store';
 import { findSymbolIcon } from '@/lib/icons';
-import { Badge, Button, Chip, Dialog, Dot, DotMenu, EmptyState, IconButton, Segmented, Select, Slider, Switch, SymbolIcon, toneStyle, toneVar } from '@/ui/primitives';
-import { fromButton, fromMenuItem, useRunAction } from './use-run-action';
+import { Badge, Button, Chip, Dialog, Dot, DotMenu, EmptyState, IconButton, Segmented, Select, Slider, Spinner, Switch, SymbolIcon, toneStyle, toneVar } from '@/ui/primitives';
+import { EventScope, useBusySend, useEventScope } from './event-scope';
+import { useRuntime } from './runtime';
+import { fromButton, fromMenuItem, useRunAction, type RunnableAction } from './use-run-action';
 
 /* ---------- time ---------- */
 
@@ -89,26 +90,27 @@ export function PageNodes({ nodes }: { nodes: UiNode[] }) {
 /* ---------- section ---------- */
 
 function SectionActions({ actions }: { actions: UiMenuItem[] }) {
-  const [run, dialog] = useRunAction();
+  const [run, dialog, busy] = useRunAction();
   if (actions.length === 0) return null;
   const [first] = actions;
   return (
     <>
       {actions.length === 1 && first ? (
-        <Button size="sm" variant={first.variant} disabled={first.disabled || first.scope === 'mac'} title={first.hint} onClick={() => run(fromMenuItem(first))}>
+        <Button size="sm" variant={first.variant} busy={busy} disabled={first.disabled || first.scope === 'mac'} title={first.hint} onClick={() => run(fromMenuItem(first))}>
           {first.label}
         </Button>
       ) : (
-        <MenuOf items={actions} run={(item) => run(fromMenuItem(item))} />
+        <MenuOf items={actions} busy={busy} run={(item) => run(fromMenuItem(item))} />
       )}
       {dialog}
     </>
   );
 }
 
-function MenuOf({ items, run }: { items: UiMenuItem[]; run: (item: UiMenuItem) => void }) {
+function MenuOf({ items, run, busy }: { items: UiMenuItem[]; run: (item: UiMenuItem) => void; busy?: boolean }) {
   return (
     <DotMenu
+      busy={busy}
       entries={items.map((item) => ({
         id: item.id,
         label: item.label,
@@ -122,7 +124,17 @@ function MenuOf({ items, run }: { items: UiMenuItem[]; run: (item: UiMenuItem) =
   );
 }
 
+/** Секція — зона помилок: відхилена дія її контролів з'являється червоним під секцією. */
 function SectionNode({ node }: { node: UiSection }) {
+  const scope = useEventScope();
+  return (
+    <EventScope value={scope.run}>
+      <SectionBody node={node} error={scope.error} />
+    </EventScope>
+  );
+}
+
+function SectionBody({ node, error }: { node: UiSection; error: string | null }) {
   const children = node.children;
   const hasHead = node.title || node.status || node.actions?.length;
   return (
@@ -156,6 +168,11 @@ function SectionNode({ node }: { node: UiSection }) {
         </div>
       ) : null}
       {node.footer ? <p className="u-section-foot">{node.footer}</p> : null}
+      {error ? (
+        <p className="u-section-foot" data-error="true" role="alert">
+          {error}
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -182,73 +199,96 @@ function TileNode({ node }: { node: UiRow }) {
 
 /* ---------- rows & controls ---------- */
 
+/**
+ * Контрол праворуч у рядку. Значення — з дерева сервера (у demo — локальна зміна поверх фікстури); поки подія
+ * летить, контрол заблокований, а кнопка стає лоадером. Нове значення приходить разом із перечитаним деревом.
+ */
 function ControlView({ id, control, label }: { id: string; control: UiControl; label: string }) {
-  const demo = useDemo();
-  const [run, dialog] = useRunAction();
   switch (control.type) {
-    case 'switch': {
-      const value = control.setting ? demo.setting(control.setting.module, control.setting.key, control.value) : demo.local(id, control.value);
-      return (
-        <Switch
-          label={label}
-          checked={value}
-          disabled={control.disabled}
-          onChange={(next) => {
-            if (control.setting) return demo.send({ type: 'setting', change: { ...control.setting, value: next } }, label);
-            demo.setLocal(id, next);
-            const action = next ? control.on : control.off;
-            if (action) demo.send({ type: 'action', action }, `${label}: ${next ? 'увімк.' : 'вимк.'}`);
-          }}
-        />
-      );
-    }
-    case 'select': {
-      const value = control.setting ? demo.setting(control.setting.module, control.setting.key, control.value) : demo.local(id, control.value);
-      return (
-        <Select
-          id={`ctl-${id}`}
-          label={label}
-          value={value}
-          options={control.options}
-          disabled={control.disabled}
-          onChange={(next) => {
-            if (control.setting) return demo.send({ type: 'setting', change: { ...control.setting, value: next } }, label);
-            demo.setLocal(id, next);
-            if (control.action) demo.send({ type: 'action', action: { ...control.action, params: { ...control.action.params, value: next } } }, label);
-          }}
-        />
-      );
-    }
-    case 'slider': {
-      const value = demo.local(id, control.value);
-      return (
-        <>
-          <Slider
-            label={label}
-            value={value}
-            min={control.min}
-            max={control.max}
-            step={control.step}
-            disabled={control.disabled}
-            onChange={(v) => demo.setLocal(id, v)}
-            onCommit={(v) => demo.send({ type: 'action', action: { ...control.action, params: { ...control.action.params, value: v } } }, label)}
-          />
-          <span className="u-row-value" style={{ width: 34 }}>{value}</span>
-        </>
-      );
-    }
-    case 'button': {
-      const item = fromButton(control.button);
-      return (
-        <>
-          <Button size="sm" variant={item.variant} disabled={control.button.disabled} onClick={() => run(item)}>
-            {control.button.label}
-          </Button>
-          {dialog}
-        </>
-      );
-    }
+    case 'switch': return <SwitchControl id={id} control={control} label={label} />;
+    case 'select': return <SelectControl id={id} control={control} label={label} />;
+    case 'slider': return <SliderControl control={control} label={label} />;
+    case 'button': return <ActionButton item={fromButton(control.button)} disabled={control.button.disabled} size="sm" />;
   }
+}
+
+function SwitchControl({ id, control, label }: { id: string; control: Extract<UiControl, { type: 'switch' }>; label: string }) {
+  const runtime = useRuntime();
+  const { send, busy } = useBusySend();
+  const value = control.setting ? runtime.setting(control.setting.module, control.setting.key, control.value) : runtime.local(id, control.value);
+  return (
+    <Switch
+      label={label}
+      checked={value}
+      busy={busy}
+      disabled={control.disabled}
+      onChange={(next) => {
+        if (control.setting) return void send({ type: 'setting', change: { ...control.setting, value: next } }, label);
+        runtime.setLocal(id, next);
+        const action = next ? control.on : control.off;
+        if (!action) return;
+        void send({ type: 'action', action }, `${label}: ${next ? 'увімк.' : 'вимк.'}`);
+      }}
+    />
+  );
+}
+
+function SelectControl({ id, control, label }: { id: string; control: Extract<UiControl, { type: 'select' }>; label: string }) {
+  const runtime = useRuntime();
+  const { send, busy } = useBusySend();
+  const value = control.setting ? runtime.setting(control.setting.module, control.setting.key, control.value) : runtime.local(id, control.value);
+  return (
+    <Select
+      id={`ctl-${id}`}
+      label={label}
+      value={value}
+      options={control.options}
+      disabled={control.disabled || busy}
+      onChange={(next) => {
+        if (control.setting) return void send({ type: 'setting', change: { ...control.setting, value: next } }, label);
+        runtime.setLocal(id, next);
+        if (!control.action) return;
+        void send({ type: 'action', action: { ...control.action, params: { ...control.action.params, value: next } } }, label);
+      }}
+    />
+  );
+}
+
+/** Повзунок: поки його тягнуть, показує своє значення; після відпускання — знову значення сервера. */
+function SliderControl({ control, label }: { control: Extract<UiControl, { type: 'slider' }>; label: string }) {
+  const { send, busy } = useBusySend();
+  const [drag, setDrag] = useState<number | null>(null);
+  const value = drag ?? control.value;
+  return (
+    <>
+      <Slider
+        label={label}
+        value={value}
+        min={control.min}
+        max={control.max}
+        step={control.step}
+        disabled={control.disabled || busy}
+        onChange={setDrag}
+        onCommit={(v) => {
+          void send({ type: 'action', action: { ...control.action, params: { ...control.action.params, value: v } } }, label).finally(() => setDrag(null));
+        }}
+      />
+      <span className="u-row-value" style={{ width: 34 }}>{value}</span>
+    </>
+  );
+}
+
+/** Кнопка дії зі своїм лоадером і діалогом підтвердження / форми. */
+function ActionButton({ item, disabled, size }: { item: RunnableAction; disabled?: boolean; size?: 'sm' }) {
+  const [run, dialog, busy] = useRunAction();
+  return (
+    <>
+      <Button size={size} variant={item.variant} busy={busy} disabled={disabled} onClick={() => run(item)}>
+        {item.label}
+      </Button>
+      {dialog}
+    </>
+  );
 }
 
 function RowNode({ node }: { node: UiRow }) {
@@ -328,18 +368,11 @@ function SettingSelectNode({ node }: { node: Extract<UiNode, { type: 'select' }>
 }
 
 function ButtonsNode({ node }: { node: UiButtons }) {
-  const [run, dialog] = useRunAction();
   return (
     <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(120px, 1fr))`, gap: 8, padding: 12 }}>
-      {node.buttons.map((button) => {
-        const item = fromButton(button);
-        return (
-          <Button key={button.id} variant={item.variant} disabled={button.disabled} onClick={() => run(item)}>
-            {button.label}
-          </Button>
-        );
-      })}
-      {dialog}
+      {node.buttons.map((button) => (
+        <ActionButton key={button.id} item={fromButton(button)} disabled={button.disabled} />
+      ))}
     </div>
   );
 }
@@ -361,12 +394,22 @@ function ListNode({ node }: { node: UiList }) {
   );
 }
 
+/**
+ * Вкладки в сторінці — навігація: перемикаються одразу, без лоадера. Вкладка з налаштуванням ще й пише його на
+ * сервер у фоні; до відповіді показуємо вибрану, далі — те, що повернув сервер. Без налаштування вибір живе тут.
+ */
 function TabsNode({ node, page }: { node: UiTabs; page?: boolean }) {
-  const demo = useDemo();
+  const runtime = useRuntime();
+  const send = useBusySend().send;
+  const [chosen, setChosen] = useState<string | null>(null);
   const fallback = node.value ?? node.tabs[0]?.id ?? '';
-  const value = node.setting ? demo.setting(node.setting.module, node.setting.key, fallback) : demo.local(node.id, fallback);
+  const value = chosen ?? (node.setting ? runtime.setting(node.setting.module, node.setting.key, fallback) : fallback);
   const active = node.tabs.find((tab) => tab.id === value) ?? node.tabs[0];
-  const onChange = (next: string) => (node.setting ? demo.send({ type: 'setting', change: { ...node.setting, value: next } }) : demo.setLocal(node.id, next));
+  const onChange = (next: string) => {
+    setChosen(next);
+    if (!node.setting || runtime.mode === 'readonly') return;
+    void send({ type: 'setting', change: { ...node.setting, value: next } }).then(() => setChosen(null));
+  };
   if (page) {
     return (
       <>
@@ -380,11 +423,7 @@ function TabsNode({ node, page }: { node: UiTabs; page?: boolean }) {
   return (
     <div>
       <div style={{ padding: 12, display: 'flex', justifyContent: 'center', position: node.sticky ? 'sticky' : undefined, top: 0, zIndex: 2, background: 'var(--surface-1)', backdropFilter: 'var(--glass-blur)' }}>
-        <Segmented
-          value={active?.id ?? ''}
-          options={node.tabs.map((tab) => ({ value: tab.id, label: tab.label }))}
-          onChange={(next) => (node.setting ? demo.send({ type: 'setting', change: { ...node.setting, value: next } }) : demo.setLocal(node.id, next))}
-        />
+        <Segmented value={active?.id ?? ''} options={node.tabs.map((tab) => ({ value: tab.id, label: tab.label }))} onChange={onChange} />
       </div>
       {active?.children.map((child) => (
         <div key={child.id} style={{ borderTop: '1px solid var(--line)' }}>
@@ -530,7 +569,7 @@ function CopyValue({ value, label }: { value: string; label?: string }) {
 }
 
 function ItemNode({ node }: { node: UiItem }) {
-  const [run, dialog] = useRunAction();
+  const [run, dialog, busy] = useRunAction();
   const actions = node.actions ?? [];
   const [single] = actions;
   return (
@@ -541,11 +580,11 @@ function ItemNode({ node }: { node: UiItem }) {
         {node.status ? <Badge {...node.status} /> : null}
         {node.control ? <ControlView id={node.id} control={node.control} label={node.title} /> : null}
         {actions.length === 1 && single ? (
-          <Button size="sm" variant={single.variant} disabled={single.disabled || single.scope === 'mac'} title={single.scope === 'mac' ? (single.hint ?? 'Лише в аппці на Mac') : single.hint} onClick={() => run(fromMenuItem(single))}>
+          <Button size="sm" variant={single.variant} busy={busy} disabled={single.disabled || single.scope === 'mac'} title={single.scope === 'mac' ? (single.hint ?? 'Лише в аппці на Mac') : single.hint} onClick={() => run(fromMenuItem(single))}>
             {single.label}
           </Button>
         ) : actions.length > 1 ? (
-          <MenuOf items={actions} run={(item) => run(fromMenuItem(item))} />
+          <MenuOf items={actions} busy={busy} run={(item) => run(fromMenuItem(item))} />
         ) : null}
       </div>
       {node.tags?.length ? (
@@ -564,9 +603,11 @@ function ItemNode({ node }: { node: UiItem }) {
 
 /* ---------- notice / qr ---------- */
 
+/** Сповіщення сторінки; хрестик шле `dismiss` серверу, і воно зникає з перечитаним деревом (у demo — одразу). */
 function NoticeNode({ node }: { node: UiNotice }) {
-  const demo = useDemo();
-  if (demo.dismissed(node.id)) return null;
+  const runtime = useRuntime();
+  const { send, busy } = useBusySend();
+  if (runtime.dismissed(node.id)) return null;
   const tone = node.variant === 'error' ? 'red' : node.variant === 'warn' ? 'yellow' : 'accent';
   const Icon = node.icon ? (findSymbolIcon(node.icon.symbol) ?? Info) : node.variant === 'error' ? CircleX : node.variant === 'warn' ? TriangleAlert : Info;
   return (
@@ -577,14 +618,20 @@ function NoticeNode({ node }: { node: UiNotice }) {
         <span>{node.text}</span>
       </div>
       {node.dismiss ? (
-        <IconButton
-          icon={X}
-          label="Закрити"
-          onClick={() => {
-            demo.dismiss(node.id);
-            if (node.dismiss) demo.send({ type: 'action', action: node.dismiss }, 'Сповіщення закрито');
-          }}
-        />
+        busy ? (
+          <span className="u-icon-btn" aria-busy="true">
+            <Spinner label="Закриваю" />
+          </span>
+        ) : (
+          <IconButton
+            icon={X}
+            label="Закрити"
+            onClick={() => {
+              runtime.dismiss(node.id);
+              if (node.dismiss) void send({ type: 'action', action: node.dismiss }, 'Сповіщення закрито');
+            }}
+          />
+        )
       ) : null}
     </div>
   );
@@ -593,7 +640,7 @@ function NoticeNode({ node }: { node: UiNotice }) {
 /** Декоративний QR-подібний візерунок: справжній код одноразовий і з Mac не виходить. */
 /**
  * QR-код у стилі MaControl, як `QrCodeImage.swift` у Mac-аппці: заокруглені кути-маркери і крапки-модулі на білому.
- * Матриця справжня (рівень корекції M), тож код сканується; у Umbra значення — демо з фікстур.
+ * Матриця справжня (рівень корекції M), тож код сканується; значення — з дерева сервера (у demo — з фікстур).
  */
 function QrNode({ node }: { node: UiQr }) {
   const svg = useMemo(() => {
@@ -612,6 +659,7 @@ function QrNode({ node }: { node: UiQr }) {
     return { total, dots, eyes };
   }, [node.value]);
   const [zoomed, setZoomed] = useState(false);
+  const runtime = useRuntime();
   const code = (
     <svg viewBox={`0 0 ${svg.total} ${svg.total}`} role="img" aria-label="QR-код">
       <rect width={svg.total} height={svg.total} fill="#fff" />
@@ -630,7 +678,7 @@ function QrNode({ node }: { node: UiQr }) {
       <button type="button" className="u-qr-thumb" aria-label="Збільшити QR-код" onClick={() => setZoomed(true)}>
         {code}
       </button>
-      <small>Натисни, щоб збільшити · демо-код, справжній показує лише Mac.</small>
+      <small>{runtime.mode === 'demo' ? 'Натисни, щоб збільшити · демо-код, справжній показує лише Mac.' : 'Натисни, щоб збільшити'}</small>
       {zoomed ? createPortal(
         <Dialog title="QR-код" onClose={() => setZoomed(false)} actions={<Button onClick={() => setZoomed(false)}>Закрити</Button>}>
           <div className="u-qr-zoom">{code}</div>

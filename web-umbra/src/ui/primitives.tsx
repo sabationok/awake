@@ -1,7 +1,7 @@
 'use client';
 import type { UiOption, UiTone } from '@awake/contracts';
-import { ChevronDown, Info, MoreHorizontal, type LucideIcon } from 'lucide-react';
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react';
+import { ChevronDown, Info, LoaderCircle, MoreHorizontal, type LucideIcon } from 'lucide-react';
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type InputHTMLAttributes, type ReactNode } from 'react';
 import { resolveSymbolIcon } from '@/lib/icons';
 
 /** Колір тону дерева в токенах Umbra. accent — помаранчевий акцент, orange — червоніший, щоб їх розрізняти. */
@@ -22,17 +22,26 @@ export const toneStyle = (tone: UiTone | undefined): CSSProperties => ({ ['--ton
 
 export type ButtonVariant = 'accent' | 'default' | 'ghost' | 'warn' | 'danger';
 
+/** Крутилка «чекаємо сервер». Лише для дій: вкладки й навігація ніколи її не показують. */
+export function Spinner({ label = 'Виконується' }: { label?: string }) {
+  return <LoaderCircle className="u-spin" role="status" aria-label={label} />;
+}
+
+/** Кнопка. `busy` — дія летить: кнопка заблокована, підпис лишається на місці під крутилкою, ширина не стрибає. */
 export function Button({
   variant = 'default',
   size,
   icon: Icon,
+  busy,
+  disabled,
   children,
   ...rest
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: 'sm'; icon?: LucideIcon }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: 'sm'; icon?: LucideIcon; busy?: boolean }) {
   return (
-    <button type="button" className="u-btn" data-variant={variant} data-size={size} {...rest}>
+    <button type="button" className="u-btn" data-variant={variant} data-size={size} data-busy={busy ? 'true' : undefined} disabled={disabled || busy} aria-busy={busy || undefined} {...rest}>
       {Icon ? <Icon /> : null}
-      {children}
+      <span className="u-btn-label">{children}</span>
+      {busy ? <Spinner /> : null}
     </button>
   );
 }
@@ -45,7 +54,7 @@ export function IconButton({ icon: Icon, label, ...rest }: ButtonHTMLAttributes<
   );
 }
 
-export function Switch({ checked, onChange, disabled, label }: { checked: boolean; onChange: (next: boolean) => void; disabled?: boolean; label: string }) {
+export function Switch({ checked, onChange, disabled, busy, label }: { checked: boolean; onChange: (next: boolean) => void; disabled?: boolean; busy?: boolean; label: string }) {
   return (
     <button
       type="button"
@@ -53,7 +62,9 @@ export function Switch({ checked, onChange, disabled, label }: { checked: boolea
       className="u-switch"
       aria-checked={checked}
       aria-label={label}
-      disabled={disabled}
+      aria-busy={busy || undefined}
+      data-busy={busy ? 'true' : undefined}
+      disabled={disabled || busy}
       onClick={() => onChange(!checked)}
     />
   );
@@ -147,7 +158,7 @@ export interface MenuEntry {
 }
 
 /** Меню «⋯»: закривається кліком поза ним і Escape. */
-export function DotMenu({ entries, label = 'Дії' }: { entries: MenuEntry[]; label?: string }) {
+export function DotMenu({ entries, label = 'Дії', busy }: { entries: MenuEntry[]; label?: string; busy?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -164,8 +175,14 @@ export function DotMenu({ entries, label = 'Дії' }: { entries: MenuEntry[]; l
   }, [open]);
   return (
     <div className="u-menu-wrap" ref={ref}>
-      <IconButton icon={MoreHorizontal} label={label} aria-expanded={open} onClick={() => setOpen((v) => !v)} />
-      {open ? (
+      {busy ? (
+        <span className="u-icon-btn" aria-busy="true">
+          <Spinner />
+        </span>
+      ) : (
+        <IconButton icon={MoreHorizontal} label={label} aria-expanded={open} onClick={() => setOpen((v) => !v)} />
+      )}
+      {open && !busy ? (
         <div className="u-menu" role="menu">
           {entries.map(({ id, label: text, icon: Icon, variant, disabled, hint, onSelect }) => (
             <div key={id}>
@@ -215,4 +232,58 @@ export function EmptyState({ text, icon: Icon = Info }: { text: string; icon?: L
       {text}
     </div>
   );
+}
+
+/** Блок сторінки: заголовок, праворуч стан або дії, панель рядків і підпис. Підпис з помилкою — червоним. */
+export function Section({ title, trailing, footer, error, children }: { title?: string; trailing?: ReactNode; footer?: ReactNode; error?: string | null; children?: ReactNode }) {
+  return (
+    <section className="u-section">
+      {title || trailing ? (
+        <div className="u-section-head">
+          <h3>{title}</h3>
+          {trailing}
+        </div>
+      ) : null}
+      {children}
+      {footer ? <p className="u-section-foot">{footer}</p> : null}
+      {error ? (
+        <p className="u-section-foot" data-error="true" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+/** Панель: рядки один під одним з роздільником. */
+export function Panel({ children }: { children?: ReactNode }) {
+  return <div className="u-panel">{children}</div>;
+}
+
+/** Простий рядок панелі: підпис, підказка і значення праворуч. */
+export function Row({ label, hint, value }: { label: string; hint?: string; value?: ReactNode }) {
+  return (
+    <div className="u-row">
+      <div className="u-row-text">
+        <span className="u-row-label">{label}</span>
+        {hint ? <span className="u-row-hint">{hint}</span> : null}
+      </div>
+      {value != null ? <span className="u-row-value">{value}</span> : null}
+    </div>
+  );
+}
+
+/** Поле форми: підпис над контролом, під ним підказка або помилка. */
+export function Field({ id, label, hint, error, children }: { id: string; label: string; hint?: string; error?: string | null; children: ReactNode }) {
+  return (
+    <div className="u-field" data-error={error ? 'true' : undefined}>
+      <label htmlFor={id}>{label}</label>
+      {children}
+      {error ? <small role="alert">{error}</small> : hint ? <small>{hint}</small> : null}
+    </div>
+  );
+}
+
+export function TextInput({ type = 'text', ...rest }: InputHTMLAttributes<HTMLInputElement>) {
+  return <input className="u-input" type={type} {...rest} />;
 }

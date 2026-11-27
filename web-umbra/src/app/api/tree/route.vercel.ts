@@ -1,23 +1,12 @@
 import { UI_TREE_KEY, type UiTree } from '@awake/contracts';
 import { NextResponse } from 'next/server';
 import { FIXTURE_SAMPLED_AT, fixtureTree } from '@/fixtures/tree';
-import { toPublicUiTree } from '@/server/public-tree';
-import { readStageConfig, type Stage, type TreeSource } from '@/server/stage-config';
-import { upstashGet } from '@/server/upstash';
+import { toPublicUiTree } from '@/server/public-tree.vercel';
+import type { TreeResponse } from '@/demo/tree-response';
+import { readStageConfig, type TreeSource } from '@/server/stage-config.vercel';
+import { upstashGet } from '@/server/upstash.vercel';
 
 export const dynamic = 'force-dynamic';
-
-export type TreeOrigin = 'upstash' | 'web-swift' | 'fixtures';
-
-/** Що віддав сервер і чому саме це: `misses` — джерела, які спробували перед ним, з причиною. */
-export interface TreeResponse {
-  tree: UiTree;
-  origin: TreeOrigin;
-  stage: Stage;
-  misses: { origin: Exclude<TreeOrigin, 'fixtures'>; reason: string }[];
-  /** Лише для фікстур: дата зразка, з якого їх списано. */
-  sampledAt?: string;
-}
 
 const TIMEOUT_MS = 4000;
 

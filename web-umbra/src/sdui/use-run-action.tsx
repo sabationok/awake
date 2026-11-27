@@ -1,8 +1,8 @@
 'use client';
-import type { UiAction, UiButton, UiConfirm, UiForm, UiMenuItem } from '@awake/contracts';
+import type { UiAction, UiButton, UiConfirm, UiEvent, UiForm, UiMenuItem } from '@awake/contracts';
 import { useState, type ReactNode } from 'react';
-import { useDemo } from '@/demo/demo-store';
 import { Button, Dialog, Select, type ButtonVariant } from '@/ui/primitives';
+import { useBusySend } from './event-scope';
 
 export interface RunnableAction {
   label: string;
@@ -26,20 +26,41 @@ export function fromMenuItem(item: UiMenuItem): RunnableAction {
   return { label: item.label, action: item.action, variant: item.variant, confirm: item.confirm, form: item.form };
 }
 
-/** Запуск дії з підтвердженням або формою. Повертає `run` і діалог, який треба вставити в розмітку. */
-export function useRunAction(): [(item: RunnableAction) => void, ReactNode] {
-  const { send } = useDemo();
+/**
+ * Запуск дії з підтвердженням або формою. Повертає `run`, діалог, який треба вставити в розмітку, і `busy`:
+ * поки дія летить, кнопка-тригер стає лоадером. Помилку показує зона (підпис секції або тост); форма з помилкою
+ * лишається відкритою і показує текст сервера.
+ */
+export function useRunAction(): [(item: RunnableAction) => void, ReactNode, boolean] {
+  const { send, busy } = useBusySend();
   const [pending, setPending] = useState<RunnableAction | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const close = () => setPending(null);
-  const fire = (item: RunnableAction, extra?: Record<string, string>) => {
-    send({ type: 'action', action: { ...item.action, params: { ...item.action.params, ...extra } } }, item.label);
+  const eventOf = (item: RunnableAction, extra?: Record<string, string>): UiEvent => ({
+    type: 'action',
+    action: { ...item.action, params: { ...item.action.params, ...extra } },
+  });
+  const fire = (item: RunnableAction) => {
     close();
+    void send(eventOf(item), item.label);
   };
-  const run = (item: RunnableAction) => (item.confirm || item.form ? setPending(item) : fire(item));
+  const submit = async (item: RunnableAction, values: Record<string, string>) => {
+    setFormError(null);
+    const error = await send(eventOf(item, values), item.label);
+    if (error) setFormError(error);
+    else close();
+  };
+  const run = (item: RunnableAction) => {
+    if (busy) return;
+    setFormError(null);
+    if (item.confirm || item.form) setPending(item);
+    else fire(item);
+  };
 
   let dialog: ReactNode = null;
-  if (pending?.form) dialog = <FormDialog item={pending} form={pending.form} onClose={close} onSubmit={(values) => fire(pending, values)} />;
-  else if (pending?.confirm) {
+  if (pending?.form) {
+    dialog = <FormDialog item={pending} form={pending.form} busy={busy} error={formError} onClose={close} onSubmit={(values) => void submit(pending, values)} />;
+  } else if (pending?.confirm) {
     const { title, text, ok } = pending.confirm;
     dialog = (
       <Dialog
@@ -56,10 +77,10 @@ export function useRunAction(): [(item: RunnableAction) => void, ReactNode] {
       </Dialog>
     );
   }
-  return [run, dialog];
+  return [run, dialog, busy];
 }
 
-function FormDialog({ item, form, onClose, onSubmit }: { item: RunnableAction; form: UiForm; onClose: () => void; onSubmit: (values: Record<string, string>) => void }) {
+function FormDialog({ item, form, busy, error: serverError, onClose, onSubmit }: { item: RunnableAction; form: UiForm; busy: boolean; error: string | null; onClose: () => void; onSubmit: (values: Record<string, string>) => void }) {
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(form.fields.map((f) => [f.name, f.value ?? f.options?.[0]?.value ?? ''])));
   const [touched, setTouched] = useState(false);
   const errors = Object.fromEntries(
@@ -82,6 +103,7 @@ function FormDialog({ item, form, onClose, onSubmit }: { item: RunnableAction; f
           <Button variant="ghost" onClick={onClose}>Скасувати</Button>
           <Button
             variant="accent"
+            busy={busy}
             onClick={() => {
               setTouched(true);
               if (valid) onSubmit(values);
@@ -97,7 +119,7 @@ function FormDialog({ item, form, onClose, onSubmit }: { item: RunnableAction; f
         onSubmit={(event) => {
           event.preventDefault();
           setTouched(true);
-          if (valid) onSubmit(values);
+          if (valid && !busy) onSubmit(values);
         }}
       >
         {form.fields.map((f) => {
@@ -122,6 +144,11 @@ function FormDialog({ item, form, onClose, onSubmit }: { item: RunnableAction; f
             </div>
           );
         })}
+        {serverError ? (
+          <p className="u-form-error" role="alert">
+            {serverError}
+          </p>
+        ) : null}
         <button type="submit" hidden />
       </form>
     </Dialog>

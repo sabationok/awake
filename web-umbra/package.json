@@ -6,6 +6,7 @@
     "gen:dev-build": "node src/vendor/dev-indicator/gen-dev-build.mjs --out src/generated/dev-build.json --project-id web-umbra --name MaControl --variant Umbra --package ../app/package.json",
     "dev": "pnpm gen:dev-build && next dev -p 3218",
     "build": "pnpm gen:dev-build && next build",
+    "build:local": "pnpm gen:dev-build && BUILD_TARGET=local next build",
     "typecheck": "pnpm gen:dev-build && tsc --noEmit",
     "deploy": "../scripts/deploy-web-umbra.sh"
   },
