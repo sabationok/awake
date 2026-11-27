@@ -1,0 +1,14 @@
+{
+  "kit": "dev-indicator-kit",
+  "part": "web",
+  "sourceCommit": "d06cf3930979baace0832e26e6c1048f3d87e1f2",
+  "files": {
+    "DevIndicator.tsx": "b5b0462b0a40f8269baea0010e1be4fbe4677ca5f20749c806e9e3bd7ade16f7",
+    "contract/index.ts": "4da1bdda8c2d2dcb12e9226b54d931e650f1933680eb7fd90e4117a7bd133e50",
+    "dev-indicator.css": "d7fdde64d0d044483e63a39ff3e005bf803985a3126a37b48f3bd291cf10e18b",
+    "gen-dev-build.mjs": "2feb0e9017c47ff93d9042471fc91dcd963beac3c668ec061700338370162e53",
+    "index.ts": "dd9484d052fbc1e99aa1cfaa562c05b2cb593b9734d1625952b9d12946c7f2c3",
+    "tools.ts": "1a57107fe46070b169fe63e62428300d248def67ae1860efb08c3e14012ac8ab",
+    "types.ts": "1b55450c4131bb0f533341304abcfb68b908e0800ba78bc21e44db147f0137c0"
+  }
+}

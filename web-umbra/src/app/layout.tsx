@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import './globals.css';
 import '../ui/umbra.css';
 import '../shell/shell.css';
+import { DevBuildIndicator } from '../shell/dev-build-indicator';
 
 export const metadata: Metadata = {
   title: 'MaControl · Umbra',
@@ -16,7 +17,7 @@ export const viewport: Viewport = { themeColor: '#060403', width: 'device-width'
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="uk" data-backdrop="gradient" suppressHydrationWarning>
+    <html lang="uk" data-theme="dark" data-backdrop="gradient" suppressHydrationWarning>
       <head>
         {/* До першого малювання: `?theme=light` — пробна світла тема, `?backdrop=off` — без підкладки (порівняти). */}
         <script
@@ -28,7 +29,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <DevBuildIndicator />
+      </body>
     </html>
   );
 }

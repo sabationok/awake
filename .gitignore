@@ -12,3 +12,4 @@ Resources/agent/
 .vercel
 web-umbra/.next/
 web-umbra/.vercel/
+web-umbra/src/generated/
