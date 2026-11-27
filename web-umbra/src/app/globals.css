@@ -85,15 +85,15 @@
 :root[data-backdrop='gradient'] {
   /* Плями зверху, по центру і знизу; у темній темі всі в акцентному (помаранчевому) спектрі. */
   --backdrop:
-    radial-gradient(45% 35% at 18% 0%, rgba(255, 155, 47, 0.30), transparent 70%),
-    radial-gradient(40% 32% at 86% 6%, rgba(255, 122, 69, 0.22), transparent 70%),
-    radial-gradient(38% 34% at 52% 52%, rgba(255, 183, 102, 0.12), transparent 70%),
-    radial-gradient(50% 36% at 30% 100%, rgba(255, 122, 69, 0.20), transparent 70%),
-    radial-gradient(40% 32% at 92% 96%, rgba(255, 155, 47, 0.16), transparent 70%),
-    #050403;
+    radial-gradient(50% 40% at 18% 0%, rgba(255, 155, 47, 0.55), transparent 72%),
+    radial-gradient(44% 36% at 86% 6%, rgba(255, 122, 69, 0.45), transparent 72%),
+    radial-gradient(42% 38% at 52% 52%, rgba(255, 183, 102, 0.26), transparent 72%),
+    radial-gradient(55% 40% at 30% 100%, rgba(255, 122, 69, 0.42), transparent 72%),
+    radial-gradient(44% 36% at 92% 96%, rgba(255, 155, 47, 0.36), transparent 72%),
+    #060403;
   --bg: transparent;
-  --bg-app: rgba(8, 8, 10, 0.45);
-  --surface-1: rgba(22, 22, 25, 0.58);
+  --bg-app: rgba(8, 7, 7, 0.38);
+  --surface-1: rgba(20, 18, 18, 0.5);
   --surface-2: rgba(32, 32, 36, 0.78);
   --surface-3: rgba(52, 52, 58, 0.6);
   --line: rgba(255, 255, 255, 0.07);
