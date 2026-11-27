@@ -83,12 +83,14 @@
  * розмиття (`--glass-blur`) лише там, де під шаром рухається вміст: шапка, меню, тости, діалоги, мобільне меню.
  */
 :root[data-backdrop='gradient'] {
+  /* Плями зверху, по центру і знизу; у темній темі всі в акцентному (помаранчевому) спектрі. */
   --backdrop:
-    radial-gradient(55% 45% at 8% 4%, rgba(255, 155, 47, 0.26), transparent 70%),
-    radial-gradient(45% 40% at 92% 12%, rgba(125, 107, 255, 0.24), transparent 70%),
-    radial-gradient(60% 50% at 78% 98%, rgba(255, 95, 95, 0.14), transparent 70%),
-    radial-gradient(50% 45% at 20% 90%, rgba(63, 207, 142, 0.08), transparent 70%),
-    linear-gradient(160deg, #0d0b12 0%, #050506 55%, #0e0906 100%);
+    radial-gradient(45% 35% at 18% 0%, rgba(255, 155, 47, 0.30), transparent 70%),
+    radial-gradient(40% 32% at 86% 6%, rgba(255, 122, 69, 0.22), transparent 70%),
+    radial-gradient(38% 34% at 52% 52%, rgba(255, 183, 102, 0.12), transparent 70%),
+    radial-gradient(50% 36% at 30% 100%, rgba(255, 122, 69, 0.20), transparent 70%),
+    radial-gradient(40% 32% at 92% 96%, rgba(255, 155, 47, 0.16), transparent 70%),
+    #050403;
   --bg: transparent;
   --bg-app: rgba(8, 8, 10, 0.45);
   --surface-1: rgba(22, 22, 25, 0.58);
@@ -99,12 +101,14 @@
   --glass-blur: blur(24px) saturate(160%);
 }
 :root[data-theme='light'][data-backdrop='gradient'] {
+  /* Ті самі місця, у світлій — різні кольори акцентів. */
   --backdrop:
-    radial-gradient(55% 45% at 8% 4%, rgba(255, 155, 47, 0.30), transparent 70%),
-    radial-gradient(45% 40% at 92% 12%, rgba(125, 107, 255, 0.22), transparent 70%),
-    radial-gradient(60% 50% at 78% 98%, rgba(255, 120, 150, 0.18), transparent 70%),
-    radial-gradient(50% 45% at 20% 90%, rgba(63, 207, 142, 0.14), transparent 70%),
-    linear-gradient(160deg, #f6f1fb 0%, #f3f3f6 55%, #fbf3ec 100%);
+    radial-gradient(45% 35% at 18% 0%, rgba(255, 155, 47, 0.32), transparent 70%),
+    radial-gradient(40% 32% at 86% 6%, rgba(125, 107, 255, 0.24), transparent 70%),
+    radial-gradient(38% 34% at 52% 52%, rgba(255, 183, 102, 0.16), transparent 70%),
+    radial-gradient(50% 36% at 30% 100%, rgba(63, 207, 142, 0.18), transparent 70%),
+    radial-gradient(40% 32% at 92% 96%, rgba(255, 120, 150, 0.22), transparent 70%),
+    #f4f3f6;
   --bg-app: rgba(255, 255, 255, 0.35);
   --surface-1: rgba(255, 255, 255, 0.62);
   --surface-2: rgba(255, 255, 255, 0.85);
