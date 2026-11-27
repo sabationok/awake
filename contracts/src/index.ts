@@ -162,13 +162,13 @@ export type MacToAgentMessage =
   | { type: 'envify'; data: { action: 'reload' } }
   /** Довірені мережі Wi-Fi: список у SQLite агента, аппка лише додає й прибирає. */
   | { type: 'trustedNetworks'; data: { action: 'add' | 'remove'; ssid: string } }
-  /** Bluetooth-пристрої поруч, раз на кілька секунд, поки ввімкнено `proximity.enabled`. Рішення блокувати — за агентом. */
+  /** Лише стара аппка (archive/mac-old): Bluetooth тепер сканує помічник (HelperToServerMessage `proximity`). TODO(cutover): прибрати. */
   | { type: 'proximity'; data: ProximityReport }
   /** Вебхуки webhooxy: аппка зберігає форму з модалки, вмикає, вимикає, прибирає. Секрети сюди не йдуть. */
   | { type: 'webhooks'; data: import('./webhooks').WebhookAction }
   /** Сторінка «Сервер» відкрилась або змінився період: агент шле графіки й далі live-тіки цього періоду. */
   | { type: 'serverCharts'; data: { period: StatsPeriod } }
-  /** Тимчасово, поки помічник не має дозволу геолокації: назву Wi-Fi знає лише аппка. */
+  /** Лише стара аппка (archive/mac-old): назву Wi-Fi тепер дає помічник (HelperState.ssid). TODO(cutover): прибрати. */
   | { type: 'wifi'; data: { ssid: string | null } };
 
 /** Дозволи, якими володіє сервер: що видано в системі (перевіряє помічник) і що вимкнено окремим модулям. */
@@ -179,7 +179,7 @@ export interface PermissionsSnapshot {
   denied: { module: string; permission: string }[];
 }
 
-/** Стан Bluetooth на Mac. `unauthorized` — macOS не дала аппці доступ. */
+/** Стан Bluetooth на Mac. `unauthorized` — macOS не дала помічнику (MaControl Helper) доступ. */
 export type BluetoothState = 'on' | 'off' | 'unauthorized' | 'unsupported' | 'unknown';
 
 /** Пристрій, який Mac бачив за останні секунди. `id` — ідентифікатор CoreBluetooth, стабільний для цього Mac. */

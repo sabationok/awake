@@ -14,7 +14,7 @@ import { readProximityConfig } from './helpers/read-proximity-config';
 const DEVICE_NAME_KEY = 'deviceName';
 
 /**
- * «Поруч»: аппка шле, які Bluetooth-пристрої бачить і з яким сигналом, агент вирішує, коли блокувати.
+ * «Поруч»: помічник шле, які Bluetooth-пристрої бачить і з яким сигналом, агент вирішує, коли блокувати.
  * Вибраний пристрій слабший за поріг (або зник) довше за затримку → одна команда `lock`. Наступна — лише після того,
  * як пристрій повернувся в діапазон.
  */
@@ -72,7 +72,7 @@ export class ProximityService {
 
   update(report: unknown) {
     if (!isProximityReport(report)) {
-      this._logger.warn('Некоректний звіт proximity від аппки');
+      this._logger.warn('Некоректний звіт proximity');
       return;
     }
     this._report = report;

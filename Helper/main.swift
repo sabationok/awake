@@ -2,11 +2,14 @@
 // Його запускає сервер (NestJS). Протокол — JSON-рядки: запити зі stdin, стан і відповіді в stdout
 // (contracts/src/helper.ts). Помічник нічого не вирішує: виконує примітив і звітує стан.
 // Системні сервіси — у Helper/System, список файлів у scripts/build-helper.sh.
-import CoreWLAN
+// Помічник — фоновий бандл MaControlHelper.app: дозволи Bluetooth і геолокації (назва Wi-Fi) macOS видає саме йому.
 import Foundation
 import LocalAuthentication
 
-let helperVersion = "0.1.0"
+// Першим ділом: стати відповідальним за себе, щоб дозволи питались від імені помічника (Helper/System/Responsibility.swift).
+Responsibility.disclaimIfNeeded()
+
+let helperVersion = "0.2.0"
 /// Як часто стан іде серверу без запиту. Сервер вважає Mac офлайн після 30 с тиші.
 let statePeriod: TimeInterval = 5
 
@@ -34,6 +37,8 @@ func thermalName(_ state: ProcessInfo.ThermalState) -> String {
 /// Видані в системі дозволи (правила sudoers). `sudo -n -l` важчий за решту стану, тож перечитується рідше.
 var grantedPermissions = SudoersRules.granted()
 var stateTicks = 0
+let wifi = WifiService()
+let bluetooth = BluetoothScanner()
 
 func sendState() {
     stateTicks += 1
@@ -46,8 +51,8 @@ func sendState() {
         "thermal": thermalName(ProcessInfo.processInfo.thermalState),
         "lidClosed": ClamshellService.isClosed(),
         "sleepBlocked": PowerService.isSleepBlocked(),
-        // Без дозволу геолокації macOS віддає nil; дозвіл помічник отримає окремим кроком.
-        "ssid": orNull(CWWiFiClient.shared().interface()?.ssid()),
+        // Без дозволу геолокації macOS віддає nil.
+        "ssid": orNull(wifi.ssid),
         "volume": orNull(SoundService.volume()),
         "muted": SoundService.isMuted() ?? false,
         "brightness": orNull(BrightnessService.brightness()),
@@ -118,6 +123,10 @@ func perform(_ request: Request.Body) -> String? {
     case "sleepNow":
         _ = Shell.run("/usr/bin/pmset", ["sleepnow"])
         return nil
+    case "bluetoothScan":
+        guard let enabled = request.value?.flag else { return "bluetoothScan needs true or false" }
+        bluetooth.set(enabled: enabled, target: request.name.flatMap { $0.isEmpty ? nil : $0 })
+        return nil
     default:
         return "unknown action \(request.action)"
     }
@@ -181,11 +190,18 @@ func handle(_ line: String) {
 // MARK: старт
 
 send(type: "hello", data: ["version": helperVersion, "pid": Int(ProcessInfo.processInfo.processIdentifier)])
+wifi.onChange = { sendState() }
+wifi.requestAccess()
+bluetooth.onReport = { report in send(type: "proximity", data: report.json) }
 sendState()
 
 let timer = DispatchSource.makeTimerSource(queue: .main)
 timer.schedule(deadline: .now() + statePeriod, repeating: statePeriod)
-timer.setEventHandler { sendState() }
+timer.setEventHandler {
+    // Трамплін (Responsibility) або сервер зник: помічнику більше нема кому служити.
+    if getppid() == 1 { exit(0) }
+    sendState()
+}
 timer.resume()
 
 // stdin читає окремий потік; сам запит виконується на main, як і таймер стану.
@@ -197,4 +213,5 @@ Thread.detachNewThread {
     exit(0)
 }
 
-dispatchMain()
+// Run loop, а не dispatchMain(): CoreLocation кличе делегата лише в run loop потоку, де його створили.
+RunLoop.main.run()

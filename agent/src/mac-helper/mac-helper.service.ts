@@ -3,8 +3,8 @@ import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { createInterface } from 'node:readline';
-import { BehaviorSubject } from 'rxjs';
-import type { HelperAction, HelperResult, HelperState, HelperToServerMessage, ServerToHelperMessage } from '@awake/contracts';
+import { BehaviorSubject, Subject } from 'rxjs';
+import type { HelperAction, HelperResult, HelperState, HelperToServerMessage, ProximityReport, ServerToHelperMessage } from '@awake/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 
 /** Пауза перед новим запуском помічника, якщо він завершився або його файла немає. */
@@ -26,6 +26,10 @@ export class MacHelperService implements OnApplicationShutdown {
   private readonly _logger = new Logger(MacHelperService.name);
   /** null — помічник не запущений або ще не дав стану. */
   readonly state$ = new BehaviorSubject<HelperState | null>(null);
+  /** Помічник (пере)запустився: стан сканування в ньому скинуто, сервер має повторити свої запити. Значення — версія. */
+  readonly started$ = new Subject<string>();
+  /** Bluetooth-пристрої поруч, поки сервер увімкнув `bluetoothScan`. */
+  readonly proximity$ = new Subject<ProximityReport>();
   private _process: ChildProcessWithoutNullStreams | null = null;
   private readonly _pending = new Map<string, Pending>();
   private _stopping = false;
@@ -103,6 +107,10 @@ export class MacHelperService implements OnApplicationShutdown {
     switch (message.type) {
       case 'hello':
         this._logger.log(`helper ${message.data.version} started, pid ${message.data.pid}`);
+        this.started$.next(message.data.version);
+        return;
+      case 'proximity':
+        this.proximity$.next(message.data);
         return;
       case 'state':
         this.state$.next(message.data);

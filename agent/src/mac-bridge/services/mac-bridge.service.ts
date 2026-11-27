@@ -45,7 +45,9 @@ export interface ServerCommand {
 
 /**
  * Що сервер приймає від аппки-клієнта. `log` — її власні рядки журналу (збережено ключі, видано дозвіл).
- * `proximity` і `wifi` — тимчасово, поки Bluetooth і геолокація не в помічнику.
+ * Wi-Fi і Bluetooth дає помічник. `proximity` і `wifi` від аппки лишаються лише для старої аппки (archive/mac-old),
+ * поки вона ще клієнт зі своїм старим помічником: беремо їх, тільки коли помічник сам цього не дає.
+ * TODO(cutover): прибрати разом зі старою аппкою.
  */
 const CLIENT_TYPES: ReadonlySet<MacToAgentMessage['type']> = new Set([
   'event',
@@ -106,8 +108,10 @@ export class MacBridgeService implements OnModuleInit {
   readonly serverCommands$ = new Subject<ServerCommand>();
   private _helperState: HelperState | null = null;
   private _sessionFields: MacSessionFields = NO_SESSIONS;
-  /** Назва Wi-Fi від аппки-клієнта: помічник її поки не бачить. */
+  /** Назва Wi-Fi від старої аппки-клієнта: лише коли помічник її не бачить (див. CLIENT_TYPES). */
   private _clientSsid: string | null = null;
+  /** Помічник сам сканує Bluetooth: звіти старої аппки тоді не беремо. */
+  private _helperProximity = false;
 
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
@@ -120,6 +124,10 @@ export class MacBridgeService implements OnModuleInit {
       this._helper.state$.subscribe((state) => {
         this._helperState = state;
         if (state) this._emitState();
+      });
+      this._helper.proximity$.subscribe((report) => {
+        this._helperProximity = true;
+        this.proximity$.next(report);
       });
       this._app.lines$.subscribe((line) => this._handleLine(line, CLIENT_TYPES));
       this._app.empty$.subscribe(() => (this._clientSsid = null));
@@ -281,6 +289,7 @@ export class MacBridgeService implements OnModuleInit {
         this.trustedNetworks$.next(message.data);
         return;
       case 'proximity':
+        if (allowed && this._helperProximity) return;
         this.proximity$.next(message.data);
         return;
       case 'webhooks':
@@ -293,7 +302,10 @@ export class MacBridgeService implements OnModuleInit {
   }
 }
 
+/** Сканування Bluetooth вмикає лише сервер (ProximityListener), клієнт його не замовляє. */
+const CLIENT_HELPER_ACTIONS: readonly HelperAction[] = HELPER_ACTIONS.filter((action) => action !== 'bluetoothScan');
+
 /** Дії клієнтів, які є примітивом помічника; решту (сесії, налаштування) виконує сервер. */
 function isHelperAction(action: CommandRequest['action']): action is CommandRequest['action'] & HelperAction {
-  return (HELPER_ACTIONS as readonly string[]).includes(action);
+  return (CLIENT_HELPER_ACTIONS as readonly string[]).includes(action);
 }

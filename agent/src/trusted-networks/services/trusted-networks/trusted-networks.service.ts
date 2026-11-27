@@ -33,7 +33,7 @@ export class TrustedNetworksService {
     return !!ssid && this._ssids.has(ssid);
   }
 
-  /** Mac зараз у довіреній мережі (за останнім станом від аппки). */
+  /** Mac зараз у довіреній мережі (за останнім станом Mac, SSID дає помічник). */
   get isCurrentTrusted(): boolean {
     return this.isTrusted(this._bridge.state?.ssid);
   }

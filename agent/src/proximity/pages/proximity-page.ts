@@ -7,7 +7,7 @@ import type { ProximityState } from '../types/proximity-state.types';
 const BLUETOOTH: Record<BluetoothState, { label: string; tone: UiTone }> = {
   on: { label: 'Увімкнено', tone: 'green' },
   off: { label: 'Вимкнено на Mac', tone: 'orange' },
-  unauthorized: { label: 'Немає дозволу — сторінка «Дозвіл»', tone: 'red' },
+  unauthorized: { label: 'Немає дозволу: Системні параметри → Приватність і безпека → Bluetooth → MaControl Helper', tone: 'red' },
   unsupported: { label: 'Mac не підтримує Bluetooth LE', tone: 'red' },
   unknown: { label: 'Запускається…', tone: 'gray' },
 };
@@ -69,7 +69,7 @@ function absenceBanner(state: ProximityState, now: number): UiNotice | null {
   });
 
   if (state.bluetooth !== 'on') {
-    const reason = state.bluetooth === null ? { label: 'Аппка не надсилає даних', tone: 'gray' as UiTone } : BLUETOOTH[state.bluetooth];
+    const reason = state.bluetooth === null ? { label: 'Помічник не надсилає даних', tone: 'gray' as UiTone } : BLUETOOTH[state.bluetooth];
     return warn('Блокування не працює', `Bluetooth: ${reason.label}`, reason.tone);
   }
   if (config.device === '') return warn('Пристрій не вибрано', 'Mac не блокуватиме, доки не вибрано iPhone чи Watch', 'orange');
@@ -84,7 +84,7 @@ function absenceBanner(state: ProximityState, now: number): UiNotice | null {
 
 function statusRows(state: ProximityState): UiNode[] {
   const { config } = state;
-  const bluetooth = state.bluetooth === null ? { label: 'Аппка не надсилає даних', tone: 'gray' as UiTone } : BLUETOOTH[state.bluetooth];
+  const bluetooth = state.bluetooth === null ? { label: 'Помічник не надсилає даних', tone: 'gray' as UiTone } : BLUETOOTH[state.bluetooth];
   return [
     { id: 'bluetooth', type: 'item', title: 'Bluetooth', status: { label: bluetooth.label, tone: bluetooth.tone } },
     {

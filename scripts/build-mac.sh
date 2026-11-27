@@ -5,12 +5,12 @@
 # BIN_ONLY=1 builds only the binary mac/build/render/MaControl for offscreen snapshots (scripts/parity.sh).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+source "$ROOT/scripts/lib/codesign.sh"
 SRC="$ROOT/mac/Sources"
 OUT="$ROOT/mac/build"
 EXE="MaControl"
-# TODO(owner): switch to the old ids (dev.vitalii.macontrol / .dev) at the cutover, so the TCC grants carry over.
-# Until then the id stays the one this build was installed under, so it never shares an id with the old app.
-ID="${BUNDLE_ID:-dev.vitalii.macontrol.umbra}"; NAME="MaControl"; FILE="MaControl"
+# The old app's ids (owner, 2026-11-27): one id per stage. The helper is "$ID.helper".
+ID="${BUNDLE_ID:-dev.vitalii.macontrol}"; NAME="MaControl"; FILE="MaControl"
 [ "${RELEASE:-0}" = "1" ] || { ID="${BUNDLE_ID:-$ID.dev}"; NAME="MaControl (Dev)"; FILE="MaControl__Dev"; }
 # Dev passport for the dev indicator (~/projects/dev-indicator-kit): version of the `macontrol` package, git of this
 # checkout, build time. Stage dev; the server (agent-dev or bundled) is not known at build time, so no extra row.
@@ -30,8 +30,7 @@ umbra_module() {
 }
 app_swiftc() {
   find "$SRC" -name '*.swift' -not -path "$UMBRA/*" -print0 | xargs -0 swiftc -swift-version 5 -O -parse-as-library \
-    -target arm64-apple-macos14 -module-name MaControl -I "$MOD" -L "$MOD" -lUmbra \
-    -framework CoreLocation -framework CoreWLAN "$@"
+    -target arm64-apple-macos14 -module-name MaControl -I "$MOD" -L "$MOD" -lUmbra "$@"
 }
 if [ "${BIN_ONLY:-0}" = "1" ]; then
   mkdir -p "$OUT/render"
@@ -42,12 +41,13 @@ if [ "${BIN_ONLY:-0}" = "1" ]; then
 fi
 # Stage (as scripts/build.sh): MACONTROL_STAGE dev | preview | production; RELEASE=1 means production.
 STAGE="${MACONTROL_STAGE:-dev}"; [ "${RELEASE:-0}" = "1" ] && STAGE="${MACONTROL_STAGE:-production}"
-# The app carries its own server, like the old one: Contents/MacOS/mc-helper (scripts/build-helper.sh) and
+# The app carries its own server: the helper bundle Contents/Library/Helpers/MaControlHelper.app
+# (scripts/build-helper.sh; it owns the Bluetooth and Location grants) and
 # Contents/Resources/agent/{agent.cjs,web,build-info.json} (as scripts/build-agent.sh). WEB_OUT is the static
 # Web UI to bundle; web/out (built with build:local when missing).
 WEB_OUT="${WEB_OUT:-$ROOT/web/out}"
 server_parts() {
-  (cd "$ROOT" && bash scripts/build-helper.sh >/dev/null)
+  (cd "$ROOT" && HELPER_ID="$ID.helper" bash scripts/build-helper.sh >/dev/null)
   if [ "${SKIP_AGENT_BUILD:-0}" != "1" ]; then
     (cd "$ROOT" && pnpm install --frozen-lockfile >/dev/null && pnpm --filter @awake/agent build >/dev/null)
   fi
@@ -55,10 +55,10 @@ server_parts() {
 }
 APP="$OUT/$FILE.app"
 server_parts
-rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/agent"
+rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/agent" "$APP/Contents/Library/Helpers"
 umbra_module
 app_swiftc -o "$APP/Contents/MacOS/$EXE"
-cp "$ROOT/build/mc-helper" "$APP/Contents/MacOS/mc-helper"
+ditto "$ROOT/build/MaControlHelper.app" "$APP/Contents/Library/Helpers/MaControlHelper.app"
 cp "$ROOT/agent/dist/agent.cjs" "$APP/Contents/Resources/agent/agent.cjs"
 cp -R "$WEB_OUT" "$APP/Contents/Resources/agent/web"
 (cd "$ROOT" && node scripts/build-info.mjs "$APP/Contents/Resources/agent/build-info.json" >/dev/null)
@@ -67,7 +67,6 @@ if [ "$STAGE" = "production" ]; then
 else
   (cd "$ROOT" && swift tools/stage-icon.swift Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns" "$STAGE")
 fi
-LOC="macOS показує назву мережі Wi-Fi лише з дозволом геолокації. За нею MaControl знає, чи Mac у довіреній мережі. Координати не зберігаються."
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -83,12 +82,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>NSHighResolutionCapable</key><true/>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>MCStage</key><string>$STAGE</string>
-  <key>NSLocationUsageDescription</key><string>$LOC</string>
-  <key>NSLocationWhenInUseUsageDescription</key><string>$LOC</string>
-  <key>NSBluetoothAlwaysUsageDescription</key><string>MaControl стежить за сигналом вашого iPhone чи Apple Watch і блокує Mac, коли ви відходите.</string>
 </dict></plist>
 PLIST
 passport "$APP/Contents/Resources/dev-build.json"
-codesign --force --sign - "$APP/Contents/MacOS/mc-helper" >/dev/null
-codesign --force --sign - "$APP" >/dev/null
+# Inside out: the helper bundle is signed by build-helper.sh (ditto keeps it), then the app around it.
+mc_sign "$APP" "$ID"
+codesign --verify --deep --strict "$APP"
 echo "$APP"

@@ -43,9 +43,12 @@ One direction: clients → server → helper → macOS. Answers and events come 
 
 - **Server** (NestJS, `agent/`): the main process. Owns logic, sessions (Awake, Sleeper), data (SQLite), the
   Telegram bot, notifications, settings. Works alone; keeps running when the app is closed.
-- **Helper** (pure Swift, `Helper/`, binary `mc-helper`): the server's subprocess and the only thing that calls
-  macOS. Runs primitives (sleep on / off, sleep now, lock, display off, volume, mute, brightness) and reports the
-  system state. Decides nothing. Protocol: `contracts/src/helper.ts`.
+- **Helper** (pure Swift, `Helper/`, background bundle `MaControlHelper.app` «MaControl Helper», LSUIElement,
+  binary `Contents/MacOS/mc-helper`): the server's subprocess and the only thing that calls macOS. Runs primitives
+  (sleep on / off, sleep now, lock, display off, volume, mute, brightness), reports the system state with the Wi-Fi
+  name, and scans Bluetooth for «Поруч» while the server orders `bluetoothScan`. Decides nothing. Protocol:
+  `contracts/src/helper.ts`. It re-spawns itself as its own TCC "responsible process" (`Helper/System/
+  Responsibility.swift`), so the Location and Bluetooth grants belong to MaControl Helper, not to the app or Terminal.
 - **Clients**: the SwiftUI app (`mac/`, built by `scripts/build-mac.sh`), the Web UI (`web/`), the Telegram bot. They render what the server
   gives and send clicks; no session logic, no system calls. The app is also the double-click entry point: it starts
   the server when none is running, or when a different build is running, and then connects to it over the local
@@ -58,10 +61,14 @@ One direction: clients → server → helper → macOS. Answers and events come 
 - Agreed exception (owner, 2026-11-27): the theme (Системна | Світла | Темна) belongs to each client, not the server.
   Each client stores it itself (web: localStorage `macontrol:theme`; Mac: UserDefaults `theme`) and draws the
   section «Вигляд» first on the server page «Налаштування»; the server knows nothing about it.
-- Not moved yet, and not an agreed exception: the app still reads the Wi-Fi name and scans Bluetooth and sends them
-  to the server (macOS grants those two to a bundle with an Info.plist; the helper must become a background bundle
-  to take them over). The server reads `pmset -g assertions` itself for Keepers.
-- The app bundles its own server: `Contents/MacOS/mc-helper` and `Contents/Resources/agent/{agent.cjs,web,
+- The Wi-Fi name and Bluetooth «Поруч» come from the helper and work without the app. TODO(cutover): the server
+  still accepts the old app's (`archive/mac-old`) `wifi` / `proximity` lines as a fallback; remove them once the old
+  app is gone. The server reads `pmset -g assertions` itself for Keepers.
+- Bundle ids and signing: the app is `dev.vitalii.macontrol.dev` (dev), the helper `<app id>.helper`. Both build
+  scripts sign through `scripts/lib/codesign.sh`: with the «MaControl Dev» certificate (`scripts/dev-signing-cert.sh`,
+  once per Mac) the designated requirement is `certificate leaf` and grants survive rebuilds; without it they fall back
+  to ad-hoc (cdhash) with a warning, and every build asks for the grants again.
+- The app bundles its own server: `Contents/Library/Helpers/MaControlHelper.app` and `Contents/Resources/agent/{agent.cjs,web,
   build-info.json}`. While the old MaControl app (branch `archive/mac-old`) still runs, the new one only connects
   and never restarts a server of another build.
 
@@ -78,7 +85,7 @@ running server writes.
 
 ## Server alone, without the app (dev)
 
-- `pnpm server:dev` builds the helper and the server and runs the server with `MACONTROL_STANDALONE=1`: it starts
+- `pnpm server:dev` builds the helper (`build/MaControlHelper.app`) and the server and runs the server with `MACONTROL_STANDALONE=1`: it starts
   the helper itself and takes the state and system actions (lock, display off, volume, mute, brightness) from it.
   Keys come from `~/.config/awake/agent.env`. The app must be closed: same port, same bot.
 - The helper protocol is `contracts/src/helper.ts` (JSON lines over the helper's stdin / stdout). The helper's
@@ -86,4 +93,5 @@ running server writes.
 - In standalone mode the server owns the Awake and Sleeper sessions (`agent/src/mac-sessions`): timers, the
   one-session rule, battery / thermal / lid reactions, history and Telegram. The helper only runs primitives
   (`sleepDisabled`, `sleepNow`, lock, display off). The bash script `Resources/awake` belonged to the old app.
-- Without the app there is no Wi-Fi name and no Bluetooth «Поруч» (see the temporary exceptions above).
+- Wi-Fi name and «Поруч» work without the app: the grants dialogs show «MaControl Helper» (Location at the
+  helper's first start, Bluetooth when «Поруч» is turned on).

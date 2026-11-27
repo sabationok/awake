@@ -15,7 +15,7 @@ export interface ProximityConfig {
 /** Що бачить агент зараз: для сторінки «Поруч» і рішення блокувати. */
 export interface ProximityState {
   config: ProximityConfig;
-  /** null — аппка ще не надіслала звіт або давно мовчить. */
+  /** null — помічник ще не надіслав звіт або давно мовчить. */
   bluetooth: BluetoothState | null;
   devices: NearbyDevice[];
   /** Вибраний пристрій у звіті; null — не видно. */

@@ -5,7 +5,7 @@ import { PROXIMITY_MODULE, buildProximitySettings } from './constants/proximity-
 import { buildProximityPage } from './pages/proximity-page';
 import { ProximityService } from './services/proximity';
 
-/** Модуль «Поруч»: блокує екран, коли вибраний iPhone чи Apple Watch відходить від Mac. Сканує Bluetooth аппка. */
+/** Модуль «Поруч»: блокує екран, коли вибраний iPhone чи Apple Watch відходить від Mac. Сканує Bluetooth помічник на запит сервера. */
 @Injectable()
 export class ProximityMacModule implements MacModule {
   readonly id = PROXIMITY_MODULE;
@@ -15,7 +15,7 @@ export class ProximityMacModule implements MacModule {
 
   constructor(private readonly _proximity: ProximityService) {}
 
-  /** Варіанти «Пристрій» — з поточного звіту аппки, тому опис будується щоразу. */
+  /** Варіанти «Пристрій» — з поточного звіту помічника, тому опис будується щоразу. */
   get settings(): SettingDefinition[] {
     return buildProximitySettings(this._proximity.deviceOptions());
   }

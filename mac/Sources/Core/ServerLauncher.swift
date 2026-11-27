@@ -28,8 +28,10 @@ enum ServerLauncher {
     }
     static var activeDirectory: URL? { usesAgentDev ? agentDev : bundled }
     static var helperURL: URL? {
-        let url = Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("mc-helper")
-        guard let url, FileManager.default.isExecutableFile(atPath: url.path) else { return nil }
+        // The helper is its own background bundle (Contents/Library/Helpers/MaControlHelper.app): macOS gives the
+        // Bluetooth and Location (Wi-Fi name) grants to it, not to this app.
+        let url = Bundle.main.bundleURL.appendingPathComponent("Contents/Library/Helpers/MaControlHelper.app/Contents/MacOS/mc-helper")
+        guard FileManager.default.isExecutableFile(atPath: url.path) else { return nil }
         return url
     }
 
@@ -64,7 +66,7 @@ enum ServerLauncher {
         if let info = ServerInfoFile.read(), info.isAlive { return nil }
         lastAttempt = Date()
         guard let dir = activeDirectory else { return "Немає agent.cjs ні в agent-dev, ні в збірці" }
-        guard let helper = helperURL else { return "Немає mc-helper у збірці" }
+        guard let helper = helperURL else { return "Немає MaControl Helper у збірці" }
         guard let node = NodeFinder.find() else { return "Не знайдено Node 22+" }
         let process = Process()
         process.executableURL = node

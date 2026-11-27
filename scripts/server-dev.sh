@@ -1,6 +1,7 @@
 #!/bin/bash
 # Сервер сам, без Mac-аппки (dev): збирає помічник і сервер та запускає сервер у режимі standalone.
-# Сервер сам піднімає помічник (build/mc-helper), тож Telegram-бот і Web UI працюють без аппки.
+# Сервер сам піднімає помічник (build/MaControlHelper.app), тож Telegram-бот, Web UI, назва Wi-Fi і «Поруч»
+# працюють без аппки. Дозволи Bluetooth і геолокації належать помічнику (MaControl Helper), не терміналу.
 # Ключі ті самі, що дає аппка: ~/.config/awake/agent.env. Аппка в цей час має бути закрита:
 # два сервери на одному порту й одному боті не живуть.
 #   scripts/server-dev.sh          зібрати і запустити
@@ -25,5 +26,5 @@ fi
 WEB_DEV="$HOME/Library/Application Support/MaControl/agent-dev/web"
 [ -d "$WEB_DEV" ] && export MACONTROL_WEB_DIR="${MACONTROL_WEB_DIR:-$WEB_DEV}"
 export MACONTROL_STANDALONE=1
-export MACONTROL_HELPER="${MACONTROL_HELPER:-$PWD/build/mc-helper}"
+export MACONTROL_HELPER="${MACONTROL_HELPER:-$PWD/build/MaControlHelper.app/Contents/MacOS/mc-helper}"
 exec node agent/dist/agent.cjs
