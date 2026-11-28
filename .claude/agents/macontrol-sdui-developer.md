@@ -28,6 +28,6 @@ MaControl specifics on top of the skill:
 - A new page or a page rearrangement starts with a mockup approved by the owner (`CLAUDE.md`); transport and runtime
   changes that do not change what the owner sees need none.
 - Never stage files you did not write: other sessions leave uncommitted edits in `agent/src/web-auth/`,
-  `agent/src/web-ui/`, `agent/src/tailscale/`, `web/src/fixtures/`. Stage by explicit path.
+  `agent/src/web-ui/`, `agent/src/tailscale/`. Stage by explicit path.
 - Changeset `.changeset/<name>.md` with `"macontrol": patch | minor` in Ukrainian for the owner when the change is
   visible; written by hand (`changeset add` hangs without a TTY).

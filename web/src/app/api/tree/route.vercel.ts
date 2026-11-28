@@ -1,6 +1,5 @@
 import { UI_ALIVE_KEY, UI_TREE_KEY, type UiAlive, type UiTree } from '@awake/contracts';
 import { NextResponse } from 'next/server';
-import { FIXTURE_SAMPLED_AT, fixtureTree } from '@/fixtures/tree';
 import { toPublicUiTree } from '@/server/public-tree.vercel';
 import type { TreeResponse } from '@/demo/tree-response';
 import { readStageConfig, type TreeSource } from '@/server/stage-config.vercel';
@@ -32,7 +31,7 @@ async function agentPulse(): Promise<NonNullable<TreeResponse['agent']>> {
   return { status: alive.every === null ? 'unknown' : 'online', at: alive.at };
 }
 
-/** Джерела по черзі (Upstash → Web Swift), а коли жодне не дало дерева — вбудовані фікстури. Браузер сам нічого не підміняє. */
+/** Джерела по черзі (Upstash → Web Swift). Жодне не дало дерева — `tree: null` з причинами; вигаданого дерева немає. */
 export async function GET(): Promise<NextResponse<TreeResponse>> {
   const { stage, sources } = readStageConfig();
   const misses: TreeResponse['misses'] = [];
@@ -48,8 +47,5 @@ export async function GET(): Promise<NextResponse<TreeResponse>> {
       misses.push({ origin: source.kind, reason: (error as Error).name === 'TimeoutError' ? 'не відповів вчасно' : (error as Error).message });
     }
   }
-  return NextResponse.json(
-    { tree: fixtureTree(), origin: 'fixtures', stage, misses, sampledAt: FIXTURE_SAMPLED_AT },
-    { headers: { 'Cache-Control': 'no-store' } },
-  );
+  return NextResponse.json({ tree: null, origin: null, stage, misses }, { headers: { 'Cache-Control': 'no-store' } });
 }

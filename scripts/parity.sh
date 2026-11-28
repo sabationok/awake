@@ -4,7 +4,7 @@
 #   scripts/parity.sh                 every page of the tree web serves
 #   scripts/parity.sh session tracking
 #
-# Both sides render the SAME tree: the one http://localhost:3218/api/tree returns (live or the web's fixtures) is
+# Both sides render the SAME tree: the one http://localhost:3218/api/tree returns (live: Upstash or Web Swift) is
 # saved to build/parity/tree.json and handed to the Mac snapshot with --tree. Nothing reaches the owner's screen:
 # the Mac binary runs with the .prohibited activation policy and never orders its window in, Chrome runs headless.
 # The running server, the old app and agent-dev are never touched (no socket either: the tree comes from the file).
