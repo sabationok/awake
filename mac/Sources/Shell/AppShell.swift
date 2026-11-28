@@ -97,13 +97,13 @@ struct AppShell: View {
     private var source: some View {
         switch server.origin {
         case .socket where server.connected:
-            SidebarSource("Живі дані · server.sock", detail: "Дії йдуть на сервер", symbol: "bolt.horizontal",
+            SidebarSource("Сервер активний", detail: "Зміни видно одразу", symbol: "bolt.horizontal",
                                tone: .green)
         case .socket:
-            SidebarSource("Сервер недоступний", detail: "Перепідключення щосекунди", symbol: "bolt.horizontal",
+            SidebarSource("Сервер недоступний", detail: "Пробую підключитися знову", symbol: "bolt.horizontal",
                                tone: .red)
         case .file:
-            SidebarSource("Знімок з файлу", detail: "Дії не надсилаються на сервер")
+            SidebarSource("Знімок з файлу", detail: "Кнопки нічого не роблять")
         }
     }
 
