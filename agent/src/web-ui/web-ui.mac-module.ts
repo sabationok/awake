@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { UiPage } from '@macontrol/contracts';
+import type { UiNode, UiPage } from '@macontrol/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 import { describeUserAgent } from '../devices/helpers/describe-user-agent';
 import { DevicesBridgeService } from '../devices/services/devices-bridge.service';
@@ -14,6 +14,7 @@ import { DashboardPasswordService } from '../web-auth/services/dashboard-passwor
 import { WebSessionsService } from '../web-auth/services/web-sessions.service';
 import { WEB_UI_ICON, WEB_UI_MODULE } from './constants/web-ui';
 import { WEB_UI_SETTINGS } from './constants/web-ui-settings';
+import { webUiDockMenu } from './helpers/web-ui-dock-menu';
 import { buildDevicesPage } from './pages/devices-page';
 import { buildLoginPage } from './pages/login-page';
 import { buildNetworksPage } from './pages/networks-page';
@@ -47,6 +48,10 @@ export class WebUiMacModule implements MacModule {
   pages(ctx: ModuleContext): UiPage[] {
     const snapshot = this._snapshot(ctx);
     return [buildOverviewPage(snapshot, ctx.settingNode('heartbeat')), buildLoginPage(snapshot), buildNetworksPage(snapshot), buildDevicesPage(this._devicesBridge.snapshot())];
+  }
+
+  dockMenu(): UiNode[] {
+    return webUiDockMenu(this._addresses());
   }
 
   private _snapshot(ctx: ModuleContext): WebUiSnapshot {

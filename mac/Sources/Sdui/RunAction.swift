@@ -1,20 +1,27 @@
+import AppKit
 import SwiftUI
 
 /// Port of `web/src/sdui/use-run-action.tsx`: an action with a confirm or a form. Nodes call `run`; the shell
 /// draws the pending one as an Umbra dialog (`runActionDialog`), the same `Dialog` / `FormDialog` the web shows.
 struct RunnableAction {
     var label: String
-    var action: UiAction
+    /// nil for a link button (`link`) and for a broken one: nothing is sent.
+    var action: UiAction?
     var variant: ButtonVariant
     var confirm: UiConfirm?
     var form: UiForm?
+    /// A link button: opened in the default browser, the server gets nothing.
+    var link: URL?
 }
 
 /// As web `fromButton`: only filled and destructive differ, the rest is the bordered default; the confirm text gets
 /// the button's label as title and OK.
 func fromButton(_ button: UiButton) -> RunnableAction {
-    RunnableAction(label: button.label, action: button.action, variant: button.variant.umbra,
-                   confirm: button.confirm.map { UiConfirm(title: button.label, text: $0, ok: button.label) })
+    if button.href != nil {
+        return RunnableAction(label: button.label, action: nil, variant: button.variant.umbra, link: button.link)
+    }
+    return RunnableAction(label: button.label, action: button.action, variant: button.variant.umbra,
+                          confirm: button.confirm.map { UiConfirm(title: button.label, text: $0, ok: button.label) })
 }
 
 func fromMenuItem(_ item: UiMenuItem) -> RunnableAction {
@@ -33,16 +40,17 @@ final class RunAction: ObservableObject {
     @Published var pending: Pending?
 
     func run(_ item: RunnableAction, send: @escaping SendEvent) {
-        if item.confirm != nil || item.form != nil {
+        if let link = item.link {
+            NSWorkspace.shared.open(link)
+        } else if item.confirm != nil || item.form != nil {
             pending = Pending(item: item, send: send)
-        } else {
-            send(.action(item.action))
+        } else if let action = item.action {
+            send(.action(action))
         }
     }
 
     func fire(_ extra: [String: String] = [:]) {
-        guard let pending else { return }
-        var action = pending.item.action
+        guard let pending, var action = pending.item.action else { return }
         if !extra.isEmpty {
             action.params = (action.params ?? [:]).merging(extra.mapValues { .string($0) }) { $1 }
         }

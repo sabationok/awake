@@ -4,7 +4,8 @@ import AppKit
 /// The top section «Інфо» is the app's own: the build passport and whether the server answers. The module sections
 /// come from the server page `dock` (`ServerConnection.dockLayout`) with the app's AppState copy, as any page:
 /// a section → its title as a header, `timer` / `row` → a disabled line, a button → an item sending the same action
-/// a page button sends. The app decides nothing about what is in them.
+/// a page button sends, or opening its `href` in the browser (a link button). The app decides nothing about what is
+/// in them.
 @MainActor
 enum DockMenu {
     static let pageId = "dock"
@@ -56,7 +57,7 @@ enum DockMenu {
         case .row(let row):
             return [line([row.label, row.value].compactMap { $0 }.joined(separator: " · "))]
         case .buttons(_, let buttons):
-            return buttons.map { button(fromButton($0), disabled: $0.disabled ?? false, server: server) }
+            return buttons.map { button(fromButton($0), disabled: $0.disabled ?? false || ($0.action == nil && $0.link == nil), server: server) }
         default:
             return []
         }
@@ -80,9 +81,14 @@ enum DockMenu {
         let item = NSMenuItem(title: runnable.label, action: nil, keyEquivalent: "")
         item.isEnabled = !disabled
         DockMenuAction { [weak server] in
-            guard let server else { return }
+            // A link button (Web UI) opens the browser; the server gets nothing.
+            if let link = runnable.link {
+                NSWorkspace.shared.open(link)
+                return
+            }
+            guard let server, let action = runnable.action else { return }
             if let confirm = runnable.confirm, !confirmed(confirm) { return }
-            server.send(.action(runnable.action))
+            server.send(.action(action))
         }.attach(to: item)
         return item
     }

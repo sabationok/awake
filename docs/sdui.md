@@ -22,7 +22,7 @@
 | HTTP локально | `agent/src/modules/ui.controller.ts`: `GET /api/ui/shell`, `GET /api/ui/pages/:pageId` (ETag `"local:<rev>"`, `304`, `private, no-cache` — `helpers/send-cached.ts`), `POST /api/ui/events` |
 | Роутер (дії, екрани бота) | `agent/src/bot/` (`@Bot`, `@BotAction`, `@BotScreen`, `BotRouterService`) |
 | Канал Mac | `agent/src/modules/mac-ui.listener.ts` + `agent/src/mac-bridge/`: `shell` при підключенні й зміні; `layout.get {pageId, ifRev}` → `layout.page` / `layout.notModified` / `layout.notFound`; останні 4 відкриті сторінки отримують зміни |
-| Меню Dock (Mac) | сторінка `dock` (scope mac, не в індексі й не в Upstash): `MacModule.dockMenu(ctx)` → секція на модуль у `ModulesService._dockPage`; `MacUiListener` не витісняє її з відкритих; аппка — `mac/Sources/Dock/DockMenu.swift` (`timer` / `row` → сірий рядок, кнопка → пункт) плюс своя секція «Інфо» (паспорт збірки, сервер) |
+| Меню Dock (Mac) | сторінка `dock` (scope mac, не в індексі й не в Upstash): `MacModule.dockMenu(ctx)` → секція на модуль у `ModulesService._dockPage`; `MacUiListener` не витісняє її з відкритих; аппка — `mac/Sources/Dock/DockMenu.swift` (`timer` / `row` → сірий рядок, кнопка → пункт; кнопка-посилання `UiLinkButton.href` відкриває браузер, агентові нічого не йде; адресу дає лише сервер, тільки http(s) — `isLinkHref`) плюс своя секція «Інфо» (паспорт збірки, сервер) |
 | Канал Web UI | `agent/src/web-ui/` |
 | Upstash: публікація + пульс | `agent/src/presence/services/ui-sync.service.ts`: `macontrol:ui:shell` + `macontrol:ui:page:<id>`, пишуться лише сторінки зі зміненим `rev`, зниклі видаляються |
 | Relay (webhooxy) | `agent/src/relay/services/relay-host/`: viewer просить `shell` / `page`, host розсилає `revs` |

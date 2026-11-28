@@ -1,5 +1,5 @@
 'use client';
-import type { UiAction, UiButton, UiConfirm, UiEvent, UiForm, UiMenuItem } from '@macontrol/contracts';
+import type { UiAction, UiActionButton, UiButton, UiConfirm, UiEvent, UiForm, UiMenuItem } from '@macontrol/contracts';
 import { useState, type ReactNode } from 'react';
 import { Button, Dialog, Select, type ButtonVariant } from '@/ui/primitives';
 import { useBusySend } from './event-scope';
@@ -12,12 +12,16 @@ export interface RunnableAction {
   form?: UiForm;
 }
 
-export function fromButton(button: UiButton): RunnableAction {
-  const variant: ButtonVariant = button.variant === 'filled' ? 'accent' : button.variant === 'destructive' ? 'danger' : 'default';
+/** Колір старої кнопки: лише filled і destructive відрізняються, решта — default. */
+export function buttonVariant(button: UiButton): ButtonVariant {
+  return button.variant === 'filled' ? 'accent' : button.variant === 'destructive' ? 'danger' : 'default';
+}
+
+export function fromButton(button: UiActionButton): RunnableAction {
   return {
     label: button.label,
     action: button.action,
-    variant,
+    variant: buttonVariant(button),
     confirm: button.confirm ? { title: button.label, text: button.confirm, ok: button.label } : undefined,
   };
 }

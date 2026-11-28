@@ -13,6 +13,8 @@
 .u-btn[data-variant='danger']:hover { background: color-mix(in oklab, var(--danger) 8%, transparent); }
 .u-btn[data-size='sm'] { height: 26px; padding: 0 10px; font-size: var(--fs-xs); }
 .u-btn:disabled { opacity: .4; cursor: not-allowed; }
+a.u-btn { text-decoration: none; }
+a.u-btn[aria-disabled='true'] { opacity: .4; cursor: not-allowed; pointer-events: none; }
 .u-btn { position: relative; }
 /* Дія летить: підпис лишається (ширина не стрибає), поверх — крутилка. */
 .u-btn[data-busy] { opacity: .75; cursor: progress; }

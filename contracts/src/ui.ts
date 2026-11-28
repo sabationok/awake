@@ -24,14 +24,35 @@ export interface UiAction {
   params?: Record<string, string | number | boolean>;
 }
 
-export interface UiButton {
+/** Кнопка: шле `action` (`UiActionButton`) або відкриває посилання `href` (`UiLinkButton`), рівно одне з двох. */
+export type UiButton = UiActionButton | UiLinkButton;
+
+interface UiButtonBase {
   id: string;
   label: string;
-  action: UiAction;
   variant?: 'filled' | 'plain' | 'destructive';
   disabled?: boolean;
+}
+
+export interface UiActionButton extends UiButtonBase {
+  action: UiAction;
+  href?: undefined;
   /** Текст підтвердження перед дією. */
   confirm?: string;
+}
+
+/**
+ * Кнопка-посилання: клієнт відкриває `href` (web — нова вкладка, Mac — браузер за замовчуванням) і нічого не шле
+ * агентові. Адресу вирішує лише сервер, тільки абсолютна `http:` / `https:` (`isLinkHref`); іншої клієнт не відкриває.
+ */
+export interface UiLinkButton extends UiButtonBase {
+  href: string;
+  action?: undefined;
+}
+
+/** Адреса, яку можна віддати в `UiLinkButton.href`: лише абсолютна `http(s)://хост…` без пробілів. */
+export function isLinkHref(href: string): boolean {
+  return /^https?:\/\/[^\s/?#]+[^\s]*$/i.test(href);
 }
 
 export interface UiOption {

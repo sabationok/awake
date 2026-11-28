@@ -1,6 +1,8 @@
 'use client';
 import qrcode from 'qrcode-generator';
+import { isLinkHref } from '@macontrol/contracts';
 import type {
+  UiButton,
   UiButtons,
   UiChart,
   UiControl,
@@ -20,10 +22,10 @@ import { Check, Copy, Inbox, Info, TriangleAlert, X, CircleX } from 'lucide-reac
 import { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { findSymbolIcon } from '@/lib/icons';
-import { Badge, Button, Chip, Dialog, Dot, DotMenu, EmptyState, IconButton, Segmented, Select, Slider, Spinner, Switch, SymbolIcon, toneStyle, toneVar } from '@/ui/primitives';
+import { Badge, Button, Chip, Dialog, Dot, DotMenu, EmptyState, IconButton, LinkButton, Segmented, Select, Slider, Spinner, Switch, SymbolIcon, toneStyle, toneVar } from '@/ui/primitives';
 import { EventScope, useBusySend, useEventScope } from './event-scope';
 import { useRuntime } from './runtime';
-import { fromButton, fromMenuItem, useRunAction, type RunnableAction } from './use-run-action';
+import { buttonVariant, fromButton, fromMenuItem, useRunAction, type RunnableAction } from './use-run-action';
 
 /* ---------- time ---------- */
 
@@ -208,7 +210,7 @@ function ControlView({ id, control, label }: { id: string; control: UiControl; l
     case 'switch': return <SwitchControl id={id} control={control} label={label} />;
     case 'select': return <SelectControl id={id} control={control} label={label} />;
     case 'slider': return <SliderControl control={control} label={label} />;
-    case 'button': return <ActionButton item={fromButton(control.button)} disabled={control.button.disabled} size="sm" />;
+    case 'button': return <NodeButton button={control.button} size="sm" />;
   }
 }
 
@@ -276,6 +278,18 @@ function SliderControl({ control, label }: { control: Extract<UiControl, { type:
       <span className="u-row-value" style={{ width: 34 }}>{value}</span>
     </>
   );
+}
+
+/** Кнопка сервера: з `href` — посилання (лише http(s), іншого не відкриваємо), інакше — дія. Кнопка вікна — лише Mac. */
+function NodeButton({ button, size }: { button: UiButton; size?: 'sm' }) {
+  if (button.href !== undefined) {
+    return (
+      <LinkButton href={button.href} variant={buttonVariant(button)} size={size} disabled={button.disabled || !isLinkHref(button.href)}>
+        {button.label}
+      </LinkButton>
+    );
+  }
+  return <ActionButton item={fromButton(button)} disabled={button.disabled} size={size} />;
 }
 
 /** Кнопка дії зі своїм лоадером і діалогом підтвердження / форми. */
@@ -371,7 +385,7 @@ function ButtonsNode({ node }: { node: UiButtons }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(120px, 1fr))`, gap: 8, padding: 12 }}>
       {node.buttons.map((button) => (
-        <ActionButton key={button.id} item={fromButton(button)} disabled={button.disabled} />
+        <NodeButton key={button.id} button={button} />
       ))}
     </div>
   );

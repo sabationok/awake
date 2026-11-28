@@ -45,14 +45,24 @@ struct UiAction: Codable, Hashable {
     var params: [String: UiScalar]?
 }
 
+/// Кнопка: шле `action` або відкриває посилання `href` (`UiLinkButton`), рівно одне з двох.
 struct UiButton: Codable, Hashable, Identifiable {
     enum Variant: String, Codable { case filled, plain, destructive }
     var id: String
     var label: String
-    var action: UiAction
+    var action: UiAction?
+    /// Посилання від сервера; аппка відкриває лише `http` / `https` (`link`).
+    var href: String?
     var variant: Variant?
     var disabled: Bool?
     var confirm: String?
+
+    /// `href` як URL, коли це абсолютна `http(s)` адреса з хостом (як `isLinkHref` контракту), інакше nil.
+    var link: URL? {
+        guard let href, let url = URL(string: href), let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https", url.host?.isEmpty == false else { return nil }
+        return url
+    }
 }
 
 struct UiOption: Codable, Hashable {

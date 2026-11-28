@@ -1,7 +1,7 @@
 'use client';
 import type { UiOption, UiTone } from '@macontrol/contracts';
 import { ChevronDown, Info, LoaderCircle, MoreHorizontal, type LucideIcon } from 'lucide-react';
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type AnchorHTMLAttributes, type ButtonHTMLAttributes, type CSSProperties, type InputHTMLAttributes, type ReactNode } from 'react';
 import { resolveSymbolIcon } from '@/lib/icons';
 
 /** Колір тону з сервера в токенах теми. accent — помаранчевий акцент, orange — червоніший, щоб їх розрізняти. */
@@ -43,6 +43,33 @@ export function Button({
       <span className="u-btn-label">{children}</span>
       {busy ? <Spinner /> : null}
     </button>
+  );
+}
+
+/** Кнопка-посилання: вигляд `Button`, відкриває `href` новою вкладкою (`rel=noopener noreferrer`). `disabled` — сіра, без переходу. */
+export function LinkButton({
+  variant = 'default',
+  size,
+  icon: Icon,
+  disabled,
+  href,
+  children,
+  ...rest
+}: AnchorHTMLAttributes<HTMLAnchorElement> & { href: string; variant?: ButtonVariant; size?: 'sm'; icon?: LucideIcon; disabled?: boolean }) {
+  return (
+    <a
+      className="u-btn"
+      data-variant={variant}
+      data-size={size}
+      href={disabled ? undefined : href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-disabled={disabled || undefined}
+      {...rest}
+    >
+      {Icon ? <Icon /> : null}
+      <span className="u-btn-label">{children}</span>
+    </a>
   );
 }
 
