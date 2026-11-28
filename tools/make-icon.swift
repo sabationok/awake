@@ -1,13 +1,14 @@
 // Малює іконку MaControl за сіткою macOS (полотно 1024, форма 824 з відступом 100, радіус 185)
 // і збирає Resources/AppIcon.icns з усіма розмірами 16…512 @1x/@2x.
 // Запуск:  swift tools/make-icon.swift [концепт] [--preview <файл.png>]
-//   концепт: mac (обраний, за замовчуванням) | power | dial — варіанти лишені для порівняння
+//   концепт: moon (обраний, за замовчуванням: куля Umbra у фазі місяця) | orb | orb-light | mac | power | dial
+//   — решта лишені для порівняння
 //   --preview: лише PNG 1024 для перегляду, .icns не чіпається.
 // Без SF Symbols: Apple забороняє їх в іконках аппок, тому все намальовано кривими.
 import AppKit
 
 let args = Array(CommandLine.arguments.dropFirst())
-let concept = args.first { !$0.hasPrefix("--") && !$0.hasSuffix(".png") } ?? "mac"
+let concept = args.first { !$0.hasPrefix("--") && !$0.hasSuffix(".png") } ?? "moon"
 let previewPath = args.firstIndex(of: "--preview").map { args[$0 + 1] }
 
 func rgb(_ hex: UInt32, _ a: CGFloat = 1) -> CGColor {
@@ -167,10 +168,88 @@ func drawMac(_ k: Canvas) {
     k.solid(circle(src, 26), rgb(0x22C55E), glow: rgb(0x5EF2C6, 0.9), glowBlur: 20)
 }
 
+// MARK: Umbra — скляна куля на орбіті в стилі бібліотеки Umbra (чорне скло, hairline, один теплий акцент)
+
+struct UmbraLook {
+    let tileTop: CGColor, tileBottom: CGColor
+    let glowA: CGColor, glowB: CGColor
+    let hairline: CGColor
+    let orb: [CGColor]          // від світлого ядра до краю
+    let ring: CGColor, accent: CGColor, accentGlow: CGColor
+    let shade: CGColor          // тінь «фази місяця»
+
+    static let dark = UmbraLook(
+        tileTop: rgb(0x161517), tileBottom: rgb(0x000000),
+        glowA: rgb(0xFF9B2F, 0.30), glowB: rgb(0xFF7A45, 0.18), hairline: white(0.11),
+        orb: [rgb(0xFFF1DC), rgb(0xFFB766), rgb(0xFF9B2F), rgb(0xA8410C), rgb(0x1E0D05)],
+        ring: white(0.20), accent: rgb(0xFFB766), accentGlow: rgb(0xFF9B2F, 0.95), shade: rgb(0x050403, 0.92))
+    static let light = UmbraLook(
+        tileTop: rgb(0xFBFBFC), tileBottom: rgb(0xE4E4E9),
+        glowA: rgb(0xFF9B2F, 0.22), glowB: rgb(0x7D6BFF, 0.12), hairline: CGColor(gray: 0, alpha: 0.08),
+        orb: [rgb(0xFFE3C2), rgb(0xF08A1C), rgb(0xD96A00), rgb(0x8A3E00), rgb(0x3A1800)],
+        ring: CGColor(gray: 0, alpha: 0.16), accent: rgb(0xD96A00), accentGlow: rgb(0xF08A1C, 0.8),
+        shade: rgb(0x1A1410, 0.85))
+}
+
+func drawUmbraOrb(_ k: Canvas, _ l: UmbraLook, moon: Bool) {
+    base(k, top: l.tileTop, bottom: l.tileBottom, highlight: 0.05)
+    k.radial(bodyPath, [l.glowA, rgb(0, 0)], center: CGPoint(x: 230, y: 880), radius: 520)
+    k.radial(bodyPath, [l.glowB, rgb(0, 0)], center: CGPoint(x: 860, y: 150), radius: 460)
+
+    let R: CGFloat = 196
+    let tilt = CGAffineTransform(translationX: C.x, y: C.y).rotated(by: -18 * .pi / 180).scaledBy(x: 1, y: 0.30)
+    func ringArc(_ a0: CGFloat, _ a1: CGFloat) -> CGPath {
+        let p = CGMutablePath(); let t = tilt
+        p.addArc(center: .zero, radius: 336, startAngle: a0 * .pi / 180, endAngle: a1 * .pi / 180, clockwise: false, transform: t)
+        return p
+    }
+    // вся орбіта під кулею; передня половина ще раз — лише поверх кулі (без накладання кінців)
+    k.stroke(ringArc(0, 360), width: 9, [l.ring, l.ring], from: .zero, to: CGPoint(x: 1, y: 1))
+
+    // куля: м'яке світіння навколо, тіло з ядром зміщеним угору-вліво
+    let orb = circle(C, R)
+    k.solid(orb, l.orb[2], glow: l.accentGlow, glowBlur: 90)
+    k.cg.saveGState(); k.cg.addPath(orb); k.cg.clip()
+    k.cg.drawRadialGradient(k.gradient(l.orb, [0, 0.22, 0.48, 0.82, 1]),
+                            startCenter: CGPoint(x: C.x - 70, y: C.y + 80), startRadius: 0,
+                            endCenter: C, endRadius: R * 1.08, options: [.drawsAfterEndLocation])
+    if moon {
+        // тінь фази: друга куля зміщена вправо-вгору, з м'яким краєм
+        let sc = CGPoint(x: C.x + 118, y: C.y + 52)
+        k.cg.drawRadialGradient(k.gradient([l.shade, l.shade, rgb(0, 0)], [0, 0.78, 1]),
+                                startCenter: sc, startRadius: 0, endCenter: sc, endRadius: R * 1.18, options: [])
+    }
+    // відблиск скла
+    let spec = CGPath(ellipseIn: CGRect(x: C.x - 118, y: C.y + 84, width: 96, height: 50),
+                      transform: nil)
+    k.cg.saveGState()
+    k.cg.translateBy(x: C.x - 68, y: C.y + 107); k.cg.rotate(by: 28 * .pi / 180); k.cg.translateBy(x: -(C.x - 68), y: -(C.y + 107))
+    k.fill(spec, [white(0.5), white(0)], from: CGPoint(x: C.x - 90, y: C.y + 144), to: CGPoint(x: C.x - 40, y: C.y + 70))
+    k.cg.restoreGState()
+    k.cg.restoreGState()
+    k.stroke(orb, width: 3, [white(0.28), white(0.04)], from: CGPoint(x: C.x, y: C.y + R), to: CGPoint(x: C.x, y: C.y - R))
+
+    // передня половина орбіти — поверх кулі, з теплим сегментом-сигналом
+    k.cg.saveGState(); k.cg.addPath(orb); k.cg.clip()
+    k.stroke(ringArc(180, 360), width: 9, [l.ring, l.ring], from: .zero, to: CGPoint(x: 1, y: 1))
+    k.cg.restoreGState()
+    k.stroke(ringArc(286, 334), width: 12, [l.accent, l.accent], from: .zero, to: CGPoint(x: 1, y: 1),
+             glow: l.accentGlow, glowBlur: 26)
+    let ha = 334 * CGFloat.pi / 180
+    let head = CGPoint(x: 336 * cos(ha), y: 336 * sin(ha)).applying(tilt)
+    k.solid(circle(head, 15), l.accent, glow: l.accentGlow, glowBlur: 24)
+    // hairline по краю плитки
+    let inner = CGPath(roundedRect: body.insetBy(dx: 2, dy: 2), cornerWidth: 183, cornerHeight: 183, transform: nil)
+    k.stroke(inner, width: 3, [l.hairline, l.hairline], from: .zero, to: CGPoint(x: 1, y: 1))
+}
+
 let draw: (Canvas) -> Void = switch concept {
+case "orb": { drawUmbraOrb($0, .dark, moon: false) }
+case "orb-light": { drawUmbraOrb($0, .light, moon: false) }
+case "mac": drawMac
 case "dial": drawDial
 case "power": drawPower
-default: drawMac
+default: { drawUmbraOrb($0, .dark, moon: true) }
 }
 
 func render(_ px: Int) -> Data {
