@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import type { MacModule, ModuleContext, StatusFields } from '../types/mac-module';
 import { KEEPERS_MODULE } from './constants/keepers';
 import { keepersSummary } from './helpers/keepers-summary';

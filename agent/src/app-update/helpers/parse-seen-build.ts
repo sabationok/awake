@@ -1,4 +1,4 @@
-import type { SettingValue } from '@awake/contracts';
+import type { SettingValue } from '@macontrol/contracts';
 import type { SeenBuild } from '../types/seen-build.types';
 
 /** Збережений рядок JSON → остання показана збірка; нічого або сміття — null. */

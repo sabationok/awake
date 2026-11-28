@@ -1,4 +1,4 @@
-import type { MacState, UiPage, UiRow } from '@awake/contracts';
+import type { MacState, UiPage, UiRow } from '@macontrol/contracts';
 import type { ModuleContext } from '../../types/mac-module';
 import { sleepRow } from '../../awake/helpers/sleep-row';
 import { formatBattery } from '../../awake/helpers/format-battery';

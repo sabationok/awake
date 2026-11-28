@@ -1,4 +1,4 @@
-import type { SleepTimerRecord, UiPage } from '@awake/contracts';
+import type { SleepTimerRecord, UiPage } from '@macontrol/contracts';
 import { buildStatsPage } from '../../helpers/build-stats-page';
 import type { ModuleContext } from '../../types/mac-module';
 import { SLEEP_TRACKING_PAGE } from '../constants/sleep-pages';

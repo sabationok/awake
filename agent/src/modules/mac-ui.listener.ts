@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import type { UiLayoutRequest } from '@awake/contracts';
+import type { UiLayoutRequest } from '@macontrol/contracts';
 import { Subscription, debounceTime, merge } from 'rxjs';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
 import { TransportsService } from '../transports';

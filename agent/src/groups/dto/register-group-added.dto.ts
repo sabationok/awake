@@ -1,4 +1,4 @@
-import type { GroupBotRights, GroupProviderId } from '@awake/contracts';
+import type { GroupBotRights, GroupProviderId } from '@macontrol/contracts';
 
 /** Бота додали в групу. `byOwner` вирішує конектор (він знає, хто власник); ядро лише довіряє цьому. */
 export class RegisterGroupAddedDto {

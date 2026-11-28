@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { GroupProviderManifest, SettingDefinition, SettingValue, UiPage } from '@awake/contracts';
+import type { GroupProviderManifest, SettingDefinition, SettingValue, UiPage } from '@macontrol/contracts';
 import type { MacModule, ModuleContext, StatusFields } from '../modules/types/mac-module';
 import { StatsService } from '../stats';
 import { GROUPS_MODULE } from './constants/groups-module';

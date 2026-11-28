@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import type { SleepTimerEvent } from '@awake/contracts';
+import type { SleepTimerEvent } from '@macontrol/contracts';
 import { filter, type Subscription } from 'rxjs';
 import { formatHhmm } from '../../../common/format-hhmm';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';

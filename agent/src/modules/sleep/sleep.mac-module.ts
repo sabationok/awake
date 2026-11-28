@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import { SleepTimersService } from '../../sleep-timers/sleep-timers.service';
 import type { MacModule, ModuleContext } from '../types/mac-module';
 import { SLEEP_QUERY_LIMIT } from './constants/sleep-limits';

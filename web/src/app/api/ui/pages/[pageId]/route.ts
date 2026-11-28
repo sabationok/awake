@@ -1,4 +1,4 @@
-import type { UiPageLayout } from '@awake/contracts';
+import type { UiPageLayout } from '@macontrol/contracts';
 import { NextResponse, type NextRequest } from 'next/server';
 import { toPublicLayout } from '@/server/public-layout.vercel';
 import { readFirst, readStageConfig } from '@/server/stage-config.vercel';

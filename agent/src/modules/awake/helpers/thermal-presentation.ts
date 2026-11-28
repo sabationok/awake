@@ -1,4 +1,4 @@
-import type { ThermalLevel, UiTone } from '@awake/contracts';
+import type { ThermalLevel, UiTone } from '@macontrol/contracts';
 
 const PRESENTATION: Record<ThermalLevel, { label: string; tone: UiTone }> = {
   nominal: { label: 'Норма', tone: 'green' },

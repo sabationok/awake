@@ -1,4 +1,4 @@
-import type { SessionRecord, UiList } from '@awake/contracts';
+import type { SessionRecord, UiList } from '@macontrol/contracts';
 import { formatElapsed } from '../../helpers/format-elapsed';
 import { formatSessionStart } from '../../helpers/format-session-start';
 import { sessionSourceLabel } from '../../helpers/session-source-label';

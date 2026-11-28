@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { StatGranularity, type MacToAgentMessage, type SessionRecord, type UiChartPoint } from '@awake/contracts';
+import { StatGranularity, type MacToAgentMessage, type SessionRecord, type UiChartPoint } from '@macontrol/contracts';
 import { StatsService, totalChartPoints, type StatsPeriodWindow } from '../stats';
 import { AWAKE_SESSIONS_STAT_NS, AWAKE_TIME_STAT_NS, SESSION_STAT_GRANULARITIES } from './constants/session-stats';
 import { CloseSessionDto } from './dto/close-session.dto';

@@ -1,4 +1,4 @@
-import type { SettingDefinition, UiOption } from '@awake/contracts';
+import type { SettingDefinition, UiOption } from '@macontrol/contracts';
 import { RELAY_MAX_PAYLOAD_BYTES, RELAY_MAX_VIEWERS } from './relay-limits';
 
 /** Значення select, з яким поле не передається: діє default webhooxy. */

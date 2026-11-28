@@ -1,4 +1,4 @@
-import type { SettingDefinition, UiOption } from '@awake/contracts';
+import type { SettingDefinition, UiOption } from '@macontrol/contracts';
 import { UNTIL_OPTIONS } from '../../constants/until-options';
 import { statsPeriodSetting } from '../../../stats';
 import { AWAKE_TRACKING_PAGE } from './awake-pages';

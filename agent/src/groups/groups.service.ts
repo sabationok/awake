@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { GroupCapability, GroupProviderId, GroupProviderManifest } from '@awake/contracts';
+import type { GroupCapability, GroupProviderId, GroupProviderManifest } from '@macontrol/contracts';
 import { Subject } from 'rxjs';
 import { StatsService } from '../stats';
 import { GROUP_PROVIDERS } from './constants/group-providers';

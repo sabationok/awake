@@ -1,6 +1,6 @@
 # План: агент на SQLite mini-ORM, потім `@my-nestjs-kit/sqlite`
 
-Spec: [../sqlite-orm-spec.md](../sqlite-orm-spec.md). Кожна фаза — окремий коміт у `dev`, агент після кожної збирається (`pnpm --filter @awake/agent build`) і стартує на наявній БД користувача без втрати даних.
+Spec: [../sqlite-orm-spec.md](../sqlite-orm-spec.md). Кожна фаза — окремий коміт у `dev`, агент після кожної збирається (`pnpm --filter @macontrol/agent build`) і стартує на наявній БД користувача без втрати даних.
 
 ## Фаза 0. Каркас shim
 

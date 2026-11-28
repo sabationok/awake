@@ -6,7 +6,7 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
         "--filter",
-        "@awake/web",
+        "@macontrol/web",
         "dev"
       ],
       "port": 3218

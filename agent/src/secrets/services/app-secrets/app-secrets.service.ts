@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Subject } from 'rxjs';
-import type { SecretKeyInfo } from '@awake/contracts';
+import type { SecretKeyInfo } from '@macontrol/contracts';
 import { EnvifyService } from '../../../envify';
 import { APP_SECRET_KEYS, type AppSecretField } from '../../constants/app-secret-keys';
 import { readAppSecrets } from '../../helpers/read-app-secrets';

@@ -1,5 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import type { SessionRecord } from '@awake/contracts';
+import type { SessionRecord } from '@macontrol/contracts';
 import { AppResponse } from '../common/app-response';
 import { clampLimit } from '../common/clamp-limit';
 import { SessionsService } from './sessions.service';

@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { interval, type Subscription } from 'rxjs';
-import type { HelperState, SessionSource, SettingValue } from '@awake/contracts';
+import type { HelperState, SessionSource, SettingValue } from '@macontrol/contracts';
 import { formatHhmm } from '../common/format-hhmm';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 import { MacBridgeService, type ServerCommand } from '../mac-bridge/services/mac-bridge.service';

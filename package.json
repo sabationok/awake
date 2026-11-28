@@ -1,17 +1,17 @@
 {
-  "name": "awake",
+  "name": "macontrol-workspace",
   "private": true,
   "packageManager": "pnpm@11.17.0",
   "scripts": {
     "vercel-build": "next build",
-    "build:agent": "pnpm --filter @awake/agent build",
+    "build:agent": "pnpm --filter @macontrol/agent build",
     "agent:dev": "scripts/agent-dev.sh",
     "agent:dev:web": "scripts/agent-dev.sh web",
     "agent:dev:off": "scripts/agent-dev.sh off",
     "helper:build": "scripts/build-helper.sh",
     "server:dev": "scripts/server-dev.sh",
-    "build:web:local": "pnpm --filter @awake/web build:local",
-    "dev:web": "pnpm --filter @awake/web dev",
+    "build:web:local": "pnpm --filter @macontrol/web build:local",
+    "dev:web": "pnpm --filter @macontrol/web dev",
     "deploy:web": "scripts/deploy-web.sh",
     "changeset": "changeset",
     "release:version": "changeset version"

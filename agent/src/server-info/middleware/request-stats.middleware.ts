@@ -1,6 +1,6 @@
 import { Inject, Injectable, NestMiddleware } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
-import { StatGranularity } from '@awake/contracts';
+import { StatGranularity } from '@macontrol/contracts';
 import { requestPath } from '../../auth/helpers/request-path';
 import { AGENT_CONFIG, type AgentConfig } from '../../config/agent-config';
 import { StatsService } from '../../stats';

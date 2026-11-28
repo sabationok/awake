@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { uiKeys, uiNamespace, uiTtlSeconds } from '@awake/contracts';
-import type { UiAlive } from '@awake/contracts';
+import { uiKeys, uiNamespace, uiTtlSeconds } from '@macontrol/contracts';
+import type { UiAlive } from '@macontrol/contracts';
 import { ModulesService } from '../../modules/modules.service';
 import { WEB_UI_MODULE } from '../../web-ui/constants/web-ui';
 import { HEARTBEAT_OFF } from '../../web-ui/constants/web-ui-settings';

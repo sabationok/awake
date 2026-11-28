@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { filter, merge, Subscription } from 'rxjs';
-import type { StatsPeriod, WebhookInfo } from '@awake/contracts';
+import type { StatsPeriod, WebhookInfo } from '@macontrol/contracts';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
 import { StatsService } from '../../../stats';
 import { RelayStateService } from '../../../relay/state/relay-state.service';

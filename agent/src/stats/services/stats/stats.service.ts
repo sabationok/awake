@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Subject } from 'rxjs';
-import { STAT_SUBJECT_NONE, StatGranularity, type StatMetrics, type StatSeriesRef, type StatTimeline, type StatTotals } from '@awake/contracts';
+import { STAT_SUBJECT_NONE, StatGranularity, type StatMetrics, type StatSeriesRef, type StatTimeline, type StatTotals } from '@macontrol/contracts';
 import { API_ERROR_CODES, AppException } from '../../../common/app-exception';
 import { STAT_DEFAULT_VALUE_LIMIT, STAT_GAUGE_COUNT, STAT_GAUGE_SUM, STAT_LIMITS, STAT_MAX_TIMELINE_POINTS, STAT_RETENTION_MS } from '../../constants/stat-limits';
 import { addStatMetrics } from '../../helpers/add-stat-metrics';

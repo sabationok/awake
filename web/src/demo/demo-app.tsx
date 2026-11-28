@@ -1,5 +1,5 @@
 'use client';
-import type { UiPageLayout } from '@awake/contracts';
+import type { UiPageLayout } from '@macontrol/contracts';
 import { useMemo, useState } from 'react';
 import type { Tagged } from '@/live/pairing/agent-api';
 import type { UiSource } from '@/live/sources';

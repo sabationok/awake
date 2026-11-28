@@ -1,4 +1,4 @@
-import type { PowerSource } from '@awake/contracts';
+import type { PowerSource } from '@macontrol/contracts';
 
 const LABELS: Record<PowerSource, string> = { AC: 'Від мережі', BAT: 'Від батареї', unknown: '—' };
 

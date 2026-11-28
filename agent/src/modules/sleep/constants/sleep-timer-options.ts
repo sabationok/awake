@@ -1,4 +1,4 @@
-import type { UiOption } from '@awake/contracts';
+import type { UiOption } from '@macontrol/contracts';
 
 /** Через скільки хвилин заснути. */
 export const SLEEP_TIMER_OPTIONS: UiOption[] = [

@@ -1,4 +1,4 @@
-import type { GroupCapability, GroupProviderManifest } from '@awake/contracts';
+import type { GroupCapability, GroupProviderManifest } from '@macontrol/contracts';
 import type { GroupChatEntity } from '../entities/group-chat.entity';
 import type { GroupTopicRow } from './group-topic-row.types';
 

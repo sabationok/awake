@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 import { describeUserAgent } from '../devices/helpers/describe-user-agent';
 import { DevicesBridgeService } from '../devices/services/devices-bridge.service';

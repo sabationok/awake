@@ -1,6 +1,6 @@
 import { statSync } from 'node:fs';
 import { join } from 'node:path';
-import type { ServerWebInfo } from '@awake/contracts';
+import type { ServerWebInfo } from '@macontrol/contracts';
 
 function builtAt(dir: string): string | null {
   try {

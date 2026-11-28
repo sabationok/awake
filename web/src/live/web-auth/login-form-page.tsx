@@ -1,5 +1,5 @@
 'use client';
-import { WEB_SESSION_IDLE_OPTIONS, type WebSessionIdleMinutes } from '@awake/contracts';
+import { WEB_SESSION_IDLE_OPTIONS, type WebSessionIdleMinutes } from '@macontrol/contracts';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import type { AgentError } from '@/live/pairing/agent-api';

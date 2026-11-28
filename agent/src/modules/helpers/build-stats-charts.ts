@@ -1,4 +1,4 @@
-import type { StatTimeline } from '@awake/contracts';
+import type { StatTimeline } from '@macontrol/contracts';
 import { counterChartPoints, type StatsPeriodWindow } from '../../stats';
 import type { UiModuleStats } from '../types/ui-module-stats';
 import type { StatsPageChart } from './build-stats-page';

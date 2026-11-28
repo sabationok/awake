@@ -1,4 +1,4 @@
-import type { SettingDefinition, SettingValue } from '@awake/contracts';
+import type { SettingDefinition, SettingValue } from '@macontrol/contracts';
 import { isValidSettingValue } from './is-valid-setting-value';
 
 /** Збережене значення або default, якщо його немає чи воно більше не відповідає опису. */

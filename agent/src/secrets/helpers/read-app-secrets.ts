@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import type { SecretKeyInfo, SecretSource } from '@awake/contracts';
+import type { SecretKeyInfo, SecretSource } from '@macontrol/contracts';
 import { unquoteEnvValue } from '../../telegram/helpers/unquote-env-value';
 import { APP_SECRET_KEYS, type AppSecretField } from '../constants/app-secret-keys';
 

@@ -1,4 +1,4 @@
-import type { StatMetrics } from '@awake/contracts';
+import type { StatMetrics } from '@macontrol/contracts';
 
 /** target += delta, по клітинках. Змінює target. */
 export function addStatMetrics(target: StatMetrics, delta: StatMetrics): StatMetrics {

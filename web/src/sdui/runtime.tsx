@@ -1,5 +1,5 @@
 'use client';
-import type { UiEvent } from '@awake/contracts';
+import type { UiEvent } from '@macontrol/contracts';
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 
 export type RuntimeValue = string | number | boolean;

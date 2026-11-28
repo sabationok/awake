@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { SettingValue, UiPage } from '@awake/contracts';
+import type { SettingValue, UiPage } from '@macontrol/contracts';
 import { TelegramNotificationsService } from '../../telegram/notifications';
 import { TrustedNetworksService } from '../../trusted-networks';
 import type { MacModule, ModuleContext } from '../types/mac-module';

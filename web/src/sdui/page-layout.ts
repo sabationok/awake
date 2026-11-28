@@ -1,4 +1,4 @@
-import type { UiControl, UiMenuItem, UiNode, UiNodeProps, UiNodeRow, UiPageLayout } from '@awake/contracts';
+import type { UiControl, UiMenuItem, UiNode, UiNodeProps, UiNodeRow, UiPageLayout } from '@macontrol/contracts';
 
 /**
  * Таблиця рядків сторінки → вузли для рендерера, лише для сторінки на екрані. `id` вузла — id рядка з сервера, тож

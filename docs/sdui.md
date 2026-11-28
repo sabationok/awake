@@ -128,7 +128,7 @@
 
 ## 6. Перевірки
 
-- `pnpm --filter @awake/agent typecheck`, `pnpm --filter @awake/web typecheck`
+- `pnpm --filter @macontrol/agent typecheck`, `pnpm --filter @macontrol/web typecheck`
 - Swift: `scripts/build-mac.sh`; нові файли helper-а — у `scripts/build-helper.sh`
 - Паритет контракту: агент `macontrol-contract-keeper`
 - Сервер без перевстановлення аппки: `pnpm agent:dev`; аппку ставити лише без сесії Awake / Sleeper і з

@@ -1,4 +1,4 @@
-import type { UiNode, UiPage } from '@awake/contracts';
+import type { UiNode, UiPage } from '@macontrol/contracts';
 import type { ModuleContext } from '../../modules/types/mac-module';
 import { telegramNotificationSettingKey, TELEGRAM_NOTIFICATIONS_PAGE, type TelegramNotificationSource } from '../notifications';
 

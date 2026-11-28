@@ -1,4 +1,4 @@
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import { RELAY_SESSIONS_PAGE } from '../constants/relay-settings';
 import { relaySessionListItem } from '../helpers/relay-session-list-item';
 import type { RelayStateSnapshot } from '../types/relay-status.types';

@@ -1,4 +1,4 @@
-import type { SettingDefinition } from '@awake/contracts';
+import type { SettingDefinition } from '@macontrol/contracts';
 import { TELEGRAM_NOTIFICATIONS_PAGE, telegramNotificationSettingKey, type TelegramNotificationSource } from '../../telegram/notifications';
 import { SESSION_ENDING_LEAD_DEFAULT, SESSION_ENDING_LEAD_KEYS, SESSION_ENDING_LEAD_OPTIONS } from './session-ending';
 

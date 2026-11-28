@@ -1,4 +1,4 @@
-import type { SettingValue } from '@awake/contracts';
+import type { SettingValue } from '@macontrol/contracts';
 import { NO_DEVICE, PROXIMITY_DELAY_OPTIONS, PROXIMITY_RANGE_OPTIONS, PROXIMITY_WHEN_OPTIONS } from '../../../constants/proximity-settings';
 import type { ProximityConfig, ProximityWhen } from '../../../types/proximity-state.types';
 

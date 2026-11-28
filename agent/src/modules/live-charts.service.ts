@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import type { ChartTick, UiChart } from '@awake/contracts';
+import type { ChartTick, UiChart } from '@macontrol/contracts';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
 import { statNextPeriodStart, statPeriodStart, statsPeriodWindow, type StatsChartPeriod } from '../stats';
 import type { LiveChartRegistry, LiveChartSpec } from './types/live-chart.types';

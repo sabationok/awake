@@ -1,4 +1,4 @@
-import type { UiNode, UiPage, UiSwitch } from '@awake/contracts';
+import type { UiNode, UiPage, UiSwitch } from '@macontrol/contracts';
 import type { BotMetrics } from '../../../bot-journal';
 import type { AgentProxy, AgentTransport } from '../../../transports';
 import type { ModuleContext } from '../../types/mac-module';

@@ -1,4 +1,4 @@
-import type { UiTone } from '@awake/contracts';
+import type { UiTone } from '@macontrol/contracts';
 import type { ModuleSource } from '../../modules/types/module-source';
 
 /** Стан транспорту для сторінки Агента. */

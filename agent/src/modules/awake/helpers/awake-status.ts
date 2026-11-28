@@ -1,4 +1,4 @@
-import type { MacState } from '@awake/contracts';
+import type { MacState } from '@macontrol/contracts';
 import { formatHhmm } from '../../../common/format-hhmm';
 import type { StatusFields } from '../../types/mac-module';
 

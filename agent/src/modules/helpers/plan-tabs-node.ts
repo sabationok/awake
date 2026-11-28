@@ -1,4 +1,4 @@
-import type { UiNode, UiOption, UiRow } from '@awake/contracts';
+import type { UiNode, UiOption, UiRow } from '@macontrol/contracts';
 import type { ModuleContext } from '../types/mac-module';
 
 /** Рядок вибору всередині вкладки: ключ налаштування модуля, підпис і варіанти. */

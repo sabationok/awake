@@ -1,4 +1,4 @@
-import type { GroupBotRights, UiItem, UiNode, UiPage } from '@awake/contracts';
+import type { GroupBotRights, UiItem, UiNode, UiPage } from '@macontrol/contracts';
 import { menuItem } from '../../modules/helpers/menu-item';
 import type { ModuleContext } from '../../modules/types/mac-module';
 import { GROUP_CAPABILITY_LABEL } from '../constants/groups-capabilities';

@@ -1,4 +1,4 @@
-import type { WebLoginBody, WebSessionInfo } from '@awake/contracts';
+import type { WebLoginBody, WebSessionInfo } from '@macontrol/contracts';
 import { callAgent } from '@/live/pairing/agent-api';
 
 /** Вхід у Web UI через API агента на тому ж сайті: сесію і кукі веде агент. */

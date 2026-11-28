@@ -1,4 +1,4 @@
-import type { SettingDefinition, SettingValue, UiSelect, UiSwitch } from '@awake/contracts';
+import type { SettingDefinition, SettingValue, UiSelect, UiSwitch } from '@macontrol/contracts';
 
 /** Вузол налаштування на сторінці «Налаштування»; key вузла збігається з UiSettingChange. */
 export function buildSettingNode(

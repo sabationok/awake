@@ -1,4 +1,4 @@
-import type { SettingDefinition } from '@awake/contracts';
+import type { SettingDefinition } from '@macontrol/contracts';
 import { UNTIL_OPTIONS } from '../../constants/until-options';
 import { SLEEP_TIMER_OPTIONS } from './sleep-timer-options';
 import { statsPeriodSetting } from '../../../stats';

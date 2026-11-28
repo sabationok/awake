@@ -1,4 +1,4 @@
-import type { DevicePairingPoll } from '@awake/contracts';
+import type { DevicePairingPoll } from '@macontrol/contracts';
 import { callAgent } from './agent-api';
 
 const POLL_MS = 1500;

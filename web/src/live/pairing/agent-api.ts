@@ -1,4 +1,4 @@
-import type { AppNextStep, AppResponse } from '@awake/contracts';
+import type { AppNextStep, AppResponse } from '@macontrol/contracts';
 
 /** Помилка API агента: код, HTTP-статус і, якщо агент його дав, наступний крок. */
 export type AgentError = Error & { code?: string; status: number; next?: AppNextStep };

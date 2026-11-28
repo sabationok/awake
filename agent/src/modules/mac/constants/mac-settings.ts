@@ -1,4 +1,4 @@
-import type { SettingDefinition } from '@awake/contracts';
+import type { SettingDefinition } from '@macontrol/contracts';
 
 /** Коли сервер пише заміри (CPU, пам'ять, навантаження, нагрів) у статистику. */
 export const METRICS_TRACKING_KEY = 'metricsTracking';

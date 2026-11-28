@@ -1,4 +1,4 @@
-import type { GroupProviderManifest } from '@awake/contracts';
+import type { GroupProviderManifest } from '@macontrol/contracts';
 
 /** Що конектор Telegram справді вміє в групах. Нова можливість з'являється тут лише разом із реалізацією. */
 export const TELEGRAM_GROUPS_MANIFEST: GroupProviderManifest = {

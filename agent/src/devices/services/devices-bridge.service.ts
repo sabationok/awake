@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Subscription, distinctUntilChanged, map, merge } from 'rxjs';
-import type { DevicePairing, DevicePairingMode, DevicesSnapshot } from '@awake/contracts';
+import type { DevicePairing, DevicePairingMode, DevicesSnapshot } from '@macontrol/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';
 import { MacBridgeService } from '../../mac-bridge/services/mac-bridge.service';
 import { RelayStateService } from '../../relay/state/relay-state.service';

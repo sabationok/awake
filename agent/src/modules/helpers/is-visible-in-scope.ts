@@ -1,4 +1,4 @@
-import type { UiScope } from '@awake/contracts';
+import type { UiScope } from '@macontrol/contracts';
 
 /** Вузол зі scope local не потрапляє на сторінки для Vercel/WebApp, зі scope mac — нікуди, крім SwiftUI. */
 export function isVisibleInScope(node: { scope?: UiScope }, scope: UiScope): boolean {

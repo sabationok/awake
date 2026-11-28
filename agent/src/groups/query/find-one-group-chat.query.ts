@@ -1,4 +1,4 @@
-import type { GroupProviderId } from '@awake/contracts';
+import type { GroupProviderId } from '@macontrol/contracts';
 
 export class FindOneGroupChatQuery {
   id?: number;

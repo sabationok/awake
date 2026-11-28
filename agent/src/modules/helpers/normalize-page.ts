@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { UiNode, UiNodeProps, UiNodeRow, UiPage, UiPageLayout } from '@awake/contracts';
+import type { UiNode, UiNodeProps, UiNodeRow, UiPage, UiPageLayout } from '@macontrol/contracts';
 
 /** Вузол сторінки з його id рядка: так збирання бачить, який рядок вийшов з якого вузла (графіки для live-тіків). */
 export type OnPageNode = (rowId: string, node: UiNode) => void;

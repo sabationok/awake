@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { Subject } from 'rxjs';
-import type { Webhook, WebhookInput, WebhookType } from '@awake/contracts';
+import type { Webhook, WebhookInput, WebhookType } from '@macontrol/contracts';
 import { readEnvFile } from '../../../secrets';
 import { generateWhId } from '../../helpers/generate-wh-id';
 import type { SaveWebhookDto } from '../../dto/save-webhook.dto';

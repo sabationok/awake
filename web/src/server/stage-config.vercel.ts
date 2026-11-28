@@ -1,5 +1,5 @@
 import 'server-only';
-import { uiKeys, uiNamespace, type UiNamespace } from '@awake/contracts';
+import { uiKeys, uiNamespace, type UiNamespace } from '@macontrol/contracts';
 import { isUpstashConfigured, upstashGet } from './upstash.vercel';
 
 /**

@@ -1,4 +1,4 @@
-import type { StatCounters } from '@awake/contracts';
+import type { StatCounters } from '@macontrol/contracts';
 
 /** Складає плоскі лічильники кількох namespace (однакові ключі сумуються, не затираються). */
 export function mergeStatCounters(...parts: StatCounters[]): StatCounters {

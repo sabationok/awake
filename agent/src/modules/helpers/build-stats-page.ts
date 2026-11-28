@@ -1,4 +1,4 @@
-import type { UiChart, UiChartPoint, UiIcon, UiNode, UiPage, UiRow, UiTone } from '@awake/contracts';
+import type { UiChart, UiChartPoint, UiIcon, UiNode, UiPage, UiRow, UiTone } from '@macontrol/contracts';
 import { STATS_PAGE_PERIODS, STATS_PERIOD_KEY, statsPeriodWindow, type StatsPagePeriod, type StatsPeriodWindow } from '../../stats';
 import type { ModuleContext } from '../types/mac-module';
 import { formatDuration } from './format-duration';

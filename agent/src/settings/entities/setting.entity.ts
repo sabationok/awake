@@ -1,4 +1,4 @@
-import type { SettingValue } from '@awake/contracts';
+import type { SettingValue } from '@macontrol/contracts';
 import { Column, Entity, PrimaryColumn } from '@nest-kit/sqlite';
 
 /** Значення лежить як JSON, щоб bool і число не поверталися рядками. */

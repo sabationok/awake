@@ -1,4 +1,4 @@
-import type { UiChart, UiChartPoint } from '@awake/contracts';
+import type { UiChart, UiChartPoint } from '@macontrol/contracts';
 import type { StatsChartPeriod, StatsPeriodWindow } from '../../stats';
 
 /**

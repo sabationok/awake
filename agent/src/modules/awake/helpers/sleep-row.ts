@@ -1,4 +1,4 @@
-import type { MacState, UiRow } from '@awake/contracts';
+import type { MacState, UiRow } from '@macontrol/contracts';
 
 /** Рядок «Сон»: чи блокує Mac сон. Стан уже в тексті праворуч, тож без крапки-індикатора. */
 export function sleepRow(mac: MacState): UiRow {

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 import { ModulesService } from '../modules/modules.service';
 import type { MacModule, ModuleContext } from '../modules/types/mac-module';

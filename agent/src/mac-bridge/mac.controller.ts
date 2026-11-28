@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import type { CommandAction, CommandRequest, MacState } from '@awake/contracts';
+import type { CommandAction, CommandRequest, MacState } from '@macontrol/contracts';
 import { AppResponse } from '../common/app-response';
 import { API_ERROR_CODES, AppException } from '../common/app-exception';
 import { MacBridgeService } from './services/mac-bridge.service';

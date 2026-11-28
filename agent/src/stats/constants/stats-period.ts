@@ -1,4 +1,4 @@
-import type { StatsPeriod } from '@awake/contracts';
+import type { StatsPeriod } from '@macontrol/contracts';
 
 /** Ключ налаштування з вибраною вкладкою періоду на сторінці статистики модуля (`<module>.statsPeriod`). */
 export const STATS_PERIOD_KEY = 'statsPeriod';

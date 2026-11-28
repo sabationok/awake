@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import type { MacModule, ModuleContext } from '../types/mac-module';
 import { mediaStatus } from './helpers/media-status';
 import { buildMediaPage } from './pages/media-page';

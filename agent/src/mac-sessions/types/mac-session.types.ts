@@ -1,4 +1,4 @@
-import type { SessionSource } from '@awake/contracts';
+import type { SessionSource } from '@macontrol/contracts';
 
 /** Сесія Awake, яку веде сервер. Дати — ISO. */
 export interface AwakeSession {

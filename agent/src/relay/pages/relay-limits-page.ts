@@ -1,4 +1,4 @@
-import type { UiNode, UiPage } from '@awake/contracts';
+import type { UiNode, UiPage } from '@macontrol/contracts';
 import type { ModuleContext } from '../../modules/types/mac-module';
 import { RELAY_LIMIT_KEYS, RELAY_LIMITS_PAGE } from '../constants/relay-settings';
 import { effectiveLimit } from '../helpers/effective-limit';

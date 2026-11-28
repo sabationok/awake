@@ -24,8 +24,8 @@ changed file in full.
 
 ## Commands
 
-- `pnpm --filter @awake/agent typecheck`
-- `pnpm --filter @awake/agent check:sql` (SQL text allowed only in `agent/src/nest-kit/` and
+- `pnpm --filter @macontrol/agent typecheck`
+- `pnpm --filter @macontrol/agent check:sql` (SQL text allowed only in `agent/src/nest-kit/` and
   `agent/src/database/migrations/`), then look for what its regex misses.
 
 ## MaControl specifics

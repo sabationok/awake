@@ -1,5 +1,5 @@
 import { createHmac, randomUUID } from 'node:crypto';
-import { RELAY_TICKET_AUDIENCE, RELAY_TICKET_TTL_SECONDS, type RelayTicketClaims } from '@awake/contracts';
+import { RELAY_TICKET_AUDIENCE, RELAY_TICKET_TTL_SECONDS, type RelayTicketClaims } from '@macontrol/contracts';
 
 const base64url = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
 

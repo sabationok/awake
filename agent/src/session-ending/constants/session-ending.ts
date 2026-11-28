@@ -1,4 +1,4 @@
-import type { UiOption } from '@awake/contracts';
+import type { UiOption } from '@macontrol/contracts';
 
 /** Як часто перевіряти стан Mac на наближення кінця сесії і таймера сну. */
 export const SESSION_ENDING_POLL_MS = 30_000;

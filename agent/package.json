@@ -1,5 +1,5 @@
 {
-  "name": "@awake/agent",
+  "name": "@macontrol/agent",
   "version": "0.1.0",
   "private": true,
   "description": "Local Awake agent: runs as a subprocess of the Mac app, keeps history in SQLite, serves the local dashboard, publishes presence to Upstash.",
@@ -19,7 +19,7 @@
     "telegraf": "4.16.3"
   },
   "devDependencies": {
-    "@awake/contracts": "workspace:*",
+    "@macontrol/contracts": "workspace:*",
     "@types/express": "5.0.3",
     "@types/node": "22.15.3",
     "esbuild": "0.25.10",

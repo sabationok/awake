@@ -1,4 +1,4 @@
-import type { SessionSource } from '@awake/contracts';
+import type { SessionSource } from '@macontrol/contracts';
 
 const LABELS: Record<SessionSource, string> = { mac: 'Mac', telegram: 'Telegram', web: 'Web UI' };
 

@@ -1,4 +1,4 @@
-import type { GroupProviderId } from '@awake/contracts';
+import type { GroupProviderId } from '@macontrol/contracts';
 
 /** Група за ключем провайдера. */
 export class GroupRefDto {

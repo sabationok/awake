@@ -1,4 +1,4 @@
-import type { SwitchSetting } from '@awake/contracts';
+import type { SwitchSetting } from '@macontrol/contracts';
 import { GROUPS_TOPICS_PAGE } from '../constants/groups-module';
 import { GROUPS_TOPIC_KEY_PREFIX } from '../constants/groups-settings';
 import type { GroupTopicSource } from '../types/group-topic-row.types';

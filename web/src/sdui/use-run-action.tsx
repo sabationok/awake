@@ -1,5 +1,5 @@
 'use client';
-import type { UiAction, UiButton, UiConfirm, UiEvent, UiForm, UiMenuItem } from '@awake/contracts';
+import type { UiAction, UiButton, UiConfirm, UiEvent, UiForm, UiMenuItem } from '@macontrol/contracts';
 import { useState, type ReactNode } from 'react';
 import { Button, Dialog, Select, type ButtonVariant } from '@/ui/primitives';
 import { useBusySend } from './event-scope';

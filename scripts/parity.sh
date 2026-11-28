@@ -11,7 +11,7 @@
 # The running server, the old app and agent-dev are never touched (no socket either: the layout comes from the file).
 #
 # Out: mac/build/parity/<id>-mac.png, <id>-web.png and <id>.png (the two side by side).
-# Needs: web dev server on :3218 (`pnpm --filter @awake/web dev`), Google Chrome, jq.
+# Needs: web dev server on :3218 (`pnpm --filter @macontrol/web dev`), Google Chrome, jq.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

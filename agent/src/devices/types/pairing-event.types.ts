@@ -1,4 +1,4 @@
-import type { DevicePairingMode } from '@awake/contracts';
+import type { DevicePairingMode } from '@macontrol/contracts';
 
 /**
  * Що сталося з пристроєм на шляху `via`: запит на сполучення, відповідь Mac, або вже сполучений пристрій

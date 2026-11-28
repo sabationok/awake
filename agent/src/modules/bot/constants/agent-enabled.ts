@@ -1,4 +1,4 @@
-import type { SettingDefinition } from '@awake/contracts';
+import type { SettingDefinition } from '@macontrol/contracts';
 
 export const AGENT_MODULE = 'bot';
 export const AGENT_ENABLED_KEY = 'enabled';

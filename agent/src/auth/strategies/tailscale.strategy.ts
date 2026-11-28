@@ -1,6 +1,6 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
-import { RELAY_DEVICE_COOKIE, WEB_SESSION_COOKIE } from '@awake/contracts';
+import { RELAY_DEVICE_COOKIE, WEB_SESSION_COOKIE } from '@macontrol/contracts';
 import { API_ERROR_CODES, AppException } from '../../common/app-exception';
 import { readCookie } from '../../common/read-cookie';
 import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';

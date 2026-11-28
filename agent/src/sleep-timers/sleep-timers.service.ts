@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { SleepTimerEvent } from '@awake/contracts';
+import type { SleepTimerEvent } from '@macontrol/contracts';
 import type { CloseSleepTimerDto } from './dto/close-sleep-timer.dto';
 import type { CreateSleepTimerDto } from './dto/create-sleep-timer.dto';
 import type { SleepTimerEntity } from './entities/sleep-timer.entity';

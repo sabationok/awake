@@ -3,7 +3,7 @@
 ## Changelog and versions
 
 MaControl is versioned as one unit, the package `macontrol` in `app/` (Mac app, agent and Web UI ship together).
-Changesets keeps its version and `app/CHANGELOG.md`; the workspace packages `@awake/*` are not versioned on their own.
+Changesets keeps its version and `app/CHANGELOG.md`; the workspace packages `@macontrol/*` are not versioned on their own.
 
 - Every change that the owner can notice (new behaviour, changed behaviour, a fix) ships with a changeset file in
   the same commit: `.changeset/<short-kebab-name>.md` with `"macontrol": patch | minor | major` and one or two

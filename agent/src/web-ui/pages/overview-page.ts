@@ -1,4 +1,4 @@
-import type { UiNode, UiPage } from '@awake/contracts';
+import type { UiNode, UiPage } from '@macontrol/contracts';
 import { WEB_UI_ICON, WEB_UI_MODULE } from '../constants/web-ui';
 import { formatWhen } from '../helpers/format-when';
 import type { WebUiSnapshot } from '../types/web-ui-snapshot.types';

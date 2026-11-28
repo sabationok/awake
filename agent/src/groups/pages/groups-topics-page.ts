@@ -1,4 +1,4 @@
-import type { UiNode, UiPage } from '@awake/contracts';
+import type { UiNode, UiPage } from '@macontrol/contracts';
 import type { ModuleContext } from '../../modules/types/mac-module';
 import { GROUPS_MODULE, GROUPS_TOPICS_PAGE } from '../constants/groups-module';
 import { capabilityReason } from '../helpers/capability-reason';

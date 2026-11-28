@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { StatsPeriod, UiChart, UiChartPoint } from '@awake/contracts';
+import type { StatsPeriod, UiChart, UiChartPoint } from '@macontrol/contracts';
 import { counterChartPoints, StatsService, statSeriesTones, statsPeriodWindow, type StatsPeriodWindow } from '../../../stats';
 import { WEBHOOK_ERROR_EVENTS, WEBHOOK_EVENT_LABELS, WEBHOOK_EVENTS_STAT_NS, WEBHOOK_STAT_SUBJECT } from '../../constants/webhook-stats';
 import { webhookStatSeries } from '../../helpers/webhook-stat-series';

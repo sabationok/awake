@@ -1,4 +1,4 @@
-import type { SettingDefinition, UiOption } from '@awake/contracts';
+import type { SettingDefinition, UiOption } from '@macontrol/contracts';
 
 export const PROXIMITY_MODULE = 'proximity';
 export const PROXIMITY_PAGE = 'proximity';

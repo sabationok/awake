@@ -1,4 +1,4 @@
-import type { WebhookConfig, WebhookMode, WebhookProvider, WebhookType } from '@awake/contracts';
+import type { WebhookConfig, WebhookMode, WebhookProvider, WebhookType } from '@macontrol/contracts';
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, StateDateColumn, UpdateDateColumn } from '@nest-kit/sqlite';
 
 /** Вебхук агента. Видалені — soft delete: рядок лишається (`hasEverType` бачить його), пошук його не бачить. */

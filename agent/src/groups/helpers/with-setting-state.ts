@@ -1,4 +1,4 @@
-import type { UiNode } from '@awake/contracts';
+import type { UiNode } from '@macontrol/contracts';
 
 /** Стан вузла налаштування, який знає лише сторінка: сірий з причиною або з поточним станом у підказці. */
 export class SettingNodeState {

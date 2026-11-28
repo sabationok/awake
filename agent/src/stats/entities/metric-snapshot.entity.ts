@@ -1,4 +1,4 @@
-import type { StatGranularity, StatMetrics } from '@awake/contracts';
+import type { StatGranularity, StatMetrics } from '@macontrol/contracts';
 import { Column, Entity, Index, PrimaryColumn } from '@nest-kit/sqlite';
 
 /** Бакет статистики. Глобальна серія — `subjectId` '' (NULL у первинному ключі SQLite не конфліктує). */

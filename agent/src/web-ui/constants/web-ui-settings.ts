@@ -1,4 +1,4 @@
-import type { SettingDefinition } from '@awake/contracts';
+import type { SettingDefinition } from '@macontrol/contracts';
 import { WEB_UI_MODULE } from './web-ui';
 
 /** Інтервал пульсу агента для Vercel у секундах; `off` — не слати. */

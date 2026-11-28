@@ -1,4 +1,4 @@
-import type { SleepTimerRecord } from '@awake/contracts';
+import type { SleepTimerRecord } from '@macontrol/contracts';
 import { Bot, BotAction, BotCtx, BotParams, BotScreen, BotSource, type BotMenu, type BotParamValue } from '../../bot';
 import { escapeHtml } from '../../common/escape-html';
 import { formatHhmm } from '../../common/format-hhmm';

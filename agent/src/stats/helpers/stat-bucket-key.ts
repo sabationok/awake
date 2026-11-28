@@ -1,4 +1,4 @@
-import type { StatGranularity, StatSeriesRef } from '@awake/contracts';
+import type { StatGranularity, StatSeriesRef } from '@macontrol/contracts';
 
 /** Ключ бакета в пам'яті: усі сегменти серії, гранулярність і початок періоду. */
 export function statBucketKey(series: StatSeriesRef, granularity: StatGranularity, periodStart: Date): string {

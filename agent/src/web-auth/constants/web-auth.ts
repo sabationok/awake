@@ -1,4 +1,4 @@
-import type { WebSessionIdleMinutes } from '@awake/contracts';
+import type { WebSessionIdleMinutes } from '@macontrol/contracts';
 
 /** Перша сесія після схвалення пейрингу, коли таймаут ще ніхто не вибирав. */
 export const DEFAULT_IDLE_MINUTES: WebSessionIdleMinutes = 5;

@@ -1,4 +1,4 @@
-import type { StatGranularity, StatMetrics, StatSeriesRef } from '@awake/contracts';
+import type { StatGranularity, StatMetrics, StatSeriesRef } from '@macontrol/contracts';
 
 /** Бакет: серія × гранулярність × початок періоду, з дельтою (у пам'яті) або підсумком (у SQLite). */
 export interface StatBucket extends StatSeriesRef {
@@ -51,5 +51,5 @@ export interface StatDurationIncrement extends Omit<StatIncrement, 'metrics' | '
 export interface StatLocalDay {
   /** Локальна північ. */
   start: Date;
-  metrics: import('@awake/contracts').StatMetrics;
+  metrics: import('@macontrol/contracts').StatMetrics;
 }

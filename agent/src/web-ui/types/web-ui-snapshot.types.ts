@@ -1,5 +1,5 @@
-import type { SecretSource } from '@awake/contracts';
-import type { ServerWebInfo } from '@awake/contracts';
+import type { SecretSource } from '@macontrol/contracts';
+import type { ServerWebInfo } from '@macontrol/contracts';
 
 /** Адреса, за якою відкривається Web UI; `url: null` — зараз недоступна, `note` каже чому. */
 export interface WebUiAddress {

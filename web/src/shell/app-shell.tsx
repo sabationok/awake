@@ -1,5 +1,5 @@
 'use client';
-import type { UiPageInfo, UiShell } from '@awake/contracts';
+import type { UiPageInfo, UiShell } from '@macontrol/contracts';
 import { ChevronLeft, ChevronRight, CircleAlert, CircleCheck, DatabaseZap, FlaskConical, Info, Menu, Power, TriangleAlert, X, type LucideIcon } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { levelOf, pathTo, sidebarPages, sidebarSections, type SidebarNode } from '@/lib/sidebar-sections';

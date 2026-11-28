@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AGENT_CONFIG, type AgentConfig } from '../config/agent-config';
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import { BotCallsChartsService } from '../bot-journal';
 import { statsPeriodSetting } from '../stats';
 import { WebhookChartsService, WebhooksService } from '../webhooks';

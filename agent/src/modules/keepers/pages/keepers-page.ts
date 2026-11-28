@@ -1,4 +1,4 @@
-import type { MacState, UiNode, UiPage } from '@awake/contracts';
+import type { MacState, UiNode, UiPage } from '@macontrol/contracts';
 import { formatHhmm } from '../../../common/format-hhmm';
 import { KEEPERS_MODULE } from '../constants/keepers';
 import { keepersSummary } from '../helpers/keepers-summary';

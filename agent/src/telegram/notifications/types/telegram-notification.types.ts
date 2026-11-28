@@ -1,4 +1,4 @@
-import type { SettingDefinition, UiTone } from '@awake/contracts';
+import type { SettingDefinition, UiTone } from '@macontrol/contracts';
 
 /** Одна подія джерела: перемикач `events.<source>.<type>` у Telegram → Сповіщення. */
 export interface TelegramNotificationEvent {

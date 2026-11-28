@@ -63,7 +63,7 @@ Mac-аппка — повний виняток: ходить до Nest напр�
 { ok: false, error: { code: 'AUTH_REQUIRED' }, next: { type: 'auth', action: 'login' } }
 ```
 
-- `next` описує дію (`type` + `action` + параметри), а не шлях. Тип — у `@awake/contracts`.
+- `next` описує дію (`type` + `action` + параметри), а не шлях. Тип — у `@macontrol/contracts`.
 - Сторінку для кроку вибирає веб: одна мапа `type/action → сторінка` в `web/src/features/redirects/`.
 - `callAgent` бачить `next` і переходить на сторінку з мапи.
 - Повні переходи (скан QR): `/redirects?type=…&action=…`. У статичному експорті це клієнтська сторінка `redirects/page.local.tsx`: читає крок і робить `router.replace` за мапою. `next` перевіряється `safeNextPath`, `code` — форматом.

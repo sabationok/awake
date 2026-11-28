@@ -1,4 +1,4 @@
-import type { SessionRecord, SessionSource } from '@awake/contracts';
+import type { SessionRecord, SessionSource } from '@macontrol/contracts';
 import { Column, Entity, Index, PrimaryGeneratedColumn, StateDateColumn } from '@nest-kit/sqlite';
 
 @Entity('sessions')

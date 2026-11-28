@@ -1,4 +1,4 @@
-import type { SecretSource, UiNode, UiPage } from '@awake/contracts';
+import type { SecretSource, UiNode, UiPage } from '@macontrol/contracts';
 import { menuItem } from '../../modules/helpers/menu-item';
 import { MAC_ONLY_HINT, WEB_UI_MODULE } from '../constants/web-ui';
 import { webUiAction } from '../helpers/web-ui-action';

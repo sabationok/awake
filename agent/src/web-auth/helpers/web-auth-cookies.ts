@@ -1,5 +1,5 @@
 import type { CookieOptions, Response } from 'express';
-import { RELAY_DEVICE_COOKIE, WEB_SESSION_COOKIE } from '@awake/contracts';
+import { RELAY_DEVICE_COOKIE, WEB_SESSION_COOKIE } from '@macontrol/contracts';
 import { DEVICE_COOKIE_MAX_AGE_MS } from '../constants/web-auth';
 
 /** Same-origin через `https://<mac>.ts.net`: TLS знімає serve, браузер бачить https, тож Secure працює. */

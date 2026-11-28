@@ -4,7 +4,7 @@ import { connect, createServer, type Server, type Socket } from 'node:net';
 import { dirname } from 'node:path';
 import { createInterface } from 'node:readline';
 import { Subject } from 'rxjs';
-import type { AgentToMacMessage } from '@awake/contracts';
+import type { AgentToMacMessage } from '@macontrol/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';
 
 /** Типи, останній рядок яких новий клієнт отримує одразу після підключення. */

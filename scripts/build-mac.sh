@@ -50,9 +50,9 @@ WEB_OUT="${WEB_OUT:-$ROOT/web/out}"
 server_parts() {
   (cd "$ROOT" && HELPER_ID="$SERVER_ID" bash scripts/build-helper.sh >/dev/null)
   if [ "${SKIP_AGENT_BUILD:-0}" != "1" ]; then
-    (cd "$ROOT" && pnpm install --frozen-lockfile >/dev/null && pnpm --filter @awake/agent build >/dev/null)
+    (cd "$ROOT" && pnpm install --frozen-lockfile >/dev/null && pnpm --filter @macontrol/agent build >/dev/null)
   fi
-  [ -d "$WEB_OUT" ] || (cd "$ROOT" && pnpm --filter @awake/web build:local >/dev/null)
+  [ -d "$WEB_OUT" ] || (cd "$ROOT" && pnpm --filter @macontrol/web build:local >/dev/null)
 }
 APP="$OUT/$FILE.app"
 server_parts

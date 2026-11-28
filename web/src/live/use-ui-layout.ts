@@ -1,5 +1,5 @@
 'use client';
-import type { UiEvent, UiPageLayout, UiShell } from '@awake/contracts';
+import type { UiEvent, UiPageLayout, UiShell } from '@macontrol/contracts';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { PageStore } from '@/sdui/page-layout';
 import type { UiSource } from './sources';

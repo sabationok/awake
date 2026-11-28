@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Subject } from 'rxjs';
-import type { NearbyDevice, ProximityReport, UiOption } from '@awake/contracts';
+import type { NearbyDevice, ProximityReport, UiOption } from '@macontrol/contracts';
 import { LogsService } from '../../../logs/logs.service';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
 import { SettingsService } from '../../../settings/settings.service';

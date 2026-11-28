@@ -1,4 +1,4 @@
-import type { GroupProviderId } from '@awake/contracts';
+import type { GroupProviderId } from '@macontrol/contracts';
 
 /** Куди зараз можна слати в прив'язану групу: чат і живі топіки `джерело → thread id`. */
 export interface GroupDeliveryMap {

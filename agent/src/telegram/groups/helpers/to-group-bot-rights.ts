@@ -1,4 +1,4 @@
-import type { GroupBotRights } from '@awake/contracts';
+import type { GroupBotRights } from '@macontrol/contracts';
 import type { ChatMember } from 'telegraf/types';
 
 /** Права бота з `ChatMember` Telegram → нейтральний знімок ядра. Не адмін — жодного права. */

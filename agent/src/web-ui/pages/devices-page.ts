@@ -1,4 +1,4 @@
-import type { DevicePairing, DevicePairingMode, DevicesSnapshot, UiNode, UiPage } from '@awake/contracts';
+import type { DevicePairing, DevicePairingMode, DevicesSnapshot, UiNode, UiPage } from '@macontrol/contracts';
 import { menuItem } from '../../modules/helpers/menu-item';
 import { MAC_ONLY_HINT, WEB_UI_MODULE } from '../constants/web-ui';
 import { formatWhen } from '../helpers/format-when';

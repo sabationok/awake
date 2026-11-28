@@ -1,4 +1,4 @@
-import type { SleepTimerRecord, UiPage } from '@awake/contracts';
+import type { SleepTimerRecord, UiPage } from '@macontrol/contracts';
 import { SLEEP_HISTORY_LIMIT } from '../constants/sleep-limits';
 import { sleepTimerListItem } from '../helpers/sleep-timer-list-item';
 

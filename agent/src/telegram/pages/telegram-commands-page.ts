@@ -1,4 +1,4 @@
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import type { BotNamespace } from '../../bot';
 import type { ModuleContext } from '../../modules/types/mac-module';
 import { telegramCommandSettingKey } from '../helpers/telegram-command-setting-key';

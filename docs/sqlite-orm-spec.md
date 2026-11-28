@@ -59,7 +59,7 @@ export class SessionEntity {
 - `@Index(fields, { unique?, name? })` на класі.
 - `@DeleteDateColumn()` (`deletedAt`, `TEXT NULL`, ISO-час) вмикає soft delete для entity — див. «Soft delete».
 - `@CreateDateColumn()` / `@UpdateDateColumn()` — `createdAt` / `updatedAt`, база ставить ISO-час сама при `create` / `update`.
-- Entity реалізує контракт з `@awake/contracts` (`implements SessionRecord`), тож мапер `toRecord` зникає: репозиторій повертає entity, яка вже має форму контракту.
+- Entity реалізує контракт з `@macontrol/contracts` (`implements SessionRecord`), тож мапер `toRecord` зникає: репозиторій повертає entity, яка вже має форму контракту.
 
 Метадані: глобальний `MetadataStorage` (`WeakMap<Class, EntityMeta>`), декоратори лише пишуть у нього. Збирання — при `forFeature` (явний список). Скан усіх `@Entity` через `DiscoveryService` — пізніше, коли з'явиться потреба.
 

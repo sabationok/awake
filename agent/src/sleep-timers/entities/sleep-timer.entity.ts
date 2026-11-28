@@ -1,4 +1,4 @@
-import type { SessionSource, SleepTimerRecord } from '@awake/contracts';
+import type { SessionSource, SleepTimerRecord } from '@macontrol/contracts';
 import { Column, Entity, Index, PrimaryGeneratedColumn, StateDateColumn } from '@nest-kit/sqlite';
 
 @Entity('sleep_timers')

@@ -1,4 +1,4 @@
-import { uiKeys, type UiAlive, type UiNamespace, type UiShell } from '@awake/contracts';
+import { uiKeys, type UiAlive, type UiNamespace, type UiShell } from '@macontrol/contracts';
 import { NextResponse } from 'next/server';
 import type { ShellResponse } from '@/demo/layout-response';
 import { readFirst, readStageConfig } from '@/server/stage-config.vercel';

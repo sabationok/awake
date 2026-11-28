@@ -1,4 +1,4 @@
-import type { SleepTimerRecord, UiChartPoint } from '@awake/contracts';
+import type { SleepTimerRecord, UiChartPoint } from '@macontrol/contracts';
 import { statPeriodRange, statPeriodStart, type StatsPeriodWindow } from '../../../stats';
 import { SLEEP_OUTCOME, sleepTimerOutcome } from './sleep-timer-outcome';
 

@@ -1,4 +1,4 @@
-import type { WebhookInput } from '@awake/contracts';
+import type { WebhookInput } from '@macontrol/contracts';
 
 const PROVIDERS = new Set(['macontrol', 'envify']);
 const TYPES = new Set(['relay', 'envify', 'links']);

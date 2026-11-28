@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { SettingDefinition } from '@awake/contracts';
+import type { SettingDefinition } from '@macontrol/contracts';
 import { resolveSettingValue } from '../modules/helpers/resolve-setting-value';
 import { SettingsService } from '../settings/settings.service';
 import { TelegramNotificationsService } from '../telegram/notifications';

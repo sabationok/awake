@@ -1,4 +1,4 @@
-import type { SleepTimerRecord, UiList } from '@awake/contracts';
+import type { SleepTimerRecord, UiList } from '@macontrol/contracts';
 import { formatClock } from '../../helpers/format-clock';
 import { formatSessionStart } from '../../helpers/format-session-start';
 import { sessionSourceLabel } from '../../helpers/session-source-label';

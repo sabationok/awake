@@ -1,4 +1,4 @@
-import type { UiNode, UiPage } from '@awake/contracts';
+import type { UiNode, UiPage } from '@macontrol/contracts';
 import { settingControl } from '../../modules/helpers/menu-item';
 import { TAILSCALE_MODULE, TAILSCALE_PAGE } from '../constants/tailscale-settings';
 import type { TailscaleState } from '../types/tailscale-state.types';

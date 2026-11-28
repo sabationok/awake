@@ -1,4 +1,4 @@
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import type { ModuleContext } from '../../types/mac-module';
 
 /** «Налаштування сесії»: лише те, як поводиться сесія Awake (екран, кришка, коли повернути сон). */

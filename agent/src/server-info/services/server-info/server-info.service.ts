@@ -1,6 +1,6 @@
 import { Inject, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { loadavg } from 'node:os';
-import { StatGranularity, type ServerInfo, type ServerStats, type ServerUsage } from '@awake/contracts';
+import { StatGranularity, type ServerInfo, type ServerStats, type ServerUsage } from '@macontrol/contracts';
 import { AGENT_CONFIG, type AgentConfig } from '../../../config/agent-config';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
 import { flattenStatTotals, StatsService } from '../../../stats';

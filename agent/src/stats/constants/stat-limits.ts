@@ -1,4 +1,4 @@
-import { StatGranularity } from '@awake/contracts';
+import { StatGranularity } from '@macontrol/contracts';
 
 /** Довжини сегментів серії: довший ключ відкидаємо на записі (правило 19). */
 export const STAT_LIMITS = { namespace: 255, subjectType: 64, subjectId: 255, seriesKey: 255, value: 128, status: 64 };

@@ -1,4 +1,4 @@
-import type { UiNodeRow, UiPageLayout } from '@awake/contracts';
+import type { UiNodeRow, UiPageLayout } from '@macontrol/contracts';
 
 /**
  * Сторінка для показу поза Mac: без рядків `qr` (і їхніх нащадків) і без значень `copy` (посилання сполучення,

@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { BehaviorSubject, Subject } from 'rxjs';
-import type { HelperAction, HelperResult, HelperState, HelperToServerMessage, ProximityReport, ServerToHelperMessage } from '@awake/contracts';
+import type { HelperAction, HelperResult, HelperState, HelperToServerMessage, ProximityReport, ServerToHelperMessage } from '@macontrol/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 
 /** Пауза перед новим запуском помічника, якщо він завершився або його файла немає. */

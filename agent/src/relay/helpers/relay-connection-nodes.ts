@@ -1,4 +1,4 @@
-import type { UiNode } from '@awake/contracts';
+import type { UiNode } from '@macontrol/contracts';
 import type { RelayConnectionInfo } from '../types/relay-connection.types';
 
 /** Рядки Host про підключення: URL webhooxy цього stage і чого бракує. Значення секретів тут не показуються. */

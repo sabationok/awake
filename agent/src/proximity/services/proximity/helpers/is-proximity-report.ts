@@ -1,4 +1,4 @@
-import type { ProximityReport } from '@awake/contracts';
+import type { ProximityReport } from '@macontrol/contracts';
 
 const STATES = new Set(['on', 'off', 'unauthorized', 'unsupported', 'unknown']);
 

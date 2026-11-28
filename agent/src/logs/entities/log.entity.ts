@@ -1,4 +1,4 @@
-import type { LogRecord } from '@awake/contracts';
+import type { LogRecord } from '@macontrol/contracts';
 import { Column, Entity, Index, PrimaryGeneratedColumn } from '@nest-kit/sqlite';
 
 @Entity('logs')

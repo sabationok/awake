@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { io, type Socket } from 'socket.io-client';
-import type { RelayHostBroadcast, RelayHostReply } from '@awake/contracts';
+import type { RelayHostBroadcast, RelayHostReply } from '@macontrol/contracts';
 import { BotJournalService } from '../../../bot-journal';
 import { AGENT_CONFIG, type AgentConfig } from '../../../config/agent-config';
-import { StatGranularity } from '@awake/contracts';
+import { StatGranularity } from '@macontrol/contracts';
 import { StatsService } from '../../../stats';
 import { AppSecretsService } from '../../../secrets';
 import { WebhooksService, webhookStatSeries } from '../../../webhooks';

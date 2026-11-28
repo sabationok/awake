@@ -1,4 +1,4 @@
-import type { WebhookType } from '@awake/contracts';
+import type { WebhookType } from '@macontrol/contracts';
 
 export class FindOneWebhookQuery {
   id?: number;

@@ -1,5 +1,5 @@
 'use client';
-import type { UiOption, UiTone } from '@awake/contracts';
+import type { UiOption, UiTone } from '@macontrol/contracts';
 import { ChevronDown, Info, LoaderCircle, MoreHorizontal, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type InputHTMLAttributes, type ReactNode } from 'react';
 import { resolveSymbolIcon } from '@/lib/icons';

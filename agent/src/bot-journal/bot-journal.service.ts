@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Subject } from 'rxjs';
-import { StatGranularity } from '@awake/contracts';
+import { StatGranularity } from '@macontrol/contracts';
 import { flattenStatTotals, mergeStatCounters, StatsService } from '../stats';
 import { BOT_CALLS_STAT_NS, BOT_ERRORS_STAT_NS, BOT_LEGACY_STAT_NS, BOT_TRANSPORT_SUBJECT } from './constants/bot-stats';
 import { BOT_EVENT_NAME_MAX, BOT_EVENTS_KEEP } from './constants/bot-journal-limits';

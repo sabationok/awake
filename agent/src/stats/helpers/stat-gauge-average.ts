@@ -1,4 +1,4 @@
-import type { StatMetrics } from '@awake/contracts';
+import type { StatMetrics } from '@macontrol/contracts';
 import { STAT_GAUGE_COUNT, STAT_GAUGE_SUM } from '../constants/stat-limits';
 
 /** Середнє заміру `value` у бакеті (`{ sum, n }` від `recordGauge`); null — у бакеті замірів не було. */

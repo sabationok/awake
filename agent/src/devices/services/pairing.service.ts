@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Subject } from 'rxjs';
-import type { DevicePairingMode } from '@awake/contracts';
+import type { DevicePairingMode } from '@macontrol/contracts';
 import type { CreateDeviceDto } from '../dto/create-device.dto';
 import { DEVICE_PUBLIC_FIELDS } from '../constants/device-public-fields';
 import { OwnerAuthService } from '../../mac-helper/services/owner-auth.service';

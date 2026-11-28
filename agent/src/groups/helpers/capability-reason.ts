@@ -1,4 +1,4 @@
-import type { GroupCapability, GroupProviderManifest } from '@awake/contracts';
+import type { GroupCapability, GroupProviderManifest } from '@macontrol/contracts';
 import { GROUP_CAPABILITY_LABEL } from '../constants/groups-capabilities';
 
 /** Причина сірого елемента: конектор не задекларував можливість у своєму маніфесті. */

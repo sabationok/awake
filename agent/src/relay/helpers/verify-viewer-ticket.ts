@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { RELAY_TICKET_AUDIENCE, RELAY_TICKET_TTL_SECONDS } from '@awake/contracts';
-import type { RelayTicketClaims } from '@awake/contracts';
+import { RELAY_TICKET_AUDIENCE, RELAY_TICKET_TTL_SECONDS } from '@macontrol/contracts';
+import type { RelayTicketClaims } from '@macontrol/contracts';
 
 export type TicketCheck = { ok: true; claims: RelayTicketClaims } | { ok: false; reason: string };
 

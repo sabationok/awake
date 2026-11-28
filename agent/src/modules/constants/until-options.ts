@@ -1,4 +1,4 @@
-import type { UiOption } from '@awake/contracts';
+import type { UiOption } from '@macontrol/contracts';
 
 /** Вибір часу доби (Awake «Не спати до», таймер «Заснути о»): кожні пів години. */
 export const UNTIL_OPTIONS: UiOption[] = Array.from({ length: 48 }, (_, i) => {

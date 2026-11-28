@@ -1,4 +1,4 @@
-import type { SessionRecord, UiPage } from '@awake/contracts';
+import type { SessionRecord, UiPage } from '@macontrol/contracts';
 import { TRACKING_HISTORY_LIMIT } from '../constants/session-limits';
 import { AWAKE_HISTORY_PAGE } from '../constants/awake-pages';
 import { sessionListItem } from '../helpers/session-list-item';

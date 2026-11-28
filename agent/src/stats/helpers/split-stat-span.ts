@@ -1,4 +1,4 @@
-import type { StatGranularity } from '@awake/contracts';
+import type { StatGranularity } from '@macontrol/contracts';
 import { statNextPeriodStart, statPeriodStart } from './stat-period';
 
 /** [start, end) по бакетах `granularity`: шматок на кожен бакет, щоб кожен період отримав лише свій час. */

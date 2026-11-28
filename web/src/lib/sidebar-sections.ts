@@ -1,4 +1,4 @@
-import type { UiPageInfo, UiShell } from '@awake/contracts';
+import type { UiPageInfo, UiShell } from '@macontrol/contracts';
 
 /**
  * Вузол навігації: сторінка і її дочірні вузли (модуль Awake → Налаштування сесії, Трекінг…).

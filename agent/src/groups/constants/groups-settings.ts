@@ -1,4 +1,4 @@
-import type { SelectSetting, SettingDefinition, SwitchSetting } from '@awake/contracts';
+import type { SelectSetting, SettingDefinition, SwitchSetting } from '@macontrol/contracts';
 import { statsPeriodSetting } from '../../stats';
 import { GROUPS_PAGE, GROUPS_STATS_PAGE } from './groups-module';
 

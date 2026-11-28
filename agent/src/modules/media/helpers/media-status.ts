@@ -1,4 +1,4 @@
-import type { MacState } from '@awake/contracts';
+import type { MacState } from '@macontrol/contracts';
 import type { StatusFields } from '../../types/mac-module';
 
 /** /status → `media`. */

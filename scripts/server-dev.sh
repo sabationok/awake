@@ -21,7 +21,7 @@ if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
 fi
 if [ "${1:-}" != nobuild ]; then
   scripts/build-helper.sh
-  pnpm --filter @awake/agent build
+  pnpm --filter @macontrol/agent build
 fi
 WEB_DEV="$HOME/Library/Application Support/MaControl/agent-dev/web"
 [ -d "$WEB_DEV" ] && export MACONTROL_WEB_DIR="${MACONTROL_WEB_DIR:-$WEB_DEV}"

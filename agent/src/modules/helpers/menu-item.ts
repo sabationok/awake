@@ -1,4 +1,4 @@
-import type { UiAction, UiActionVariant, UiConfirm, UiControl, UiForm, UiIcon, UiMenuItem, UiNode, UiScope } from '@awake/contracts';
+import type { UiAction, UiActionVariant, UiConfirm, UiControl, UiForm, UiIcon, UiMenuItem, UiNode, UiScope } from '@macontrol/contracts';
 
 /** Необов'язкові поля пункту дії; variant за замовчуванням default. */
 export class MenuItemOptions {

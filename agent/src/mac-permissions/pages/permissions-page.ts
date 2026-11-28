@@ -1,5 +1,5 @@
-import type { MacPermission, PermissionsSnapshot, PrivacyAccess, PrivacyAccessKind, UiNode, UiPage, UiStatusBadge } from '@awake/contracts';
-import { PRIVACY_ACCESS_KINDS } from '@awake/contracts';
+import type { MacPermission, PermissionsSnapshot, PrivacyAccess, PrivacyAccessKind, UiNode, UiPage, UiStatusBadge } from '@macontrol/contracts';
+import { PRIVACY_ACCESS_KINDS } from '@macontrol/contracts';
 import { menuItem } from '../../modules/helpers/menu-item';
 import { MAC_PERMISSIONS, PERMISSIONS_MODULE, PERMISSION_INFO, PRIVACY_ACCESS_INFO } from '../constants/permissions';
 

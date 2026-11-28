@@ -15,7 +15,7 @@ import type {
   UiStatus,
   UiTabs,
   UiTimer,
-} from '@awake/contracts';
+} from '@macontrol/contracts';
 import { Check, Copy, Inbox, Info, TriangleAlert, X, CircleX } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';

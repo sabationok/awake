@@ -26,8 +26,8 @@ what, screens only from the lib, labels from the tree.
 | Side | Where | How it binds |
 |---|---|---|
 | Contract | `contracts/src/{ui,modules,stats,relay,webhooks,groups,helper,state,index}.ts` | source of truth; `pnpm check` and `pnpm test` in `contracts/` (fixtures `contracts/fixtures/state/*.json`) |
-| Server | `agent/src`; tree builders `agent/src/modules/modules.service.ts`, `agent/src/modules/helpers/*` (scope: `filter-nodes-by-scope.ts`); sends the tree to the Mac in `agent/src/mac-bridge/services/mac-bridge.service.ts` | imports `@awake/contracts`, checked by `tsc` |
-| Web UI | renderer `web/src/sdui/node-view.tsx`, actions `web/src/sdui/use-run-action.tsx`, shell + page polling `web/src/live/use-ui-layout.ts`, rows → nodes `web/src/sdui/page-layout.ts`, `web/src/server`, `web/src/lib` | imports `@awake/contracts`, checked by `tsc` |
+| Server | `agent/src`; tree builders `agent/src/modules/modules.service.ts`, `agent/src/modules/helpers/*` (scope: `filter-nodes-by-scope.ts`); sends the tree to the Mac in `agent/src/mac-bridge/services/mac-bridge.service.ts` | imports `@macontrol/contracts`, checked by `tsc` |
+| Web UI | renderer `web/src/sdui/node-view.tsx`, actions `web/src/sdui/use-run-action.tsx`, shell + page polling `web/src/live/use-ui-layout.ts`, rows → nodes `web/src/sdui/page-layout.ts`, `web/src/server`, `web/src/lib` | imports `@macontrol/contracts`, checked by `tsc` |
 | Mac app | `mac/Sources/Contract/UiLayout.swift`, `mac/Sources/Contract/UiActionTypes.swift`, renderer `mac/Sources/Sdui/*` (`NodeView.swift`, `RunAction.swift`), menu `mac/Sources/Lib/SidebarSections.swift` (port of `web/src/lib/sidebar-sections.ts`) | hand-written `Codable`, checked by nobody: no decode test yet |
 | Helper | `Helper/main.swift`, `Helper/System/*` (`AppPermission.swift` mirrors `MacPermission`) | JSON lines per `contracts/src/helper.ts`, hand-written, no test |
 
@@ -76,7 +76,7 @@ you start decoding must not hide, move or remove anything that was shown before.
 
 ## Verify
 
-`pnpm check` and `pnpm test` in `contracts/`, `pnpm --filter @awake/agent typecheck`, `pnpm --filter @awake/web
+`pnpm check` and `pnpm test` in `contracts/`, `pnpm --filter @macontrol/agent typecheck`, `pnpm --filter @macontrol/web
 typecheck`. Swift in fix mode: `BIN_ONLY=1 scripts/build-mac.sh` (compiles the app without bundling) and
 `scripts/build-helper.sh` when the helper changed; in audit mode read only. Say plainly what you did not run.
 

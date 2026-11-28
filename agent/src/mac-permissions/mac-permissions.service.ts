@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { distinctUntilChanged, map, Subject, type Subscription } from 'rxjs';
-import type { MacPermission, PermissionsSnapshot, PrivacyAccess, PrivacyAccessKind } from '@awake/contracts';
+import type { MacPermission, PermissionsSnapshot, PrivacyAccess, PrivacyAccessKind } from '@macontrol/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../config/agent-config';
 import { PERMISSION_INFO } from './constants/permissions';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';

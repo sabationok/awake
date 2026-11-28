@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ServerCharts, ServerChartsTick, StatsPeriod, UiChart } from '@awake/contracts';
+import type { ServerCharts, ServerChartsTick, StatsPeriod, UiChart } from '@macontrol/contracts';
 import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.service';
 import {
   counterChartPoints,

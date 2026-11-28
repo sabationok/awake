@@ -1,4 +1,4 @@
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import { formatSessionStart } from '../../modules/helpers/format-session-start';
 import type { ModuleContext } from '../../modules/types/mac-module';
 import type { TelegramRunState } from '../types/telegram-run-state.types';

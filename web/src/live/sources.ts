@@ -1,4 +1,4 @@
-import type { UiEvent, UiPageLayout, UiShell } from '@awake/contracts';
+import type { UiEvent, UiPageLayout, UiShell } from '@macontrol/contracts';
 import { callAgent, callAgentTagged, type AgentError, type Tagged } from './pairing/agent-api';
 
 /**

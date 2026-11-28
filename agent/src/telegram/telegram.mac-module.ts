@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { SettingDefinition, SettingValue, UiChartPoint, UiPage } from '@awake/contracts';
+import type { SettingDefinition, SettingValue, UiChartPoint, UiPage } from '@macontrol/contracts';
 import { BotRouterService } from '../bot';
 import { BotCallsChartsService } from '../bot-journal';
 import { counterChartPoints, StatsService, statsPeriodSetting, sumChartPoints, type StatsPeriodWindow } from '../stats';

@@ -1,4 +1,4 @@
-import { StatGranularity, type UiChart } from '@awake/contracts';
+import { StatGranularity, type UiChart } from '@macontrol/contracts';
 import type { StatsChartPeriod } from '../constants/stats-period';
 import { statNextPeriodStart, statPeriodStart } from './stat-period';
 

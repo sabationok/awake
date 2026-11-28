@@ -1,4 +1,4 @@
-import type { MacState, UiButton, UiButtons, UiTimer, UiTone } from '@awake/contracts';
+import type { MacState, UiButton, UiButtons, UiTimer, UiTone } from '@macontrol/contracts';
 import { formatClock } from './format-clock';
 
 /** Сесія, що йде зараз: відлік від `from` до `until`; `changed` — у вкладках вибрано інший час. */

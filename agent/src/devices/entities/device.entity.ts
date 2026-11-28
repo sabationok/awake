@@ -1,4 +1,4 @@
-import type { DevicePairingMode } from '@awake/contracts';
+import type { DevicePairingMode } from '@macontrol/contracts';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from '@nest-kit/sqlite';
 import { WebSessionEntity } from '../../web-auth/entities/web-session.entity';
 

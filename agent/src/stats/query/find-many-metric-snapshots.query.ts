@@ -1,4 +1,4 @@
-import type { StatGranularity } from '@awake/contracts';
+import type { StatGranularity } from '@macontrol/contracts';
 import { FindManyQueryBase } from '@nest-kit/sqlite';
 import type { StatFilter } from '../types/stat-bucket.types';
 

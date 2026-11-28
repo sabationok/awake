@@ -1,4 +1,4 @@
-import type { StatTimeline, UiChartPoint } from '@awake/contracts';
+import type { StatTimeline, UiChartPoint } from '@macontrol/contracts';
 import { statGaugeAverage } from './stat-gauge-average';
 
 /** Середнє заміру `value` по бакетах; бакет без замірів — 0, щоб вісь лишалась суцільною. */

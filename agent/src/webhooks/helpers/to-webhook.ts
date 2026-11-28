@@ -1,4 +1,4 @@
-import type { Webhook } from '@awake/contracts';
+import type { Webhook } from '@macontrol/contracts';
 import type { WebhookEntity } from '../entities/webhook.entity';
 
 /** Entity → контракт: `updatedAt` / `disabledAt` у контракті опційні, `NULL` у БД — їх немає. */

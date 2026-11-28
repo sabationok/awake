@@ -1,4 +1,4 @@
-import type { MacState, UiNode, UiPage, UiRow } from '@awake/contracts';
+import type { MacState, UiNode, UiPage, UiRow } from '@macontrol/contracts';
 
 /** Сторінка «Екран і звук»: гучність, вимкнення звуку і яскравість вбудованого дисплея. */
 export function buildMediaPage(mac: MacState | null): UiPage {

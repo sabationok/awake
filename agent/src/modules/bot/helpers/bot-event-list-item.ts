@@ -1,4 +1,4 @@
-import type { UiList } from '@awake/contracts';
+import type { UiList } from '@macontrol/contracts';
 import type { BotEventRecord } from '../../../bot-journal';
 import { formatSessionStart } from '../../helpers/format-session-start';
 import { BOT_EVENT_TYPE_LABEL, BOT_SOURCE_LABEL } from '../constants/bot-source-labels';

@@ -1,4 +1,4 @@
-import type { UiMenuItem, UiNode, UiPage, UiStatusBadge, UiTabs } from '@awake/contracts';
+import type { UiMenuItem, UiNode, UiPage, UiStatusBadge, UiTabs } from '@macontrol/contracts';
 import { menuItem } from '../../modules/helpers/menu-item';
 import { GROUPS_LIST_PAGE, GROUPS_MODULE } from '../constants/groups-module';
 import type { GroupChatEntity } from '../entities/group-chat.entity';

@@ -1,4 +1,4 @@
-import type { MacState, UiNode, UiPage, UiRow } from '@awake/contracts';
+import type { MacState, UiNode, UiPage, UiRow } from '@macontrol/contracts';
 import { UNTIL_OPTIONS } from '../../constants/until-options';
 import { formatClock } from '../../helpers/format-clock';
 import { planTabsNode } from '../../helpers/plan-tabs-node';

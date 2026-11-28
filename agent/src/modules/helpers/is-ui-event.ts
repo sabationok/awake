@@ -1,4 +1,4 @@
-import type { UiEvent } from '@awake/contracts';
+import type { UiEvent } from '@macontrol/contracts';
 
 type Plain = Record<string, unknown>;
 

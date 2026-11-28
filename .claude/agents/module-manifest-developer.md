@@ -407,7 +407,7 @@ error, not a silent success. First use: `docs/supergroups-module-spec.md` §5 (`
 - Labels come from the server route index (`shell.modules[].title`, `page.title`); a client never renames or hard-codes one.
 - Repository and service params are named DTO / query classes, never inline `{ … }` types. State columns are
   nullable timestamps (`disabledAt`), not booleans. No raw SQL outside the ORM shim and migrations
-  (`pnpm --filter @awake/agent check:sql`).
+  (`pnpm --filter @macontrol/agent check:sql`).
 - Naming: the agent is «агент MaControl», the web client is «Web UI»; Mac system names use `MaControl` / `mc-`.
 - UI text is Ukrainian; code comments follow the file's language.
 - A change the owner can notice ships with a changeset `.changeset/<name>.md` (`"macontrol": patch | minor`), text in
@@ -418,8 +418,8 @@ error, not a silent success. First use: `docs/supergroups-module-spec.md` §5 (`
 
 ## Verify and report
 
-Run `pnpm --filter @awake/agent typecheck`, `pnpm --filter @awake/agent check:sql` and
-`pnpm --filter @awake/web typecheck`; when Swift changed, build with `scripts/build-mac.sh` (app) or
+Run `pnpm --filter @macontrol/agent typecheck`, `pnpm --filter @macontrol/agent check:sql` and
+`pnpm --filter @macontrol/web typecheck`; when Swift changed, build with `scripts/build-mac.sh` (app) or
 `scripts/build-helper.sh` (helper). Say plainly what you could not run.
 
 Return: what the manifest now declares (per module touched), files changed, system parts added (contract, helper,

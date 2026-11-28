@@ -1,4 +1,4 @@
-import type { LogRecord, UiPage } from '@awake/contracts';
+import type { LogRecord, UiPage } from '@macontrol/contracts';
 import { formatClock } from '../../helpers/format-clock';
 import { isToday } from '../helpers/is-today';
 

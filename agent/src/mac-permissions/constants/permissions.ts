@@ -1,4 +1,4 @@
-import type { MacPermission, PrivacyAccessKind, UiIcon } from '@awake/contracts';
+import type { MacPermission, PrivacyAccessKind, UiIcon } from '@macontrol/contracts';
 
 export const PERMISSIONS_MODULE = 'permissions';
 

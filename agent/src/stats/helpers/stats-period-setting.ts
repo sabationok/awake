@@ -1,4 +1,4 @@
-import type { SelectSetting } from '@awake/contracts';
+import type { SelectSetting } from '@macontrol/contracts';
 import { STATS_PAGE_PERIODS, STATS_PERIOD_DEFAULT, STATS_PERIOD_KEY, type StatsPagePeriod } from '../constants/stats-period';
 
 /**

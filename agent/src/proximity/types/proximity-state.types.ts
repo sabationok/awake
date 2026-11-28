@@ -1,4 +1,4 @@
-import type { BluetoothState, NearbyDevice } from '@awake/contracts';
+import type { BluetoothState, NearbyDevice } from '@macontrol/contracts';
 
 export type ProximityWhen = 'session' | 'always';
 

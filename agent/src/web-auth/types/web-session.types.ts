@@ -1,4 +1,4 @@
-import type { WebSessionIdleMinutes } from '@awake/contracts';
+import type { WebSessionIdleMinutes } from '@macontrol/contracts';
 
 export interface ActiveWebSession {
   id: string;

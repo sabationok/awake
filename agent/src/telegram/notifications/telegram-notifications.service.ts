@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { SettingDefinition } from '@awake/contracts';
+import type { SettingDefinition } from '@macontrol/contracts';
 import { Subject } from 'rxjs';
 import { telegramNotificationSettingKey } from './helpers/telegram-notification-setting-key';
 import type { TelegramNotification, TelegramNotificationSource } from './types/telegram-notification.types';

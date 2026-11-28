@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AGENT_CONFIG, type AgentConfig } from '../../config/agent-config';
-import type { SettingDefinition, SettingValue, UiPage } from '@awake/contracts';
+import type { SettingDefinition, SettingValue, UiPage } from '@macontrol/contracts';
 import { BotRouterService } from '../../bot';
 import { BotCallsChartsService, BotJournalService } from '../../bot-journal';
 import { BOT_EVENTS_PAGE_LIMIT } from '../../bot-journal/constants/bot-journal-limits';

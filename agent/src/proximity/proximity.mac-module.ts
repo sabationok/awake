@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { SettingDefinition, UiPage } from '@awake/contracts';
+import type { SettingDefinition, UiPage } from '@macontrol/contracts';
 import type { MacModule, ModuleContext, StatusFields } from '../modules/types/mac-module';
 import { PROXIMITY_MODULE, buildProximitySettings } from './constants/proximity-settings';
 import { buildProximityPage } from './pages/proximity-page';

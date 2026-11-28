@@ -1,4 +1,4 @@
-import type { MacState, UiButton, UiNode, UiPage, UiRow } from '@awake/contracts';
+import type { MacState, UiButton, UiNode, UiPage, UiRow } from '@macontrol/contracts';
 import type { ModuleContext } from '../../types/mac-module';
 import { DURATION_OPTIONS } from '../constants/awake-settings';
 import { UNTIL_OPTIONS } from '../../constants/until-options';

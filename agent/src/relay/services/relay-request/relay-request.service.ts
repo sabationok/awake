@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { RELAY_DEVICE_COOKIE, type AppResponse, type RelayPairPoll, type RelayViewerAccess } from '@awake/contracts';
+import { RELAY_DEVICE_COOKIE, type AppResponse, type RelayPairPoll, type RelayViewerAccess } from '@macontrol/contracts';
 import { AGENT_CONFIG, type AgentConfig } from '../../../config/agent-config';
 import { PairingService } from '../../../devices/services/pairing.service';
 import { deviceViewerSub } from '../../helpers/device-viewer-sub';

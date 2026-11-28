@@ -1,4 +1,4 @@
-import type { StatTimeline, UiPage } from '@awake/contracts';
+import type { StatTimeline, UiPage } from '@macontrol/contracts';
 import { buildStatsCharts } from '../../modules/helpers/build-stats-charts';
 import { buildStatsPage } from '../../modules/helpers/build-stats-page';
 import type { ModuleContext } from '../../modules/types/mac-module';

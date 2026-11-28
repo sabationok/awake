@@ -1,4 +1,4 @@
-import type { CommandRequest, MacPermission, MacState, SettingDefinition, SettingValue, UiChart, UiNode, UiPage } from '@awake/contracts';
+import type { CommandRequest, MacPermission, MacState, SettingDefinition, SettingValue, UiChart, UiNode, UiPage } from '@macontrol/contracts';
 import type { TelegramNotificationSource } from '../../telegram/notifications';
 import type { LiveChartSpec } from './live-chart.types';
 import type { ModuleSource } from './module-source';
@@ -46,7 +46,7 @@ export type ModulesStatus = Record<string, StatusFields>;
 export interface MacModule {
   id: string;
   title: string;
-  icon: { symbol: string; tone: import('@awake/contracts').UiTone };
+  icon: { symbol: string; tone: import('@macontrol/contracts').UiTone };
   /** Модуль-провайдер, під яким сторінки цього модуля стоять у меню (`UiModuleInfo.parent`). */
   parent?: string;
   /** Одне-два речення для користувача: що робить модуль. Поки що лише в маніфесті, в UI не йде. */

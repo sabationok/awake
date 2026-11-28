@@ -19,11 +19,11 @@ const config: NextConfig = {
   trailingSlash: local,
   distDir: local ? 'out' : '.next',
   outputFileTracingRoot: join(__dirname, '..'),
-  transpilePackages: ['@awake/contracts'],
+  transpilePackages: ['@macontrol/contracts'],
   env: { NEXT_PUBLIC_BUILD_TARGET: local ? 'local' : 'vercel' },
   // Лівий нижній кут займає наш dev-індикатор (src/shell/dev-build-indicator.tsx); значок Next — праворуч.
   devIndicators: { position: 'bottom-right' },
-  // `@awake/contracts` — сирий TS. Скомпільований поруч `*.js` (CommonJS після випадкового tsc) не має перекрити
+  // `@macontrol/contracts` — сирий TS. Скомпільований поруч `*.js` (CommonJS після випадкового tsc) не має перекрити
   // `*.ts`: у браузері він падає з `exports is not defined`. Тому TS раніше за JS.
   webpack: (cfg) => {
     const ext: string[] = cfg.resolve.extensions ?? [];

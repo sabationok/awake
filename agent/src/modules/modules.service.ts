@@ -11,7 +11,7 @@ import type {
   UiScope,
   UiSection,
   UiShell,
-} from '@awake/contracts';
+} from '@macontrol/contracts';
 import { type BotMenu, type BotNamespace, BotRouterService, type BotViaInfo } from '../bot';
 import { BotJournalService, type BotEventCreate } from '../bot-journal';
 import { API_ERROR_CODES, AppException } from '../common/app-exception';

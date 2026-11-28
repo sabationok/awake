@@ -1,4 +1,4 @@
-import type { SleepTimerRecord } from '@awake/contracts';
+import type { SleepTimerRecord } from '@macontrol/contracts';
 import { STOP_REASON } from '../../../mac-sessions/constants/mac-sessions';
 
 /** Наслідок таймера сну: серія графіка і рядок підсумку. */

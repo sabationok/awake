@@ -1,4 +1,4 @@
-import type { GroupBotRights } from '@awake/contracts';
+import type { GroupBotRights } from '@macontrol/contracts';
 import { GroupRefDto } from './group-ref.dto';
 
 export class UpdateGroupRightsDto extends GroupRefDto {

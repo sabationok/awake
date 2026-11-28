@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Subject } from 'rxjs';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import type { WebSessionIdleMinutes, WebSessionInfo } from '@awake/contracts';
+import type { WebSessionIdleMinutes, WebSessionInfo } from '@macontrol/contracts';
 import { SESSION_RETENTION_MS } from '../constants/web-auth';
 import type { CreateWebSessionDto } from '../dto/create-web-session.dto';
 import { WebSessionsRepository } from '../repositories/web-sessions.repository';

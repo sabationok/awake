@@ -1,4 +1,4 @@
-import type { UiNode, UiScope } from '@awake/contracts';
+import type { UiNode, UiScope } from '@macontrol/contracts';
 import { isVisibleInScope } from './is-visible-in-scope';
 
 /** Прибирає вузли поза scope; вкладені секції і вкладки фільтруються рекурсивно (QR зі scope mac не має витекти). */

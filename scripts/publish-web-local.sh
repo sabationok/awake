@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 TARGET="${MACONTROL_WEB_PUBLISHED_DIR:-$HOME/Library/Application Support/MaControl/web}"
 mkdir -p "$(dirname "$TARGET")"
 
-pnpm --filter @awake/web build:local
+pnpm --filter @macontrol/web build:local
 rm -rf "$TARGET.next" "$TARGET.old"
 cp -R web/out "$TARGET.next"
 [ -d "$TARGET" ] && mv "$TARGET" "$TARGET.old"

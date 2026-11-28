@@ -1,4 +1,4 @@
-import type { UiShell } from '@awake/contracts';
+import type { UiShell } from '@macontrol/contracts';
 
 export type Stage = 'preview' | 'dev' | 'production';
 

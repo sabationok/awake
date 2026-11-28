@@ -1,4 +1,4 @@
-import type { GroupBotRights, GroupProviderId, GroupProviderManifest } from '@awake/contracts';
+import type { GroupBotRights, GroupProviderId, GroupProviderManifest } from '@macontrol/contracts';
 import type { RegisterGroupAddedDto } from '../dto/register-group-added.dto';
 import type { UpdateGroupRightsDto } from '../dto/update-group-rights.dto';
 import type { EnsureGroupTopicDto } from '../dto/ensure-group-topic.dto';

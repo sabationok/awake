@@ -1,4 +1,4 @@
-import type { UiTone } from '@awake/contracts';
+import type { UiTone } from '@macontrol/contracts';
 import type { RelayStatus } from '../types/relay-status.types';
 
 export const RELAY_STATUS_VIEW: Record<RelayStatus, { label: string; tone: UiTone }> = {

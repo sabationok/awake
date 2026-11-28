@@ -1,5 +1,5 @@
 'use client';
-import type { WebSessionInfo } from '@awake/contracts';
+import type { WebSessionInfo } from '@macontrol/contracts';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import type { AgentError } from '@/live/pairing/agent-api';

@@ -1,4 +1,4 @@
-import type { SettingDefinition } from '@awake/contracts';
+import type { SettingDefinition } from '@macontrol/contracts';
 
 export const TAILSCALE_MODULE = 'tailscale';
 /** Головна вкладка модуля: тут його перемикач. */

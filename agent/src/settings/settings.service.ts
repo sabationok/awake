@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { SettingValue } from '@awake/contracts';
+import type { SettingValue } from '@macontrol/contracts';
 import { UpsertSettingDto } from './dto/upsert-setting.dto';
 import { SettingsRepository } from './repositories/settings.repository';
 

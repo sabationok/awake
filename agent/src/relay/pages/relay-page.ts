@@ -1,4 +1,4 @@
-import type { UiNode, UiPage } from '@awake/contracts';
+import type { UiNode, UiPage } from '@macontrol/contracts';
 import { RELAY_PAGE } from '../constants/relay-settings';
 import { relayConnectionNodes } from '../helpers/relay-connection-nodes';
 import { RELAY_STATUS_VIEW } from '../helpers/relay-status-label';

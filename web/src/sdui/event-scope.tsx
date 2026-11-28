@@ -1,5 +1,5 @@
 'use client';
-import type { UiEvent } from '@awake/contracts';
+import type { UiEvent } from '@macontrol/contracts';
 import { createContext, useCallback, useContext, useState } from 'react';
 import { errorText, useRuntime } from './runtime';
 

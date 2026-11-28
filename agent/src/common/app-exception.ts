@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import type { AppNextStep } from '@awake/contracts';
+import type { AppNextStep } from '@macontrol/contracts';
 
 export const API_ERROR_CODES = {
   unauthorized: 'UNAUTHORIZED',

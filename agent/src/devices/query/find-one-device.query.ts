@@ -1,4 +1,4 @@
-import type { DevicePairingMode } from '@awake/contracts';
+import type { DevicePairingMode } from '@macontrol/contracts';
 
 export class FindOneDeviceQuery {
   id?: number;

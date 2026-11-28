@@ -14,10 +14,10 @@ if [ "$MODE" = off ]; then
   echo "Зовнішнього агента прибрано: аппка повернеться до вшитого."
   exit 0
 fi
-pnpm --filter @awake/agent build
+pnpm --filter @macontrol/agent build
 mkdir -p "$DIR"
 if [ "$MODE" = web ] || [ ! -d "$DIR/web" ]; then
-  pnpm --filter @awake/web build:local
+  pnpm --filter @macontrol/web build:local
   rm -rf "$DIR/web.new"
   cp -R web/out "$DIR/web.new"
   rm -rf "$DIR/web"

@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Subject } from 'rxjs';
-import type { EnvifyStatus } from '@awake/contracts';
+import type { EnvifyStatus } from '@macontrol/contracts';
 import { AGENT_CONFIG, type AgentConfig } from '../../../config/agent-config';
 import { fetchEnvifyConfig } from '../../helpers/fetch-envify-config';
 import { readEnvifyToken } from '../../helpers/read-envify-token';

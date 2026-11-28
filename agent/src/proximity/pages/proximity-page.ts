@@ -1,4 +1,4 @@
-import type { BluetoothState, UiNode, UiNotice, UiPage, UiTone } from '@awake/contracts';
+import type { BluetoothState, UiNode, UiNotice, UiPage, UiTone } from '@macontrol/contracts';
 import { formatClock } from '../../modules/helpers/format-clock';
 import type { ModuleContext } from '../../modules/types/mac-module';
 import { PROXIMITY_MODULE, PROXIMITY_PAGE } from '../constants/proximity-settings';

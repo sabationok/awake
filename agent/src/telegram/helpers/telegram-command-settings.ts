@@ -1,4 +1,4 @@
-import type { SettingDefinition } from '@awake/contracts';
+import type { SettingDefinition } from '@macontrol/contracts';
 import type { BotNamespace } from '../../bot';
 import { telegramCommandSettingKey } from './telegram-command-setting-key';
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { StatTimeline, UiChartPoint } from '@awake/contracts';
+import type { StatTimeline, UiChartPoint } from '@macontrol/contracts';
 import { counterChartPoints, StatsService, sumChartPoints, totalChartPoints, type StatFilter, type StatsPeriodWindow } from '../stats';
 import { BOT_CALLS_STAT_NS, BOT_ERRORS_STAT_NS, BOT_LEGACY_STAT_NS, BOT_TRANSPORT_SUBJECT } from './constants/bot-stats';
 

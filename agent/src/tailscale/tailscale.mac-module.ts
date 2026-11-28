@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import { isRemoteAllowed } from '../modules/bot/constants/remote-access';
 import type { MacModule, ModuleContext, StatusFields } from '../modules/types/mac-module';
 import { TAILSCALE_MODULE, TAILSCALE_SETTINGS } from './constants/tailscale-settings';

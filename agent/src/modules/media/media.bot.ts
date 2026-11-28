@@ -1,4 +1,4 @@
-import type { MacState } from '@awake/contracts';
+import type { MacState } from '@macontrol/contracts';
 import { Bot, BotAction, BotCtx, BotParams, BotScreen, BotSource, type BotMenu, type BotParamValue } from '../../bot';
 import { MACONTROL_BOT } from '../constants/macontrol-bot';
 import type { ModuleContext } from '../types/mac-module';

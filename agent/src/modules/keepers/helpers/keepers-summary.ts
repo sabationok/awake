@@ -1,4 +1,4 @@
-import type { MacState } from '@awake/contracts';
+import type { MacState } from '@macontrol/contracts';
 import type { Keeper } from '../types/keeper.types';
 
 /** Хто зараз не дає Mac заснути самому: наші сесії і сторонні процеси, без повторів. Порожньо — ніхто. */

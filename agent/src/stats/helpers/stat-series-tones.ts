@@ -1,4 +1,4 @@
-import type { UiTone } from '@awake/contracts';
+import type { UiTone } from '@macontrol/contracts';
 
 /** Кольори серій stacked-графіка по черзі; червоний лишається для помилок. */
 const SERIES_TONES: UiTone[] = ['accent', 'green', 'indigo', 'yellow', 'orange', 'gray'];

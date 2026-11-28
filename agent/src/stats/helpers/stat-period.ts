@@ -1,4 +1,4 @@
-import { StatGranularity } from '@awake/contracts';
+import { StatGranularity } from '@macontrol/contracts';
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;

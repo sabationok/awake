@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Headers, HttpStatus, Inject, Param, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import type { DevicePairingPoll } from '@awake/contracts';
+import type { DevicePairingPoll } from '@macontrol/contracts';
 import { AppResponse } from '../common/app-response';
 import { API_ERROR_CODES, AppException } from '../common/app-exception';
 import { PublicRoute } from '../auth/decorators/public-route.decorator';

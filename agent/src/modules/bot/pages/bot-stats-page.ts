@@ -1,4 +1,4 @@
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import type { BotNamespace } from '../../../bot';
 import type { BotCallsChartsService } from '../../../bot-journal';
 import { statSeriesTones } from '../../../stats';

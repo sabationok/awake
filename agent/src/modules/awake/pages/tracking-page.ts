@@ -1,4 +1,4 @@
-import type { UiChartPoint, UiPage } from '@awake/contracts';
+import type { UiChartPoint, UiPage } from '@macontrol/contracts';
 import { buildStatsPage } from '../../helpers/build-stats-page';
 import { formatDuration } from '../../helpers/format-duration';
 import type { ModuleContext } from '../../types/mac-module';

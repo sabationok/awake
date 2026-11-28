@@ -1,4 +1,4 @@
-import type { StatCounters, StatMetrics, StatTotals } from '@awake/contracts';
+import type { StatCounters, StatMetrics, StatTotals } from '@macontrol/contracts';
 
 function flatten(metrics: StatMetrics): Record<string, number> {
   return Object.fromEntries(Object.entries(metrics).map(([value, statuses]) => [value, Object.values(statuses).reduce((a, b) => a + b, 0)]));

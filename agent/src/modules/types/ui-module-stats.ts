@@ -1,4 +1,4 @@
-import type { UiChart, UiTone } from '@awake/contracts';
+import type { UiChart, UiTone } from '@macontrol/contracts';
 
 /** Ключ namespace-у статистики (value або status), як його показати: підпис серії і колір. */
 export interface UiStatsKey {

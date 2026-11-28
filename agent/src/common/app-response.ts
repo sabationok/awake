@@ -1,4 +1,4 @@
-import type { AppNextStep, AppResponse as AppResponseShape } from '@awake/contracts';
+import type { AppNextStep, AppResponse as AppResponseShape } from '@macontrol/contracts';
 
 /** Конверт усіх відповідей API. */
 export class AppResponse<T> implements AppResponseShape<T> {

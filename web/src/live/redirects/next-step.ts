@@ -1,4 +1,4 @@
-import type { AppNextStep } from '@awake/contracts';
+import type { AppNextStep } from '@macontrol/contracts';
 import { STEP_PATH } from './redirect-flows';
 import { safeNextPath } from './safe-next';
 

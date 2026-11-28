@@ -1,4 +1,4 @@
-import type { UiList } from '@awake/contracts';
+import type { UiList } from '@macontrol/contracts';
 import { formatSessionStart } from '../../modules/helpers/format-session-start';
 import type { RelayViewerSession } from '../types/relay-status.types';
 

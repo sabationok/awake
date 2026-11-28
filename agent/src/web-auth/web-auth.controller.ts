@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
-import { WEB_SESSION_IDLE_OPTIONS, type WebLoginBody, type WebSessionIdleMinutes, type WebSessionInfo } from '@awake/contracts';
+import { WEB_SESSION_IDLE_OPTIONS, type WebLoginBody, type WebSessionIdleMinutes, type WebSessionInfo } from '@macontrol/contracts';
 import { AppResponse } from '../common/app-response';
 import { API_ERROR_CODES, AppException } from '../common/app-exception';
 import { CurrentAuth } from '../auth/decorators/current-auth.decorator';

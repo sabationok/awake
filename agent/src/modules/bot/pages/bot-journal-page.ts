@@ -1,4 +1,4 @@
-import type { UiPage } from '@awake/contracts';
+import type { UiPage } from '@macontrol/contracts';
 import type { BotEventRecord } from '../../../bot-journal';
 import type { AgentProxy } from '../../../transports';
 import { botEventListItem } from '../helpers/bot-event-list-item';

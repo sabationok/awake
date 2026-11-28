@@ -1,4 +1,4 @@
-import type { GroupBotRights, GroupProviderId } from '@awake/contracts';
+import type { GroupBotRights, GroupProviderId } from '@macontrol/contracts';
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, Index, PrimaryGeneratedColumn, StateDateColumn, UpdateDateColumn } from '@nest-kit/sqlite';
 
 /**

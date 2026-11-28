@@ -27,8 +27,8 @@ import type {
   StatsPeriod,
   WebhookAction,
   WebhookInfo,
-} from '@awake/contracts';
-import { HELPER_ACTIONS } from '@awake/contracts';
+} from '@macontrol/contracts';
+import { HELPER_ACTIONS } from '@macontrol/contracts';
 import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';
 import { MacHelperService } from '../../mac-helper/mac-helper.service';
 import { MacAppChannelService } from './mac-app-channel.service';
