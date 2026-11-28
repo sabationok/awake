@@ -34,8 +34,8 @@ split or merged) starts with a mockup shown to the owner in the chat, before any
   or a client shell is composed only from their components; no ad hoc markup, styles or one-off views in a page.
 - A missing component goes into the lib first (web: `src/ui`; Mac: the swift-umbra-lib session), then the screen
   uses it. Components carry no lib prefix (`Segmented`, not `UmbraSegmented`).
-- Labels come from the server tree, never from the client: a module's entry in the menu, crumbs and title is
-  `tree.modules[].title`; other pages use `page.title`. A client never renames or hard-codes a label.
+- Labels come from the server route index, never from the client: a module's entry in the menu, crumbs and title is
+  `shell.modules[].title`; other pages use `page.title`. A client never renames or hard-codes a label.
 
 ## Who owns what
 

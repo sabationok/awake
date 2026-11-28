@@ -40,7 +40,7 @@ code and this file disagree, report it in your result.
 | Registration (providers + `MAC_MODULES` factory inject + `@Bot` classes) | `agent/src/modules/modules.module.ts` |
 | Start-up validation of the declared parts | `agent/src/modules/helpers/validate-module-manifest.ts` |
 | Sidebar order (stored, owner reorders in «Упорядкувати») | `agent/src/modules/services/module-order.service.ts` |
-| Wire contract: `UiTree`, `UiModuleInfo`, `UiPage`, `UiNode`, `UiScope`, `UiAction`, `MacPermission` | `contracts/src/ui.ts` |
+| Wire contract: `UiShell`, `UiPageLayout`, `UiNodeRow`, `UiModuleInfo`; server-side source `UiPage`, `UiNode`, `UiScope`, `UiAction`, `MacPermission` | `contracts/src/ui.ts` |
 | Setting definitions (`SwitchSetting`, `SelectSetting`) | `contracts/src/modules.ts` |
 | AppState and the optional `bind` on nodes | `contracts/src/state.ts`, spec `docs/specs/app-state-bind-spec.md` |
 | Setting node / value check | `agent/src/modules/helpers/build-setting-node.ts`, `is-valid-setting-value.ts` |
@@ -51,7 +51,7 @@ code and this file disagree, report it in your result.
 | Bot router | `agent/src/bot/` (`@Bot`, `@BotAction`, `@BotScreen`, `BotRouterService`); bot name `agent/src/modules/constants/macontrol-bot.ts` |
 | Helper (the only process that calls macOS) | `Helper/` (`Helper/System/AppPermission.swift`, `Helper/SudoersRules.swift`), protocol `contracts/src/helper.ts` |
 | Web renderer | `web/src/sdui/` (`node-view.tsx`), components only from `web/src/ui` |
-| Mac renderer | `mac/Sources/Contract/UiTree.swift`, `mac/Sources/Sdui/NodeView.swift`, components from Umbra (`mac/Sources/Vendor/Umbra`) |
+| Mac renderer | `mac/Sources/Contract/UiLayout.swift`, `mac/Sources/Sdui/NodeView.swift`, components from Umbra (`mac/Sources/Vendor/Umbra`) |
 
 A module lives in `agent/src/modules/<id>/`, or in its own feature folder when it has services (`telegram`, `relay`,
 `tailscale`, `proximity`, `groups`, `web-ui`, `mac-permissions`). Layout:
@@ -100,7 +100,7 @@ Fields (`agent/src/modules/types/mac-module.ts`):
    `onSettingChanged(key, value, ctx)` (after saving, e.g. forward to the Mac).
 
 `scope` on a page or node (`UiScope`): `all` (Mac + Vercel), `local` (Mac + local Web UI), `mac` (SwiftUI only).
-`ModulesService.buildTree(scope)` filters pages and nodes by it.
+`ModulesService.buildShell(scope)` / `buildPage(pageId, scope)` filter pages and nodes by it.
 
 `ModuleContext` is all a module gets from the host: `mac` (last state or null), `setting(key, ofModule?)`,
 `settingNode(key, ofModule?)`, `liveChart(spec)`, `missingPermission(p)`, `sendToMac(command, source)` (in standalone
@@ -328,7 +328,7 @@ Go contract-first, then every consumer, in one change. Clients render and click;
   channel, except a per-event list of allowed channels if the owner asks for it.
 - **New setting type or UI node**: the union in `contracts/src/` → `isValidSettingValue` / `buildSettingNode` in the
   agent → a component in the web lib `web/src/ui` and its case in `web/src/sdui/` → a component in Umbra (the
-  swift-umbra-lib session) and the decoder in `mac/Sources/Contract/UiTree.swift` + `mac/Sources/Sdui/NodeView.swift`.
+  swift-umbra-lib session) and the decoder in `mac/Sources/Contract/UiLayout.swift` + `mac/Sources/Sdui/NodeView.swift`.
   Screens are composed only from lib components. An unknown node must degrade (skip or plain text), never crash a
   renderer: an old client meets a new server.
 
@@ -366,7 +366,7 @@ validation, and rename with the IDE refactoring, never by search and replace.
   one source; a resolver is allowed only at marked slots (`select` options).
 - **`Ui` naming.** `MacModule` → `UiModuleManifest`, `ModuleContext` → `UiModuleContext`, `<Feature>MacModule` /
   `*.mac-module.ts` → `<Feature>UiProvider` / `*.ui-provider.ts`, constants `<ID>_UI_SETTINGS` / `_UI_NOTIFICATIONS`
-  / `_UI_STATS` (already used by `groups`). Contract types (`UiTree`, `UiPage`, …) and Nest `@Module` classes keep
+  / `_UI_STATS` (already used by `groups`). Contract types (`UiShell`, `UiPage`, …) and Nest `@Module` classes keep
   their names.
 - **Groups and submodules.** `@UiGroup({ id, title, icon, order })` on a UI provider, a purely visual group with no
   settings or logic; each role a submodule naming its group; one level. Today `parent` covers the menu part. Stored
@@ -403,7 +403,7 @@ error, not a silent success. First use: `docs/supergroups-module-spec.md` §5 (`
 
 - Never hide, move or remove existing UI that the task did not ask to change; a disabled thing stays visible and
   grey with the reason. Report every removal.
-- Labels come from the server tree (`tree.modules[].title`, `page.title`); a client never renames or hard-codes one.
+- Labels come from the server route index (`shell.modules[].title`, `page.title`); a client never renames or hard-codes one.
 - Repository and service params are named DTO / query classes, never inline `{ … }` types. State columns are
   nullable timestamps (`disabledAt`), not booleans. No raw SQL outside the ORM shim and migrations
   (`pnpm --filter @awake/agent check:sql`).

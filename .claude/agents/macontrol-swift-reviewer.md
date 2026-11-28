@@ -28,7 +28,7 @@ the lib, labels from the tree). The rules below are this project's additions.
 
 ## Layout
 
-Mac app, `mac/Sources`: `App` (entry `MaControlApp.swift`), `Contract` (`UiTree.swift`, `UiActionTypes.swift`: the
+Mac app, `mac/Sources`: `App` (entry `MaControlApp.swift`), `Contract` (`UiLayout.swift`, `UiActionTypes.swift`: the
 hand-written mirror of `contracts/src`), `Core` (link to the server: `ServerConnection.swift`, `ServerLauncher.swift`,
 `SocketLink.swift`), `Lib` (client logic ported 1:1 from the web, e.g. `SidebarSections.swift`), `Sdui` (renderer:
 `NodeView.swift`, `RunAction.swift`), `Shell` (`AppShell.swift`, appearance, theme), `Ui` (`Umbra.swift`, the one
@@ -61,9 +61,9 @@ file by hand: a new helper file missing there is a finding.
    (Wi-Fi / Location, Bluetooth) are asked only by the helper's `requestAccess`, from the «Надати…» button, never
    at launch or build.
 5. **SDUI renderer** (`mac/Sources/Sdui`, `mac/Sources/Contract`). The Mac draws the tree from the server and sends
-   actions back; no module logic and no `if module.id == "…"` in a view. `UiTree.swift` decodes every field the
+   actions back; no module logic and no `if module.id == "…"` in a view. `UiLayout.swift` decodes every field the
    contract has, and an unknown node type or enum value degrades to a skip or plain text (`UiNode.unknown`) instead
-   of failing the whole tree. Labels come from the tree (`tree.modules[].title`, `page.title`), never hard-coded.
+   of failing the whole tree. Labels come from the route index (`shell.modules[].title`, `page.title`), never hard-coded.
 6. **Screens only from the lib.** Views are composed from Umbra components (through `mac/Sources/Ui/Umbra.swift`);
    no ad hoc styles or one-off views in a page. A missing component is a finding to hand to the swift-umbra-lib
    session, not something to build in the screen. Component names carry no lib prefix.
