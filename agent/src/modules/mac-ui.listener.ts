@@ -3,6 +3,7 @@ import type { UiLayoutRequest } from '@macontrol/contracts';
 import { Subscription, debounceTime, merge } from 'rxjs';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
 import { TransportsService } from '../transports';
+import { DOCK_PAGE_ID } from './constants/dock-page';
 import { LiveChartsService } from './live-charts.service';
 import { ModulesService } from './modules.service';
 import type { LiveChartRegistry } from './types/live-chart.types';
@@ -69,8 +70,9 @@ export class MacUiListener implements OnModuleInit, OnModuleDestroy {
   private async _open({ pageId, ifRev }: UiLayoutRequest) {
     this._watched.delete(pageId);
     this._watched.set(pageId, ifRev ?? '');
-    while (this._watched.size > WATCHED_PAGES) {
-      const oldest = this._watched.keys().next().value as string;
+    // Меню Dock не витісняється: аппка будує його з цієї сторінки в будь-який момент правого кліку.
+    while ([...this._watched.keys()].filter((id) => id !== DOCK_PAGE_ID).length > WATCHED_PAGES) {
+      const oldest = [...this._watched.keys()].find((id) => id !== DOCK_PAGE_ID) as string;
       this._watched.delete(oldest);
       this._charts.delete(oldest);
     }

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds the Mac app into mac/build/MaControl__Dev.app (shown by macOS as "MaControl (Dev)").
+# Builds the Mac app into mac/build/MaControl__Dev.app (shown by macOS as "MaControl"; the stage is the icon badge).
 # The file name has no spaces or brackets. Install as /Applications/MaControl__Dev.app.
 # Dev by default; RELEASE=1 for MaControl.app, "MaControl". BUNDLE_ID overrides the bundle id (see ID below).
 # BIN_ONLY=1 builds only the binary mac/build/render/MaControl for offscreen snapshots (scripts/parity.sh).
@@ -12,7 +12,7 @@ EXE="MaControl"
 # MaControl Helper.app, which holds the Bluetooth and Location grants. What is the app's own says "app":
 # dev.vitalii.macontrol.app[.dev].
 SERVER_ID="dev.vitalii.macontrol"; ID="${BUNDLE_ID:-$SERVER_ID.app}"; NAME="MaControl"; FILE="MaControl"
-[ "${RELEASE:-0}" = "1" ] || { SERVER_ID="$SERVER_ID.dev"; ID="${BUNDLE_ID:-$ID.dev}"; NAME="MaControl (Dev)"; FILE="MaControl__Dev"; }
+[ "${RELEASE:-0}" = "1" ] || { SERVER_ID="$SERVER_ID.dev"; ID="${BUNDLE_ID:-$ID.dev}"; FILE="MaControl__Dev"; }
 # Dev passport for the dev indicator (~/projects/dev-indicator-kit): version of the `macontrol` package, git of this
 # checkout, build time. Stage dev; the server (agent-dev or bundled) is not known at build time, so no extra row.
 KIT="${DEV_INDICATOR_KIT:-$HOME/projects/dev-indicator-kit}"
@@ -68,11 +68,12 @@ if [ "$STAGE" = "production" ]; then
 else
   (cd "$ROOT" && swift tools/stage-icon.swift Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns" "$STAGE")
 fi
-# Label in Finder / Launchpad / Dock (owner, 2026-11-28): «MaControl (Dev)» on dev, «MaControl (<version>)» on a
-# release. Finder shows the file name unless the bundle has a localized display name, so it goes to InfoPlist.strings;
-# Info.plist keeps CFBundleDisplayName = the file name, otherwise macOS takes the app as renamed and shows the file name.
+# Label in Finder / Launchpad / Dock (owner, 2026-11-28): always «MaControl». A build that is not production is told
+# apart only by the stage badge on the icon (stage-icon.swift above) and the «Інфо» lines of the Dock menu. Finder shows
+# the file name unless the bundle has a localized display name, so it goes to InfoPlist.strings; Info.plist keeps
+# CFBundleDisplayName = the file name, otherwise macOS takes the app as renamed and shows the file name.
 VERSION="$(node -p "require('$ROOT/app/package.json').version")"
-LABEL="MaControl (Dev)"; [ "${RELEASE:-0}" = "1" ] && LABEL="MaControl ($VERSION)"
+LABEL="$NAME"
 for lang in en uk; do
   mkdir -p "$APP/Contents/Resources/$lang.lproj"
   printf '"CFBundleDisplayName" = "%s";\n"CFBundleName" = "%s";\n' "$LABEL" "$NAME" > "$APP/Contents/Resources/$lang.lproj/InfoPlist.strings"

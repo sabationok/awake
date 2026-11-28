@@ -48,9 +48,9 @@ struct LaunchOptions {
 }
 
 enum AppInfo {
-    /// Variant display name: `<Product> (<Variant>)`.
+    /// Always «MaControl» (owner, 2026-11-28): the stage is the icon badge and the Dock menu «Інфо», not the name.
     static let displayName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
-        ?? "MaControl (Dev)"
+        ?? "MaControl"
 
     /// The dev passport `Resources/dev-build.json` written by the build (`gen-dev-build.mjs`), or `--dev-build`.
     static func devBuild(_ o: LaunchOptions) -> DevBuild? {
@@ -146,6 +146,11 @@ final class MaControlDelegate: NSObject, NSApplicationDelegate {
         window.setFrameOrigin(NSPoint(x: -30000, y: -30000))
         self.window = window
         Task { @MainActor in await PerfProbe.run(server: server, window: window) }
+    }
+
+    /// Right click on the Dock icon: macOS asks synchronously, so the menu is built from what the app already has.
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        DockMenu.build(server: server, build: AppInfo.devBuild(LaunchOptions.current))
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }

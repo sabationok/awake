@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import type { SettingValue, UiPage } from '@macontrol/contracts';
+import type { SettingValue, UiNode, UiPage } from '@macontrol/contracts';
 import { LogsService } from '../../logs/logs.service';
 import { SessionsService } from '../../sessions/sessions.service';
 import { TelegramNotificationsService } from '../../telegram/notifications';
 import { AWAKE_NOTIFICATIONS } from './constants/awake-notifications';
 import type { MacModule, ModuleContext } from '../types/mac-module';
+import { awakeDockMenu } from './helpers/awake-dock-menu';
 import { awakeStatus } from './helpers/awake-status';
 import { AWAKE_SETTINGS } from './constants/awake-settings';
 import { LOG_QUERY_LIMIT, TRACKING_HISTORY_LIMIT } from './constants/session-limits';
@@ -44,6 +45,10 @@ export class AwakeMacModule implements MacModule {
       buildAwakeHistoryPage(this._sessions.findMany({ pagination: { limit: TRACKING_HISTORY_LIMIT } }), new Date()),
       buildLogPage(this._logs.findMany({ pagination: { limit: LOG_QUERY_LIMIT } }), new Date()),
     ];
+  }
+
+  dockMenu(ctx: ModuleContext): UiNode[] {
+    return awakeDockMenu(ctx);
   }
 
   onSettingChanged(key: string, value: SettingValue, ctx: ModuleContext) {

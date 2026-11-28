@@ -25,6 +25,7 @@ import { isValidSettingValue } from './helpers/is-valid-setting-value';
 import { contentRev, normalizePage } from './helpers/normalize-page';
 import { resolveSettingValue } from './helpers/resolve-setting-value';
 import { validateModuleManifest } from './helpers/validate-module-manifest';
+import { DOCK_PAGE_ID } from './constants/dock-page';
 import { MACONTROL_BOT } from './constants/macontrol-bot';
 import { AGENT_ENABLED_KEY, AGENT_MODULE } from './bot/constants/agent-enabled';
 import { LiveChartsService } from './live-charts.service';
@@ -126,6 +127,7 @@ export class ModulesService {
    */
   async buildPage(pageId: string, scope: UiScope, charts?: LiveChartRegistry): Promise<UiPageLayout | null> {
     if (pageId === SETTINGS_PAGE_ID) return this._layout(this._settingsPage(), scope);
+    if (pageId === DOCK_PAGE_ID) return this._layout(this._dockPage(), scope);
     // Спершу модуль, якому сторінка належала в останньому індексі: зазвичай будується лише він.
     const owner = this._pageOwner.get(pageId);
     const modules = this.list();
@@ -309,6 +311,29 @@ export class ModulesService {
 
   private _readSetting(module: MacModule, key: string): SettingValue {
     return resolveSettingValue(this._definition(module, key), this._settings.get(module.id, key));
+  }
+
+  /**
+   * Меню Dock Mac-аппки: секція з назвою модуля на кожен увімкнений модуль, що дав пункти, у порядку меню. Сторінка
+   * лише для scope mac і не в індексі роутів (Upstash і web її не бачать).
+   */
+  private _dockPage(): UiPage {
+    const children: UiNode[] = [];
+    for (const module of this.list()) {
+      const ctx = this.context(module.id);
+      if (!module.dockMenu || module.disabled?.(ctx)) continue;
+      const items = module.dockMenu(ctx);
+      if (items.length > 0) children.push({ id: `dock-${module.id}`, type: 'section', title: module.title, children: items });
+    }
+    return {
+      id: DOCK_PAGE_ID,
+      module: 'host',
+      title: 'Меню Dock',
+      icon: { symbol: 'dock.rectangle', tone: 'gray' },
+      group: 'system',
+      scope: 'mac',
+      children,
+    };
   }
 
   /** Налаштування з полем page показує сама сторінка модуля, тому на «Налаштуваннях» їх немає. */

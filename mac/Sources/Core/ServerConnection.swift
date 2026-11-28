@@ -24,8 +24,13 @@ final class ServerConnection: ObservableObject {
     @Published var toasts: [Toast] = []
     /// Rows of the kept pages: rebuilt into `pages` when the state changes.
     private var layouts: [String: UiPageLayout] = [:]
+    /// Rows of the server page `dock` (the Dock menu): asked on every connect, kept outside the page cache, and the
+    /// server pushes it on every change (it never drops it from the watched pages).
+    private(set) var dockLayout: UiPageLayout?
     /// The app's AppState copy (raw JSON, the server owns its shape) and its `rev`.
     private var state: JSONValue?
+    /// AppState for the Dock menu's `show` / `bind`.
+    var appState: JSONValue? { state }
     private var stateRev = 0
     /// Render generation per page: a slower render of older input never replaces a newer one.
     private var renders: [String: Int] = [:]
@@ -71,7 +76,10 @@ final class ServerConnection: ObservableObject {
         link.onState = { [weak self] up in
             Task { @MainActor in
                 self?.connected = up
-                if up { self?.request() }
+                if up {
+                    self?.request()
+                    self?.requestDock()
+                }
             }
         }
         link.onConnectFailed = { [weak self] in
@@ -125,6 +133,13 @@ final class ServerConnection: ObservableObject {
         link.send(data)
     }
 
+    /// The Dock menu page, with the `rev` the app has.
+    private func requestDock() {
+        guard origin == .socket,
+              let data = try? JSONEncoder().encode(LayoutGet(data: .init(pageId: DockMenu.pageId, ifRev: dockLayout?.rev))) else { return }
+        link.send(data)
+    }
+
     /// `--perf`: decode the last page again as if the server pushed it (the echo after a `.setting`), here on the
     /// main thread to time it. Returns the decode time in ms.
     func replayLast() -> Double {
@@ -165,6 +180,8 @@ final class ServerConnection: ObservableObject {
         case .success(.shell(let next)):
             if shell != next { shell = next }
             problem = nil
+        case .success(.page(let next)) where next.id == DockMenu.pageId:
+            dockLayout = next
         case .success(.page(let next)):
             lastPageLine = line
             // Pushes for pages the app no longer keeps (watched on the server, dropped here) are ignored.
@@ -175,6 +192,8 @@ final class ServerConnection: ObservableObject {
             problem = nil
         case .success(.notModified):
             break
+        case .success(.notFound(let pageId)) where pageId == DockMenu.pageId:
+            dockLayout = nil
         case .success(.notFound(let pageId)):
             pages[pageId] = nil
             layouts[pageId] = nil
