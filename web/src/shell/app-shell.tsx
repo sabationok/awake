@@ -5,6 +5,7 @@ import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { levelOf, pathTo, sidebarPages, sidebarSections, type SidebarNode } from '@/lib/sidebar-sections';
 import { PageNodes } from '@/sdui/node-view';
 import { layoutNodes, type PageStore } from '@/sdui/page-layout';
+import { useAppState, useAppStateStore } from '@/sdui/app-state-store';
 import { useRuntime, type LogType } from '@/sdui/runtime';
 import { AppearanceSection } from './appearance';
 import { IconButton, SymbolIcon } from '@/ui/primitives';
@@ -43,6 +44,19 @@ export interface ShellProps {
   trailing?: ReactNode;
 }
 
+/** Тости, які шле сервер (сесію перезапущено, зупинено), у чергу тостів рантайму. Текст — від сервера. */
+function useServerToasts() {
+  const store = useAppStateStore();
+  const { toast } = useRuntime();
+  useEffect(() => {
+    if (!store) return;
+    const off = store.onNotify((notify) => toast(notify.kind, notify.title, notify.detail ?? ''));
+    return () => {
+      off();
+    };
+  }, [store, toast]);
+}
+
 /** Каркас Web UI: бічне меню з індексу роутів, шапка з крихтами, вкладки рівня і вузли сторінки. Потрібен рантайм вище. */
 export function Shell({ shell, pages, banner, sideNote, trailing }: ShellProps) {
   const sections = useMemo(() => sidebarSections(shell), [shell]);
@@ -57,7 +71,9 @@ export function Shell({ shell, pages, banner, sideNote, trailing }: ShellProps) 
   const pathKey = path.map((n) => n.page.id).join('/');
   const pageId = page?.id;
   const layout = pageId ? pages.get(pageId) : undefined;
-  const nodes = useMemo(() => (layout ? layoutNodes(layout) : []), [layout]);
+  const state = useAppState();
+  const nodes = useMemo(() => (layout ? layoutNodes(layout, state) : []), [layout, state]);
+  useServerToasts();
 
   // Сторінка на екрані: клієнт тягне лише її і тримає свіжою; інших сторінок не просить.
   useEffect(() => {

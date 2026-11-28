@@ -30,6 +30,7 @@ import { TlsModule } from './tls/tls.module';
 import { AppUpdateModule } from './app-update/app-update.module';
 import { SessionEndingModule } from './session-ending/session-ending.module';
 import { GroupsModule } from './groups';
+import { AppStateModule } from './app-state';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { GroupsModule } from './groups';
     GroupsModule,
     SessionEndingModule,
     MacSessionsModule,
+    AppStateModule,
     AppUpdateModule,
   ],
   providers: [

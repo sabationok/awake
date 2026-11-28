@@ -420,9 +420,15 @@ struct TimerNode: View {
         Ticking(active: node.until != nil) { now in
             let left = remaining(node.until, now)
             let fraction = left == nil ? nil : fraction(now)
-            BigValue(left ?? node.value, caption: node.caption, tone: node.tone?.umbra,
+            BigValue(left ?? node.value, caption: caption, tone: node.tone?.umbra,
                           color: fraction.map(color), progress: fraction)
         }
+    }
+
+    /// The end from state: the caption with the end time is drawn here, the layout stays the same.
+    private var caption: String? {
+        if let prefix = node.untilCaption, let until = node.until { return "\(prefix) \(timeFormat.string(from: until))" }
+        return node.caption
     }
 
     private func fraction(_ now: Date) -> Double? {

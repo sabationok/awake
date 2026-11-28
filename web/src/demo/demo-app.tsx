@@ -1,9 +1,11 @@
 'use client';
-import type { UiPageLayout } from '@macontrol/contracts';
+import type { StateFull, UiPageLayout } from '@macontrol/contracts';
 import { useMemo, useState } from 'react';
 import type { Tagged } from '@/live/pairing/agent-api';
 import type { UiSource } from '@/live/sources';
 import { useUiLayout } from '@/live/use-ui-layout';
+import { useLiveState } from '@/live/use-live-state';
+import { AppStateProvider } from '@/sdui/app-state-store';
 import { ServerRuntimeProvider } from '@/sdui/runtime';
 import { toReadOnlyLayout } from '@/sdui/page-layout';
 import { Banner, Shell } from '@/shell/app-shell';
@@ -31,6 +33,24 @@ function vercelSource(onMeta: (meta: ShellResponse) => void): UiSource {
       if (!res.ok) throw new Error(String(res.status));
       return { tag: res.headers.get('ETag'), data: toReadOnlyLayout((await res.json()) as UiPageLayout) };
     },
+    /**
+     * Стейт з `/api/ui/state` (ключ Upstash, scope all) раз на `POLL_MS`: патчів з Vercel немає, тож кожна нова
+     * версія приходить як `state.full`. `304` — та сама.
+     */
+    async live(onMessage, signal) {
+      let tag: string | null = null;
+      while (!signal.aborted) {
+        const res: Response = await fetch('/api/ui/state', { signal, headers: tag ? { 'If-None-Match': tag } : {} });
+        if (res.ok) {
+          tag = res.headers.get('ETag');
+          const full = (await res.json()) as StateFull;
+          onMessage({ type: 'state.full', ...full });
+        } else if (res.status !== 304) {
+          throw new Error(String(res.status));
+        }
+        await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+      }
+    },
   };
 }
 
@@ -39,30 +59,33 @@ export function DemoApp() {
   const [meta, setMeta] = useState<ShellResponse | null>(null);
   const source = useMemo(() => vercelSource(setMeta), []);
   const { shell, pages, error, loaded } = useUiLayout(source, POLL_MS);
+  const state = useLiveState(source);
   const offline = Boolean(error);
 
   if (!loaded || (!meta && !shell)) return <div className="s-loading">{offline ? 'Сервер Web UI недоступний' : 'MaControl…'}</div>;
   if (!shell) return <div className="s-loading">{`Інтерфейсу немає${meta?.reason ? ` — Upstash: ${meta.reason}` : ''}`}</div>;
   return (
-    <ServerRuntimeProvider mode="readonly">
-      <Shell
-        shell={shell}
-        pages={pages}
-        banner={<SourceBanner meta={meta} offline={offline} />}
-        sideNote={
-          <>
-            Живі дані · Upstash
-            <br />
-            Дії не надсилаються на сервер
-          </>
-        }
-        trailing={
-          <span className="u-badge" style={{ ['--tone' as string]: 'var(--ok)' }}>
-            Live · перегляд
-          </span>
-        }
-      />
-    </ServerRuntimeProvider>
+    <AppStateProvider value={state}>
+      <ServerRuntimeProvider mode="readonly">
+        <Shell
+          shell={shell}
+          pages={pages}
+          banner={<SourceBanner meta={meta} offline={offline} />}
+          sideNote={
+            <>
+              Живі дані · Upstash
+              <br />
+              Дії не надсилаються на сервер
+            </>
+          }
+          trailing={
+            <span className="u-badge" style={{ ['--tone' as string]: 'var(--ok)' }}>
+              Live · перегляд
+            </span>
+          }
+        />
+      </ServerRuntimeProvider>
+    </AppStateProvider>
   );
 }
 

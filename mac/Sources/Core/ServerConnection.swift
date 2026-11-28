@@ -6,6 +6,9 @@ enum LayoutOrigin { case socket, file }
 /// on screen is asked with `{"type":"layout.get","data":{pageId,ifRev}}`; the server answers with that page (or
 /// `layout.notModified`) and then pushes it again whenever its `rev` changes. Clicks go back as
 /// `{"type":"event","data":UiEvent}`. The app owns no session logic.
+/// AppState comes on the same socket: `state.full` on connect, then `state.patch` with `rev` +1 (a gap → `state.get`).
+/// A state change rebuilds the kept pages' nodes from their rows (`show` / `bind`), the layout is not asked again.
+/// `notify` lines are the server's toasts.
 @MainActor
 final class ServerConnection: ObservableObject {
     @Published var shell: UiShell?
@@ -17,6 +20,15 @@ final class ServerConnection: ObservableObject {
     @Published var problem: String?
     /// Where the layout comes from (web `UiSource`): the running server's socket, or a file for snapshots.
     @Published var origin: LayoutOrigin = .socket
+    /// Toasts the server sent (`notify`), newest last, at most three.
+    @Published var toasts: [Toast] = []
+    /// Rows of the kept pages: rebuilt into `pages` when the state changes.
+    private var layouts: [String: UiPageLayout] = [:]
+    /// The app's AppState copy (raw JSON, the server owns its shape) and its `rev`.
+    private var state: JSONValue?
+    private var stateRev = 0
+    /// Render generation per page: a slower render of older input never replaces a newer one.
+    private var renders: [String: Int] = [:]
     /// The raw line of the last page, for `--perf` (replays it as the server's echo).
     private(set) var lastPageLine: Data?
     private let link = SocketLink(path: ServerLauncher.socketPath)
@@ -30,6 +42,7 @@ final class ServerConnection: ObservableObject {
     private struct Payload<T: Decodable>: Decodable { let data: T }
     private struct PageRef: Decodable { let pageId: String }
     private struct Outgoing: Encodable { let type = "event"; let data: UiEvent }
+    private struct StateGet: Encodable { let type = "state.get"; let data: [String: String] = [:] }
     private struct LayoutGet: Encodable {
         struct Request: Encodable { let pageId: String; let ifRev: String? }
         let type = "layout.get"
@@ -38,9 +51,12 @@ final class ServerConnection: ObservableObject {
     /// A server line, decoded off the main thread.
     private enum Incoming {
         case shell(UiShell)
-        case page(UiPageContent)
+        case page(UiPageLayout)
         case notModified
         case notFound(String)
+        case stateFull(StateFullMessage)
+        case statePatch(StatePatchMessage)
+        case notify(UiNotify)
     }
     private var timer: Timer?
 
@@ -93,7 +109,7 @@ final class ServerConnection: ObservableObject {
         if recent.count > cachedPages {
             let dropped = recent.prefix(recent.count - cachedPages)
             recent.removeFirst(dropped.count)
-            dropped.forEach { pages[$0] = nil }
+            dropped.forEach { pages[$0] = nil; layouts[$0] = nil; renders[$0] = nil }
         }
         request()
     }
@@ -115,6 +131,7 @@ final class ServerConnection: ObservableObject {
         guard let line = lastPageLine else { return 0 }
         let t0 = PerfProbe.now()
         guard let decoded = Self.decode(line) else { return 0 }
+        if case .success(.page(let layout)) = decoded { _ = try? layout.renderNodes(state: state) }
         let decodedIn = PerfProbe.now() - t0
         apply(decoded, line: line)
         return decodedIn
@@ -127,14 +144,17 @@ final class ServerConnection: ObservableObject {
         case "shell":
             return Result { .shell(try UiLayoutDecoder.decoder.decode(Payload<UiShell>.self, from: line).data) }
         case "layout.page":
-            return Result {
-                let page = try UiLayoutDecoder.decoder.decode(Payload<UiPageLayout>.self, from: line).data
-                return .page(UiPageContent(id: page.id, rev: page.rev, nodes: try page.renderNodes()))
-            }
+            return Result { .page(try UiLayoutDecoder.decoder.decode(Payload<UiPageLayout>.self, from: line).data) }
         case "layout.notModified":
             return .success(.notModified)
         case "layout.notFound":
             return Result { .notFound(try JSONDecoder().decode(Payload<PageRef>.self, from: line).data.pageId) }
+        case "state.full":
+            return Result { .stateFull(try JSONDecoder().decode(Payload<StateFullMessage>.self, from: line).data) }
+        case "state.patch":
+            return Result { .statePatch(try JSONDecoder().decode(Payload<StatePatchMessage>.self, from: line).data) }
+        case "notify":
+            return Result { .notify(try JSONDecoder().decode(Payload<UiNotify>.self, from: line).data) }
         default:
             return nil
         }
@@ -149,16 +169,76 @@ final class ServerConnection: ObservableObject {
             lastPageLine = line
             // Pushes for pages the app no longer keeps (watched on the server, dropped here) are ignored.
             guard recent.contains(next.id) || origin == .file else { return }
-            if pages[next.id] != next { pages[next.id] = next }
+            layouts[next.id] = next
+            render(next.id)
             missing.remove(next.id)
             problem = nil
         case .success(.notModified):
             break
         case .success(.notFound(let pageId)):
             pages[pageId] = nil
+            layouts[pageId] = nil
             missing.insert(pageId)
+        case .success(.stateFull(let full)):
+            stateRev = full.rev
+            setState(full.state)
+        case .success(.statePatch(let patch)):
+            // A gap or a patch before any full state: ask the whole state again.
+            guard let current = state, patch.rev == stateRev + 1 else { return askState() }
+            stateRev = patch.rev
+            guard !patch.ops.isEmpty else { return }
+            guard let next = AppStateJSON.apply(current, patch.ops) else { return askState() }
+            setState(next)
+        case .success(.notify(let notify)):
+            show(notify)
         case .failure(let error):
             problem = "Сторінка не розібралась: \(error)"
+        }
+    }
+
+    private func askState() {
+        guard origin == .socket, let data = try? JSONEncoder().encode(StateGet()) else { return }
+        link.send(data)
+    }
+
+    private func setState(_ next: JSONValue) {
+        guard next != state else { return }
+        state = next
+        layouts.keys.forEach(render)
+    }
+
+    /// Rows + the current state → render nodes, off the main thread (dates and charts are parsed there).
+    private func render(_ pageId: String) {
+        guard let layout = layouts[pageId] else { return }
+        let generation = (renders[pageId] ?? 0) + 1
+        renders[pageId] = generation
+        let snapshot = state
+        Task { @MainActor [weak self] in
+            let result = await Task.detached(priority: .userInitiated) { Result { try layout.renderNodes(state: snapshot) } }.value
+            guard let self, self.renders[pageId] == generation, self.layouts[pageId] != nil else { return }
+            switch result {
+            case .success(let nodes):
+                let next = UiPageContent(id: layout.id, rev: layout.rev, nodes: nodes)
+                if self.pages[pageId] != next { self.pages[pageId] = next }
+            case .failure(let error):
+                self.problem = "Сторінка не розібралась: \(error)"
+            }
+        }
+    }
+
+    /// A server toast into the queue: 3.2 s (an error 6 s), at most three, as the web's `useToastQueue`.
+    private func show(_ notify: UiNotify) {
+        let kind: Toast.Kind = switch notify.kind {
+        case .info: .info
+        case .success: .success
+        case .warning: .warning
+        case .error: .error
+        }
+        let toast = Toast(kind: kind, title: notify.title, detail: notify.detail)
+        toasts = Array(toasts.suffix(2)) + [toast]
+        let seconds: Double = notify.kind == .error ? 6 : 3.2
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self] in
+            self?.toasts.removeAll { $0.id == toast.id }
         }
     }
 }

@@ -1,11 +1,13 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { AppStateProvider } from '@/sdui/app-state-store';
 import { ServerRuntimeProvider } from '@/sdui/runtime';
 import { Banner, Shell } from '@/shell/app-shell';
 import { SoloPage, StatusPage } from '@/shell/solo-page';
 import { Button } from '@/ui/primitives';
 import { useDevicePairing, type PairingStatus } from './pairing/use-device-pairing';
 import { localSource, type UiSource } from './sources';
+import { useLiveState } from './use-live-state';
 import { useUiLayout } from './use-ui-layout';
 import { SessionGate } from './web-auth/session-gate';
 import { isTailnetHost } from './web-auth/web-auth-api';
@@ -45,6 +47,8 @@ function LanApp() {
 
 function LocalUi({ source, onLeave, leaveLabel }: { source: UiSource; onLeave: () => void; leaveLabel: string }) {
   const { shell, pages, error, unauthorized, loaded, send } = useUiLayout(source, POLL_MS);
+  // Стейт іде живим каналом окремо від сторінок: старт і стоп сесії міняють його, а не layout.
+  const state = useLiveState(source);
   const leave = (
     <Button size="sm" variant="ghost" onClick={onLeave}>
       {leaveLabel}
@@ -60,8 +64,10 @@ function LocalUi({ source, onLeave, leaveLabel }: { source: UiSource; onLeave: (
   else body = <Shell shell={shell} pages={pages} trailing={leave} banner={error ? <Banner title="Сервер недоступний" details={[error, 'Показано останній отриманий стан.']} /> : undefined} />;
 
   return (
-    <ServerRuntimeProvider mode="live" send={send}>
-      {body}
-    </ServerRuntimeProvider>
+    <AppStateProvider value={state}>
+      <ServerRuntimeProvider mode="live" send={send}>
+        {body}
+      </ServerRuntimeProvider>
+    </AppStateProvider>
   );
 }

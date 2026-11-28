@@ -1,5 +1,5 @@
 // Перевірка типів bind: `tsc -p contracts`. Кожен @ts-expect-error мусить бути помилкою.
-import { defineBind, defineValueBind } from '../src/state.ts';
+import { defineBind, defineValueBind, showUnless, showWhen } from '../src/state.ts';
 
 defineBind('switch', 'permissions.bluetooth', {
   granted: 'on', denied: 'off', notDetermined: 'off', restricted: 'disabled', requesting: 'pending',
@@ -22,3 +22,10 @@ defineBind('status', 'permissions.system.thermalRead', { granted: 'ok', missing:
 defineValueBind('system.volume');
 // @ts-expect-error — шляху немає
 defineValueBind('system.fanSpeed');
+
+showWhen('sessions.awake', 'null');
+showUnless('system.sleepBlocked', 'false');
+// @ts-expect-error — у sessions.awake немає значення 'yes'
+showWhen('sessions.awake', 'yes');
+// @ts-expect-error — шляху немає
+showWhen('sessions.nap', 'null');

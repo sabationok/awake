@@ -1,22 +1,29 @@
-import type { UiControl, UiMenuItem, UiNode, UiNodeProps, UiNodeRow, UiPageLayout } from '@macontrol/contracts';
+import { isShown, resolveNodeProps } from '@macontrol/contracts';
+import type { UiControl, UiMenuItem, UiNode, UiNodeProps, UiNodeRow, UiPageLayout, UiShow } from '@macontrol/contracts';
 
 /**
  * Таблиця рядків сторінки → вузли для рендерера, лише для сторінки на екрані. `id` вузла — id рядка з сервера, тож
  * ключі React, локальний стан контролок і сховані сповіщення прив'язані до рядка, а не до позиції. Рядок, якого
- * немає в таблиці, пропускається.
+ * немає в таблиці, пропускається. `state` — копія AppState клієнта: рядок зі `show`, що не виконується, не
+ * малюється, секція з усіма дітьми, схованими `show`, теж; `bind` кладе значення стейту в пропи. Без стейту — як є.
  */
-export function layoutNodes(layout: UiPageLayout): UiNode[] {
+export function layoutNodes(layout: UiPageLayout, state?: unknown): UiNode[] {
   const rowsOf = (row: UiNodeRow | undefined): UiNodeRow[] =>
     (row?.children ?? []).map((id) => layout.nodes[id]).filter((child): child is UiNodeRow => Boolean(child));
+  const shown = (row: UiNodeRow) => isShown(state, (row.node as { show?: UiShow }).show);
 
   const build = (row: UiNodeRow): UiNode | null => {
-    const node = row.node;
+    if (!shown(row)) return null;
+    const node = resolveNodeProps(row.node, state);
     switch (node.type) {
       case 'page':
       case 'tab':
         return null;
-      case 'section':
+      case 'section': {
+        const rows = rowsOf(row);
+        if (rows.length > 0 && !rows.some(shown)) return null;
         return { ...node, id: row.id, children: inflate(row) };
+      }
       case 'tabs':
         return {
           ...node,

@@ -28,6 +28,13 @@ export async function callAgentTagged<T>(path: string, token: string | null, tag
   return { tag: res.headers.get('ETag'), data: await parse<T>(res) };
 }
 
+/** Потоковий GET (NDJSON живого каналу): відповідь як є, тіло читає викликач. Не 2xx — виняток зі статусом. */
+export async function streamAgent(path: string, token: string | null, signal: AbortSignal): Promise<Response> {
+  const res = await request(path, token, { signal, cache: 'no-store' }, '');
+  if (!res.ok || !res.body) throw Object.assign(new Error(res.statusText || 'Сервер недоступний'), { status: res.status }) as AgentError;
+  return res;
+}
+
 function request(path: string, token: string | null, init: RequestInit, base: string) {
   const headers = new Headers(init.headers);
   headers.set('Content-Type', 'application/json');

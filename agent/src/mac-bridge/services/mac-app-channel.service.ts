@@ -33,6 +33,8 @@ export class MacAppChannelService implements OnApplicationShutdown {
   readonly lines$ = new Subject<string>();
   /** Останній клієнт відключився. */
   readonly empty$ = new Subject<void>();
+  /** Новий клієнт: функція пише рядок лише йому (повний стейт, який не можна повторити останнім рядком). */
+  readonly connected$ = new Subject<(message: AgentToMacMessage) => void>();
   private readonly _clients = new Set<Socket>();
   private readonly _last = new Map<string, string>();
   private _server: Server | null = null;
@@ -83,6 +85,7 @@ export class MacAppChannelService implements OnApplicationShutdown {
   private _accept(client: Socket) {
     this._clients.add(client);
     for (const line of this._last.values()) client.write(line);
+    this.connected$.next((message) => client.write(`${JSON.stringify(message)}\n`));
     createInterface({ input: client }).on('line', (line) => this.lines$.next(line));
     client.on('error', () => client.destroy());
     client.on('close', () => {

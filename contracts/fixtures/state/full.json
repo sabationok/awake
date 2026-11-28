@@ -13,7 +13,8 @@
     },
     "system": {
       "battery": 82, "power": "AC", "thermal": "nominal", "lidClosed": false,
-      "ssid": null, "volume": 40, "muted": false, "brightness": 70
+      "ssid": null, "volume": 40, "muted": false, "brightness": 70,
+      "sleepBlocked": true, "sleepBlockedOutside": false
     },
     "modules": { "awake": { "lowBatteryStop": true } }
   }

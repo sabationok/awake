@@ -1,22 +1,23 @@
+import { showUnless } from '@macontrol/contracts';
 import type { MacState, UiNode, UiPage, UiRow } from '@macontrol/contracts';
 import { UNTIL_OPTIONS } from '../../constants/until-options';
-import { formatClock } from '../../helpers/format-clock';
 import { planTabsNode } from '../../helpers/plan-tabs-node';
-import { type SessionCard, sessionButtons, sessionTimerNode } from '../../helpers/session-card';
+import { type SessionCard, sessionButtons, sessionTimerNodes } from '../../helpers/session-card';
 import type { ModuleContext } from '../../types/mac-module';
 import { SLEEP_TIMER_OPTIONS } from '../constants/sleep-timer-options';
 import { plannedMinutes } from '../helpers/planned-minutes';
 
 /**
  * Сторінка «Sleeper» за патерном сесії Awake: відлік зверху, вкладки «Період» | «Час» і кнопка внизу.
- * Одночасно працює одна сесія: старт таймера закриває Awake, старт Awake — таймер.
+ * Одночасно працює одна сесія: старт таймера закриває Awake, старт Awake — таймер. Як і в Awake, що видно, вирішує
+ * `show` за `sessions.sleeper` / `sessions.awake`: старт і скасування міняють лише стейт, не layout.
  */
 export function buildTimerPage(ctx: ModuleContext): UiPage {
   const mac = ctx.mac;
   const now = new Date();
-  const card = sleepCard(ctx, mac, plannedMinutes(ctx, now), now);
+  const card = sleepCard(mac, plannedMinutes(ctx, now), now);
   const children: UiNode[] = [
-    sessionTimerNode(card),
+    ...sessionTimerNodes(card),
     planTabsNode(
       ctx,
       'sleep',
@@ -24,8 +25,9 @@ export function buildTimerPage(ctx: ModuleContext): UiPage {
       { key: 'until', label: 'Заснути о', options: UNTIL_OPTIONS },
     ),
   ];
-  if (mac?.active && !mac.sleepAt) children.push(awakeRunningRow());
-  children.push(sessionButtons(card));
+  // Одна сесія за раз: поки йде Awake, таймера немає, тож вистачає умови на Awake.
+  if (mac) children.push(awakeRunningRow());
+  children.push(...sessionButtons(card));
   return {
     id: 'sleep-timer',
     module: 'sleep',
@@ -44,11 +46,11 @@ export function buildTimerPage(ctx: ModuleContext): UiPage {
 }
 
 /** Таймер і кнопки таймера сну. */
-function sleepCard(ctx: ModuleContext, mac: MacState | null, minutes: number, now: Date): SessionCard {
+function sleepCard(mac: MacState | null, minutes: number, now: Date): SessionCard {
   return {
     module: 'sleep',
     mac,
-    run: mac?.sleepAt ? { until: mac.sleepAt, from: mac.sleepStartedAt, changed: planChanged(ctx, mac, minutes) } : null,
+    paths: { session: 'sessions.sleeper', until: 'sessions.sleeper.sleepAt', from: 'sessions.sleeper.startedAt' },
     plannedSeconds: minutes * 60,
     now,
     tone: 'indigo',
@@ -56,19 +58,11 @@ function sleepCard(ctx: ModuleContext, mac: MacState | null, minutes: number, no
     buttonsId: 'timer-buttons',
     texts: {
       running: 'Засинає',
-      runningCaption: (until) => `Засне о ${until}`,
+      untilCaption: 'Засне о',
       idleCaption: (end) => `Старт — засне о ${end}`,
       stop: 'Скасувати',
     },
   };
-}
-
-/** Як у Awake: на вкладці «Час» порівнюємо годину, на «Період» — тривалість таймера, що йде. */
-function planChanged(ctx: ModuleContext, mac: MacState, minutes: number): boolean {
-  if (!mac.sleepAt) return false;
-  if (ctx.setting<string>('mode') === 'time') return formatClock(mac.sleepAt) !== ctx.setting<string>('until');
-  if (!mac.sleepStartedAt) return false;
-  return Math.round((new Date(mac.sleepAt).getTime() - new Date(mac.sleepStartedAt).getTime()) / 60_000) !== minutes;
 }
 
 function awakeRunningRow(): UiRow {
@@ -78,5 +72,6 @@ function awakeRunningRow(): UiRow {
     label: 'Іде сесія Awake',
     hint: 'Старт таймера її завершить',
     icon: { symbol: 'cup.and.saucer.fill', tone: 'orange' },
+    show: showUnless('sessions.awake', 'null'),
   };
 }

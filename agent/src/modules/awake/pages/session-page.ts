@@ -1,18 +1,23 @@
+import { showUnless, showWhen } from '@macontrol/contracts';
 import type { MacState, UiButton, UiNode, UiPage, UiRow } from '@macontrol/contracts';
 import type { ModuleContext } from '../../types/mac-module';
 import { DURATION_OPTIONS } from '../constants/awake-settings';
 import { UNTIL_OPTIONS } from '../../constants/until-options';
 import { formatBattery } from '../helpers/format-battery';
-import { formatClock } from '../../helpers/format-clock';
 import { planTabsNode } from '../../helpers/plan-tabs-node';
-import { type SessionCard, sessionButtons, sessionTimerNode } from '../../helpers/session-card';
+import { type SessionCard, sessionButtons, sessionTimerNodes } from '../../helpers/session-card';
 import { durationSeconds, plannedDuration } from '../helpers/session-plan';
-import { sleepRow } from '../helpers/sleep-row';
+import { sleepRows } from '../helpers/sleep-row';
 import { thermalPresentation } from '../helpers/thermal-presentation';
 
+/** Сесія йде / ні: за цією гілкою AppState перемикаються таймер, кнопки й «зараз»-дії. */
+const SESSION = 'sessions.awake';
+
 /**
- * Сторінка «Сесія»: великий таймер зверху, вкладки «Період» | «Час» і кнопка внизу.
- * Кнопка каже, що станеться: Старт, Стоп або Перезапустити, коли на ходу вибрали інший час.
+ * Сторінка «Сесія»: великий таймер зверху, вкладки «Період» | «Час», перемикачі старту і кнопки внизу.
+ * Layout не залежить від того, чи сесія йде: що з чого видно, вирішує `show` за `sessions.awake` (скіл `sdui`
+ * «State, bind, show»), тож старт і стоп міняють лише стейт. Без сесії — «Старт»; під час неї — «Стоп» і «Старт»
+ * (перезапуск з поточними налаштуваннями), без підтверджень.
  */
 export function buildSessionPage(ctx: ModuleContext): UiPage {
   const mac = ctx.mac;
@@ -21,20 +26,20 @@ export function buildSessionPage(ctx: ModuleContext): UiPage {
   const card: SessionCard = { ...sessionCard(ctx, mac, new Date()), blocked };
   const session: UiNode[] = [
     ...(blocked ? [noPermissionRow(blocked)] : []),
-    sessionTimerNode(card),
+    ...sessionTimerNodes(card),
     planTabsNode(
       ctx,
       'awake',
       { key: 'duration', label: 'Тривалість', options: DURATION_OPTIONS },
       { key: 'until', label: 'Не спати до', options: UNTIL_OPTIONS },
     ),
-    // Перемикачі діють лише на старті: під час сесії вони нічого не зроблять, тож їх немає (owner, 2026-11-28).
-    ...(mac?.active ? [] : [ctx.settingNode('startDisplayOff'), ctx.settingNode('startLock')]),
+    // Видно завжди (owner, 2026-11-28): під час сесії вони діють на «Старт», що її перезапускає.
+    ctx.settingNode('startDisplayOff'),
+    ctx.settingNode('startLock'),
+    ...(mac ? [sleepBlockedRow()] : []),
+    ...sessionButtons(card),
+    { id: 'session-now', type: 'buttons', buttons: sessionNowButtons(), show: showUnless(SESSION, 'null') },
   ];
-  if (mac && !mac.active && mac.sleepBlocked) session.push(sleepBlockedRow());
-  session.push(sessionButtons(card));
-  const nowButtons = mac?.active ? sessionNowButtons() : [];
-  if (nowButtons.length) session.push({ id: 'session-now', type: 'buttons', buttons: nowButtons });
 
   const children: UiNode[] = [
     {
@@ -43,11 +48,9 @@ export function buildSessionPage(ctx: ModuleContext): UiPage {
       footer: 'Mac не засинає навіть із закритою кришкою. Сон повертається сам після таймера, при низькому заряді або перегріві, і коли ти виходиш з аппки.',
       children: session,
     },
+    // Під час сесії «Погасити зараз» уже є в картці: окремий рядок був би дублем.
+    { id: 'screen', type: 'section', show: showWhen(SESSION, 'null'), children: [displayOffNowRow(mac)] },
   ];
-  // Під час сесії «Погасити зараз» уже є в картці: окремий рядок був би дублем.
-  if (!nowButtons.some((b) => b.id === 'session-display-off-now')) {
-    children.push({ id: 'screen', type: 'section', children: [displayOffNowRow(mac)] });
-  }
   if (mac !== null) {
     children.push({ id: 'state', type: 'section', title: 'Стан', children: stateRows(mac) });
   }
@@ -62,11 +65,11 @@ export function buildSessionPage(ctx: ModuleContext): UiPage {
 }
 
 /** Таймер і кнопки сесії Awake. */
-function sessionCard(ctx: ModuleContext, mac: MacState | null, now: Date): SessionCard {
+function sessionCard(ctx: ModuleContext, mac: MacState | null, now: Date): Omit<SessionCard, 'blocked'> {
   return {
     module: 'awake',
     mac,
-    run: mac?.active ? { until: mac.until, from: mac.startedAt, changed: planChanged(ctx, mac) } : null,
+    paths: { session: SESSION, until: 'sessions.awake.until', from: 'sessions.awake.startedAt' },
     plannedSeconds: durationSeconds(plannedDuration(ctx, now)),
     now,
     tone: 'orange',
@@ -74,7 +77,7 @@ function sessionCard(ctx: ModuleContext, mac: MacState | null, now: Date): Sessi
     buttonsId: 'session-buttons',
     texts: {
       running: 'Не спить',
-      runningCaption: (until) => `Не спить до ${until}`,
+      untilCaption: 'Не спить до',
       idleCaption: (end) => `Старт — до ${end}`,
       stop: 'Стоп',
     },
@@ -82,8 +85,8 @@ function sessionCard(ctx: ModuleContext, mac: MacState | null, now: Date): Sessi
 }
 
 /**
- * Сесія вже йде: перемикачів старту немає, а погасити чи заблокувати можна будь-коли кнопкою під «Стоп».
- * Обидві кнопки є завжди, навіть якщо перемикач спрацював на старті: Mac могли вже розблокувати.
+ * Сесія вже йде: погасити чи заблокувати можна будь-коли кнопкою під «Стоп». Обидві кнопки є завжди, навіть якщо
+ * перемикач спрацював на старті: Mac могли вже розблокувати.
  */
 function sessionNowButtons(): UiButton[] {
   return [
@@ -92,17 +95,11 @@ function sessionNowButtons(): UiButton[] {
   ];
 }
 
-function planChanged(ctx: ModuleContext, mac: MacState): boolean {
-  if (ctx.setting<string>('mode') === 'time') {
-    return !mac.until || formatClock(mac.until) !== ctx.setting<string>('until');
-  }
-  return mac.duration !== ctx.setting<string>('duration');
-}
-
 function noPermissionRow(reason: string): UiRow {
   return { id: 'no-permission', type: 'row', label: 'Сесію не запустити', dot: { tone: 'red' }, hint: reason };
 }
 
+/** Сон вимкнено, а сесії немає (`system.sleepBlockedOutside` рахує сервер). */
 function sleepBlockedRow(): UiRow {
   return {
     id: 'sleep-blocked',
@@ -110,6 +107,7 @@ function sleepBlockedRow(): UiRow {
     label: 'Сон заблоковано поза аппкою',
     dot: { tone: 'red' },
     hint: 'Скрипт не працює, а сон вимкнено',
+    show: showWhen('system.sleepBlockedOutside', 'true'),
     control: {
       type: 'button',
       button: { id: 'restore-sleep', label: 'Повернути сон', variant: 'plain', action: { module: 'awake', name: 'restoreSleep' } },
@@ -139,7 +137,7 @@ function displayOffNowRow(mac: MacState | null): UiRow {
 function stateRows(mac: MacState): UiRow[] {
   const thermal = thermalPresentation(mac.thermal);
   return [
-    sleepRow(mac),
+    ...sleepRows(),
     {
       id: 'battery',
       type: 'row',

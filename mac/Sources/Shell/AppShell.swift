@@ -67,6 +67,8 @@ struct AppShell: View {
             // The app asks only the page on screen; the server then keeps it fresh.
             .task(id: page?.id) { if let id = page?.id { server.open(id) } }
         }
+        // Server toasts (`notify`): the queue is ServerConnection's, Umbra only draws it.
+        .overlay { ToastStack(server.toasts).allowsHitTesting(false) }
         .environmentObject(runner)
         .runActionDialog(runner)
         .umbraTheme(ThemeMode(rawValue: theme.rawValue) ?? .dark,

@@ -8,9 +8,9 @@
 
 | клієнт | індекс / сторінки / стейт |
 |---|---|
-| Mac-аппка (`mac/`) | JSON lines через `~/Library/Application Support/MaControl/server.sock` |
-| Web UI локально / Tailscale (`web/`, `BUILD_TARGET=local`) | API агента на тому ж origin; статичний експорт, який роздає express агента |
-| Web UI на Vercel (`web/`, `*.vercel.ts(x)`) | Upstash, лише читання; керування — тільки в локальному Web UI |
+| Mac-аппка (`mac/`) | JSON lines через `~/Library/Application Support/MaControl/server.sock`; стейт: `state.full` при підключенні й на `state.get`, далі `state.patch`; тости `notify` |
+| Web UI локально / Tailscale (`web/`, `BUILD_TARGET=local`) | API агента на тому ж origin; статичний експорт, який роздає express агента; стейт і тости — NDJSON `GET /api/ui/live` (повний `GET /api/ui/state`) |
+| Web UI на Vercel (`web/`, `*.vercel.ts(x)`) | Upstash, лише читання; керування — тільки в локальному Web UI; стейт — ключ `state` (scope all) через `/api/ui/state` раз на 5 с |
 | Telegram-бот | екрани з тих самих `@Bot` / роутів, по одному на callback |
 
 ## 2. Карта (2026-11-28)
@@ -27,7 +27,9 @@
 | Relay (webhooxy) | `agent/src/relay/services/relay-host/`: viewer просить `shell` / `page`, host розсилає `revs` |
 | Читання на Vercel | `web/src/app/api/ui/shell/route.ts`, `web/src/app/api/ui/pages/[pageId]/route.ts` (без `qr` і `copy`, ETag `"all:<ns>:<rev>"`), `web/src/demo/` |
 | Web рантайм | дані `web/src/live/use-ui-layout.ts` (індекс + сторінка на екрані, `If-None-Match`); рядки → вузли сторінки `web/src/sdui/page-layout.ts`; рендер `web/src/sdui/node-view.tsx`; роутинг `web/src/shell/app-shell.tsx`; компоненти лише з `web/src/ui` |
-| Mac рантайм | `mac/Sources/Contract/UiLayout.swift` (`UiShell`, `UiPageLayout.renderNodes()`), `mac/Sources/Core/ServerConnection.swift` (`open(pageId)`), `mac/Sources/Sdui/`; компоненти з Umbra |
+| Mac рантайм | `mac/Sources/Contract/UiLayout.swift` (`UiShell`, `UiPageLayout.renderNodes(state:)`), `mac/Sources/Contract/AppState.swift` (патч, `show`, `bind` над JSON), `mac/Sources/Core/ServerConnection.swift` (`open(pageId)`, копія AppState, тости), `mac/Sources/Sdui/`; компоненти з Umbra |
+| AppState (власник) | `agent/src/app-state/`: `AppStateService` (збирання, дифф, `rev`, `full(scope)` / `patchFor`), мапа «гілка → scope» `constants/state-branch-scopes.ts`, Mac — `listeners/mac-state.listener.ts`, web — `app-state.controller.ts`, тости — `UiNotifyService` + `listeners/session-notify.listener.ts`; Upstash — `ui-sync.service.ts` |
+| Web стейт | `web/src/sdui/app-state-store.ts` (стор поза React, `useAppState`), `web/src/live/use-live-state.ts` (канал, перепідключення на пропуск `rev`), `layoutNodes(layout, state)` у `web/src/sdui/page-layout.ts` |
 
 ## 3. Scope
 
@@ -45,6 +47,13 @@
 - **`rev` індексу — рядок** (sha1 змісту), як і `rev` сторінки, не лічильник: не скидається з рестартом сервера.
 - **`layout.notFound {pageId}`** на Mac-каналі: сторінки немає (модуль вимкнули), аппка не чекає вічно.
 - **`rev` стейту — лічильник** (+1 на патч, пропуск → `state.full`), на відміну від `rev` індексу і сторінки.
+  Після рестарту сервера знову з 1: клієнт бачить пропуск і бере повний.
+- **`show { path, when | unless }`** замість лише `when[]`: «видно, поки сесія йде» = `unless: ['null']`, без
+  окремого похідного boolean на кожну гілку-обʼєкт. **`bind { props }`** (`defineProps`) — значення стейту в пропи
+  вузла як є (кінець і початок таймера); `UiTimer.untilCaption` — підпис «<текст> HH:MM» рахує рендерер з `until`.
+- **Вузол з `show` / `bind { props }` без статичного значення**: таймер сесії не несе `until` у layout, інакше
+  layout мінявся б на кожен старт / стоп. Усі клієнти MaControl уже рахують стейт; клієнт без стейту побачить обидва
+  варіанти.
 - **Нових значень у строгих enum Swift не додаємо**: `UiButton.variant` лишився `filled | plain | destructive`, бо
   Mac декодує його строго; нові дії йдуть через `UiMenuItem` (`default | accent | warn | danger`, невідомий → `default`).
 - **`UiNotice.dismiss?: UiAction`** замість `closable` (є дія — є хрестик); `once` / `remind` не в контракті — сервер
@@ -73,18 +82,23 @@
   `shell` / `page` / `revs`). Клієнти збирають вузли лише сторінки на екрані.
 - [x] Контракт `AppState`, `bind` / `show`, `defineBind` / `defineValueBind`, `applyStatePatch`, фікстури
   `contracts/fixtures/state/` (866c36a). Сервер `bind` і патчі стейту ще не шле.
+- [x] Крок 1, перший зріз (2026-11-28): `AppStateService` (сесії, система, дозволи, налаштування модулів; одна
+  мапа «гілка → scope»), `state.full` / `state.patch` по Mac socket і NDJSON `/api/ui/live`, ключ Upstash `state` +
+  `/api/ui/state` на Vercel, `show` / `bind` у рантаймах web і Mac, тости сервера `notify` в обох. Сторінки Awake
+  «Сесія» і Sleeper на `show` / `bind` (layout не залежить від `mac.active`: старт / стоп не міняють `rev`), рядок
+  «Сон» (і на «Стан Mac»), перемикачі налаштувань модулів несуть `bind` на `modules.*`.
 - [x] Вузли дій: `UiMenuItem`, `UiForm`, `item`, `notice`, `separator`, `UiSection.status / actions`, `UiTabs.sticky`;
   рендерери web (`web/src/sdui`) і Mac (`mac/Sources/Sdui`, `mac/Sources/Contract/UiActionTypes.swift`); сторінки
   Дозволи, Пристрої, Мережі, Пароль, Групи, Топіки, Tailscale, Поруч на `item` / `notice`.
 
 Далі, по черзі (правила — у розділах скіла, тут лише що і де):
 
-1. **Стейт і `bind`** — скіл «State, bind, show». `AppStateService` на сервері (повний + патчі по Mac socket, web,
-   Upstash зі scope-фільтром: одна функція, одна мапа «гілка → scope»). Перша сторінка — «Дозволи» (sudoers і два
-   «Надати…» на `permissions.*`), далі світчі налаштувань модулів, статуси сесій, системні слайдери; умови на кшталт
-   `mac?.active` у `agent/src/modules/awake/pages/session-page.ts` → `show` (перемикачі старту Awake ховаються під час
-   сесії). Pending 10 с. Коли всі сторінки на `bind` — прибрати перезбирання раз на 5 с у `ui-sync.service.ts`; до
-   того вузол з `bind` несе й статичне значення.
+1. **Стейт і `bind`** — скіл «State, bind, show». Зроблено перший зріз (вище). Далі: «Дозволи» (sudoers і два
+   «Надати…» на `permissions.*`), батарея / температура на «Сесії» і «Стані Mac» (зараз ще в layout, тож `rev`
+   сторінки міняється з ними), системні слайдери (`system.volume` / `brightness`), select-налаштування; таймер
+   «Старт — до HH:MM» без сесії ще рахує сервер від `now` (layout міняється раз на хвилину). Pending 10 с. Коли всі
+   сторінки на `bind` — прибрати перезбирання раз на 5 с у `ui-sync.service.ts`; до того вузол з `bind` несе й
+   статичне значення (крім погоджених винятків у розділі 4).
 2. **Патчі layout і `layout.stale`** — скіл «Layout patches»: дифф у `ModulesService`, `layout.watch` з відкритих
    сторінок (Mac уже тримає останні 4), Upstash і далі пише лише змінені сторінки.
 3. **Ліниві вузли** — скіл «Lazy loading and caching»: `lazy: true` на згорнутих секціях і довгих списках,

@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { uiKeys, uiNamespace, uiTtlSeconds } from '@macontrol/contracts';
 import type { UiAlive } from '@macontrol/contracts';
+import { AppStateService } from '../../app-state/services/app-state.service';
 import { ModulesService } from '../../modules/modules.service';
 import { WEB_UI_MODULE } from '../../web-ui/constants/web-ui';
 import { HEARTBEAT_OFF } from '../../web-ui/constants/web-ui-settings';
@@ -16,7 +17,7 @@ const ALIVE_TTL_FACTOR = 2.5;
 /**
  * Upstash для Web UI на Vercel (scope all), у просторі ключів цієї збірки (`uiNamespace(stage, гілка)`): індекс
  * роутів, кожна сторінка під своїм ключем і окремо пульс агента. Індекс і сторінки без пульсу не протухають до TTL
- * простору (90 днів stage, тиждень гілка): Vercel показує останнє, а онлайн чи ні — каже пульс. Пишеться лише те, чий `rev` змінився (і все на старті); сторінка, якої
+ * простору (90 днів stage, тиждень гілка); AppState — ключем `state`: Vercel показує останнє, а онлайн чи ні — каже пульс. Пишеться лише те, чий `rev` змінився (і все на старті); сторінка, якої
  * більше немає, стирається. Пульс — з інтервалом із налаштування Web UI «Пульс для Vercel».
  * Дій з Vercel немає: керування йде у Web UI самого агента.
  */
@@ -24,6 +25,8 @@ const ALIVE_TTL_FACTOR = 2.5;
 export class UiSyncService implements OnModuleInit, OnModuleDestroy {
   private readonly _logger = new Logger(UiSyncService.name);
   private _shellRev = '';
+  /** `rev` AppState, уже записаний в Upstash. */
+  private _stateRev = 0;
   /** Сторінка → `rev`, уже записаний в Upstash. */
   private readonly _pageRevs = new Map<string, string>();
   private _lastBeatAt = 0;
@@ -38,6 +41,7 @@ export class UiSyncService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly _upstash: UpstashClient,
     private readonly _modules: ModulesService,
+    private readonly _state: AppStateService,
     @Inject(AGENT_CONFIG) config: AgentConfig,
   ) {
     const branch = process.env.MACONTROL_BRANCH || readBuildInfo()?.branch || null;
@@ -62,6 +66,7 @@ export class UiSyncService implements OnModuleInit, OnModuleDestroy {
   async sync() {
     if (!this._upstash.isConfigured) return;
     await this._publishLayout();
+    await this._publishState();
     await this._beat();
   }
 
@@ -86,6 +91,16 @@ export class UiSyncService implements OnModuleInit, OnModuleDestroy {
     await this._run(async () => {
       await this._upstash.command(['SET', this._keys.shell, JSON.stringify(shell), 'EX', this._ttl]);
       this._shellRev = shell.rev;
+    });
+  }
+
+  /** AppState (scope all) для `show` / `bind` на Vercel: один ключ, лише коли змінився `rev`. */
+  private async _publishState() {
+    if (this._state.rev === this._stateRev) return;
+    const full = this._state.full('all');
+    await this._run(async () => {
+      await this._upstash.command(['SET', this._keys.state, JSON.stringify(full), 'EX', this._ttl]);
+      this._stateRev = full.rev;
     });
   }
 

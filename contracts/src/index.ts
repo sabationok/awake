@@ -148,6 +148,8 @@ export type MacToAgentMessage =
   | { type: 'event'; data: import('./ui').UiEvent }
   /** Аппка відкрила сторінку: сервер відповідає `layout.page` / `layout.notModified` і далі шле її зміни. */
   | { type: 'layout.get'; data: import('./ui').UiLayoutRequest }
+  /** Повний стейт ще раз: аппка побачила пропуск `rev` (або щойно підключилась і нічого не має). */
+  | { type: 'state.get'; data: Record<string, never> }
   /** Сторінка «Пристрої» в Mac-аппці: попросити свіжий знімок або відкликати пристрій. */
   | {
       type: 'devices';
@@ -213,6 +215,12 @@ export type AgentToMacMessage =
   | { type: 'layout.notModified'; data: { pageId: string; rev: string } }
   /** Сторінки з таким id немає (модуль вимкнули, стара адреса). */
   | { type: 'layout.notFound'; data: { pageId: string } }
+  /** AppState (scope mac) повністю: новому клієнту при підключенні і на `state.get`. */
+  | { type: 'state.full'; data: import('./state').StateFull }
+  /** Зміна AppState: `rev` +1 до попереднього; пропуск — аппка шле `state.get`. */
+  | { type: 'state.patch'; data: import('./state').StatePatch }
+  /** Тост від сервера (сесію перезапущено, зупинено): текст вирішує сервер. */
+  | { type: 'notify'; data: import('./state').UiNotify }
   /** Усі налаштування модулів `<module>.<key>` → значення: Mac застосовує їх у себе. */
   | { type: 'settings'; data: Record<string, import('./modules').SettingValue> }
   /** Сполучені пристрої і поточне посилання сполучення: лише для Mac-аппки, у веб не йде. */
@@ -414,12 +422,14 @@ export const uiTtlSeconds = (ns: UiNamespace) => (ns.startsWith('br:') ? UI_TTL_
  * Ключі одного простору. `shell` — індекс роутів для Web UI на Vercel (scope all; Vercel лише читає, керування йде на
  * самому агенті). `page(id)` — одна сторінка (`UiPageLayout`); пишеться лише та, чий `rev` змінився. `alive` — пульс
  * агента окремо від індексу й сторінок: живе 2,5 інтервалу; немає ключа — агент офлайн; `every: null` — пульс
- * вимкнено в Web UI, стан невідомий.
+ * вимкнено в Web UI, стан невідомий. `state` — AppState для `show` / `bind` на Vercel.
  */
 export const uiKeys = (ns: UiNamespace) => ({
   shell: `${REDIS_KEY_PREFIX}${ns}:ui:shell`,
   page: (pageId: string) => `${REDIS_KEY_PREFIX}${ns}:ui:page:${pageId}`,
   alive: `${REDIS_KEY_PREFIX}${ns}:ui:alive`,
+  /** AppState (`StateFull`, scope all): пишеться, коли змінився `rev`. */
+  state: `${REDIS_KEY_PREFIX}${ns}:ui:state`,
 });
 
 export interface UiAlive {

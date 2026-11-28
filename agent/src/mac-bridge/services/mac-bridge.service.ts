@@ -54,6 +54,7 @@ export interface ServerCommand {
 const CLIENT_TYPES: ReadonlySet<MacToAgentMessage['type']> = new Set([
   'event',
   'layout.get',
+  'state.get',
   'log',
   'devices',
   'relayEnv',
@@ -91,6 +92,10 @@ export class MacBridgeService implements OnModuleInit {
   readonly events$ = new Subject<UiEvent>();
   /** Аппка відкрила сторінку (`layout.get`). */
   readonly layoutRequests$ = new Subject<UiLayoutRequest>();
+  /** Аппка просить повний стейт (`state.get`): щойно підключилась або побачила пропуск `rev`. */
+  readonly stateRequests$ = new Subject<void>();
+  /** Лише standalone: новий клієнт на сокеті; функція пише лише йому. */
+  readonly appConnected$ = new Subject<(message: AgentToMacMessage) => void>();
   /** Запити сторінки «Пристрої» Mac-аппки. */
   readonly devices$ = new Subject<DevicesRequest>();
   /** Модалка вебхука: зберегти, увімкнути, вимкнути, прибрати. */
@@ -136,6 +141,7 @@ export class MacBridgeService implements OnModuleInit {
       });
       this._app.lines$.subscribe((line) => this._handleLine(line, CLIENT_TYPES));
       this._app.empty$.subscribe(() => (this._clientSsid = null));
+      this._app.connected$.subscribe((write) => this.appConnected$.next(write));
       this._helper.start();
       this._app.start();
       return;
@@ -179,6 +185,13 @@ export class MacBridgeService implements OnModuleInit {
 
   sendPageNotFound(pageId: string) {
     this._send({ type: 'layout.notFound', data: { pageId } });
+  }
+
+  /**
+   * Стейт і тости лише аппці-клієнту на сокеті (standalone): стара аппка (stdin / stdout, archive/mac-old) їх не знає.
+   */
+  sendLive(message: Extract<AgentToMacMessage, { type: 'state.full' | 'state.patch' | 'notify' }>) {
+    if (this._config.standalone) this._app.send(message);
   }
 
   sendSettings(settings: Record<string, SettingValue>) {
@@ -295,6 +308,9 @@ export class MacBridgeService implements OnModuleInit {
         return;
       case 'layout.get':
         this.layoutRequests$.next(message.data);
+        return;
+      case 'state.get':
+        this.stateRequests$.next();
         return;
       case 'devices':
         this.devices$.next(message.data);

@@ -48,7 +48,12 @@ interface UiNodeBase {
    * Стан вузла з AppState (contracts/src/state.ts). Є — клієнт бере стан звідси, а не зі значень вузла; немає —
    * рендерить значення з вузла, як раніше. Обидва шляхи живуть разом до кінця переходу.
    */
-  bind?: import('./state').UiBind | import('./state').UiValueBind;
+  bind?: import('./state').UiNodeBind;
+  /**
+   * Коли вузол видно, за значенням у AppState (сесія йде / ні). Лише для режимів, не для «недоступно»: недоступне
+   * видно сірим через `bind`. Клієнт без стейту або без шляху — показує. Секцію, всі діти якої сховані, не малюють.
+   */
+  show?: import('./state').UiShow;
 }
 
 /** Група рядків з заголовком і підписом, як у «Системних параметрах». */
@@ -207,6 +212,11 @@ export interface UiTimer extends UiNodeBase {
   value: string;
   /** Підпис під таймером. */
   caption?: string;
+  /**
+   * Підпис, коли є `until`: «<untilCaption> HH:MM» (час кінця за годинником клієнта) замість `caption`. Так `until`
+   * може прийти зі стейту, а layout лишається той самий.
+   */
+  untilCaption?: string;
   tone?: UiTone;
 }
 

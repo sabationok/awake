@@ -444,6 +444,8 @@ function TimerNode({ node }: { node: UiTimer }) {
     fraction = Math.min(1, Math.max(0, (until - now) / (until - from || 1)));
   }
   // Від зеленого до червоного за часткою часу, що лишилась; без відліку — тон вузла.
+  // Кінець зі стейту: підпис з часом кінця рахує рендерер, layout той самий.
+  const caption = node.untilCaption && node.until ? `${node.untilCaption} ${clockOf(node.until)}` : node.caption;
   const color = fraction === null ? toneVar(node.tone) : `color-mix(in oklab, var(--ok) ${Math.round(fraction * 100)}%, var(--danger))`;
   return (
     <div className="u-big" style={{ ['--tone' as string]: color }}>
@@ -453,9 +455,14 @@ function TimerNode({ node }: { node: UiTimer }) {
           <i style={{ width: `${fraction * 100}%` }} />
         </span>
       ) : null}
-      {node.caption ? <span className="u-big-caption">{node.caption}</span> : null}
+      {caption ? <span className="u-big-caption">{caption}</span> : null}
     </div>
   );
+}
+
+/** «HH:MM» кінця за годинником цього пристрою. */
+function clockOf(iso: string): string {
+  return new Date(iso).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
 }
 
 /* ---------- chart ---------- */

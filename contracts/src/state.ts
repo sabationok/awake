@@ -31,6 +31,10 @@ export interface AppState {
     volume: number | null;
     muted: boolean;
     brightness: number | null;
+    /** Mac зараз не засинає (pmset SleepDisabled): під час сесії Awake і коли сон лишився вимкненим поза нею. */
+    sleepBlocked: boolean;
+    /** Похідне від сервера: сон вимкнено, а сесії Awake немає (збій, скрипт) — показати «Повернути сон». */
+    sleepBlockedOutside: boolean;
   };
   /** Налаштування модулів: `modules.<module>.<key>`. */
   modules: Record<string, Record<string, SettingValue>>;
@@ -109,6 +113,37 @@ export function defineValueBind<P extends StatePath>(path: P): UiValueBind {
   return { value: path };
 }
 
+/**
+ * Значення вузла зі стейту як є: проп вузла → шлях (`until` таймера → `sessions.awake.until`). Шлях обірвався —
+ * лишається статичне значення пропа з layout.
+ */
+export interface UiPropsBind {
+  props: Record<string, string>;
+}
+
+export type UiNodeBind = UiBind | UiValueBind | UiPropsBind;
+
+/** Пропи вузла `N`, які можна взяти зі стейту, з перевіркою шляху. */
+export function defineProps<N extends object>(props: Partial<Record<keyof N & string, StatePath>>): UiPropsBind {
+  return { props: props as Record<string, string> };
+}
+
+/**
+ * Коли вузол видно: значення за `path` серед `when` або НЕ серед `unless` (ключі як у `bind`: рядок, `'true'` /
+ * `'false'`, `'null'`). Лише дані, без виразів. Шляху немає (клієнт без стейту, стара гілка) — видно.
+ */
+export type UiShow = { path: string; when: string[] } | { path: string; unless: string[] };
+
+/** Видно, коли значення за шляхом — один з `keys`. */
+export function showWhen<P extends StatePath>(path: P, ...keys: BindKey<StateAt<AppState, P>>[]): UiShow {
+  return { path, when: keys };
+}
+
+/** Видно, коли значення за шляхом — не один з `keys` (`showUnless('sessions.awake', 'null')` — сесія йде). */
+export function showUnless<P extends StatePath>(path: P, ...keys: BindKey<StateAt<AppState, P>>[]): UiShow {
+  return { path, unless: keys };
+}
+
 // ── Дріт ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
 /** Патч: лише `set` за шляхом; масиви замінюються цілком. */
@@ -121,6 +156,22 @@ export interface StatePatchOp {
 export type StateMessage =
   | { type: 'state.full'; rev: number; state: AppState }
   | { type: 'state.patch'; rev: number; ops: StatePatchOp[] };
+
+export type StateFull = Omit<Extract<StateMessage, { type: 'state.full' }>, 'type'>;
+export type StatePatch = Omit<Extract<StateMessage, { type: 'state.patch' }>, 'type'>;
+
+/**
+ * Подія, яку сервер показує тостом у кожного клієнта (сесію перезапущено, зупинено). Текст і тип вирішує сервер,
+ * клієнт лише малює його в своїй черзі тостів.
+ */
+export interface UiNotify {
+  kind: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  detail?: string;
+}
+
+/** Рядок живого каналу локального Web UI (`GET /api/ui/live`, NDJSON): стейт і тости. */
+export type LiveMessage = StateMessage | { type: 'notify'; notify: UiNotify };
 
 // ── Чисті функції для клієнтів і сервера ───────────────────────────────────────────────────────────────────────
 
@@ -140,6 +191,54 @@ export function resolveBind<C extends UiComponentKind>(state: unknown, bind: UiB
   const key = value === null ? 'null' : typeof value === 'string' || typeof value === 'boolean' ? String(value) : undefined;
   if (key === undefined || !Object.hasOwn(bind.map, key)) return bind.fallback;
   return bind.map[key] ?? bind.fallback;
+}
+
+/** Ключ значення для `show` / `bind`: `undefined` — шляху немає; `null` — значення не має ключа (обʼєкт, число). */
+function stateKey(value: unknown): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return 'null';
+  return typeof value === 'string' || typeof value === 'boolean' ? String(value) : null;
+}
+
+/** Чи видно вузол за поточного стейту. Без `show` або без шляху в стейті — видно. */
+export function isShown(state: unknown, show: UiShow | undefined): boolean {
+  if (!show) return true;
+  const key = stateKey(readStatePath(state, show.path));
+  if (key === undefined) return true;
+  return 'when' in show ? key !== null && show.when.includes(key) : key === null || !show.unless.includes(key);
+}
+
+/**
+ * Пропи вузла з урахуванням `bind`: значення стейту лягають у пропи, стан компонента — у `value` / `disabled`
+ * перемикача й кнопки. Без `bind` або без значення в стейті — пропи як є (статичні з layout). Не мутує.
+ */
+export function resolveNodeProps<T extends object>(props: T, state: unknown): T {
+  const bind = (props as { bind?: UiNodeBind }).bind;
+  if (!bind || state === undefined || state === null) return props;
+  if ('props' in bind || 'value' in bind) {
+    const entries = 'props' in bind ? Object.entries(bind.props) : [['value', bind.value] as const];
+    let next: T = props;
+    for (const [prop, path] of entries) {
+      if (FORBIDDEN_KEYS.has(prop)) continue;
+      const value = readStatePath(state, path);
+      if (value !== undefined) next = { ...next, [prop]: value };
+    }
+    return next;
+  }
+  if (readStatePath(state, bind.path) === undefined) return props;
+  const component = resolveBind(state, bind);
+  const node = props as Record<string, unknown>;
+  if (bind.component === 'switch') {
+    if (component === 'pending') return props;
+    const patch = component === 'disabled' ? { disabled: true } : { value: component === 'on' };
+    // Перемикач рядка — у `control`, вузол `switch` — сам.
+    if (node.type === 'row' && node.control && typeof node.control === 'object') {
+      return { ...props, control: { ...(node.control as object), ...patch } };
+    }
+    return { ...props, ...patch };
+  }
+  if (bind.component === 'button' && component === 'disabled') return { ...props, disabled: true };
+  return props;
 }
 
 const FORBIDDEN_KEYS = new Set(['__proto__', 'prototype', 'constructor']);

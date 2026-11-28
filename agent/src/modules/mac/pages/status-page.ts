@@ -1,6 +1,6 @@
 import type { MacState, UiPage, UiRow } from '@macontrol/contracts';
 import type { ModuleContext } from '../../types/mac-module';
-import { sleepRow } from '../../awake/helpers/sleep-row';
+import { sleepRows } from '../../awake/helpers/sleep-row';
 import { formatBattery } from '../../awake/helpers/format-battery';
 import { powerLabel } from '../../awake/helpers/power-label';
 import { thermalPresentation } from '../../awake/helpers/thermal-presentation';
@@ -29,7 +29,7 @@ export function buildStatusPage(ctx: ModuleContext, trusted: boolean): UiPage {
 function macRows(mac: MacState, trusted: boolean): UiRow[] {
   const thermal = thermalPresentation(mac.thermal);
   return [
-    sleepRow(mac),
+    ...sleepRows(),
     {
       id: 'battery',
       type: 'row',

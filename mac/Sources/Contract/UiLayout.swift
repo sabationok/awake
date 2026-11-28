@@ -269,6 +269,8 @@ struct UiTimer: Decodable, Hashable {
     var from: Date?
     var value: String
     var caption: String?
+    /// With `until`: «<untilCaption> HH:MM» (the end on this Mac's clock) instead of `caption`; `until` may come from state.
+    var untilCaption: String?
     var tone: UiTone?
 }
 
@@ -338,13 +340,24 @@ struct UiPageLayout: Decodable, Hashable {
     /// Вузли рендерера для цієї сторінки: рядки складаються у вкладені вузли з `id` рядка, рядок `tab` стає
     /// вкладкою свого `tabs`. Рядок, якого немає в таблиці, пропускається. Не на головному потоці — дати й графіки
     /// розбираються тут.
-    func renderNodes() throws -> [UiNode] {
+    ///
+    /// `state` — the app's AppState copy (`AppStateJSON`): a row whose `show` fails is not built, a section whose
+    /// children are all hidden by `show` neither; `bind` puts state values into the props. nil — rows as they came.
+    func renderNodes(state: JSONValue? = nil) throws -> [UiNode] {
+        func shown(_ id: String) -> Bool {
+            guard let row = nodes[id], case .object(let props) = row.node else { return true }
+            return AppStateJSON.isShown(state, props["show"])
+        }
         func build(_ id: String) -> JSONValue? {
-            guard let row = nodes[id], case .object(var props) = row.node, case .string(let type)? = props["type"] else { return nil }
+            guard let row = nodes[id], case .object(let raw) = row.node, case .string(let type)? = raw["type"],
+                  AppStateJSON.isShown(state, raw["show"]) else { return nil }
+            var props = AppStateJSON.resolve(raw, state)
             switch type {
             case "page", "tab":
                 return nil
             case "section":
+                let present = row.children.filter { nodes[$0] != nil }
+                if !present.isEmpty, !present.contains(where: shown) { return nil }
                 props["children"] = .array(row.children.compactMap(build))
             case "tabs":
                 props["tabs"] = .array(row.children.compactMap { tabId -> JSONValue? in
