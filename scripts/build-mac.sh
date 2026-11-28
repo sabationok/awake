@@ -68,16 +68,26 @@ if [ "$STAGE" = "production" ]; then
 else
   (cd "$ROOT" && swift tools/stage-icon.swift Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns" "$STAGE")
 fi
+# Label in Finder / Launchpad / Dock (owner, 2026-11-28): «MaControl (Dev)» on dev, «MaControl (<version>)» on a
+# release. Finder shows the file name unless the bundle has a localized display name, so it goes to InfoPlist.strings;
+# Info.plist keeps CFBundleDisplayName = the file name, otherwise macOS takes the app as renamed and shows the file name.
+VERSION="$(node -p "require('$ROOT/app/package.json').version")"
+LABEL="MaControl (Dev)"; [ "${RELEASE:-0}" = "1" ] && LABEL="MaControl ($VERSION)"
+for lang in en uk; do
+  mkdir -p "$APP/Contents/Resources/$lang.lproj"
+  printf '"CFBundleDisplayName" = "%s";\n"CFBundleName" = "%s";\n' "$LABEL" "$NAME" > "$APP/Contents/Resources/$lang.lproj/InfoPlist.strings"
+done
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>CFBundleIdentifier</key><string>$ID</string>
   <key>CFBundleName</key><string>$NAME</string>
-  <key>CFBundleDisplayName</key><string>$NAME</string>
+  <key>CFBundleDisplayName</key><string>$FILE</string>
+  <key>LSHasLocalizedDisplayName</key><true/>
   <key>CFBundleExecutable</key><string>$EXE</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
   <key>CFBundleVersion</key><string>1</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
