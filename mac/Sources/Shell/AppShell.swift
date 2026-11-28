@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// Port of `web/src/shell/app-shell.tsx`. Same parts in the same order:
-/// - sidebar `.s-side`: host block, module tree with chevrons, the «Система» group, the source plaque at the bottom;
+/// - sidebar `.s-side`: host block, module menu with chevrons, the «Система» group, the source plaque at the bottom;
 /// - top band `.s-top`: back, crumbs, h1, scope chip;
 /// - the level's NavTabs `.s-tabs`;
 /// - `SourceBanner`;
@@ -22,14 +22,14 @@ struct AppShell: View {
     }
 
     var body: some View {
-        let sections = sidebarSections(server.tree)
+        let sections = sidebarSections(server.shell)
         let all = sidebarPages(sections)
         let page = all.first { $0.id == hash } ?? all.first
         let path = pathTo(sections, page?.id)
         let tabs = levelOf(path).tabs
         let crumbs = Array(path.dropLast())
         let parent = crumbs.last
-        let labelOf = moduleLabels(server.tree, sections)
+        let labelOf = moduleLabels(server.shell, sections)
 
         Shell(chrome: .unifiedToolbar) {
             Sidebar(groups: navGroups(sections, labelOf), selection: $hash) {
@@ -57,13 +57,15 @@ struct AppShell: View {
                 if page?.id == "settings" {
                     AppearanceSection(theme: Binding(get: { theme }, set: { storedTheme = $0.rawValue }))
                 }
-                if let page {
-                    PageNodes(nodes: page.children, send: server.send)
-                } else if server.connected {
-                    EmptyState("Чекаю дерево від сервера…", symbol: "hourglass")
+                if let page, let content = server.pages[page.id] {
+                    PageNodes(nodes: content.nodes, send: server.send)
+                } else if server.connected, page.map({ !server.missing.contains($0.id) }) ?? true {
+                    EmptyState(page == nil ? "Чекаю дані від сервера…" : "Чекаю сторінку від сервера…", symbol: "hourglass")
                 }
             }
             .id(page?.id)
+            // The app asks only the page on screen; the server then keeps it fresh.
+            .task(id: page?.id) { if let id = page?.id { server.open(id) } }
         }
         .environmentObject(runner)
         .runActionDialog(runner)
@@ -81,13 +83,13 @@ struct AppShell: View {
 
     /// `.s-host`: app title, then «host · онлайн/офлайн»; the icon is accent while the Mac is online.
     private var host: some View {
-        let online = server.connected && (server.tree?.app.online ?? false)
-        return SidebarHost(server.tree?.app.title ?? "MaControl",
-                                subtitle: "\(server.tree?.app.host ?? "Mac") · \(online ? "онлайн" : "офлайн")",
+        let online = server.connected && (server.shell?.app.online ?? false)
+        return SidebarHost(server.shell?.app.title ?? "MaControl",
+                                subtitle: "\(server.shell?.app.host ?? "Mac") · \(online ? "онлайн" : "офлайн")",
                                 online: online)
     }
 
-    /// `.s-demo`: where the tree comes from and whether clicks reach the server. The build's name and version are in
+    /// `.s-demo`: where the layout comes from and whether clicks reach the server. The build's name and version are in
     /// the dev indicator, not here.
     @ViewBuilder
     private var source: some View {
@@ -99,13 +101,13 @@ struct AppShell: View {
             SidebarSource("Сервер недоступний", detail: "Перепідключення щосекунди", symbol: "bolt.horizontal",
                                tone: .red)
         case .file:
-            SidebarSource("Знімок дерева з файлу", detail: "Дії не надсилаються на сервер")
+            SidebarSource("Знімок з файлу", detail: "Дії не надсилаються на сервер")
         }
     }
 
     /// `NavNode` / `SubNode`: a disabled module stays visible, greyed, with the reason as a hint; it does not expand.
-    private func navGroups(_ sections: [SidebarSection], _ labelOf: (UiPage) -> String) -> [SidebarGroup] {
-        let disabledOf = Dictionary((server.tree?.modules ?? []).compactMap { m in m.disabled.map { (m.id, $0) } },
+    private func navGroups(_ sections: [SidebarSection], _ labelOf: (UiPageInfo) -> String) -> [SidebarGroup] {
+        let disabledOf = Dictionary((server.shell?.modules ?? []).compactMap { m in m.disabled.map { (m.id, $0) } },
                                     uniquingKeysWith: { a, _ in a })
         func item(_ node: SidebarNode, top: Bool) -> SidebarItem {
             let disabled = top ? disabledOf[node.page.module] : nil
@@ -121,36 +123,36 @@ struct AppShell: View {
     }
 }
 
-/// `SourceBanner`: shown when the tree is not live (the server stopped answering, or the tree did not parse).
+/// `SourceBanner`: shown when the layout is not live (the server stopped answering, or a page did not parse).
 struct SourceBanner: View {
     @ObservedObject var server: ServerConnection
 
     var body: some View {
         if !server.connected {
             Notice(tone: .yellow, symbol: "externaldrive.badge.exclamationmark",
-                        title: server.tree == nil ? "Сервер не відповідає"
-                            : "Сервер не відповідає — показую останнє отримане дерево",
+                        title: server.shell == nil ? "Сервер не відповідає"
+                            : "Сервер не відповідає — показую останнє отримане",
                         text: server.problem ?? "Перепідключення щосекунди…")
         } else if let problem = server.problem {
-            Notice(tone: .yellow, symbol: "exclamationmark.triangle", title: "Дерево не розібралось", text: problem)
+            Notice(tone: .yellow, symbol: "exclamationmark.triangle", title: "Сторінка не розібралась", text: problem)
         }
     }
 }
 
 /// Port of `moduleLabels` in `web/src/shell/app-shell.tsx`: the name of a menu item, crumb and title. A page
 /// that starts a module (top level, or a nested module like Групи under Telegram) is named by the module's title from
-/// `tree.modules`, not by its own `title`, so the menu item does not change when the server renames the page
+/// `shell.modules`, not by its own `title`, so the menu item does not change when the server renames the page
 /// (Awake → «Сесія», «Огляд»). System pages and a module's subpages keep their own `title`. Tabs are not touched.
-func moduleLabels(_ tree: UiTree?, _ sections: [SidebarSection]) -> (UiPage) -> String {
+func moduleLabels(_ shell: UiShell?, _ sections: [SidebarSection]) -> (UiPageInfo) -> String {
     var parentModule: [String: String?] = [:]
-    func walk(_ nodes: [SidebarNode], _ parent: UiPage?) {
+    func walk(_ nodes: [SidebarNode], _ parent: UiPageInfo?) {
         for node in nodes {
             parentModule[node.page.id] = .some(parent?.module)
             walk(node.children, node.page)
         }
     }
     sections.forEach { walk($0.nodes, nil) }
-    let titles = Dictionary((tree?.modules ?? []).map { ($0.id, $0.title) }, uniquingKeysWith: { a, _ in a })
+    let titles = Dictionary((shell?.modules ?? []).map { ($0.id, $0.title) }, uniquingKeysWith: { a, _ in a })
     return { page in
         let startsModule = page.group == .modules && (parentModule[page.id] ?? nil) != page.module
         return (startsModule ? titles[page.module] : nil) ?? page.title

@@ -13,6 +13,8 @@ export const API_ERROR_CODES = {
   forbiddenOrigin: 'FORBIDDEN_ORIGIN',
   untrustedNetwork: 'UNTRUSTED_NETWORK',
   invalidCommand: 'INVALID_COMMAND',
+  /** Немає такої сторінки UI (модуль вимкнено, стара адреса). */
+  pageNotFound: 'PAGE_NOT_FOUND',
   macOffline: 'MAC_OFFLINE',
   /** Агента вимкнено на Mac: Telegram і веб не керують, сервер працює. */
   agentDisabled: 'AGENT_DISABLED',

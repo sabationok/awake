@@ -146,6 +146,8 @@ export type MacToAgentMessage =
   | { type: 'sleepTimer'; data: SleepTimerEvent }
   /** Натискання в SwiftUI-рендерері: агент виконує його так само, як з вебу. */
   | { type: 'event'; data: import('./ui').UiEvent }
+  /** Аппка відкрила сторінку: сервер відповідає `layout.page` / `layout.notModified` і далі шле її зміни. */
+  | { type: 'layout.get'; data: import('./ui').UiLayoutRequest }
   /** Сторінка «Пристрої» в Mac-аппці: попросити свіжий знімок або відкликати пристрій. */
   | {
       type: 'devices';
@@ -203,8 +205,14 @@ export type AgentToMacMessage =
   /** Лише аппці-клієнту (standalone): стан Mac і сесій, щоб меню-бар показував те саме, що й сервер. */
   | { type: 'state'; data: MacState }
   | { type: 'command'; data: CommandRequest & { id: string; source: SessionSource } }
-  /** Повне дерево UI (scope local) для SwiftUI; шлеться при кожній зміні. */
-  | { type: 'tree'; data: import('./ui').UiTree }
+  /** Індекс роутів (scope mac): при підключенні (останній повторюється новому клієнту) і коли змінився `rev`. */
+  | { type: 'shell'; data: import('./ui').UiShell }
+  /** Сторінка таблицею вузлів: відповідь на `layout.get` і далі щоразу, коли змінився `rev` відкритої сторінки. */
+  | { type: 'layout.page'; data: import('./ui').UiPageLayout }
+  /** `ifRev` з `layout.get` збігся: сторінка та сама. */
+  | { type: 'layout.notModified'; data: { pageId: string; rev: string } }
+  /** Сторінки з таким id немає (модуль вимкнули, стара адреса). */
+  | { type: 'layout.notFound'; data: { pageId: string } }
   /** Усі налаштування модулів `<module>.<key>` → значення: Mac застосовує їх у себе. */
   | { type: 'settings'; data: Record<string, import('./modules').SettingValue> }
   /** Сполучені пристрої і поточне посилання сполучення: лише для Mac-аппки, у веб не йде. */
@@ -219,12 +227,12 @@ export type AgentToMacMessage =
   | { type: 'server'; data: ServerInfo }
   | { type: 'serverCharts'; data: ServerCharts }
   | { type: 'serverChartsTick'; data: ServerChartsTick }
-  /** Live-тік графіків SDUI-дерева Mac (сторінки статистики): поточний бакет кожного графіка, раз на 10 с. */
+  /** Live-тік графіків відкритих у Mac сторінок (статистика): поточний бакет кожного графіка, раз на 10 с. */
   | { type: 'chartTick'; data: ChartTick };
 
 /**
- * Поточний бакет графіків дерева одного вікна періоду: id вузла `chart` → точки серій. Аппка замінює точки з тим
- * самим `start` і серією або дописує їх і відкидає все раніше `from`. Веб тіків не отримує: він опитує дерево.
+ * Поточний бакет графіків одного вікна періоду: id рядка `chart` (`UiNodeRow.id`) → точки серій. Аппка замінює точки
+ * з тим самим `start` і серією або дописує їх і відкидає все раніше `from`. Веб тіків не отримує: він опитує сторінку.
  */
 export interface ChartTick {
   from: string;
@@ -381,11 +389,17 @@ export interface DevicePairingPoll {
  */
 export const REDIS_KEY_PREFIX = 'macontrol:';
 
-/** Дерево UI для Web UI на Vercel (лише вузли зі scope all). Vercel лише читає його: керування йде на самому агенті. */
-export const UI_TREE_KEY = `${REDIS_KEY_PREFIX}ui`;
+/**
+ * Індекс роутів для Web UI на Vercel (scope all). Vercel лише читає: керування йде на самому агенті.
+ * Сторінки — кожна під своїм ключем `uiPageKey(id)`; пишеться лише та, чий `rev` змінився.
+ */
+export const UI_SHELL_KEY = `${REDIS_KEY_PREFIX}ui:shell`;
+
+/** Ключ однієї сторінки (`UiPageLayout`, scope all) в Upstash. */
+export const uiPageKey = (pageId: string) => `${REDIS_KEY_PREFIX}ui:page:${pageId}`;
 
 /**
- * Пульс агента для Vercel: маленький ключ окремо від дерева, щоб не переписувати дерево заради «я живий».
+ * Пульс агента для Vercel: маленький ключ окремо від індексу й сторінок, щоб не переписувати їх заради «я живий».
  * Ключ живе 2,5 інтервалу; немає ключа — агент офлайн. `every: null` — пульс вимкнено в Web UI, стан невідомий.
  */
 export const UI_ALIVE_KEY = `${REDIS_KEY_PREFIX}ui:alive`;

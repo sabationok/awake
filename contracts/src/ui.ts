@@ -1,5 +1,7 @@
-// Server-driven UI MaControl. Модулі в Nest будують дерево з цих вузлів, а Next (і пізніше SwiftUI)
-// лише малюють його і повертають дії. Жодної логіки модулів у рендерерах.
+// Server-driven UI MaControl (docs/specs/ui-layout-spec.md). Модулі в Nest описують сторінку вкладеними вузлами
+// (`UiPage` / `UiNode`), але по дроту вона не йде: сервер нормалізує її в таблицю рядків `UiNodeRow` за `id`.
+// Клієнти отримують індекс роутів (`UiShell`) і по одній сторінці (`UiPageLayout`), малюють і повертають дії.
+// Жодної логіки модулів у рендерерах.
 
 export type UiTone = 'accent' | 'green' | 'orange' | 'red' | 'gray' | 'indigo' | 'yellow';
 
@@ -373,7 +375,10 @@ export type UiNode =
   | UiSeparator
   | UiQr;
 
-/** Вкладка бічного меню. */
+/**
+ * Сторінка так, як її пише модуль на сервері: вкладені вузли. Лише джерело для нормалізації, по дроту не йде
+ * (`normalizePage` в агенті → `UiPageLayout`); клієнти її не бачать.
+ */
 export interface UiPage {
   id: string;
   module: string;
@@ -385,17 +390,69 @@ export interface UiPage {
   children: UiNode[];
 }
 
-/**
- * Як Web UI дістається до агента напряму. Без цього блоку Web UI лише показує дерево,
- * а всі керувальні елементи вимкнені.
- */
-export interface UiLocalAccess {
-  /** HTTPS-адреса API агента в локальній мережі, напр. https://192.168.1.5:47800. */
-  url: string;
-  /** Одноразовий код сполучення: Web UI міняє його на токен пристрою. */
-  code: string;
-  /** PEM локального центру сертифікації, якому пристрій має довіритись один раз. */
-  ca: string;
+// ── Дріт: індекс роутів і сторінка таблицею вузлів ────────────────────────────────────────────────────────────
+
+/** Корінь сторінки в таблиці: рядок з `id` сторінки, його діти — вузли верхнього рівня. */
+export interface UiPageRoot {
+  type: 'page';
+}
+
+/** Вкладка вузла `tabs` у таблиці: свій рядок, діти — вміст вкладки. `value` — те, що пишуть `tabs.value` / `setting`. */
+export interface UiTab {
+  type: 'tab';
+  value: string;
+  label: string;
+}
+
+/** Пропси вузла в рядку: без `id` (він у рядку) і без дітей (вони в `children` рядка). */
+type UiRowProps<T> = T extends UiSection ? Omit<T, 'id' | 'children'> : T extends UiTabs ? Omit<T, 'id' | 'tabs'> : Omit<T, 'id'>;
+
+export type UiNodeProps = UiRowProps<UiNode> | UiTab | UiPageRoot;
+
+/** Пропси вузла типу `type`. */
+export type UiNodePropsOf<K extends UiNodeProps['type']> = Extract<UiNodeProps, { type: K }>;
+
+/** Рядок таблиці сторінки (docs/specs/ui-layout-spec.md «Таблиця вузлів»). */
+export interface UiNodeRow {
+  /** Стабільний між збираннями: `<сторінка>.<вузол>`, ставить сервер; не позиція в масиві. */
+  id: string;
+  /** null лише в кореня. Похідне: ставить сервер під час нормалізації, клієнт лише читає. */
+  parentId: string | null;
+  /** Порядок дітей; задає його лише батько. */
+  children: string[];
+  node: UiNodeProps;
+}
+
+/** Одна сторінка по дроту. `rev` — хеш її рядків: той самий зміст після рестарту дає той самий ETag. */
+export interface UiPageLayout {
+  id: string;
+  rev: string;
+  /** Рядок-корінь (`type: 'page'`), дорівнює `id`. */
+  root: string;
+  nodes: Record<string, UiNodeRow>;
+}
+
+/** Сторінка в індексі роутів: усе, що треба меню, крихтам і заголовку, без вузлів. */
+export type UiPageInfo = Omit<UiPage, 'children'>;
+
+/** Індекс роутів (shell): модулі, сторінки, назви, scope. Шлеться при підключенні; сторінки — окремо, по одній. */
+export interface UiShell {
+  /** Хеш змісту: змінився — клієнт перебудовує меню. */
+  rev: string;
+  app: {
+    title: string;
+    host: string;
+    online: boolean;
+  };
+  /** Порядок і назви модулів для бічного меню; сторінки групи system ідуть після них. */
+  modules: UiModuleInfo[];
+  pages: UiPageInfo[];
+}
+
+/** Запит сторінки на не-HTTP каналі (server.sock): `ifRev` збігся — відповідь `layout.notModified` без рядків. */
+export interface UiLayoutRequest {
+  pageId: string;
+  ifRev?: string;
 }
 
 /** Модуль у бічному меню: його сторінки йдуть під цим заголовком у порядку списку. */
@@ -419,21 +476,6 @@ export interface UiModuleInfo {
  * модуль лише декларує, що з них йому треба.
  */
 export type MacPermission = 'sleepControl' | 'thermalRead';
-
-/** Усе дерево застосунку. */
-export interface UiTree {
-  /** Порядок і назви модулів для бічного меню; сторінки групи system ідуть після них. */
-  modules: UiModuleInfo[];
-  app: {
-    title: string;
-    host: string;
-    online: boolean;
-    updatedAt: string;
-    /** Прямий доступ до агента; є лише в довіреній Wi-Fi і лише в дереві для Vercel. */
-    local?: UiLocalAccess | null;
-  };
-  pages: UiPage[];
-}
 
 /** Зміна налаштування з рендерера. */
 export interface UiSettingChange {

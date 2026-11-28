@@ -127,7 +127,7 @@
   .s-crumb { display: none; }
 }
 
-/* ---------- банер джерела дерева ---------- */
+/* ---------- банер джерела даних ---------- */
 .s-banner {
   display: flex; gap: 10px; align-items: flex-start; margin: 16px auto 0; width: calc(100% - 56px); max-width: 704px; padding: 11px 14px;
   border-radius: 10px; border: 1px solid color-mix(in oklab, var(--warn) 35%, transparent);
@@ -142,7 +142,7 @@
 /* ---------- кнопка dev-індикатора в лівому нижньому куті: низ сайдбару звільняє їй місце ---------- */
 :root:has(.dvi-root[data-mode='floating'][data-corner='bl']) .s-side { padding-bottom: 60px; }
 
-/* ---------- сторінка без дерева: вхід, сполучення, «сервер недоступний» ---------- */
+/* ---------- сторінка без інтерфейсу сервера: вхід, сполучення, «сервер недоступний» ---------- */
 .s-solo {
   min-height: 100dvh; display: grid; align-content: start; justify-items: center;
   padding: calc(56px + env(safe-area-inset-top, 0px)) 16px calc(48px + env(safe-area-inset-bottom, 0px));

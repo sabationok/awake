@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { io, type Socket } from 'socket.io-client';
-import type { RelayHostBroadcast, RelayHostReply, UiTree } from '@awake/contracts';
+import type { RelayHostBroadcast, RelayHostReply } from '@awake/contracts';
 import { BotJournalService } from '../../../bot-journal';
 import { AGENT_CONFIG, type AgentConfig } from '../../../config/agent-config';
 import { StatGranularity } from '@awake/contracts';
@@ -43,7 +43,7 @@ interface AuthorizeData {
 
 /**
  * Host кімнати relay у webhooxy (docs/relay-contract.md): пускає viewer-ів за квитком Web UI,
- * виконує їхні події через ModulesService і розсилає нове дерево після змін.
+ * виконує їхні події через ModulesService і після змін розсилає `rev` індексу й сторінок (viewer перечитує своє).
  */
 @Injectable()
 export class RelayHostService implements OnModuleInit, OnModuleDestroy {
@@ -56,7 +56,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
   private _webhookId: number | null = null;
   private _socket?: Socket;
   private _retry?: NodeJS.Timeout;
-  private _lastTree = '';
+  private _lastRevs = '';
   private _maxPayloadBytes = RELAY_MAX_PAYLOAD_BYTES;
 
   constructor(
@@ -181,16 +181,16 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     this._notifications.notify({ source: 'relay', type: 'limits', title: '⚠️ webhooxy не прийняв ліміти', fields: { error } });
   }
 
-  /** Розсилає дерево авторизованим viewer-ам, якщо воно змінилося. */
-  async broadcastTree() {
+  /** Розсилає авторизованим viewer-ам `rev` індексу й сторінок, якщо щось змінилось; сторінки вони беруть самі. */
+  async broadcastRevs() {
     if (!this.isOnline) return;
-    const tree = await this._modules.buildTree('all');
-    const fingerprint = JSON.stringify({ ...tree, app: { ...tree.app, updatedAt: '' } });
-    if (fingerprint === this._lastTree) return;
-    const data: RelayHostBroadcast = { type: 'tree', tree };
+    const { shell, pages } = await this._modules.buildAll('all');
+    const data: RelayHostBroadcast = { type: 'revs', shell: shell.rev, pages: Object.fromEntries(pages.map((page) => [page.id, page.rev])) };
+    const fingerprint = JSON.stringify(data);
+    if (fingerprint === this._lastRevs) return;
     if (!this._fits(data)) return;
     const reply = (await this._socket!.emitWithAck('relay:broadcast', { data })) as ServerEnvelope<unknown>;
-    if (reply.statusCode === 200) this._lastTree = fingerprint;
+    if (reply.statusCode === 200) this._lastRevs = fingerprint;
     else {
       this._logger.warn(`Broadcast rejected: ${reply.statusCode} ${reply.message}`);
       this._track(RELAY_METRICS.errors);
@@ -211,7 +211,7 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     this._socket = socket;
 
     socket.on('connect', () => {
-      this._lastTree = '';
+      this._lastRevs = '';
       this._logger.log(`Relay host online (${this._config.stage})`);
       this._track(RELAY_METRICS.connects);
       this._setStatus('online');
@@ -344,19 +344,25 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async _handle(data: unknown): Promise<RelayHostReply> {
-    const message = data as { type?: unknown; event?: unknown } | null;
+    const message = data as { type?: unknown; event?: unknown; pageId?: unknown } | null;
     try {
       switch (message?.type) {
         case 'ping':
           return { type: 'pong' };
-        case 'tree': {
-          const reply: RelayHostReply = { type: 'tree', tree: await this._modules.buildTree('all') };
-          return this._fits(reply) ? reply : { type: 'error', message: 'Tree too large for relay' };
+        case 'shell': {
+          const reply: RelayHostReply = { type: 'shell', shell: await this._modules.buildShell('all') };
+          return this._fits(reply) ? reply : { type: 'error', message: 'Shell too large for relay' };
+        }
+        case 'page': {
+          const page = typeof message.pageId === 'string' ? await this._modules.buildPage(message.pageId, 'all') : null;
+          if (!page) return { type: 'error', message: 'Unknown page' };
+          const reply: RelayHostReply = { type: 'page', page };
+          return this._fits(reply) ? reply : { type: 'error', message: 'Page too large for relay' };
         }
         case 'event':
           if (!isUiEvent(message.event)) return { type: 'error', message: 'Invalid UI event' };
           await this._modules.dispatch(message.event, 'web', { proxy: RELAY_PROXY_ID });
-          void this.broadcastTree();
+          void this.broadcastRevs();
           return { type: 'accepted' };
         default:
           return { type: 'error', message: 'Unknown relay message' };
@@ -366,10 +372,10 @@ export class RelayHostService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private _fits(data: { type: 'tree'; tree: UiTree } | RelayHostReply): boolean {
+  private _fits(data: RelayHostBroadcast | RelayHostReply): boolean {
     const size = Buffer.byteLength(JSON.stringify({ data }));
     if (size <= this._maxPayloadBytes) return true;
-    this._logger.warn(`Relay tree is ${size} bytes, over maxPayloadBytes ${this._maxPayloadBytes}`);
+    this._logger.warn(`Relay ${data.type} is ${size} bytes, over maxPayloadBytes ${this._maxPayloadBytes}`);
     return false;
   }
 }

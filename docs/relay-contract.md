@@ -132,7 +132,7 @@
   - **Межі:** ті самі, що в DTO DEST; після злиття результат ще раз обрізається до стель. Глобальну стелю за IP override не змінює.
   - **Скільки живе:** тільки в пам'яті. Після disconnect host-а override тримається `pendingTimeoutMs`, потім видаляється. Новий host приносить свій. Зміни діють одразу на живі сокети.
   - REST-bootstrap override не приймає.
-- **MaControl:** агент на старті передає в handshake `relay: { allowedOrigins, maxViewers, maxPayloadBytes }` зі свого stage-конфігу. Кімнату має один користувач, тож варто задати `allowedOrigins` (dev-дашборд Vercel і `localhost` для `next dev`) і невеликий `maxViewers`. Tree агента може бути великим, тому треба перевірити, що його розмір вкладається в `maxPayloadBytes`.
+- **MaControl:** агент на старті передає в handshake `relay: { allowedOrigins, maxViewers, maxPayloadBytes }` зі свого stage-конфігу. Кімнату має один користувач, тож варто задати `allowedOrigins` (dev-дашборд Vercel і `localhost` для `next dev`) і невеликий `maxViewers`. Сторінка агента може бути великою, тому треба перевірити, що її розмір вкладається в `maxPayloadBytes`.
 
 ## `data` (формат MaControl, webhooxy його не розбирає)
 
@@ -140,10 +140,12 @@
 
 - viewer → host (`relay:send`), відповідь в ack:
   - `{ type: 'ping' }` → `{ type: 'pong' }`;
-  - `{ type: 'tree' }` → `{ type: 'tree', tree }` (scope `all`);
+  - `{ type: 'shell' }` → `{ type: 'shell', shell }` (індекс роутів `UiShell`, scope `all`);
+  - `{ type: 'page', pageId }` → `{ type: 'page', page }` (одна сторінка `UiPageLayout` таблицею вузлів, scope `all`);
   - `{ type: 'event', event: UiEvent }` → `{ type: 'accepted' }`. Налаштування зі scope `mac` з relay змінити не можна.
   - Помилка: `{ type: 'error', message }`.
-- host → viewers (`relay:broadcast`): `{ type: 'tree', tree }` після кожної зміни стану Mac, налаштування чи події.
+- host → viewers (`relay:broadcast`): `{ type: 'revs', shell, pages }` (`rev` індексу і кожної сторінки), коли
+  щось із них змінилось; viewer перечитує те, що тримає. Повного дерева по дроту немає (`docs/specs/ui-layout-spec.md`).
 
 ## Модуль Relay в агенті
 

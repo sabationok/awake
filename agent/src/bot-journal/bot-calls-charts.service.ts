@@ -50,7 +50,7 @@ export class BotCallsChartsService {
 
   /**
    * Найактивніші модулі вікна (разом з історією), до `limit`. `known` — зареєстровані namespace-и: вони доповнюють
-   * список нулями, щоб графік мав серії й без викликів. Ранг фіксується на збиранні дерева, тож тіки мають ті самі серії.
+   * список нулями, щоб графік мав серії й без викликів. Ранг фіксується на збиранні сторінки, тож тіки мають ті самі серії.
    */
   topModules(window: StatsPeriodWindow, known: string[], limit: number): string[] {
     const counts = new Map<string, number>(known.map((module) => [module, 0]));

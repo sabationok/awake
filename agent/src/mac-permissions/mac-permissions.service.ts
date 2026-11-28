@@ -16,13 +16,13 @@ type Denied = PermissionsSnapshot['denied'];
 
 /**
  * Дозволи належать серверу (режим standalone). Чи видано дозвіл у системі, перевіряє помічник; що вимкнено
- * окремим модулям, зберігає сервер у своїй базі. Клієнти бачать їх на сторінці «Дозволи» з дерева і шлють
+ * окремим модулям, зберігає сервер у своїй базі. Клієнти бачать їх на сторінці «Дозволи» від сервера і шлють
  * лише натискання (дії модуля `permissions`). Перевірка перед дією — `allowed()`.
  */
 @Injectable()
 export class MacPermissionsService implements OnModuleInit, OnModuleDestroy {
   private readonly _logger = new Logger(MacPermissionsService.name);
-  /** Знімок змінився: дерево треба перебудувати. */
+  /** Знімок змінився: індекс і сторінки треба перебудувати. */
   readonly changed$ = new Subject<void>();
   private readonly _subscriptions: Subscription[] = [];
   private _denied: Denied = [];
@@ -125,7 +125,7 @@ export class MacPermissionsService implements OnModuleInit, OnModuleDestroy {
   }
 
   private _publish() {
-    // Знімок окремим рядком потрібен меню-бару аппки; сторінку «Дозволи» клієнти отримують у дереві.
+    // Знімок окремим рядком потрібен меню-бару аппки; сторінку «Дозволи» клієнти отримують як звичайну сторінку.
     this._bridge.sendPermissions(this.snapshot());
     this.changed$.next();
   }

@@ -1,11 +1,11 @@
-import type { UiPage, UiTree } from '@awake/contracts';
+import type { UiPageInfo, UiShell } from '@awake/contracts';
 
 /**
  * Вузол навігації: сторінка і її дочірні вузли (модуль Awake → Налаштування сесії, Трекінг…).
- * Дерево рекурсивне: вкладений модуль (Групи під Telegram) — дочірній вузол зі своїми сторінками.
+ * Меню рекурсивне: вкладений модуль (Групи під Telegram) — дочірній вузол зі своїми сторінками.
  */
 export interface SidebarNode {
-  page: UiPage;
+  page: UiPageInfo;
   children: SidebarNode[];
 }
 
@@ -19,9 +19,9 @@ export interface SidebarSection {
  * Те саме меню, що в Mac-аппці (MainView.swift): модуль — це його перша сторінка, решта сторінок модуля — дочірні;
  * далі системні сторінки окремою групою. Порожні групи не малюються.
  */
-export function sidebarSections(tree: UiTree | null): SidebarSection[] {
-  const pages = tree?.pages ?? [];
-  const modules = tree?.modules ?? [];
+export function sidebarSections(shell: UiShell | null): SidebarSection[] {
+  const pages = shell?.pages ?? [];
+  const modules = shell?.modules ?? [];
   const pagesOf = (id: string) => pages.filter((item) => item.module === id && item.group === 'modules');
   // Модуль з `parent` (Групи → Telegram) не має свого пункту: його сторінки — діти провайдера, після його власних.
   const moduleNode = (id: string): SidebarNode[] => {
@@ -38,8 +38,8 @@ export function sidebarSections(tree: UiTree | null): SidebarSection[] {
 }
 
 /** Усі сторінки меню по порядку: батько, далі його діти (вглиб). */
-export function sidebarPages(sections: SidebarSection[]): UiPage[] {
-  const walk = (node: SidebarNode): UiPage[] => [node.page, ...node.children.flatMap(walk)];
+export function sidebarPages(sections: SidebarSection[]): UiPageInfo[] {
+  const walk = (node: SidebarNode): UiPageInfo[] => [node.page, ...node.children.flatMap(walk)];
   return sections.flatMap((section) => section.nodes.flatMap(walk));
 }
 
@@ -64,7 +64,7 @@ export function pathTo(sections: SidebarSection[], id: string | undefined): Side
  * Вкладки поточного рівня. Сторінка з дітьми сама є рівнем: вона і її діти. Листова сторінка — рівень її батька.
  * Повертає вузол-рівень і вкладки; без дітей на рівні вкладок немає.
  */
-export function levelOf(path: SidebarNode[]): { level: SidebarNode | null; tabs: UiPage[] } {
+export function levelOf(path: SidebarNode[]): { level: SidebarNode | null; tabs: UiPageInfo[] } {
   const current = path[path.length - 1];
   const level = current?.children.length ? current : (path[path.length - 2] ?? null);
   return { level, tabs: level ? [level.page, ...level.children.map((child) => child.page)] : [] };

@@ -4,7 +4,7 @@ import { MacBridgeService } from '../../../mac-bridge/services/mac-bridge.servic
 import { ModulesService } from '../../../modules/modules.service';
 import { TrustedNetworksService } from './trusted-networks.service';
 
-/** Аппка додала чи прибрала мережу → SQLite; будь-яка зміна → знімок аппці й нове дерево («Мережа · довірена»). */
+/** Аппка додала чи прибрала мережу → SQLite; будь-яка зміна → знімок аппці й нові сторінки («Мережа · довірена»). */
 @Injectable()
 export class TrustedNetworksListener implements OnModuleInit, OnModuleDestroy {
   private readonly _subscription = new Subscription();

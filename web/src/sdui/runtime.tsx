@@ -18,14 +18,14 @@ export interface Toast {
 /**
  * Як рендерер говорить із сервером.
  * - live: локальний агент на Mac; показуємо лише те, що він повернув, події йдуть у його API.
- * - readonly: Vercel; дерево лише для перегляду, нічого не надсилається.
+ * - readonly: Vercel; сторінки лише для перегляду, нічого не надсилається.
  * - demo: `next dev` з фікстурами; зміни живуть у пам'яті вкладки, на сервер нічого не йде.
  */
 export type RuntimeMode = 'live' | 'readonly' | 'demo';
 
 export interface SduiRuntime {
   mode: RuntimeMode;
-  /** Подія на сервер. Чекає відповіді (і перечитування дерева); помилку кидає з текстом для людини. */
+  /** Подія на сервер. Чекає відповіді (і перечитування сторінки); помилку кидає з текстом для людини. */
   send(event: UiEvent, label?: string): Promise<void>;
   /** Значення налаштування. live / readonly: те, що дав сервер; demo: локальна зміна поверх фікстури. */
   setting<T extends RuntimeValue>(module: string, key: string, fallback: T): T;
@@ -65,7 +65,7 @@ const keep = <T,>(_id: string, fallback: T) => fallback;
 const noop = () => undefined;
 
 /**
- * Рантайм без власного стану: значення лише з дерева сервера. `send` — подія в агент (live) або відмова (readonly).
+ * Рантайм без власного стану: значення лише зі сторінок сервера. `send` — подія в агент (live) або відмова (readonly).
  */
 export function ServerRuntimeProvider({ mode, send, children }: { mode: 'live' | 'readonly'; send?: (event: UiEvent) => Promise<void>; children: ReactNode }) {
   const { toasts, toast } = useToastQueue();

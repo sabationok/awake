@@ -19,8 +19,8 @@ export interface ModuleContext {
    */
   settingNode(key: string, ofModule?: string): UiNode;
   /**
-   * Вузол графіка статистики за період: точки всього вікна зараз, а в дереві Mac далі — live-тіки поточного бакета
-   * (LiveChartsService). id вузла має бути унікальним у всьому дереві.
+   * Вузол графіка статистики за період: точки всього вікна зараз, а на сторінці, відкритій у Mac, далі — live-тіки
+   * поточного бакета (LiveChartsService). id вузла має бути унікальним на сторінці.
    */
   liveChart(spec: LiveChartSpec): UiChart;
   /**
@@ -49,7 +49,7 @@ export interface MacModule {
   icon: { symbol: string; tone: import('@awake/contracts').UiTone };
   /** Модуль-провайдер, під яким сторінки цього модуля стоять у меню (`UiModuleInfo.parent`). */
   parent?: string;
-  /** Одне-два речення для користувача: що робить модуль. Поки що лише в маніфесті, у дерево не йде. */
+  /** Одне-два речення для користувача: що робить модуль. Поки що лише в маніфесті, в UI не йде. */
   description?: string;
   /** Системні дозволи Mac, які модуль просить. Mac показує їх окремо по модулях і дає лише дозволені. */
   permissions: MacPermission[];
@@ -62,7 +62,7 @@ export interface MacModule {
   notifications?: TelegramNotificationSource;
   /** Декларація статистики для UI: сторінка, графіки, ключі namespace-ів, фільтри. Запис — у сервісах модуля. */
   stats?: UiModuleStats;
-  /** Вкладки модуля в бічному меню. Будуються з поточного стану щоразу. */
+  /** Сторінки модуля (вкладені вузли): з них сервер бере індекс роутів і одну сторінку таблицею. Будуються з поточного стану щоразу. */
   pages(ctx: ModuleContext): UiPage[] | Promise<UiPage[]>;
   /** Модуль вимкнений (жорстко в агенті чи у своїй вкладці): причина для сірого пункту меню; null — працює. Сторінок тоді немає. */
   disabled?(ctx: ModuleContext): string | null;

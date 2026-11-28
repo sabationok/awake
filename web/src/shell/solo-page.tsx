@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { Panel, Row, Section } from '@/ui/primitives';
 
 /**
- * Сторінка без дерева (вхід, сполучення, «сервер недоступний»): назва аппки і вузька колонка по центру,
+ * Сторінка без інтерфейсу сервера (вхід, сполучення, «сервер недоступний»): назва аппки і вузька колонка по центру,
  * у тих самих токенах і підкладці, що й Shell.
  */
 export function SoloPage({ children }: { children?: ReactNode }) {
@@ -21,7 +21,7 @@ export function SoloPage({ children }: { children?: ReactNode }) {
   );
 }
 
-/** Стан замість дерева: один рядок із назвою стану і пояснення під ним; праворуч — дія, якщо є. */
+/** Стан замість інтерфейсу сервера: один рядок із назвою стану і пояснення під ним; праворуч — дія, якщо є. */
 export function StatusPage({ label, footer, value, action }: { label: string; footer?: string; value?: string; action?: ReactNode }) {
   return (
     <SoloPage>

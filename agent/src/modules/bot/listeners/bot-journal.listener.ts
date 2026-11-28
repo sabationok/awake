@@ -3,7 +3,7 @@ import type { Subscription } from 'rxjs';
 import { BotJournalService } from '../../../bot-journal';
 import { ModulesService } from '../../modules.service';
 
-/** Нове повідомлення бота або зміна його стану перебудовує дерево: сторінки модуля Bot живі. */
+/** Нове повідомлення бота або зміна його стану перебудовує сторінки: сторінки модуля Bot живі. */
 @Injectable()
 export class BotJournalListener implements OnModuleInit, OnModuleDestroy {
   private _subscription: Subscription | null = null;

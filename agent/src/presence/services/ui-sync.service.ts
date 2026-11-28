@@ -1,29 +1,30 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { UI_ALIVE_KEY, UI_TREE_KEY } from '@awake/contracts';
-import type { UiAlive, UiTree } from '@awake/contracts';
-import { MacBridgeService } from '../../mac-bridge/services/mac-bridge.service';
+import { UI_ALIVE_KEY, UI_SHELL_KEY, uiPageKey } from '@awake/contracts';
+import type { UiAlive } from '@awake/contracts';
 import { ModulesService } from '../../modules/modules.service';
 import { WEB_UI_MODULE } from '../../web-ui/constants/web-ui';
 import { HEARTBEAT_OFF } from '../../web-ui/constants/web-ui-settings';
-import { PresenceService } from './presence.service';
 import { UpstashClient } from './upstash.client';
 
-/** Як часто локально звіряти дерево з опублікованим. У Upstash іде лише зміна. */
+/** Як часто локально звіряти індекс і сторінки з опублікованими. У Upstash іде лише зміна. */
 const CHECK_MS = 5_000;
-/** Дерево без пульсу не протухає: Vercel показує останнє, а онлайн чи ні — каже пульс. Тиждень — щоб не лишалось сміття. */
-const TREE_TTL_SECONDS = 7 * 24 * 3600;
+/** Індекс і сторінки без пульсу не протухають: Vercel показує останнє, а онлайн чи ні — каже пульс. Тиждень — щоб не лишалось сміття. */
+const LAYOUT_TTL_SECONDS = 7 * 24 * 3600;
 /** Ключ пульсу живе 2,5 інтервалу: один пропущений пульс ще не офлайн. */
 const ALIVE_TTL_FACTOR = 2.5;
 
 /**
- * Upstash для Web UI на Vercel: дерево UI (scope all) з локальною адресою і окремо пульс агента.
- * Дерево пишеться лише тоді, коли змінилось (і на старті); пульс — з інтервалом із налаштування Web UI «Пульс для Vercel».
+ * Upstash для Web UI на Vercel (scope all): індекс роутів `UI_SHELL_KEY`, кожна сторінка під своїм ключем
+ * `uiPageKey(id)` і окремо пульс агента. Пишеться лише те, чий `rev` змінився (і все на старті); сторінка, якої
+ * більше немає, стирається. Пульс — з інтервалом із налаштування Web UI «Пульс для Vercel».
  * Дій з Vercel немає: керування йде у Web UI самого агента.
  */
 @Injectable()
 export class UiSyncService implements OnModuleInit, OnModuleDestroy {
   private readonly _logger = new Logger(UiSyncService.name);
-  private _lastTree = '';
+  private _shellRev = '';
+  /** Сторінка → `rev`, уже записаний в Upstash. */
+  private readonly _pageRevs = new Map<string, string>();
   private _lastBeatAt = 0;
   /** Інтервал, з яким писали пульс востаннє: зміна налаштування пише пульс одразу. undefined — ще не писали. */
   private _lastEvery: number | null | undefined = undefined;
@@ -33,8 +34,6 @@ export class UiSyncService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly _upstash: UpstashClient,
     private readonly _modules: ModulesService,
-    private readonly _bridge: MacBridgeService,
-    private readonly _presence: PresenceService,
   ) {}
 
   onModuleInit() {
@@ -52,20 +51,31 @@ export class UiSyncService implements OnModuleInit, OnModuleDestroy {
 
   async sync() {
     if (!this._upstash.isConfigured) return;
-    await this._publishTree();
+    await this._publishLayout();
     await this._beat();
   }
 
-  private async _publishTree() {
-    const tree = await this._modules.buildTree('all');
-    const state = this._bridge.state;
-    const withLocal: UiTree = { ...tree, app: { ...tree.app, local: state ? this._presence.localAccess(state) : null } };
-    // updatedAt міняється на кожному збиранні: без нього відбиток рівний, коли зміст той самий.
-    const fingerprint = JSON.stringify({ ...withLocal, app: { ...withLocal.app, updatedAt: '' } });
-    if (fingerprint === this._lastTree) return;
+  private async _publishLayout() {
+    const { shell, pages } = await this._modules.buildAll('all');
+    const ids = new Set(pages.map((page) => page.id));
+    for (const page of pages) {
+      if (this._pageRevs.get(page.id) === page.rev) continue;
+      await this._run(async () => {
+        await this._upstash.command(['SET', uiPageKey(page.id), JSON.stringify(page), 'EX', LAYOUT_TTL_SECONDS]);
+        this._pageRevs.set(page.id, page.rev);
+      });
+    }
+    for (const id of [...this._pageRevs.keys()].filter((known) => !ids.has(known))) {
+      await this._run(async () => {
+        await this._upstash.command(['DEL', uiPageKey(id)]);
+        this._pageRevs.delete(id);
+      });
+    }
+    // Індекс — після сторінок: Vercel не побачить у меню сторінку, якої ще немає в Upstash.
+    if (shell.rev === this._shellRev) return;
     await this._run(async () => {
-      await this._upstash.command(['SET', UI_TREE_KEY, JSON.stringify(withLocal), 'EX', TREE_TTL_SECONDS]);
-      this._lastTree = fingerprint;
+      await this._upstash.command(['SET', UI_SHELL_KEY, JSON.stringify(shell), 'EX', LAYOUT_TTL_SECONDS]);
+      this._shellRev = shell.rev;
     });
   }
 

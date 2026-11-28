@@ -11,7 +11,7 @@ import { AGENT_CONFIG, AgentConfig } from '../../config/agent-config';
 const REPLAYED: ReadonlySet<AgentToMacMessage['type']> = new Set([
   'ready',
   'state',
-  'tree',
+  'shell',
   'settings',
   'devices',
   'secrets',

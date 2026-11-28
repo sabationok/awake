@@ -17,7 +17,7 @@ export interface UiStatsNamespace {
   statuses: UiStatsKey[];
 }
 
-/** Графік сторінки статистики. `id` унікальний у всьому дереві (починається з id сторінки). */
+/** Графік сторінки статистики. `id` унікальний на сторінці (починається з id сторінки). */
 export interface UiStatsChart {
   id: string;
   title: string;

@@ -470,7 +470,7 @@ func formatBucket(_ date: Date, _ unit: UiChart.Unit) -> String {
 }
 
 /// `ChartNode` → `Chart` (`.u-chart`): head with the hovered bucket, bars, axis, legend.
-/// Equatable: a tree pushed again with the same points skips the chart's body (`.equatable()` at the call site).
+/// Equatable: a page pushed again with the same points skips the chart's body (`.equatable()` at the call site).
 struct ChartNode: View, Equatable {
     let node: UiChart
 

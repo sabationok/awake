@@ -1,64 +1,57 @@
 'use client';
-import type { UiTree } from '@awake/contracts';
-import { useEffect, useMemo, useState } from 'react';
+import type { UiPageLayout } from '@awake/contracts';
+import { useMemo, useState } from 'react';
+import type { Tagged } from '@/live/pairing/agent-api';
+import type { UiSource } from '@/live/sources';
+import { useUiLayout } from '@/live/use-ui-layout';
 import { ServerRuntimeProvider } from '@/sdui/runtime';
-import { toReadOnlyNodes } from '@/sdui/to-read-only-nodes';
+import { toReadOnlyLayout } from '@/sdui/page-layout';
 import { Banner, Shell } from '@/shell/app-shell';
-import type { TreeOrigin, TreeResponse } from './tree-response';
+import type { ShellResponse } from './layout-response';
 
 const POLL_MS = 5000;
 
-const ORIGIN_LABEL: Record<TreeOrigin, string> = { upstash: 'Upstash', 'web-swift': 'Web Swift' };
-
 /**
- * Дерево з `/api/tree` раз на 5 с. Джерело (Upstash → Web Swift) вибирає сервер; браузер нічого не підміняє.
- * Якщо сервер не відповів, лишається останнє отримане дерево, а `offline` каже про це банеру.
+ * Джерело Vercel: індекс з `/api/ui/shell` (разом зі stage, причиною й пульсом агента — їх віддаємо в `onMeta`) і
+ * сторінки з `/api/ui/pages/<id>` з ETag. Браузер нічого не підміняє.
  */
-function useTree(): { data: TreeResponse | null; offline: boolean } {
-  const [state, setState] = useState<{ data: TreeResponse | null; offline: boolean }>({ data: null, offline: false });
-  useEffect(() => {
-    let alive = true;
-    const load = async () => {
-      try {
-        const res = await fetch('/api/tree', { cache: 'no-store' });
-        if (!res.ok) throw new Error(String(res.status));
-        const data = (await res.json()) as TreeResponse;
-        if (alive) setState((prev) => ({ data: data.tree || !prev.data ? data : { ...prev.data, misses: data.misses }, offline: false }));
-      } catch {
-        if (alive) setState((prev) => ({ ...prev, offline: true }));
-      }
-    };
-    void load();
-    const timer = setInterval(load, POLL_MS);
-    return () => {
-      alive = false;
-      clearInterval(timer);
-    };
-  }, []);
-  return state;
+function vercelSource(onMeta: (meta: ShellResponse) => void): UiSource {
+  return {
+    async shell() {
+      const res = await fetch('/api/ui/shell', { cache: 'no-store' });
+      if (!res.ok) throw new Error(String(res.status));
+      const meta = (await res.json()) as ShellResponse;
+      onMeta(meta);
+      return { tag: null, data: meta.shell };
+    },
+    async page(pageId, tag): Promise<Tagged<UiPageLayout> | null | undefined> {
+      const res = await fetch(`/api/ui/pages/${encodeURIComponent(pageId)}`, { headers: tag ? { 'If-None-Match': tag } : {} });
+      if (res.status === 304) return null;
+      if (res.status === 404) return undefined;
+      if (!res.ok) throw new Error(String(res.status));
+      return { tag: res.headers.get('ETag'), data: toReadOnlyLayout((await res.json()) as UiPageLayout) };
+    },
+  };
 }
 
-/** Web UI на Vercel: лише перегляд дерева з Upstash / Web Swift. Керування — лише у Web UI на Mac. */
+/** Web UI на Vercel: лише перегляд індексу й сторінок з Upstash. Керування — лише у Web UI на Mac. */
 export function DemoApp() {
-  const { data, offline } = useTree();
-  const tree = data?.tree ?? null;
-  const readOnlyTree = useMemo<UiTree | null>(
-    () => (tree ? { ...tree, pages: tree.pages.map((page) => ({ ...page, children: toReadOnlyNodes(page.children) })) } : null),
-    [tree],
-  );
-  if (!data) return <div className="s-loading">{offline ? 'Сервер Web UI недоступний' : 'MaControl…'}</div>;
-  if (!readOnlyTree || !data.origin) {
-    const reasons = data.misses.map((m) => `${ORIGIN_LABEL[m.origin]}: ${m.reason}`).join(' · ');
-    return <div className="s-loading">{`Дерева немає${reasons ? ` — ${reasons}` : ''}`}</div>;
-  }
+  const [meta, setMeta] = useState<ShellResponse | null>(null);
+  const source = useMemo(() => vercelSource(setMeta), []);
+  const { shell, pages, error, loaded } = useUiLayout(source, POLL_MS);
+  const offline = Boolean(error);
+
+  if (!loaded || (!meta && !shell)) return <div className="s-loading">{offline ? 'Сервер Web UI недоступний' : 'MaControl…'}</div>;
+  if (!shell) return <div className="s-loading">{`Інтерфейсу немає${meta?.reason ? ` — Upstash: ${meta.reason}` : ''}`}</div>;
   return (
     <ServerRuntimeProvider mode="readonly">
       <Shell
-        tree={readOnlyTree}
-        banner={<SourceBanner data={data} offline={offline} />}
+        shell={shell}
+        pages={pages}
+        banner={<SourceBanner meta={meta} offline={offline} />}
         sideNote={
           <>
-            {`Живі дані · ${ORIGIN_LABEL[data.origin]}`}
+            Живі дані · Upstash
             <br />
             Дії не надсилаються на сервер
           </>
@@ -73,11 +66,11 @@ export function DemoApp() {
   );
 }
 
-/** Банер, коли дерево не свіже: сервер Web UI перестав відповідати або агент не шле пульс. */
-function SourceBanner({ data, offline }: { data: TreeResponse; offline: boolean }) {
-  if (offline) return <Banner title="Сервер Web UI не відповідає — показую останнє отримане дерево" details={[]} />;
-  if (data.agent?.status === 'offline') {
-    return <Banner title="Mac офлайн — показую останнє опубліковане дерево" details={['Пульс агента не приходить: сервер зупинено або Mac без мережі.']} />;
+/** Банер, коли дані не свіжі: сервер Web UI перестав відповідати або агент не шле пульс. */
+function SourceBanner({ meta, offline }: { meta: ShellResponse | null; offline: boolean }) {
+  if (offline) return <Banner title="Сервер Web UI не відповідає — показую останнє отримане" details={[]} />;
+  if (meta?.agent?.status === 'offline') {
+    return <Banner title="Mac офлайн — показую останнє опубліковане" details={['Пульс агента не приходить: сервер зупинено або Mac без мережі.']} />;
   }
   return null;
 }

@@ -8,7 +8,7 @@ import { ModulesService } from '../../../modules/modules.service';
 import { isRemoteChange } from '../../../modules/bot/constants/remote-access';
 import { RelayHostService } from './relay-host.service';
 
-/** Перемикач relay або вибір «Віддалений доступ» → host підключається або відпускає кімнату; нові секрети чи вебхук relay → перечитати й перепідключитись; новий стан Mac чи налаштування → дерево viewer-ам; відкликали пристрій → вигнати його сесії. */
+/** Перемикач relay або вибір «Віддалений доступ» → host підключається або відпускає кімнату; нові секрети чи вебхук relay → перечитати й перепідключитись; новий стан Mac чи налаштування → `rev` індексу й сторінок viewer-ам; відкликали пристрій → вигнати його сесії. */
 @Injectable()
 export class RelayHostListener implements OnModuleInit, OnModuleDestroy {
   private readonly _subscriptions: Subscription[] = [];
@@ -37,7 +37,7 @@ export class RelayHostListener implements OnModuleInit, OnModuleDestroy {
         .pipe(filter((change) => change.module === 'relay' && change.key.startsWith('limits.')))
         .subscribe(() => void this._relay.applyLimits()),
       merge(this._secrets.changed$, this._webhooks.changed$).subscribe(() => this._relay.reloadEnv()),
-      merge(this._bridge.state$, this._modules.settingChanged$).subscribe(() => void this._relay.broadcastTree()),
+      merge(this._bridge.state$, this._modules.settingChanged$).subscribe(() => void this._relay.broadcastRevs()),
       // Список пристроїв змінився (зокрема відкликання): живі сесії відкликаних — геть.
       this._pairing.changed$.subscribe(() => void this._relay.kickRevokedDevices().catch(() => undefined)),
     );

@@ -8,7 +8,9 @@ import type {
   ChartTick,
   SettingValue,
   UiEvent,
-  UiTree,
+  UiLayoutRequest,
+  UiPageLayout,
+  UiShell,
   CommandRequest,
   PermissionsSnapshot,
   HelperAction,
@@ -51,6 +53,7 @@ export interface ServerCommand {
  */
 const CLIENT_TYPES: ReadonlySet<MacToAgentMessage['type']> = new Set([
   'event',
+  'layout.get',
   'log',
   'devices',
   'relayEnv',
@@ -86,6 +89,8 @@ export class MacBridgeService implements OnModuleInit {
   readonly logs$ = new Subject<LogMessage>();
   /** Натискання в SwiftUI-рендерері Mac-аппки. */
   readonly events$ = new Subject<UiEvent>();
+  /** Аппка відкрила сторінку (`layout.get`). */
+  readonly layoutRequests$ = new Subject<UiLayoutRequest>();
   /** Запити сторінки «Пристрої» Mac-аппки. */
   readonly devices$ = new Subject<DevicesRequest>();
   /** Модалка вебхука: зберегти, увімкнути, вимкнути, прибрати. */
@@ -160,8 +165,20 @@ export class MacBridgeService implements OnModuleInit {
     return id;
   }
 
-  sendTree(tree: UiTree) {
-    this._send({ type: 'tree', data: tree });
+  sendShell(shell: UiShell) {
+    this._send({ type: 'shell', data: shell });
+  }
+
+  sendPage(page: UiPageLayout) {
+    this._send({ type: 'layout.page', data: page });
+  }
+
+  sendPageNotModified(pageId: string, rev: string) {
+    this._send({ type: 'layout.notModified', data: { pageId, rev } });
+  }
+
+  sendPageNotFound(pageId: string) {
+    this._send({ type: 'layout.notFound', data: { pageId } });
   }
 
   sendSettings(settings: Record<string, SettingValue>) {
@@ -275,6 +292,9 @@ export class MacBridgeService implements OnModuleInit {
         return;
       case 'event':
         this.events$.next(message.data);
+        return;
+      case 'layout.get':
+        this.layoutRequests$.next(message.data);
         return;
       case 'devices':
         this.devices$.next(message.data);

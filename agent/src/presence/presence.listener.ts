@@ -3,7 +3,7 @@ import { Subscription } from 'rxjs';
 import { MacBridgeService } from '../mac-bridge/services/mac-bridge.service';
 import { UiSyncService } from './services/ui-sync.service';
 
-/** Новий стан від Mac → дерево в Upstash одразу, а не на наступному такті. */
+/** Новий стан від Mac → індекс і сторінки в Upstash одразу, а не на наступному такті. */
 @Injectable()
 export class PresenceListener implements OnModuleInit, OnModuleDestroy {
   private _subscription?: Subscription;

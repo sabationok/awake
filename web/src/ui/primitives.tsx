@@ -4,7 +4,7 @@ import { ChevronDown, Info, LoaderCircle, MoreHorizontal, type LucideIcon } from
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type InputHTMLAttributes, type ReactNode } from 'react';
 import { resolveSymbolIcon } from '@/lib/icons';
 
-/** Колір тону дерева в токенах теми. accent — помаранчевий акцент, orange — червоніший, щоб їх розрізняти. */
+/** Колір тону з сервера в токенах теми. accent — помаранчевий акцент, orange — червоніший, щоб їх розрізняти. */
 export function toneVar(tone: UiTone | undefined): string {
   switch (tone) {
     case 'accent': return 'var(--accent)';

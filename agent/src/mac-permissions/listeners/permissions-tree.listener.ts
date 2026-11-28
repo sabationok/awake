@@ -3,7 +3,7 @@ import type { Subscription } from 'rxjs';
 import { ModulesService } from '../../modules/modules.service';
 import { MacPermissionsService } from '../mac-permissions.service';
 
-/** Дозволи змінились → дерево перебудовується, і сторінку «Дозволи» отримують усі клієнти. */
+/** Дозволи змінились → сторінки перебудовуються, і сторінку «Дозволи» отримують усі клієнти. */
 @Injectable()
 export class PermissionsTreeListener implements OnModuleInit, OnModuleDestroy {
   private _subscription: Subscription | null = null;

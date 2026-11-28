@@ -13,7 +13,7 @@ const MAX_SSID_BYTES = 32;
  */
 @Injectable()
 export class TrustedNetworksService {
-  /** Список змінився: перебудувати дерево, посилання сполучення, знімок для аппки. */
+  /** Список змінився: перебудувати сторінки, посилання сполучення, знімок для аппки. */
   readonly changed$ = new Subject<void>();
   private _ssids: ReadonlySet<string>;
 

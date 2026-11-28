@@ -1,7 +1,7 @@
 import AppKit
 
-/// `--perf <page>`: an offscreen timing run against the running server (R1: it only reads the socket, it never
-/// sends). It switches the page's period tabs locally and replays the last tree the server pushed (the echo after a
+/// `--perf <page>`: an offscreen timing run against the running server (R1: it only reads the socket; the one line it
+/// sends is `layout.get` for the page). It switches the page's period tabs locally and replays the last page the server pushed (the echo after a
 /// `.setting`), timing the decode, the SwiftUI update + layout, and the draw of each step. Prints one line per step
 /// and a summary, then exits. Nothing reaches the owner's screen: the window is never ordered in.
 @MainActor
@@ -27,8 +27,8 @@ enum PerfProbe {
 
     static func run(server: ServerConnection, window: NSWindow, rounds: Int = 3) async {
         guard let view = window.contentView?.superview ?? window.contentView else { exit(3) }
-        for _ in 0..<60 where server.lastTreeLine == nil { try? await Task.sleep(nanoseconds: 100_000_000) }
-        guard server.lastTreeLine != nil else { print("perf: no tree from the server"); exit(3) }
+        for _ in 0..<60 where server.lastPageLine == nil { try? await Task.sleep(nanoseconds: 100_000_000) }
+        guard server.lastPageLine != nil else { print("perf: no page from the server"); exit(3) }
         try? await Task.sleep(nanoseconds: 500_000_000)
         _ = settle(view)
         _ = settle(view)
@@ -69,9 +69,9 @@ enum PerfProbe {
             }
         }
         func median(_ a: [Double]) -> Double { let s = a.sorted(); return s[s.count / 2] }
-        print(String(format: "SUMMARY switch update median %.1f | switch median %.1f max %.1f | charts update median %.1f | echo median %.1f max %.1f | tree %d bytes",
+        print(String(format: "SUMMARY switch update median %.1f | switch median %.1f max %.1f | charts update median %.1f | echo median %.1f max %.1f | page %d bytes",
                      median(updates), median(switches), switches.max() ?? 0, median(builds), median(echoes), echoes.max() ?? 0,
-                     server.lastTreeLine?.count ?? 0))
+                     server.lastPageLine?.count ?? 0))
         exit(0)
     }
 }

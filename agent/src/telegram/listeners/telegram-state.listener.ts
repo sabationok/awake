@@ -3,7 +3,7 @@ import { skip, type Subscription } from 'rxjs';
 import { ModulesService } from '../../modules/modules.service';
 import { TelegramStateService } from '../state/telegram-state.service';
 
-/** Старт чи зупинка polling-у перебудовує дерево: стан на сторінці Telegram живий. */
+/** Старт чи зупинка polling-у перебудовує сторінки: стан на сторінці Telegram живий. */
 @Injectable()
 export class TelegramStateListener implements OnModuleInit, OnModuleDestroy {
   private _subscription: Subscription | null = null;

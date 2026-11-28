@@ -1,20 +1,30 @@
-import type { UiEvent, UiTree } from '@awake/contracts';
-import { callAgent } from './pairing/agent-api';
+import type { UiEvent, UiPageLayout, UiShell } from '@awake/contracts';
+import { callAgent, callAgentTagged, type AgentError, type Tagged } from './pairing/agent-api';
 
-/** Звідки локальний Web UI бере дерево і куди шле події: API агента на тому ж origin. */
+/**
+ * Звідки Web UI бере індекс роутів і сторінки і куди шле події. `tag` — ETag попередньої відповіді: `null` у
+ * відповідь — версія та сама (`304`). Сторінки `undefined` — її немає (`404`).
+ */
 export interface UiSource {
-  load(): Promise<UiTree | null>;
-  send(event: UiEvent): Promise<void>;
+  shell(tag: string | null): Promise<Tagged<UiShell | null> | null>;
+  page(pageId: string, tag: string | null): Promise<Tagged<UiPageLayout> | null | undefined>;
+  send?(event: UiEvent): Promise<void>;
 }
 
 /**
- * Web UI на Mac: `GET /api/ui?scope=local` і `POST /api/ui/events`, як у web. LAN — з токеном пристрою (Bearer),
- * Tailscale — null: браузер сам шле HttpOnly-кукі `mc_*`.
+ * Web UI на Mac: `GET /api/ui/shell`, `GET /api/ui/pages/:pageId` і `POST /api/ui/events`. LAN — з токеном
+ * пристрою (Bearer), Tailscale — null: браузер сам шле HttpOnly-кукі `mc_*`.
  */
 export function localSource(token: string | null): UiSource {
   return {
-    async load() {
-      return (await callAgent<UiTree | null>('/api/ui?scope=local', token)) ?? null;
+    shell: (tag) => callAgentTagged<UiShell>('/api/ui/shell', token, tag),
+    async page(pageId, tag) {
+      try {
+        return await callAgentTagged<UiPageLayout>(`/api/ui/pages/${encodeURIComponent(pageId)}`, token, tag);
+      } catch (error) {
+        if ((error as AgentError).status === 404) return undefined;
+        throw error;
+      }
     },
     async send(event) {
       await callAgent<unknown>('/api/ui/events', token, { method: 'POST', body: JSON.stringify(event) });

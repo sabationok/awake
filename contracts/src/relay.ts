@@ -1,15 +1,20 @@
 // Relay через webhooxy (docs/relay-contract.md): типи поля `data`, якими обмінюються агент (host) і Web UI (viewer).
 // Конверт і події socket.io задає webhooxy; тут лише формат MaControl.
-import type { UiEvent, UiTree } from './ui';
+import type { UiEvent, UiPageLayout, UiShell } from './ui';
 
-/** viewer → host (`relay:send`). */
-export type RelayViewerMessage = { type: 'ping' } | { type: 'tree' } | { type: 'event'; event: UiEvent };
+/** viewer → host (`relay:send`): індекс роутів, одна сторінка або подія. */
+export type RelayViewerMessage = { type: 'ping' } | { type: 'shell' } | { type: 'page'; pageId: string } | { type: 'event'; event: UiEvent };
 
 /** host → viewer: відповідь в ack на `relay:send`. */
-export type RelayHostReply = { type: 'pong' } | { type: 'tree'; tree: UiTree } | { type: 'accepted' } | { type: 'error'; message: string };
+export type RelayHostReply =
+  | { type: 'pong' }
+  | { type: 'shell'; shell: UiShell }
+  | { type: 'page'; page: UiPageLayout }
+  | { type: 'accepted' }
+  | { type: 'error'; message: string };
 
-/** host → viewers (`relay:broadcast`): нове дерево після зміни стану. */
-export type RelayHostBroadcast = { type: 'tree'; tree: UiTree };
+/** host → viewers (`relay:broadcast`): `rev` індексу і кожної сторінки після зміни; viewer перечитує, що тримає. */
+export type RelayHostBroadcast = { type: 'revs'; shell: string; pages: Record<string, string> };
 
 /** Audience квитка viewer-а: його перевіряє агент у `relay:authorize`. */
 export const RELAY_TICKET_AUDIENCE = 'macontrol-agent';

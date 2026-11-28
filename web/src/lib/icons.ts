@@ -76,7 +76,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-/** SF Symbol з дерева → іконка lucide. Невідома назва малює крапку-заглушку. */
+/** SF Symbol від сервера → іконка lucide. Невідома назва малює крапку-заглушку. */
 const SYMBOL_ICON: Record<string, LucideIcon | undefined> = {
   'cup.and.saucer.fill': Coffee,
   'waveform.path.ecg': Activity,

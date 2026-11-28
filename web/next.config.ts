@@ -3,8 +3,8 @@ import { join } from 'node:path';
 
 /**
  * Дві збірки з одного коду, як у web.
- * - vercel (за замовчуванням): Next-сервер, дерево читає route handler з Upstash, клієнт лише показує його. Файли *.vercel.tsx / *.vercel.ts.
- * - local: статичний експорт, який роздає агент на Mac; дерево й події йдуть у його API на тому ж origin. Файли *.local.tsx.
+ * - vercel (за замовчуванням): Next-сервер, індекс і сторінки читають route handlers з Upstash, клієнт лише показує його. Файли *.vercel.tsx / *.vercel.ts.
+ * - local: статичний експорт, який роздає агент на Mac; індекс, сторінки й події йдуть у його API на тому ж origin. Файли *.local.tsx.
  * Спільні файли без суфікса потрапляють в обидві.
  */
 const local = process.env.BUILD_TARGET === 'local';

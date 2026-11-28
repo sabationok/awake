@@ -6,7 +6,7 @@ import { SoloPage, StatusPage } from '@/shell/solo-page';
 import { Button } from '@/ui/primitives';
 import { useDevicePairing, type PairingStatus } from './pairing/use-device-pairing';
 import { localSource, type UiSource } from './sources';
-import { useUiTree } from './use-ui-tree';
+import { useUiLayout } from './use-ui-layout';
 import { SessionGate } from './web-auth/session-gate';
 import { isTailnetHost } from './web-auth/web-auth-api';
 
@@ -22,13 +22,16 @@ const PAIRING_TEXT: Record<Exclude<PairingStatus, 'checking' | 'paired'>, { labe
 
 const TAILNET_SOURCE = localSource(null);
 
+/** Як часто локальний Web UI звіряє індекс і сторінку на екрані з агентом (запит з ETag, незмінне — 304). */
+const POLL_MS = 2000;
+
 /**
  * Локальний Web UI (агент на Mac віддає цю статичну збірку). Tailscale (`*.ts.net`): кукі й пароль через агента.
- * LAN: сполучення з Mac, далі дерево з його API з токеном пристрою. Показуємо лише те, що дав сервер.
+ * LAN: сполучення з Mac, далі індекс роутів і сторінки з його API з токеном пристрою. Показуємо лише те, що дав сервер.
  */
 export function LocalApp() {
   const [tailnet] = useState(isTailnetHost);
-  if (tailnet) return <SessionGate>{(logout) => <LocalTree source={TAILNET_SOURCE} onLeave={logout} leaveLabel="Вийти" />}</SessionGate>;
+  if (tailnet) return <SessionGate>{(logout) => <LocalUi source={TAILNET_SOURCE} onLeave={logout} leaveLabel="Вийти" />}</SessionGate>;
   return <LanApp />;
 }
 
@@ -37,11 +40,11 @@ function LanApp() {
   const source = useMemo(() => (token ? localSource(token) : null), [token]);
   if (status === 'checking') return <SoloPage />;
   if (!source) return <StatusPage {...PAIRING_TEXT[status === 'paired' ? 'unpaired' : status]} />;
-  return <LocalTree source={source} onLeave={forget} leaveLabel="Забути пристрій" />;
+  return <LocalUi source={source} onLeave={forget} leaveLabel="Забути пристрій" />;
 }
 
-function LocalTree({ source, onLeave, leaveLabel }: { source: UiSource; onLeave: () => void; leaveLabel: string }) {
-  const { tree, error, unauthorized, loaded, send } = useUiTree(source);
+function LocalUi({ source, onLeave, leaveLabel }: { source: UiSource; onLeave: () => void; leaveLabel: string }) {
+  const { shell, pages, error, unauthorized, loaded, send } = useUiLayout(source, POLL_MS);
   const leave = (
     <Button size="sm" variant="ghost" onClick={onLeave}>
       {leaveLabel}
@@ -52,9 +55,9 @@ function LocalTree({ source, onLeave, leaveLabel }: { source: UiSource; onLeave:
   if (!loaded) body = <div className="s-loading">MaControl…</div>;
   // 401: агент працює, але цей пристрій більше не впізнає (відкликали на Mac або токен застарів).
   else if (unauthorized) body = <StatusPage label="Пристрій не впізнано" footer={`Mac більше не впізнає цей пристрій. Натисни «${leaveLabel}» і сполучи його знову через QR у MaControl на Mac → «Пристрої».`} action={leave} />;
-  else if (!tree && error) body = <StatusPage label="Сервер недоступний" value={error} footer="Агент MaControl на Mac не відповідає. Сторінка спробує знову сама." action={leave} />;
-  else if (!tree || tree.pages.length === 0) body = <StatusPage label="Mac офлайн або ще не надіслав інтерфейс" footer="Щойно агент на Mac надішле інтерфейс, він з’явиться тут." action={leave} />;
-  else body = <Shell tree={tree} trailing={leave} banner={error ? <Banner title="Сервер недоступний" details={[error, 'Показано останній отриманий стан.']} /> : undefined} />;
+  else if (!shell && error) body = <StatusPage label="Сервер недоступний" value={error} footer="Агент MaControl на Mac не відповідає. Сторінка спробує знову сама." action={leave} />;
+  else if (!shell || shell.pages.length === 0) body = <StatusPage label="Mac офлайн або ще не надіслав інтерфейс" footer="Щойно агент на Mac надішле інтерфейс, він з’явиться тут." action={leave} />;
+  else body = <Shell shell={shell} pages={pages} trailing={leave} banner={error ? <Banner title="Сервер недоступний" details={[error, 'Показано останній отриманий стан.']} /> : undefined} />;
 
   return (
     <ServerRuntimeProvider mode="live" send={send}>

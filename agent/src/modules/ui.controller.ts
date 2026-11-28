@@ -1,14 +1,17 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Post, Query, Req } from '@nestjs/common';
-import type { Request } from 'express';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { requestPath } from '../auth/helpers/request-path';
 import { TAILSCALE_PROXY_ID } from '../tailscale';
-import type { UiTree } from '@awake/contracts';
 import { AppResponse } from '../common/app-response';
 import { AGENT_CONFIG, type AgentConfig } from '../config/agent-config';
 import { TransportsService } from '../transports';
 import { API_ERROR_CODES, AppException } from '../common/app-exception';
 import { isUiEvent } from './helpers/is-ui-event';
+import { sendCached } from './helpers/send-cached';
 import { ModulesService } from './modules.service';
+
+/** Web UI агента (LAN, Tailscale) бачить scope local; mac — лише Mac-аппка через server.sock. */
+const UI_SCOPE = 'local';
 
 @Controller('api/ui')
 export class UiController {
@@ -26,12 +29,19 @@ export class UiController {
     });
   }
 
-  @Get()
-  async getTree(@Query('scope') scope?: string): Promise<AppResponse<UiTree>> {
-    if (scope !== undefined && scope !== 'local' && scope !== 'all') {
-      throw new AppException(API_ERROR_CODES.invalidCommand, 'scope must be local or all');
-    }
-    return AppResponse.ok(await this._modules.buildTree(scope === 'all' ? 'all' : 'local'));
+  /** Індекс роутів Web UI (scope local). ETag `"local:<rev>"`: той самий — `304` без тіла. */
+  @Get('shell')
+  async getShell(@Req() req: Request, @Res() res: Response) {
+    const shell = await this._modules.buildShell(UI_SCOPE);
+    sendCached(req, res, `${UI_SCOPE}:${shell.rev}`, AppResponse.ok(shell));
+  }
+
+  /** Одна сторінка таблицею вузлів (scope local), з тим самим ETag / `304`. */
+  @Get('pages/:pageId')
+  async getPage(@Param('pageId') pageId: string, @Req() req: Request, @Res() res: Response) {
+    const page = await this._modules.buildPage(pageId, UI_SCOPE);
+    if (!page) throw new AppException(API_ERROR_CODES.pageNotFound, `Unknown page ${pageId}`, HttpStatus.NOT_FOUND);
+    sendCached(req, res, `${UI_SCOPE}:${page.rev}`, AppResponse.ok(page));
   }
 
   @Post('events')

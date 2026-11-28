@@ -25,16 +25,16 @@ export function buildNetworksPage(snapshot: WebUiSnapshot): UiPage {
       ],
     });
   }
-  trustedNetworks.forEach((ssid, index) => {
+  trustedNetworks.forEach((ssid) => {
     networks.push({
-      id: `webui-network-${index}`,
+      id: `webui-network-${ssid}`,
       type: 'item',
       title: ssid,
       icon: { symbol: 'checkmark.shield.fill', tone: 'green' },
       status: { label: 'Довірена', tone: 'green' },
       ...(ssid === currentSsid ? { comment: 'Зараз тут' } : {}),
       actions: [
-        menuItem(`webui-network-remove-${index}`, 'Прибрати', webUiAction('removeNetwork', { ssid }), {
+        menuItem(`webui-network-remove-${ssid}`, 'Прибрати', webUiAction('removeNetwork', { ssid }), {
           variant: 'danger',
           scope: 'mac',
           hint: MAC_ONLY_HINT,

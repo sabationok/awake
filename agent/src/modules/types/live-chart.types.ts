@@ -2,7 +2,7 @@ import type { UiChart, UiChartPoint } from '@awake/contracts';
 import type { StatsChartPeriod, StatsPeriodWindow } from '../../stats';
 
 /**
- * Графік сторінки, що живе в дереві Mac: опис вузла, період і функція точок для довільного вікна. Сторінка будує
+ * Графік сторінки, відкритої в Mac: опис вузла, період і функція точок для довільного вікна. Сторінка будує
  * через неї все вікно періоду, LiveChartsService — лише поточний бакет для тіка.
  */
 export interface LiveChartSpec extends Omit<UiChart, 'type' | 'unit' | 'points'> {
@@ -10,5 +10,5 @@ export interface LiveChartSpec extends Omit<UiChart, 'type' | 'unit' | 'points'>
   points(window: StatsPeriodWindow): UiChartPoint[];
 }
 
-/** Графіки одного збирання дерева: id вузла `chart` → опис. */
+/** Графіки одного збирання: ключ — id вузла `chart` (у модулі) або id рядка (сторінка, відкрита в Mac) → опис. */
 export type LiveChartRegistry = Map<string, LiveChartSpec>;

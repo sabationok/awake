@@ -9,7 +9,7 @@ import { PROXIMITY_TICK_MS } from '../../constants/proximity-limits';
 import { ProximityService } from './proximity.service';
 
 /**
- * Звіт помічника, щосекундна перевірка, зміна налаштувань і стану сесії → ProximityService; його зміни → нове дерево.
+ * Звіт помічника, щосекундна перевірка, зміна налаштувань і стану сесії → ProximityService; його зміни → нові сторінки.
  * Standalone: сканувати чи ні, вирішує сервер — вмикає `bluetoothScan` у помічнику за `proximity.enabled` і повторює
  * запит після кожного перезапуску помічника.
  */

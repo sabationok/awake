@@ -1,9 +1,10 @@
 'use client';
-import type { UiPage, UiTree } from '@awake/contracts';
+import type { UiPageInfo, UiShell } from '@awake/contracts';
 import { ChevronLeft, ChevronRight, CircleAlert, CircleCheck, DatabaseZap, FlaskConical, Info, Menu, Power, TriangleAlert, X, type LucideIcon } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { levelOf, pathTo, sidebarPages, sidebarSections, type SidebarNode } from '@/lib/sidebar-sections';
 import { PageNodes } from '@/sdui/node-view';
+import { layoutNodes, type PageStore } from '@/sdui/page-layout';
 import { useRuntime, type LogType } from '@/sdui/runtime';
 import { AppearanceSection } from './appearance';
 import { IconButton, SymbolIcon } from '@/ui/primitives';
@@ -31,7 +32,9 @@ function useHash(): [string, (id: string) => void] {
 }
 
 export interface ShellProps {
-  tree: UiTree;
+  shell: UiShell;
+  /** Сторінки, які клієнт уже має; сторінку на екрані Shell відкриває сам (`open`). */
+  pages: PageStore;
   /** Банер над вмістом сторінки (джерело даних, зв'язок із сервером). */
   banner?: ReactNode;
   /** Примітка внизу бічного меню (лише Vercel / demo). */
@@ -40,18 +43,26 @@ export interface ShellProps {
   trailing?: ReactNode;
 }
 
-/** Каркас Web UI: бічне меню з дерева, шапка з крихтами, вкладки рівня і вузли сторінки. Потрібен рантайм вище. */
-export function Shell({ tree, banner, sideNote, trailing }: ShellProps) {
-  const sections = useMemo(() => sidebarSections(tree), [tree]);
+/** Каркас Web UI: бічне меню з індексу роутів, шапка з крихтами, вкладки рівня і вузли сторінки. Потрібен рантайм вище. */
+export function Shell({ shell, pages, banner, sideNote, trailing }: ShellProps) {
+  const sections = useMemo(() => sidebarSections(shell), [shell]);
   const all = useMemo(() => sidebarPages(sections), [sections]);
   const [hash, go] = useHash();
   const [drawer, setDrawer] = useState(false);
   const page = all.find((p) => p.id === hash) ?? all[0];
   const path = useMemo(() => pathTo(sections, page?.id), [sections, page?.id]);
   const [open, setOpen] = useState<Set<string>>(() => new Set(path.slice(0, -1).map((n) => n.page.id)));
-  const disabledOf = (p: UiPage) => tree.modules.find((m) => m.id === p.module)?.disabled;
-  const labelOf = useMemo(() => moduleLabels(tree, sections), [tree, sections]);
+  const disabledOf = (p: UiPageInfo) => shell.modules.find((m) => m.id === p.module)?.disabled;
+  const labelOf = useMemo(() => moduleLabels(shell, sections), [shell, sections]);
   const pathKey = path.map((n) => n.page.id).join('/');
+  const pageId = page?.id;
+  const layout = pageId ? pages.get(pageId) : undefined;
+  const nodes = useMemo(() => (layout ? layoutNodes(layout) : []), [layout]);
+
+  // Сторінка на екрані: клієнт тягне лише її і тримає свіжою; інших сторінок не просить.
+  useEffect(() => {
+    if (pageId) pages.open(pageId);
+  }, [pageId, pages]);
 
   // Предки поточної сторінки в меню завжди розгорнуті.
   useEffect(() => {
@@ -78,12 +89,12 @@ export function Shell({ tree, banner, sideNote, trailing }: ShellProps) {
     <div className="s-app" data-drawer={drawer ? 'open' : undefined}>
       <aside className="s-side">
         <div className="s-host">
-          <span className="s-host-icon" data-online={tree.app.online ? 'true' : undefined}>
+          <span className="s-host-icon" data-online={shell.app.online ? 'true' : undefined}>
             <Power />
           </span>
           <div>
-            <b>{tree.app.title}</b>
-            <small>{tree.app.host} · {tree.app.online ? 'онлайн' : 'офлайн'}</small>
+            <b>{shell.app.title}</b>
+            <small>{shell.app.host} · {shell.app.online ? 'онлайн' : 'офлайн'}</small>
           </div>
           <IconButton className="u-icon-btn s-close" icon={X} label="Закрити меню" onClick={() => setDrawer(false)} />
         </div>
@@ -135,7 +146,7 @@ export function Shell({ tree, banner, sideNote, trailing }: ShellProps) {
         {banner}
         <div className="s-content" key={page?.id}>
           {page?.id === 'settings' ? <AppearanceSection /> : null}
-          {page ? <PageNodes nodes={page.children} /> : null}
+          <PageNodes nodes={nodes} />
         </div>
       </main>
       <Toasts />
@@ -148,8 +159,8 @@ interface NavProps {
   current?: string;
   path: SidebarNode[];
   open: Set<string>;
-  disabledOf: (page: UiPage) => string | undefined;
-  labelOf: (page: UiPage) => string;
+  disabledOf: (page: UiPageInfo) => string | undefined;
+  labelOf: (page: UiPageInfo) => string;
   onToggle: (id: string) => void;
   onNavigate: (id: string) => void;
 }
@@ -241,19 +252,19 @@ function Toasts() {
 
 /**
  * Назва пункту меню, крихти й заголовка. Сторінка, з якої починається модуль (верхній рівень або вкладений модуль на
- * кшталт Груп під Telegram), зветься назвою модуля з `tree.modules`, а не своїм `title`: так пункт меню не
+ * кшталт Груп під Telegram), зветься назвою модуля з `shell.modules`, а не своїм `title`: так пункт меню не
  * перейменовується, коли сервер міняє заголовок сторінки (Awake → «Сесія», «Огляд»). Системні сторінки й підсторінки
  * модуля лишаються зі своїм `title`.
  */
-function moduleLabels(tree: UiTree, sections: { nodes: SidebarNode[] }[]): (page: UiPage) => string {
+function moduleLabels(shell: UiShell, sections: { nodes: SidebarNode[] }[]): (page: UiPageInfo) => string {
   const parentModule = new Map<string, string | undefined>();
-  const walk = (nodes: SidebarNode[], parent?: UiPage) =>
+  const walk = (nodes: SidebarNode[], parent?: UiPageInfo) =>
     nodes.forEach((n) => {
       parentModule.set(n.page.id, parent?.module);
       walk(n.children, n.page);
     });
   sections.forEach((s) => walk(s.nodes));
-  const titles = new Map(tree.modules.map((m) => [m.id, m.title]));
+  const titles = new Map(shell.modules.map((m) => [m.id, m.title]));
   return (page) => {
     const startsModule = page.group === 'modules' && parentModule.get(page.id) !== page.module;
     return (startsModule ? titles.get(page.module) : undefined) ?? page.title;

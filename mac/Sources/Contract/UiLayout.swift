@@ -1,7 +1,8 @@
 import Foundation
 
-// Дзеркало contracts/src/ui.ts. Агент шле це дерево через stdout, SwiftUI-рендерер
-// лише малює його і повертає UiEvent. Жодної логіки модулів тут немає.
+// Дзеркало contracts/src/ui.ts. Сервер шле через server.sock індекс роутів (`UiShell`) і по одній сторінці як
+// таблицю рядків (`UiPageLayout`); аппка збирає вузли лише сторінки на екрані (`UiPageLayout.nodes()`), малює їх і
+// повертає UiEvent. Жодної логіки модулів тут немає.
 
 enum UiTone: String, Codable {
     case accent, green, orange, red, gray, indigo, yellow
@@ -118,7 +119,7 @@ struct UiListItem: Codable, Hashable, Identifiable {
     var value: String?
 }
 
-/// Вузол дерева. Невідомий тип стає `.unknown`, щоб нова версія агента не ламала старий рендерер.
+/// Вузол сторінки (id — id рядка з сервера). Невідомий тип стає `.unknown`, щоб нова версія агента не ламала старий рендерер.
 indirect enum UiNode: Decodable, Identifiable, Hashable {
     case section(UiSection)
     case row(UiRow)
@@ -282,7 +283,8 @@ struct UiStatus: Decodable, Hashable {
     var countdownTo: Date?
 }
 
-struct UiPage: Decodable, Hashable, Identifiable {
+/// Сторінка в індексі роутів: без вузлів, вони приходять окремо (`layout.get` → `UiPageLayout`).
+struct UiPageInfo: Decodable, Hashable, Identifiable {
     enum Group: String, Decodable { case modules, system }
     /// `UiScope`: who may see and use the page. `local` — the web shows it only on the local network.
     enum Scope: String, Decodable { case all, local, mac }
@@ -292,7 +294,6 @@ struct UiPage: Decodable, Hashable, Identifiable {
     var icon: UiIcon
     var group: Group
     var scope: Scope?
-    var children: [UiNode]
 }
 
 struct UiModuleInfo: Decodable, Hashable, Identifiable {
@@ -307,15 +308,98 @@ struct UiModuleInfo: Decodable, Hashable, Identifiable {
     var parent: String?
 }
 
-struct UiTree: Decodable, Hashable {
+/// Індекс роутів: меню, крихти, заголовки. `rev` міняється разом зі змістом.
+struct UiShell: Decodable, Hashable {
     struct App: Decodable, Hashable {
         var title: String
         var host: String
         var online: Bool
     }
+    var rev: String
     var modules: [UiModuleInfo]
     var app: App
-    var pages: [UiPage]
+    var pages: [UiPageInfo]
+}
+
+/// Сторінка на дроті: рядки за `id` з `children` і `parentId`, `rev` — хеш змісту. `node` рядка тримаємо сирим JSON,
+/// поки сторінку не треба малювати.
+struct UiPageLayout: Decodable, Hashable {
+    struct Row: Decodable, Hashable {
+        var id: String
+        var parentId: String?
+        var children: [String]
+        var node: JSONValue
+    }
+    var id: String
+    var rev: String
+    var root: String
+    var nodes: [String: Row]
+
+    /// Вузли рендерера для цієї сторінки: рядки складаються у вкладені вузли з `id` рядка, рядок `tab` стає
+    /// вкладкою свого `tabs`. Рядок, якого немає в таблиці, пропускається. Не на головному потоці — дати й графіки
+    /// розбираються тут.
+    func renderNodes() throws -> [UiNode] {
+        func build(_ id: String) -> JSONValue? {
+            guard let row = nodes[id], case .object(var props) = row.node, case .string(let type)? = props["type"] else { return nil }
+            switch type {
+            case "page", "tab":
+                return nil
+            case "section":
+                props["children"] = .array(row.children.compactMap(build))
+            case "tabs":
+                props["tabs"] = .array(row.children.compactMap { tabId -> JSONValue? in
+                    guard let tab = nodes[tabId], case .object(let t) = tab.node, t["type"] == .string("tab") else { return nil }
+                    return .object(["id": t["value"] ?? .string(tabId), "label": t["label"] ?? .string(""),
+                                    "children": .array(tab.children.compactMap(build))])
+                })
+            default:
+                break
+            }
+            props["id"] = .string(row.id)
+            return .object(props)
+        }
+        let list = JSONValue.array((nodes[root]?.children ?? []).compactMap(build))
+        return try UiLayoutDecoder.decoder.decode([UiNode].self, from: JSONEncoder().encode(list))
+    }
+}
+
+/// Сторінка, готова до показу: `rev` з сервера і її вузли.
+struct UiPageContent: Hashable {
+    var id: String
+    var rev: String
+    var nodes: [UiNode]
+}
+
+/// Будь-яке JSON-значення: `node` рядка до збирання сторінки.
+enum JSONValue: Codable, Hashable {
+    case null
+    case bool(Bool)
+    case number(Double)
+    case string(String)
+    case array([JSONValue])
+    case object([String: JSONValue])
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        if c.decodeNil() { self = .null }
+        else if let value = try? c.decode(Bool.self) { self = .bool(value) }
+        else if let value = try? c.decode(Double.self) { self = .number(value) }
+        else if let value = try? c.decode(String.self) { self = .string(value) }
+        else if let value = try? c.decode([JSONValue].self) { self = .array(value) }
+        else { self = .object(try c.decode([String: JSONValue].self)) }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        switch self {
+        case .null: try c.encodeNil()
+        case .bool(let value): try c.encode(value)
+        case .number(let value): try c.encode(value)
+        case .string(let value): try c.encode(value)
+        case .array(let value): try c.encode(value)
+        case .object(let value): try c.encode(value)
+        }
+    }
 }
 
 /// Що рендерер повертає агенту.
@@ -339,7 +423,7 @@ enum UiEvent: Encodable {
     }
 }
 
-enum UiTreeDecoder {
+enum UiLayoutDecoder {
     /// ISO-дати з мілісекундами, як їх пише JavaScript.
     static let decoder: JSONDecoder = {
         let decoder = JSONDecoder()
@@ -356,7 +440,7 @@ enum UiTreeDecoder {
 
     /// JavaScript's `toISOString()` form, `YYYY-MM-DDTHH:MM:SS[.fff]Z`, parsed by hand. `ISO8601DateFormatter` goes
     /// through ICU and reloads its locale symbols on every call: ~95 µs a date, ~200 ms for the 2 000 chart points
-    /// of one tree. Anything else (an offset, no `Z`) returns nil and falls back to the formatters.
+    /// of one page. Anything else (an offset, no `Z`) returns nil and falls back to the formatters.
     static func fastISO(_ text: String) -> Date? {
         var utf8 = text.utf8
         return utf8.withContiguousStorageIfAvailable { u -> Date? in

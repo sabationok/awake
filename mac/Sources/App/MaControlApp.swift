@@ -1,18 +1,18 @@
 import AppKit
 import SwiftUI
 
-/// `--page <id> --snapshot <png> --render --width N --height N [--tree <json>]` for scripted screenshots.
-/// `--tree` renders a saved tree (the parity script passes the one the web shows) instead of the socket's.
+/// `--page <id> --snapshot <png> --render --width N --height N [--layout <json>]` for scripted screenshots.
+/// `--layout` renders a saved route index and pages (`{shell, pages}`; the parity script saves what the web shows) instead of the socket.s.
 /// `--dev-build <json>` reads the dev passport from a file (the bare snapshot binary has no bundle resources);
 /// `--dev-indicator floating|panel|strip` forces the indicator's state for a shot.
 /// `--translucent --wallpaper <png>` keeps the window materials in a render and draws them over that image
 /// (offscreen there is no desktop behind the window), to compare the sidebar and content tints on a shot.
 /// `--theme system|light|dark` overrides the stored client theme for a shot (nothing is written).
-/// `--perf <page>` times period-tab switches and the server's tree echo on that page offscreen (`PerfProbe`).
+/// `--perf <page>` times period-tab switches and the server's page echo on that page offscreen (`PerfProbe`).
 struct LaunchOptions {
     var page: String?
     var snapshot: String?
-    var tree: String?
+    var layout: String?
     var render = false
     var devBuild: String?
     var devIndicator: String?
@@ -30,7 +30,7 @@ struct LaunchOptions {
             switch arg {
             case "--page": o.page = args.next()
             case "--snapshot": o.snapshot = args.next()
-            case "--tree": o.tree = args.next()
+            case "--layout": o.layout = args.next()
             case "--render": o.render = true
             case "--dev-build": o.devBuild = args.next()
             case "--dev-indicator": o.devIndicator = args.next()
@@ -115,10 +115,11 @@ final class MaControlDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Scripted screenshot that never reaches the owner's screen: no Dock icon, no activation, the window is never
-    /// ordered in. It only reads the running server's socket (R1) and draws the window's view tree into a PNG.
+    /// ordered in. It only reads the running server's socket (R1; the one line it sends is
+    /// `layout.get` for the page) and draws the window's view tree into a PNG.
     private func snapshot(_ o: LaunchOptions) {
         NSApp.setActivationPolicy(.prohibited)
-        if let file = o.tree { server.load(file: file) } else { server.start(launch: false) }
+        if let file = o.layout { server.load(file: file) } else { server.start(launch: false) }
         let window = makeWindow(o)
         window.setFrameOrigin(NSPoint(x: -30000, y: -30000))
         self.window = window

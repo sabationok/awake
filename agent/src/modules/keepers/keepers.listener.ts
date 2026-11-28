@@ -3,7 +3,7 @@ import type { Subscription } from 'rxjs';
 import { ModulesService } from '../modules.service';
 import { KeepersService } from './keepers.service';
 
-/** Список утримувачів змінився → дерево UI перебудовується. */
+/** Список утримувачів змінився → сторінки UI перебудовуються. */
 @Injectable()
 export class KeepersListener implements OnModuleInit, OnModuleDestroy {
   private _subscription: Subscription | null = null;

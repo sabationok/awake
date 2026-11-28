@@ -7,9 +7,10 @@ import type {
   UiEvent,
   UiNode,
   UiPage,
+  UiPageLayout,
   UiScope,
   UiSection,
-  UiTree,
+  UiShell,
 } from '@awake/contracts';
 import { type BotMenu, type BotNamespace, BotRouterService, type BotViaInfo } from '../bot';
 import { BotJournalService, type BotEventCreate } from '../bot-journal';
@@ -21,6 +22,7 @@ import { buildSettingNode } from './helpers/build-setting-node';
 import { filterNodesByScope } from './helpers/filter-nodes-by-scope';
 import { isVisibleInScope } from './helpers/is-visible-in-scope';
 import { isValidSettingValue } from './helpers/is-valid-setting-value';
+import { contentRev, normalizePage } from './helpers/normalize-page';
 import { resolveSettingValue } from './helpers/resolve-setting-value';
 import { validateModuleManifest } from './helpers/validate-module-manifest';
 import { MACONTROL_BOT } from './constants/macontrol-bot';
@@ -31,13 +33,24 @@ import { MAC_MODULES, type MacModule, type ModuleContext, type ModulesStatus, ty
 import type { ModuleSource } from './types/module-source';
 import { ModuleOrderService } from './services/module-order.service';
 
-/** Реєстр модулів MaControl: з них будується дерево UI і сюди приходять дії та налаштування. */
+/** Системна сторінка «Налаштування»: її будує сам реєстр, не модуль. */
+const SETTINGS_PAGE_ID = 'settings';
+
+/**
+ * Реєстр модулів MaControl: з них будуються індекс роутів і сторінки (по одній, таблицею вузлів), сюди приходять дії
+ * та налаштування. Повного дерева застосунку немає ніде (docs/specs/ui-layout-spec.md).
+ */
 @Injectable()
 export class ModulesService {
   readonly settingChanged$ = new Subject<{ module: string; key: string; value: SettingValue }>();
-  /** Стан модуля змінився поза Mac і налаштуваннями (напр. viewer relay): дерево треба перебудувати. */
+  /**
+   * Стан модуля змінився поза Mac і налаштуваннями (напр. viewer relay): індекс і відкриті сторінки треба перебудувати.
+   * TODO(cleanup): перейменувати в `layoutChanged$`, коли сесія web-ui / tailscale закомітить свої правки.
+   */
   readonly treeChanged$ = new Subject<void>();
   private readonly _byId: Map<string, MacModule>;
+  /** Сторінка → модуль з останнього збирання індексу: `buildPage` будує спершу його. */
+  private readonly _pageOwner = new Map<string, string>();
 
   constructor(
     @Inject(MAC_MODULES) modules: MacModule[],
@@ -58,18 +71,18 @@ export class ModulesService {
     }
   }
 
-  /** Модулі в порядку меню (ModuleOrderService): від нього — порядок сторінок і модулів у дереві. */
+  /** Модулі в порядку меню (ModuleOrderService): від нього — порядок сторінок і модулів в індексі роутів. */
   list(): MacModule[] {
     return this._order.sort([...this._byId.values()]);
   }
 
-  /** Новий порядок меню: лише відомі модулі; дерево перебудовується. */
+  /** Новий порядок меню: лише відомі модулі; індекс роутів перебудовується. */
   reorder(ids: string[]) {
     this._order.set(ids.filter((id) => this._byId.has(id)));
     this.treeChanged$.next();
   }
 
-  /** `charts` — реєстр графіків збирання дерева; без нього графіки будуються, але тіків не отримують. */
+  /** `charts` — реєстр графіків збирання сторінки; без нього графіки будуються, але тіків не отримують. */
   context(moduleId: string, charts?: LiveChartRegistry): ModuleContext {
     const module = this._find(moduleId);
     // Звичайний get-аксесор у літералі бачить сам літерал, тож сервіс беремо в змінну.
@@ -102,24 +115,41 @@ export class ModulesService {
     return status;
   }
 
-  async buildTree(scope: UiScope): Promise<UiTree> {
-    const mac = this._bridge.state;
-    const pages: UiPage[] = [];
-    const charts: LiveChartRegistry = new Map();
-    for (const module of this.list()) {
-      const ctx = this.context(module.id, charts);
+  /** Індекс роутів для scope: модулі (вимкнені теж, сірими), сторінки без вузлів, назви. */
+  async buildShell(scope: UiScope): Promise<UiShell> {
+    return this._shell(await this._collect(), scope);
+  }
+
+  /**
+   * Одна сторінка таблицею вузлів; null — такої немає або вона поза scope. Будуються лише сторінки модуля-власника.
+   * `charts` отримує графіки саме цієї сторінки за id рядка (live-тіки Mac).
+   */
+  async buildPage(pageId: string, scope: UiScope, charts?: LiveChartRegistry): Promise<UiPageLayout | null> {
+    if (pageId === SETTINGS_PAGE_ID) return this._layout(this._settingsPage(), scope);
+    // Спершу модуль, якому сторінка належала в останньому індексі: зазвичай будується лише він.
+    const owner = this._pageOwner.get(pageId);
+    const modules = this.list();
+    for (const module of owner ? [...modules.filter((m) => m.id === owner), ...modules.filter((m) => m.id !== owner)] : modules) {
+      const registry: LiveChartRegistry = new Map();
+      const ctx = this.context(module.id, registry);
       if (module.disabled?.(ctx)) continue;
-      pages.push(...(await module.pages(ctx)));
+      const page = (await module.pages(ctx)).find((item) => item.id === pageId);
+      if (page) return this._layout(page, scope, registry, charts);
     }
-    pages.push(this._settingsPage());
-    // Тіки — лише графікам дерева Mac; новий реєстр цілком замінює попередній.
-    if (scope === 'mac') this._liveCharts.replace(charts);
+    return null;
+  }
 
-    const visible = pages
-      .filter((page) => isVisibleInScope(page, scope))
-      .map((page) => ({ ...page, children: filterNodesByScope(page.children, scope) }));
+  /** Індекс і всі сторінки scope таблицями за одне збирання (Upstash, relay): кожна сторінка зі своїм `rev`. */
+  async buildAll(scope: UiScope): Promise<{ shell: UiShell; pages: UiPageLayout[] }> {
+    const pages = await this._collect();
+    return { shell: this._shell(pages, scope), pages: pages.flatMap((page) => this._layout(page, scope) ?? []) };
+  }
 
-    return {
+  private _shell(all: UiPage[], scope: UiScope): UiShell {
+    const mac = this._bridge.state;
+    const pages = all.filter((page) => isVisibleInScope(page, scope)).map(({ children: _children, ...info }) => info);
+    const shell: Omit<UiShell, 'rev'> = {
+      app: { title: 'MaControl', host: mac?.host ?? 'Mac', online: mac !== null },
       modules: this.list().map((module) => {
         const disabled = module.disabled?.(this.context(module.id));
         return {
@@ -131,14 +161,33 @@ export class ModulesService {
           ...(module.parent ? { parent: module.parent } : {}),
         };
       }),
-      app: {
-        title: 'MaControl',
-        host: mac?.host ?? 'Mac',
-        online: mac !== null,
-        updatedAt: new Date().toISOString(),
-      },
-      pages: visible,
+      pages,
     };
+    return { rev: contentRev(shell), ...shell };
+  }
+
+  /** Сторінки всіх увімкнених модулів і «Налаштування» в порядку меню, ще вкладені (джерело для нормалізації). */
+  private async _collect(): Promise<UiPage[]> {
+    const pages: UiPage[] = [];
+    for (const module of this.list()) {
+      const ctx = this.context(module.id);
+      if (module.disabled?.(ctx)) continue;
+      const own = await module.pages(ctx);
+      for (const page of own) this._pageOwner.set(page.id, module.id);
+      pages.push(...own);
+    }
+    pages.push(this._settingsPage());
+    return pages;
+  }
+
+  /** Scope-фільтр і нормалізація. `registry` — графіки збирання модуля; у `charts` ідуть ті, що лишились на сторінці. */
+  private _layout(page: UiPage, scope: UiScope, registry?: LiveChartRegistry, charts?: LiveChartRegistry): UiPageLayout | null {
+    if (!isVisibleInScope(page, scope)) return null;
+    const visible = { ...page, children: filterNodesByScope(page.children, scope) };
+    return normalizePage(visible, (rowId, node) => {
+      const spec = node.type === 'chart' ? registry?.get(node.id) : undefined;
+      if (spec) charts?.set(rowId, spec);
+    });
   }
 
   /** Namespace-и бота MaControl (модулі з `@Bot`): команди й стартовий екран Telegram. */
@@ -280,7 +329,7 @@ export class ModulesService {
     const children: UiNode[] =
       sections.length > 0 ? sections : [{ id: 'settings-empty', type: 'text', text: 'Загальних налаштувань поки немає' }];
     return {
-      id: 'settings',
+      id: SETTINGS_PAGE_ID,
       module: 'host',
       title: 'Налаштування',
       icon: { symbol: 'gearshape.fill', tone: 'gray' },

@@ -53,7 +53,7 @@ export class RelayMacModule implements MacModule {
   private _trackingPoints(): RelayTrackingPoints {
     return {
       actions: (window) => this._calls.byProxy(window, { [RELAY_PROXY_ID]: '' }),
-      // Вебхук шукаємо на кожен тік: його могли замінити, не перебудувавши дерево.
+      // Вебхук шукаємо на кожен тік: його могли замінити, не перебудувавши сторінку.
       events: (window, labels) => this._webhookCharts.eventPoints(this._webhooks.findActive('relay')?.id ?? null, window, labels),
     };
   }
