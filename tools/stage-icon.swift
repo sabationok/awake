@@ -38,21 +38,30 @@ func render(_ px: Int) -> Data {
     let s = CGFloat(px) / 1024
     base.draw(in: NSRect(x: 0, y: 0, width: px, height: px))
 
+    // Усе, що малюємо поверх, обрізаємо формою іконки (824 з відступом 100, радіус 185, як у make-icon.swift).
+    // Якщо хоч піксель вийде за форму, macOS 26+ вважає іконку «не за сіткою» і зменшує її
+    // в сірий контейнер — саме так dev-іконка ставала крихітною.
+    NSBezierPath(roundedRect: NSRect(x: 100 * s, y: 100 * s, width: 824 * s, height: 824 * s),
+                 xRadius: 185 * s, yRadius: 185 * s).addClip()
+    color.setFill()
     if px < 64 {
-        // На малих розмірах текст не читається: лише кольорова крапка в правому нижньому куті.
-        let d = 360 * s
-        color.setFill()
-        NSBezierPath(ovalIn: NSRect(x: 924 * s - d, y: 100 * s, width: d, height: d)).fill()
+        // На малих розмірах текст не читається: лише кольоровий нижній край форми.
+        NSRect(x: 0, y: 0, width: CGFloat(px), height: 300 * s).fill()
     } else {
-        // Стрічка внизу форми іконки (форма 824 з відступом 100, як у make-icon.swift).
-        let band = NSRect(x: 100 * s, y: 150 * s, width: 824 * s, height: 190 * s)
-        color.setFill()
-        NSBezierPath(roundedRect: band, xRadius: 40 * s, yRadius: 40 * s).fill()
-        let font = NSFont.systemFont(ofSize: 150 * s, weight: .heavy)
-        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.white, .kern: 6 * s]
-        let text = NSAttributedString(string: label, attributes: attrs)
+        // Стрічка на всю ширину по низу форми; форма обрізає її кути.
+        let band = NSRect(x: 0, y: 100 * s, width: CGFloat(px), height: 210 * s)
+        band.fill()
+        // Напис вміщується в 600 з 824 ширини форми: DEV лишається 140, довші слова зменшуються.
+        func text(_ pt: CGFloat) -> NSAttributedString {
+            NSAttributedString(string: label, attributes: [.font: NSFont.systemFont(ofSize: pt, weight: .heavy),
+                                                           .foregroundColor: NSColor.white, .kern: pt * 0.04])
+        }
+        var pt = 140 * s
+        let w = text(pt).size().width
+        if w > 600 * s { pt *= 600 * s / w }
+        let text = text(pt)
         let size = text.size()
-        text.draw(at: NSPoint(x: band.midX - size.width / 2, y: band.midY - size.height / 2))
+        text.draw(at: NSPoint(x: band.midX - size.width / 2, y: band.midY - size.height / 2 + 6 * s))
     }
     NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])!
