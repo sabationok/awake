@@ -46,8 +46,8 @@ export class UiSyncService implements OnModuleInit, OnModuleDestroy {
     this._ttl = uiTtlSeconds(ns);
   }
 
+  /** Таймер стартує завжди: ключі Upstash можуть прийти пізніше (Envify, форма секретів), `sync` перевіряє їх щоразу. */
   onModuleInit() {
-    if (!this._upstash.isConfigured) return;
     this._timer = setInterval(() => void this.sync(), CHECK_MS);
     void this.sync();
   }
