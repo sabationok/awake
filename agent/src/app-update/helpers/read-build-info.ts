@@ -13,6 +13,7 @@ export function readBuildInfo(): BuildInfo | null {
       version: info.version,
       stage: typeof info.stage === 'string' ? info.stage : 'dev',
       commit: typeof info.commit === 'string' ? info.commit : '',
+      branch: typeof info.branch === 'string' ? info.branch : '',
       builtAt: info.builtAt,
       changes: Array.isArray(info.changes) ? info.changes.filter((item) => typeof item?.id === 'string' && typeof item?.text === 'string') : [],
       released: typeof info.released === 'string' ? info.released : null,

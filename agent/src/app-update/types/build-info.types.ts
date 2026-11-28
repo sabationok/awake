@@ -10,6 +10,8 @@ export interface BuildInfo {
   version: string;
   stage: string;
   commit: string;
+  /** Гілка, з якої зібрано (`HEAD` — detached); порожньо — невідомо. */
+  branch: string;
   builtAt: string;
   /** Зміни після останнього релізу (dev-збірки). */
   changes: BuildChange[];

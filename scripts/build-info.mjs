@@ -38,7 +38,11 @@ try {
   commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
 } catch {}
 
-const info = { version, stage: process.env.MACONTROL_STAGE || 'dev', commit, builtAt: new Date().toISOString(), changes, released: releasedSection() };
+let branch = process.env.MACONTROL_BRANCH || '';
+try {
+  if (!branch) branch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+} catch {}
+const info = { version, stage: process.env.MACONTROL_STAGE || 'dev', commit, branch, builtAt: new Date().toISOString(), changes, released: releasedSection() };
 const out = process.argv[2] || join(root, 'Resources/agent/build-info.json');
 writeFileSync(out, `${JSON.stringify(info, null, 2)}\n`);
 console.log(`Паспорт збірки: ${version} (${info.stage}, ${commit}), змін у черзі: ${changes.length}`);

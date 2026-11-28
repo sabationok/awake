@@ -17,7 +17,7 @@
 
 | що | де |
 |---|---|
-| Контракт UI на дроті (`UiShell`, `UiPageLayout`, `UiNodeRow`, scope, actions) | `contracts/src/ui.ts`; ключі Upstash `UI_SHELL_KEY`, `uiPageKey(id)` і повідомлення Mac — `contracts/src/index.ts`; relay — `contracts/src/relay.ts` |
+| Контракт UI на дроті (`UiShell`, `UiPageLayout`, `UiNodeRow`, scope, actions) | `contracts/src/ui.ts`; ключі Upstash `uiKeys(uiNamespace(stage, гілка))` і повідомлення Mac — `contracts/src/index.ts`; relay — `contracts/src/relay.ts` |
 | Збирання: індекс і сторінка за `id` + scope-фільтр | `agent/src/modules/modules.service.ts` (`buildShell`, `buildPage`, `buildAll`); модулі пишуть вкладені `UiPage` / `UiNode` у `MacModule.pages(ctx)`, на дріт вони йдуть лише через `normalizePage` (`agent/src/modules/helpers/normalize-page.ts`: id рядка `<сторінка>.<вузол>`, `rev` = sha1 рядків) |
 | HTTP локально | `agent/src/modules/ui.controller.ts`: `GET /api/ui/shell`, `GET /api/ui/pages/:pageId` (ETag `"local:<rev>"`, `304`, `private, no-cache` — `helpers/send-cached.ts`), `POST /api/ui/events` |
 | Роутер (дії, екрани бота) | `agent/src/bot/` (`@Bot`, `@BotAction`, `@BotScreen`, `BotRouterService`) |
@@ -59,6 +59,10 @@
   обгорнутий ключем з пароля (Argon2id), `S` лише в пам'яті вкладки; кліки = тіло + `ts` + `nonce` + `HMAC(S)`, вікно
   ±N хв, повтори відкидаються; «Завершити» сесію = `revokedAt` на `S`. Без `S` web бачить лише статуси й маски, дії
   зміни сірі («розблокуйте сесію») і відхиляються сервером.
+
+- **Простори ключів Upstash** (owner, 2026-11-28): одна база, ключі `macontrol:<простір>:ui:*`. Простір — stage
+  (`dev`, `production`, TTL 90 днів) або гілка dev-збірки поза `dev` / `main` (`br:<гілка>`, тиждень). Vercel
+  production читає `production`, dev — `dev`, preview — `br:<VERCEL_GIT_COMMIT_REF>`, без нього — `dev`.
 
 ## 5. Перехід
 

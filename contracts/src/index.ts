@@ -390,19 +390,37 @@ export interface DevicePairingPoll {
 export const REDIS_KEY_PREFIX = 'macontrol:';
 
 /**
- * Індекс роутів для Web UI на Vercel (scope all). Vercel лише читає: керування йде на самому агенті.
- * Сторінки — кожна під своїм ключем `uiPageKey(id)`; пишеться лише та, чий `rev` змінився.
+ * Простір ключів UI в Upstash (owner, 2026-11-28): одна база, ключі префіксовані stage або гілкою.
+ * Стабільні `dev` / `production` живуть 90 днів, гілкові `br:<гілка>` (превʼю) — тиждень. Агент пише у свій простір,
+ * Vercel production читає `production`, dev — `dev`, preview — `br:<гілка деплою>`, а без нього — `dev`.
  */
-export const UI_SHELL_KEY = `${REDIS_KEY_PREFIX}ui:shell`;
+export type UiNamespace = 'dev' | 'production' | `br:${string}`;
 
-/** Ключ однієї сторінки (`UiPageLayout`, scope all) в Upstash. */
-export const uiPageKey = (pageId: string) => `${REDIS_KEY_PREFIX}ui:page:${pageId}`;
+/** Гілки, що не мають свого простору: їхня збірка пише в простір свого stage. */
+export const UI_STABLE_BRANCHES: readonly string[] = ['dev', 'main', 'master'];
+
+export const UI_TTL_SECONDS = { stable: 90 * 24 * 3600, branch: 7 * 24 * 3600 } as const;
+
+/** `production` завжди свій; dev-збірка з нестабільної гілки — `br:<slug>`. */
+export function uiNamespace(stage: 'dev' | 'production', branch?: string | null): UiNamespace {
+  if (stage === 'production' || !branch || UI_STABLE_BRANCHES.includes(branch)) return stage;
+  const slug = branch.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  return slug ? `br:${slug}` : stage;
+}
+
+export const uiTtlSeconds = (ns: UiNamespace) => (ns.startsWith('br:') ? UI_TTL_SECONDS.branch : UI_TTL_SECONDS.stable);
 
 /**
- * Пульс агента для Vercel: маленький ключ окремо від індексу й сторінок, щоб не переписувати їх заради «я живий».
- * Ключ живе 2,5 інтервалу; немає ключа — агент офлайн. `every: null` — пульс вимкнено в Web UI, стан невідомий.
+ * Ключі одного простору. `shell` — індекс роутів для Web UI на Vercel (scope all; Vercel лише читає, керування йде на
+ * самому агенті). `page(id)` — одна сторінка (`UiPageLayout`); пишеться лише та, чий `rev` змінився. `alive` — пульс
+ * агента окремо від індексу й сторінок: живе 2,5 інтервалу; немає ключа — агент офлайн; `every: null` — пульс
+ * вимкнено в Web UI, стан невідомий.
  */
-export const UI_ALIVE_KEY = `${REDIS_KEY_PREFIX}ui:alive`;
+export const uiKeys = (ns: UiNamespace) => ({
+  shell: `${REDIS_KEY_PREFIX}${ns}:ui:shell`,
+  page: (pageId: string) => `${REDIS_KEY_PREFIX}${ns}:ui:page:${pageId}`,
+  alive: `${REDIS_KEY_PREFIX}${ns}:ui:alive`,
+});
 
 export interface UiAlive {
   /** ISO-час останнього пульсу. */
