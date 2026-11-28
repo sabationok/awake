@@ -31,7 +31,7 @@ export function buildRelayTrackingPage(ctx: ModuleContext, points: RelayTracking
   return buildStatsPage(ctx, {
     id: RELAY_TRACKING_PAGE,
     module: 'relay',
-    title: 'Трекінг',
+    title: 'Статистика',
     icon: { symbol: 'chart.bar.fill', tone: 'accent' },
     // Webhooxy налаштовують лише в SwiftUI: Web UI, що йде через нього, сам його не крутить.
     scope: 'mac',

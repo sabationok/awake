@@ -11,7 +11,7 @@ export function buildGroupsStatsPage(ctx: ModuleContext, timeline: (namespace: s
   return buildStatsPage(ctx, {
     id: GROUPS_UI_STATS.page,
     module: GROUPS_MODULE,
-    title: 'Статистика груп',
+    title: 'Статистика',
     icon: { symbol: 'chart.bar.fill', tone: 'accent' },
     scope: 'all',
     periodKey: GROUPS_UI_STATS.filters.period,

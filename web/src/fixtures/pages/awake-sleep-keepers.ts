@@ -368,7 +368,7 @@ function awakeTrackingPage(): UiPage {
   return trackingPage({
     id: 'tracking',
     module: 'awake',
-    title: 'Трекінг',
+    title: 'Статистика',
     icon: { symbol: 'chart.bar.xaxis', tone: 'accent' },
     footer: 'Час — лише закритих сесій, розкладений по годинах, у які Mac справді не спав. Дні, тижні й місяці — за UTC.',
     charts: [
@@ -562,7 +562,7 @@ function sleepTrackingPage(): UiPage {
   return trackingPage({
     id: 'sleep-tracking',
     module: 'sleep',
-    title: 'Трекінг',
+    title: 'Статистика',
     icon: { symbol: 'chart.bar.xaxis', tone: 'indigo' },
     footer: 'Рахується з історії таймерів. Дні, тижні й місяці — за UTC.',
     charts: [

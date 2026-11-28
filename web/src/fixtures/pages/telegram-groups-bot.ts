@@ -673,7 +673,7 @@ function groupsStatsPage(b: Buckets): UiPage {
   return statsPage({
     id: 'groups-stats',
     module: 'groups',
-    title: 'Статистика груп',
+    title: 'Статистика',
     icon: { symbol: 'chart.bar.fill', tone: 'accent' },
     scope: 'all',
     footer: 'Лічильники доставки в групу з дозволом; сповіщення в приватний чат — Telegram → Статистика.',

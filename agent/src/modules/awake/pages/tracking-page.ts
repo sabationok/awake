@@ -13,7 +13,7 @@ export function buildTrackingPage(ctx: ModuleContext, points: AwakeTrackingPoint
   return buildStatsPage(ctx, {
     id: AWAKE_TRACKING_PAGE,
     module: 'awake',
-    title: 'Трекінг',
+    title: 'Статистика',
     icon: { symbol: 'chart.bar.xaxis', tone: 'accent' },
     footer: 'Час — лише закритих сесій, розкладений по годинах, у які Mac справді не спав. Дні, тижні й місяці — за UTC.',
     sections: [

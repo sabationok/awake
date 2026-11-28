@@ -12,7 +12,7 @@ export function buildSleepTrackingPage(ctx: ModuleContext, timers: SleepTimerRec
   return buildStatsPage(ctx, {
     id: SLEEP_TRACKING_PAGE,
     module: 'sleep',
-    title: 'Трекінг',
+    title: 'Статистика',
     icon: { symbol: 'chart.bar.xaxis', tone: 'indigo' },
     footer: 'Рахується з історії таймерів. Дні, тижні й місяці — за UTC.',
     sections: [
