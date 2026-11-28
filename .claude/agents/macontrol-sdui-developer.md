@@ -20,9 +20,9 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 Project overlay of the global agent `sdui-developer` (`~/.claude/agents/sdui-developer.md`): load the `sdui` skill
 and work as that agent does. This file adds only what is specific to MaControl and wins where the two differ.
 
-Project spec: `docs/sdui.md` (clients and channels, map, scopes, agreed deviations, migration, checks) and the three
-specs it links. Ownership: `CLAUDE.md` «Who owns what» — clients → server → helper → macOS; a change that would move
-something across it is a question to the owner.
+Project spec: `docs/sdui.md` (clients and channels, map, scopes, agreed deviations, migration, checks, open
+questions); generic rules live only in the `sdui` skill. Ownership: `CLAUDE.md` «Who owns what» — clients → server →
+helper → macOS; a change that would move something across it is a question to the owner.
 
 MaControl specifics on top of the skill:
 - A new page or a page rearrangement starts with a mockup approved by the owner (`CLAUDE.md`); transport and runtime

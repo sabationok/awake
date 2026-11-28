@@ -1,4 +1,4 @@
-// Спільний стан MaControl (docs/specs/app-state-bind-spec.md). Сервер — єдиний власник: збирає AppState, шле його
+// Спільний стан MaControl (скіл `sdui` «State, bind, show»; MaControl — docs/sdui.md). Сервер — єдиний власник: збирає AppState, шле його
 // клієнтам повністю при підключенні й далі патчами з `rev`. Клієнти тримають копію і рахують стан кожного
 // компонента з його `bind`, тож layout сторінок більше не несе значень і не перезбирається на кожну зміну.
 import type { PowerSource, ThermalLevel } from './index';

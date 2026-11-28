@@ -42,7 +42,7 @@ code and this file disagree, report it in your result.
 | Sidebar order (stored, owner reorders in «Упорядкувати») | `agent/src/modules/services/module-order.service.ts` |
 | Wire contract: `UiShell`, `UiPageLayout`, `UiNodeRow`, `UiModuleInfo`; server-side source `UiPage`, `UiNode`, `UiScope`, `UiAction`, `MacPermission` | `contracts/src/ui.ts` |
 | Setting definitions (`SwitchSetting`, `SelectSetting`) | `contracts/src/modules.ts` |
-| AppState and the optional `bind` on nodes | `contracts/src/state.ts`, spec `docs/specs/app-state-bind-spec.md` |
+| AppState and the optional `bind` on nodes | `contracts/src/state.ts`; rules: `sdui` skill «State, bind, show», steps: `docs/sdui.md` «Перехід» |
 | Setting node / value check | `agent/src/modules/helpers/build-setting-node.ts`, `is-valid-setting-value.ts` |
 | Stats declaration types | `agent/src/modules/types/ui-module-stats.ts` |
 | Stats page builders | `agent/src/modules/helpers/build-stats-page.ts`, `build-stats-charts.ts`; engine `agent/src/stats/` (`statsPeriodSetting`), live charts `ctx.liveChart` |
@@ -117,9 +117,10 @@ Rules:
 
 `contracts/src/state.ts` holds `AppState` (one typed object of the whole state, owned by the server) and `UiBind` /
 `UiValueBind`; `UiNode` has an optional `bind` (`contracts/src/ui.ts`). With `bind` a client takes the node's state
-from AppState, without it from the node's values; both paths live together until the switch is done. The spec is
-`docs/specs/app-state-bind-spec.md`. Step 1 (contract only, commit 866c36a) is in; the server does not emit `bind`
-or state patches yet. Do not add `bind` to a module's pages ahead of the spec's steps unless the brief says so; when
+from AppState, without it from the node's values; both paths live together until the switch is done. The rules are
+the `sdui` skill «State, bind, show»; the steps are `docs/sdui.md` «Перехід». The contract step (commit 866c36a) is
+in; the server does not emit `bind` or state patches yet. Do not add `bind` to a module's pages ahead of those steps
+unless the brief says so; when
 you do, the state branch belongs to the server, never to a client.
 
 ## Adding a module

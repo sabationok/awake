@@ -1,4 +1,4 @@
-// Server-driven UI MaControl (docs/specs/ui-layout-spec.md). Модулі в Nest описують сторінку вкладеними вузлами
+// Server-driven UI MaControl (скіл `sdui`; MaControl — docs/sdui.md). Модулі в Nest описують сторінку вкладеними вузлами
 // (`UiPage` / `UiNode`), але по дроту вона не йде: сервер нормалізує її в таблицю рядків `UiNodeRow` за `id`.
 // Клієнти отримують індекс роутів (`UiShell`) і по одній сторінці (`UiPageLayout`), малюють і повертають дії.
 // Жодної логіки модулів у рендерерах.
@@ -412,7 +412,7 @@ export type UiNodeProps = UiRowProps<UiNode> | UiTab | UiPageRoot;
 /** Пропси вузла типу `type`. */
 export type UiNodePropsOf<K extends UiNodeProps['type']> = Extract<UiNodeProps, { type: K }>;
 
-/** Рядок таблиці сторінки (docs/specs/ui-layout-spec.md «Таблиця вузлів»). */
+/** Рядок таблиці сторінки (скіл `sdui` «Page layout as a node table»). */
 export interface UiNodeRow {
   /** Стабільний між збираннями: `<сторінка>.<вузол>`, ставить сервер; не позиція в масиві. */
   id: string;

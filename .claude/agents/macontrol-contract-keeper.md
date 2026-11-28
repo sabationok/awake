@@ -41,7 +41,7 @@ attention.
    and the shape of `UiEvent` the Mac sends back. `MacPermission` (`contracts/src/ui.ts`) equals the raw values of
    `AppPermission` in `Helper/System/AppPermission.swift`; the helper's actions and state equal
    `HelperAction` / `PrivacyAccessKind` and the rest of `contracts/src/helper.ts`.
-2. **App state and `bind`** (`contracts/src/state.ts`, spec `docs/specs/app-state-bind-spec.md`): `AppState`,
+2. **App state and `bind`** (`contracts/src/state.ts`, rules in the `sdui` skill «State, bind, show», MaControl steps in `docs/sdui.md`): `AppState`,
    `UiBind` / `UiValueBind` built only with `defineBind` / `defineValueBind`, `StatePatchOp` applied with
    `applyStatePatch`, `UiNodeBase.bind?` optional. Each bind path exists in `AppState`; a node with `bind` still
    carries a static value so a client without state support draws it. Web: resolves `bind` through

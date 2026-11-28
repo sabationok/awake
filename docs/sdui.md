@@ -1,14 +1,8 @@
 # SDUI у MaControl — project spec
 
-Локальні особливості для глобального скіла `sdui` (`~/.claude/skills/sdui`) і агента `sdui-developer`. Де цей файл
-конкретніший, він важить більше. Дизайн по шарах — у специ нижче.
-
-| шар | spec |
-|---|---|
-| Індекс роутів і рядки сторінок, патчі за `id`, лінь, кеш, застаріле дерево | `docs/specs/ui-layout-spec.md` |
-| AppState, `bind`, `show`, pending, стор клієнта | `docs/specs/app-state-bind-spec.md` |
-| Роути на сервері, query DTO, `@StatsRoute` + `StatsInterceptor`, Telegram | `docs/specs/ui-routes-spec.md` |
-| Кліки й форми | `docs/specs/server-ui-actions-spec.md`, `docs/specs/ui-actions-and-forms-spec.md` |
+Локальні особливості для глобального скіла `sdui` (`~/.claude/skills/sdui/SKILL.md`) і агента `sdui-developer`. Загальні
+правила (шари, таблиця вузлів, патчі, лінь, кеш, `bind` / `show`, контекст дії, застаріле дерево, роути) — лише в
+скілі; тут тільки MaControl. Де цей файл конкретніший, він важить більше.
 
 ## 1. Клієнти й канали
 
@@ -50,22 +44,83 @@
 - **Індекс і сторінки під `/api/ui/…`**, не `/ui/…`: решта API агента теж під `/api`.
 - **`rev` індексу — рядок** (sha1 змісту), як і `rev` сторінки, не лічильник: не скидається з рестартом сервера.
 - **`layout.notFound {pageId}`** на Mac-каналі: сторінки немає (модуль вимкнули), аппка не чекає вічно.
+- **`rev` стейту — лічильник** (+1 на патч, пропуск → `state.full`), на відміну від `rev` індексу і сторінки.
+- **Нових значень у строгих enum Swift не додаємо**: `UiButton.variant` лишився `filled | plain | destructive`, бо
+  Mac декодує його строго; нові дії йдуть через `UiMenuItem` (`default | accent | warn | danger`, невідомий → `default`).
+- **`UiNotice.dismiss?: UiAction`** замість `closable` (є дія — є хрестик); `once` / `remind` не в контракті — сервер
+  сам вирішує, чи слати вузол.
+- **Дії розв'язує сервер** (owner, 2026-11-27, варіант A): сторінка шле вже відфільтрований за станом список
+  `UiMenuItem`, без `when`; стан — з timestamp-колонок (`revokedAt`, `disabledAt`, `dismissedAt`). Пункт `scope: 'mac'`
+  у web видно сірим з `hint`, сервер його відхиляє з не-Mac джерела. Будує пункти лише
+  `agent/src/modules/helpers/menu-item.ts`.
+- **Обмеження Mac-рендерера**: `sendUiEvent` не повертає результату (форма закривається одразу, помилку сервер
+  показує станом сторінки); `UiNotice.sticky` у `Form` не працює — сповіщення в потоці.
+- **Модель довіри Web ↔ Mac** (рішення): секрети на web не потрапляють; на кожну web-сесію Mac генерує HMAC-ключ `S`,
+  обгорнутий ключем з пароля (Argon2id), `S` лише в пам'яті вкладки; кліки = тіло + `ts` + `nonce` + `HMAC(S)`, вікно
+  ±N хв, повтори відкидаються; «Завершити» сесію = `revokedAt` на `S`. Без `S` web бачить лише статуси й маски, дії
+  зміни сірі («розблокуйте сесію») і відхиляються сервером.
 
 ## 5. Перехід
 
-Рішення owner (2026-11-28): дерев більше немає, усе на індексі — вузли за `id` з `children` і `parentId`. Тому
-кроки 1–3 ui-layout-spec зроблено одним переходом, без перехідного дерева:
+Рішення owner (2026-11-28): дерев більше немає, усе на індексі — вузли за `id` з `children` і `parentId`.
 
-- [x] 1. Стабільний серверний `id` кожного вузла сторінки (`<сторінка>.<вузол>`, детерміновано на сторінці).
-- [x] 2. Дріт: індекс роутів `UiShell` + по одній сторінці `UiPageLayout` (таблиця `UiNodeRow`) з `rev`.
-- [x] 3. Канали: Mac (`shell` + `layout.get`), Web локально (`/api/ui/shell`, `/api/ui/pages/:id`, ETag / 304),
-  Upstash (ключ на сторінку + індекс замість `macontrol:ui:tree`), Vercel (`/api/ui/shell`, `/api/ui/pages/[pageId]`),
-  relay (`shell` / `page` / `revs`). Клієнти збирають вузли лише сторінки на екрані.
-- [ ] 4–6. AppState / `bind`, патчі за `id`, застаріле (`stale`) — далі.
+- [x] Стабільний серверний `id` вузла (`<сторінка>.<вузол>`), дріт `UiShell` + `UiPageLayout` з `rev`, усі канали
+  з таблиці 1 (Mac `shell` + `layout.get`, `/api/ui/…` з ETag / 304, Upstash ключ на сторінку, Vercel, relay
+  `shell` / `page` / `revs`). Клієнти збирають вузли лише сторінки на екрані.
+- [x] Контракт `AppState`, `bind` / `show`, `defineBind` / `defineValueBind`, `applyStatePatch`, фікстури
+  `contracts/fixtures/state/` (866c36a). Сервер `bind` і патчі стейту ще не шле.
+- [x] Вузли дій: `UiMenuItem`, `UiForm`, `item`, `notice`, `separator`, `UiSection.status / actions`, `UiTabs.sticky`;
+  рендерери web (`web/src/sdui`) і Mac (`mac/Sources/Sdui`, `mac/Sources/Contract/UiActionTypes.swift`); сторінки
+  Дозволи, Пристрої, Мережі, Пароль, Групи, Топіки, Tailscale, Поруч на `item` / `notice`.
 
-Лишилось: стан 5 с (`ui-sync`) як був; `ModulesService.treeChanged$` — TODO(cleanup) перейменувати на
-`layoutChanged$` (ним користується незакомічений tailscale.listener іншої сесії); індекс збирається з `pages()` усіх
-модулів — дешевше стане з роутами (`ui-routes-spec`). Старий ключ `macontrol:ui:tree` просто спливає за TTL.
+Далі, по черзі (правила — у розділах скіла, тут лише що і де):
+
+1. **Стейт і `bind`** — скіл «State, bind, show». `AppStateService` на сервері (повний + патчі по Mac socket, web,
+   Upstash зі scope-фільтром: одна функція, одна мапа «гілка → scope»). Перша сторінка — «Дозволи» (sudoers і два
+   «Надати…» на `permissions.*`), далі світчі налаштувань модулів, статуси сесій, системні слайдери; умови на кшталт
+   `mac?.active` у `agent/src/modules/awake/pages/session-page.ts` → `show` (перемикачі старту Awake ховаються під час
+   сесії). Pending 10 с. Коли всі сторінки на `bind` — прибрати перезбирання раз на 5 с у `ui-sync.service.ts`; до
+   того вузол з `bind` несе й статичне значення.
+2. **Патчі layout і `layout.stale`** — скіл «Layout patches»: дифф у `ModulesService`, `layout.watch` з відкритих
+   сторінок (Mac уже тримає останні 4), Upstash і далі пише лише змінені сторінки.
+3. **Ліниві вузли** — скіл «Lazy loading and caching»: `lazy: true` на згорнутих секціях і довгих списках,
+   `GET /api/ui/nodes/:id` і `layout.get { nodeId }` на Mac.
+4. **Застаріле дерево** — скіл «Stale layout, unknown nodes, node refresh». Зараз web мовчки не малює невідомий
+   вузол, Mac робить `.unknown` → `EmptyView`, сервер на стару дію відповідає `invalidCommand` / «Unknown action».
+   Джерело свіжих вузлів: Vercel — Upstash-роути, локальний web — API агента, Mac — `server.sock`.
+5. **UI-роути і статистика** — скіл «Routes on the server». Роутер бота (`agent/src/bot/`) уже є, клік з web і Mac
+   іде в ті самі `@BotAction`. `@UiRoute`, `@RouteQuery`, `@UiFilter`, лейаут `stats`, `StatsInterceptor`; сторінки
+   статистики Awake, Sleeper, Webhooxy, Telegram, Агент, Групи → `@StatsRoute` (`UiModuleStats` +
+   `build-stats-charts.ts` лишаються декларацією; приклад — `GROUPS_UI_STATS` з `GroupsStatsQuery extends StatsQuery`
+   і `@UiFilter` на `key`). Потім `@ListRoute` (історія сесій, журнал), `@SettingsRoute`; `pages(ctx)` живе поруч,
+   поки всі сторінки не на роутах, і тоді індекс перестане збиратися з `pages()` усіх модулів. Назви дій модуля —
+   типізований юніон.
+6. **Контекст дії** — скіл «Actions: one context string per control»: `UiAction { module, name, params }` → один
+   `ctx` на контрол з `pageId`, `nodeId`, `rev`; `STALE_LAYOUT` замість «Unknown action». Кодування — див. відкриті
+   питання.
+
+Ще не зроблено поза кроками:
+- Модуль `notices` (`agent/src/notices/`, repository + service + DTO, міграція `notice_states`: `id` = id нотісу +
+  версія, напр. `proximity.bluetooth@1`, `dismissedAt`, `remindAt`, `createdAt`); дія `{ module: 'notices', name:
+  'dismiss', params: { id } }`; `remind.after` рахує сервер від `dismissedAt` / `createdAt`. Перше застосування після
+  «Поруч» — сесія, що втрачає систему: `notice` `error`, `sticky: 'bottom'` (`modules/helpers/session-card.ts`).
+- Прибрати `UiButton` / `UiButtons` і `UiControl { type: 'button' }`, коли жодна сторінка їх не шле (разом зі Swift).
+- Remote KV Store замість блоків «Upstash» і «Ключі Upstash (на цьому Mac)» на «Мережі»: `section` зі статусом і
+  формою `backend` (лише бекенди з адаптером на сервері) · `source` (`config | url`) · `url`; без Envify — таблиця
+  `connections` (`slug pk, type, provider, v, securedFields, values json, disabledAt`), ключ шифрування не в тій
+  самій БД, у відповідь лише маски. Без рішення по відкритих питаннях — тільки `config` і статус.
+- `ModulesService.treeChanged$` → `layoutChanged$` (TODO(cleanup); ним користується незакомічений tailscale.listener
+  іншої сесії). Старий ключ `macontrol:ui:tree` спливає за TTL.
+
+**Чекає мокапу** (`CLAUDE.md` «Mockup before UI code»), сервер не чіпає:
+- `Telegram > Групи > Список груп | Топіки | Статистика`; на `Telegram` — можливості конектора (read-only, з
+  маніфесту) і події бота з «Сповіщень»; `Telegram > Команди` — меню «/» приватного чату, у групах команд немає, у
+  топіка лише свої (бот тримає закріплене повідомлення).
+- Web UI: вкладки `Пароль` і `Сесії` окремо від входу.
+- «Поруч» — модуль верхнього рівня поряд з Awake / Sleeper.
+- «Сповіщення» без табу «Попередження»: перемикачі на сторінках своїх модулів.
+- Пристрої: sticky-фільтр `Local | Priv | Proxy` з під-табами провайдерів (`Priv` → Tailscale, `Proxy` → Webhooxy),
+  секції «Сполучити новий», «Сполучені», «Запити» фільтруються каналом.
 
 ## 6. Перевірки
 
@@ -75,3 +130,22 @@
 - Сервер без перевстановлення аппки: `pnpm agent:dev`; аппку ставити лише без сесії Awake / Sleeper і з
   розблокованим екраном
 - Коміт на `dev` зі changeset, коли owner помітить зміну; без push
+- Кожен `item` має не більше одного набору дій; дозвіл «видано» дає лише `danger`; mac-дії у web сірі з `hint`.
+
+## 7. Відкриті питання
+
+- **Фільтри статистики**: спільні (зараз період — налаштування сервера) чи свої в кожного клієнта як query роуту.
+- **Меню бота**: Mini App (`web_app`, HTTPS і вхід через `initData`) чи reply keyboard з розділами.
+- **`#pageId` чи чисті URL** зі SPA fallback в express агента і на Vercel.
+- **Кодування контексту дії по каналах**: інлайн base64url для web і Mac, ticket для бота (`callback_data` ≤ 64 байти);
+  чи потрібен HMAC на інлайн, коли контекст несе щось, що дає доступ.
+- Де живе роут: у класі `@Bot` (один роутер на бот і UI) чи окремий `@UiController` поруч.
+- Списки (пристрої «Поруч», історія сесій): рядки-вузли чи окремий вузол-список з пагінованим запитом; поріг
+  «довгого списку» для `lazy` і `?cursor=`.
+- Vercel: патчі layout і стейту через Upstash / proxy (журнал ops) чи лише перечитування за ETag.
+- Підписка клієнта лише на гілки AppState, які читають відкриті сторінки.
+- Таймаут `pending`: один на всіх (10 с) чи в `bind` вузла; операції над масивами в патчах стейту.
+- Remote KV Store: Upstash REST (URL + токен) одним полем не вміщується — URL лише як connection string, REST-пара
+  лише в конфігу?; ключ шифрування — Keychain чи файл у `~/.config/awake` (600).
+- Канал `local`: авто-вхід чи пароль, як у `proxy`.
+- Альтернатива «довіреній мережі», яку owner згадував, ще не описана.

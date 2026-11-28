@@ -145,7 +145,7 @@
   - `{ type: 'event', event: UiEvent }` → `{ type: 'accepted' }`. Налаштування зі scope `mac` з relay змінити не можна.
   - Помилка: `{ type: 'error', message }`.
 - host → viewers (`relay:broadcast`): `{ type: 'revs', shell, pages }` (`rev` індексу і кожної сторінки), коли
-  щось із них змінилось; viewer перечитує те, що тримає. Повного дерева по дроту немає (`docs/specs/ui-layout-spec.md`).
+  щось із них змінилось; viewer перечитує те, що тримає. Повного дерева по дроту немає (`docs/sdui.md`).
 
 ## Модуль Relay в агенті
 

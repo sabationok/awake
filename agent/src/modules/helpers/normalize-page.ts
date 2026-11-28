@@ -5,7 +5,7 @@ import type { UiNode, UiNodeProps, UiNodeRow, UiPage, UiPageLayout } from '@awak
 export type OnPageNode = (rowId: string, node: UiNode) => void;
 
 /**
- * Сторінка модуля (вкладені вузли) → таблиця рядків за `id` (docs/specs/ui-layout-spec.md «Таблиця вузлів»).
+ * Сторінка модуля (вкладені вузли) → таблиця рядків за `id` (скіл `sdui` «Page layout as a node table»).
  * Id рядка — `<сторінка>.<id вузла>`; той самий id вузла вдруге на сторінці бере шлях батька (`<батько>.<id>`), щоб
  * рядки не злиплись. Вкладка `tabs` — свій рядок `<tabs>.<id вкладки>` з типом `tab`. `parentId` ставить лише
  * нормалізація. `rev` — хеш рядків у порядку обходу: той самий зміст дає той самий `rev` і після рестарту.

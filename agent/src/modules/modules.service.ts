@@ -38,7 +38,7 @@ const SETTINGS_PAGE_ID = 'settings';
 
 /**
  * Реєстр модулів MaControl: з них будуються індекс роутів і сторінки (по одній, таблицею вузлів), сюди приходять дії
- * та налаштування. Повного дерева застосунку немає ніде (docs/specs/ui-layout-spec.md).
+ * та налаштування. Повного дерева застосунку немає ніде (скіл `sdui`, docs/sdui.md).
  */
 @Injectable()
 export class ModulesService {
