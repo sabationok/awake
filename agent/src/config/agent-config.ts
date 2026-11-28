@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 /** Web UI на Vercel, який може викликати агент напряму по HTTPS. */
-const DEFAULT_DASHBOARD_ORIGINS = ['https://awake-lemon.vercel.app'];
+const DEFAULT_DASHBOARD_ORIGINS = ['https://macontrol-sabationoks-projects.vercel.app'];
 
 export type Stage = 'dev' | 'production';
 
