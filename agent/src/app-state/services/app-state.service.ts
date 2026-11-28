@@ -5,7 +5,7 @@ import { MacBridgeService } from '../../mac-bridge/services/mac-bridge.service';
 import { MacPermissionsService } from '../../mac-permissions/mac-permissions.service';
 import { ModulesService } from '../../modules/modules.service';
 import { diffState } from '../helpers/diff-state';
-import { filterStateAt } from '../helpers/state-scope';
+import { filterStateAt, type SettingScopeOf } from '../helpers/state-scope';
 
 const MAC_PERMISSIONS: readonly MacPermission[] = ['sleepControl', 'thermalRead'];
 /**
@@ -75,8 +75,11 @@ export class AppStateService implements OnModuleInit, OnModuleDestroy {
     this.patches$.next({ rev: this._rev, ops });
   }
 
-  private readonly _settingScope = (module: string, key: string): UiScope | undefined =>
-    this._modules.list().find((item) => item.id === module)?.settings.find((definition) => definition.key === key)?.scope;
+  /** Визначення знайдено без scope — 'all'; не знайдено — null (фільтр сховає гілку). */
+  private readonly _settingScope: SettingScopeOf = (module, key) => {
+    const definition = this._modules.list().find((item) => item.id === module)?.settings.find((d) => d.key === key);
+    return definition ? (definition.scope ?? 'all') : null;
+  };
 
   private _build(): AppState {
     const mac = this._bridge.state;

@@ -2,10 +2,16 @@ import type { UiScope } from '@macontrol/contracts';
 import { isVisibleInScope } from '../../modules/helpers/is-visible-in-scope';
 import { STATE_BRANCH_SCOPES } from '../constants/state-branch-scopes';
 
-/** Scope гілки: найдовший префікс з мапи; налаштування — scope свого визначення (`settingScope`). */
-export function stateBranchScope(path: string, settingScope: (module: string, key: string) => UiScope | undefined): UiScope {
-  const [root, module, key] = path.split('.');
-  if (root === 'modules' && module && key) return settingScope(module, key) ?? 'all';
+/** Scope налаштування з його визначення; `null` — такого визначення немає. */
+export type SettingScopeOf = (module: string, key: string) => UiScope | null;
+
+/**
+ * Scope гілки: найдовший префікс з мапи; налаштування — scope свого визначення (`settingScope`), ключ — увесь
+ * залишок шляху. Невідоме налаштування — 'mac' (fail closed): його не побачить ні Vercel, ні локальний web.
+ */
+export function stateBranchScope(path: string, settingScope: SettingScopeOf): UiScope {
+  const [root, module, ...rest] = path.split('.');
+  if (root === 'modules' && module && rest.length) return settingScope(module, rest.join('.')) ?? 'mac';
   let best: UiScope = 'all';
   let length = -1;
   for (const [prefix, scope] of Object.entries(STATE_BRANCH_SCOPES)) {
@@ -25,7 +31,7 @@ export function filterStateAt(
   path: string,
   value: unknown,
   audience: UiScope,
-  settingScope: (module: string, key: string) => UiScope | undefined,
+  settingScope: SettingScopeOf,
 ): unknown {
   if (path && !isVisibleInScope({ scope: stateBranchScope(path, settingScope) }, audience)) return undefined;
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return value;
