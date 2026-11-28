@@ -25,7 +25,7 @@
 | Канал Web UI | `agent/src/web-ui/` |
 | Upstash: публікація + пульс | `agent/src/presence/services/ui-sync.service.ts`: `macontrol:ui:shell` + `macontrol:ui:page:<id>`, пишуться лише сторінки зі зміненим `rev`, зниклі видаляються |
 | Relay (webhooxy) | `agent/src/relay/services/relay-host/`: viewer просить `shell` / `page`, host розсилає `revs` |
-| Читання на Vercel | `web/src/app/api/ui/shell/route.vercel.ts`, `web/src/app/api/ui/pages/[pageId]/route.vercel.ts` (без `qr` і `copy`, ETag `"all:<rev>"`), `web/src/demo/` |
+| Читання на Vercel | `web/src/app/api/ui/shell/route.ts`, `web/src/app/api/ui/pages/[pageId]/route.ts` (без `qr` і `copy`, ETag `"all:<ns>:<rev>"`), `web/src/demo/` |
 | Web рантайм | дані `web/src/live/use-ui-layout.ts` (індекс + сторінка на екрані, `If-None-Match`); рядки → вузли сторінки `web/src/sdui/page-layout.ts`; рендер `web/src/sdui/node-view.tsx`; роутинг `web/src/shell/app-shell.tsx`; компоненти лише з `web/src/ui` |
 | Mac рантайм | `mac/Sources/Contract/UiLayout.swift` (`UiShell`, `UiPageLayout.renderNodes()`), `mac/Sources/Core/ServerConnection.swift` (`open(pageId)`), `mac/Sources/Sdui/`; компоненти з Umbra |
 

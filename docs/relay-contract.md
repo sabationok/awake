@@ -177,7 +177,7 @@
 
 **Відкликання.** На Маці або через ТГ: пристрій видаляється, а його живі сесії Мак виганяє через `relay:kick`.
 
-**Проксі Vercel** (`web/src/app/api/mac/[...path]/route.vercel.ts`). Прокидає запит і відповідь як є, але:
+**Проксі Vercel** (`web/src/app/api/mac/[...path]/route.ts`). Прокидає запит і відповідь як є, але:
 - в upstream іде лише кукі `mc_*`, сесія дашборду в webhooxy не потрапляє;
 - URL upstream — зі stage (`readStageConfig`), кімната й workspace — `WEBHOOXY_ROOM` / `WEBHOOXY_WORKSPACE`, ключ — `WEBHOOXY_RELAY_REQUEST_KEY` (credential `relay-request`, `rq_…`), ніколи від клієнта;
 - шлях лише з сегментів `[A-Za-z0-9_-]`, до 4; не-GET з чужим `Origin` — 403;
