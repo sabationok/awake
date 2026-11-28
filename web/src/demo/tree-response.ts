@@ -11,6 +11,11 @@ export interface TreeResponse {
   origin: TreeOrigin;
   stage: Stage;
   misses: { origin: Exclude<TreeOrigin, 'fixtures'>; reason: string }[];
+  /**
+   * Пульс агента з Upstash (лише origin upstash): `online` — ключ є і пульс увімкнено; `offline` — ключа немає
+   * (агент зупинився або пропустив пульси); `unknown` — пульс вимкнено в Web UI на Mac.
+   */
+  agent?: { status: 'online' | 'offline' | 'unknown'; at: string | null };
   /** Лише для фікстур: дата зразка, з якого їх списано. */
   sampledAt?: string;
 }

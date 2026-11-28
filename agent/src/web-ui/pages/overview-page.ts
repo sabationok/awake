@@ -19,7 +19,8 @@ const ADDRESS_SECTIONS = [
 ];
 
 /** Головна сторінка модуля: за якими адресами відкривається Web UI і яку його збірку віддає сервер. */
-export function buildOverviewPage(snapshot: WebUiSnapshot): UiPage {
+/** `heartbeat` — перемикач «Пульс для Vercel» (налаштування модуля): стоїть у секції Vercel, бо пульс лише для неї. */
+export function buildOverviewPage(snapshot: WebUiSnapshot, heartbeat: UiNode): UiPage {
   // Адреса — лише для читання: URL іде в copy (кнопка «Копіювати»), на статусі — Працює / Недоступно.
   const addresses: UiNode[] = snapshot.addresses.map((address): UiNode => ({
     id: `webui-address-${address.id}`,
@@ -45,7 +46,10 @@ export function buildOverviewPage(snapshot: WebUiSnapshot): UiPage {
         type: 'section',
         title: section.title,
         footer: section.footer,
-        children: addresses.filter((node) => section.ids.some((id) => node.id === `webui-address-${id}`)),
+        children: [
+          ...addresses.filter((node) => section.ids.some((id) => node.id === `webui-address-${id}`)),
+          ...(section.id === 'proxy' ? [heartbeat] : []),
+        ],
       })).filter((node) => node.type === 'section' && node.children.length > 0),
       {
         id: 'webui-build',

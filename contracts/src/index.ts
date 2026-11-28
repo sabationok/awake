@@ -383,3 +383,16 @@ export const REDIS_KEY_PREFIX = 'macontrol:';
 
 /** Дерево UI для Web UI на Vercel (лише вузли зі scope all). Vercel лише читає його: керування йде на самому агенті. */
 export const UI_TREE_KEY = `${REDIS_KEY_PREFIX}ui`;
+
+/**
+ * Пульс агента для Vercel: маленький ключ окремо від дерева, щоб не переписувати дерево заради «я живий».
+ * Ключ живе 2,5 інтервалу; немає ключа — агент офлайн. `every: null` — пульс вимкнено в Web UI, стан невідомий.
+ */
+export const UI_ALIVE_KEY = `${REDIS_KEY_PREFIX}ui:alive`;
+
+export interface UiAlive {
+  /** ISO-час останнього пульсу. */
+  at: string;
+  /** Інтервал пульсу в секундах; null — вимкнено. */
+  every: number | null;
+}

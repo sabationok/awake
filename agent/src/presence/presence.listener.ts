@@ -15,7 +15,7 @@ export class PresenceListener implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     this._subscription = this._bridge.state$.subscribe((state) => {
-      if (state) void this._sync.publishTree();
+      if (state) void this._sync.sync();
     });
   }
 

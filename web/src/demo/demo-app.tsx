@@ -74,7 +74,11 @@ export function DemoApp() {
 
 /** Банер, коли дерево не живе (фікстури) або сервер перестав відповідати: звідки дані і чому не свіжі. */
 function SourceBanner({ data, offline }: { data: TreeResponse; offline: boolean }) {
-  if (data.origin !== 'fixtures' && !offline) return null;
+  const agentDown = data.agent?.status === 'offline';
+  if (data.origin !== 'fixtures' && !offline && !agentDown) return null;
+  if (!offline && agentDown) {
+    return <Banner title="Mac офлайн — показую останнє опубліковане дерево" details={['Пульс агента не приходить: сервер зупинено або Mac без мережі.']} />;
+  }
   return (
     <Banner
       title={offline ? 'Сервер Web UI не відповідає — показую останнє отримане дерево' : `Живого дерева немає — показую вбудований зразок від ${data.sampledAt}`}

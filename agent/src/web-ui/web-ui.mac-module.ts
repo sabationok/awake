@@ -13,6 +13,7 @@ import { TrustedNetworksService } from '../trusted-networks';
 import { DashboardPasswordService } from '../web-auth/services/dashboard-password.service';
 import { WebSessionsService } from '../web-auth/services/web-sessions.service';
 import { WEB_UI_ICON, WEB_UI_MODULE } from './constants/web-ui';
+import { WEB_UI_SETTINGS } from './constants/web-ui-settings';
 import { buildDevicesPage } from './pages/devices-page';
 import { buildLoginPage } from './pages/login-page';
 import { buildNetworksPage } from './pages/networks-page';
@@ -30,7 +31,7 @@ export class WebUiMacModule implements MacModule {
   readonly description = 'Вебінтерфейс MaControl: де він відкривається, хто увійшов і які пристрої сполучені.';
   readonly icon = WEB_UI_ICON;
   readonly permissions: MacModule['permissions'] = [];
-  readonly settings: MacModule['settings'] = [];
+  readonly settings: MacModule['settings'] = WEB_UI_SETTINGS;
 
   constructor(
     @Inject(AGENT_CONFIG) private readonly _config: AgentConfig,
@@ -45,7 +46,7 @@ export class WebUiMacModule implements MacModule {
 
   pages(ctx: ModuleContext): UiPage[] {
     const snapshot = this._snapshot(ctx);
-    return [buildOverviewPage(snapshot), buildLoginPage(snapshot), buildNetworksPage(snapshot), buildDevicesPage(this._devicesBridge.snapshot())];
+    return [buildOverviewPage(snapshot, ctx.settingNode('heartbeat')), buildLoginPage(snapshot), buildNetworksPage(snapshot), buildDevicesPage(this._devicesBridge.snapshot())];
   }
 
   private _snapshot(ctx: ModuleContext): WebUiSnapshot {

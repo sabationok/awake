@@ -1,4 +1,4 @@
-import { UI_TREE_KEY, type UiTree } from '@awake/contracts';
+import { UI_ALIVE_KEY, UI_TREE_KEY, type UiAlive, type UiTree } from '@awake/contracts';
 import { NextResponse } from 'next/server';
 import { FIXTURE_SAMPLED_AT, fixtureTree } from '@/fixtures/tree';
 import { toPublicUiTree } from '@/server/public-tree.vercel';
@@ -24,6 +24,14 @@ async function fromSource(source: TreeSource): Promise<UiTree | string> {
   return body?.tree ?? body?.reason ?? `відповів ${res.status}`;
 }
 
+/** Пульс агента: дерево в Upstash не протухає само, тож онлайн чи ні каже окремий ключ. */
+async function agentPulse(): Promise<NonNullable<TreeResponse['agent']>> {
+  const raw = await upstashGet(UI_ALIVE_KEY);
+  if (!raw) return { status: 'offline', at: null };
+  const alive = JSON.parse(raw) as UiAlive;
+  return { status: alive.every === null ? 'unknown' : 'online', at: alive.at };
+}
+
 /** Джерела по черзі (Upstash → Web Swift), а коли жодне не дало дерева — вбудовані фікстури. Браузер сам нічого не підміняє. */
 export async function GET(): Promise<NextResponse<TreeResponse>> {
   const { stage, sources } = readStageConfig();
@@ -32,7 +40,8 @@ export async function GET(): Promise<NextResponse<TreeResponse>> {
     try {
       const tree = await fromSource(source);
       if (typeof tree !== 'string') {
-        return NextResponse.json({ tree: toPublicUiTree(tree), origin: source.kind, stage, misses }, { headers: { 'Cache-Control': 'no-store' } });
+        const agent = source.kind === 'upstash' ? await agentPulse().catch(() => undefined) : undefined;
+        return NextResponse.json({ tree: toPublicUiTree(tree), origin: source.kind, stage, misses, agent }, { headers: { 'Cache-Control': 'no-store' } });
       }
       misses.push({ origin: source.kind, reason: tree });
     } catch (error) {
