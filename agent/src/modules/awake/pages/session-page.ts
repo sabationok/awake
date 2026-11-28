@@ -28,12 +28,12 @@ export function buildSessionPage(ctx: ModuleContext): UiPage {
       { key: 'duration', label: 'Тривалість', options: DURATION_OPTIONS },
       { key: 'until', label: 'Не спати до', options: UNTIL_OPTIONS },
     ),
-    ctx.settingNode('startDisplayOff'),
-    ctx.settingNode('startLock'),
+    // Перемикачі діють лише на старті: під час сесії вони нічого не зроблять, тож їх немає (owner, 2026-11-28).
+    ...(mac?.active ? [] : [ctx.settingNode('startDisplayOff'), ctx.settingNode('startLock')]),
   ];
   if (mac && !mac.active && mac.sleepBlocked) session.push(sleepBlockedRow());
   session.push(sessionButtons(card));
-  const nowButtons = mac?.active ? sessionNowButtons(ctx) : [];
+  const nowButtons = mac?.active ? sessionNowButtons() : [];
   if (nowButtons.length) session.push({ id: 'session-now', type: 'buttons', buttons: nowButtons });
 
   const children: UiNode[] = [
@@ -82,18 +82,14 @@ function sessionCard(ctx: ModuleContext, mac: MacState | null, now: Date): Sessi
 }
 
 /**
- * Сесія вже йде, а перемикач вимкнено: те саме можна зробити зараз кнопкою під «Стоп».
- * Увімкнений перемикач кнопку прибирає: він уже спрацював на старті.
+ * Сесія вже йде: перемикачів старту немає, а погасити чи заблокувати можна будь-коли кнопкою під «Стоп».
+ * Обидві кнопки є завжди, навіть якщо перемикач спрацював на старті: Mac могли вже розблокувати.
  */
-function sessionNowButtons(ctx: ModuleContext): UiButton[] {
-  const buttons: UiButton[] = [];
-  if (!ctx.setting<boolean>('startDisplayOff')) {
-    buttons.push({ id: 'session-display-off-now', label: 'Погасити зараз', variant: 'plain', action: { module: 'awake', name: 'displayOff' } });
-  }
-  if (!ctx.setting<boolean>('startLock')) {
-    buttons.push({ id: 'session-lock-now', label: 'Заблокувати зараз', variant: 'plain', action: { module: 'awake', name: 'lock' } });
-  }
-  return buttons;
+function sessionNowButtons(): UiButton[] {
+  return [
+    { id: 'session-display-off-now', label: 'Погасити зараз', variant: 'plain', action: { module: 'awake', name: 'displayOff' } },
+    { id: 'session-lock-now', label: 'Заблокувати зараз', variant: 'plain', action: { module: 'awake', name: 'lock' } },
+  ];
 }
 
 function planChanged(ctx: ModuleContext, mac: MacState): boolean {
