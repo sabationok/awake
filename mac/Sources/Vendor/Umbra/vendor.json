@@ -2,8 +2,8 @@
   "name": "swift-umbra-lib",
   "source": "~/projects/swift-umbra-lib",
   "path": "Sources/Umbra",
-  "version": "2.1.0",
-  "sourceCommit": "ec16375",
+  "version": "2.2.0",
+  "sourceCommit": "991cd5b",
   "note": "Re-sync with rsync -a --delete --exclude vendor.json and update version / sourceCommit.",
-  "syncedAt": "2026-11-27"
+  "syncedAt": "2026-11-28"
 }
