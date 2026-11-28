@@ -2,14 +2,24 @@
 import { useCallback, useEffect, useState } from 'react';
 import { requestPairing, takePairingCode } from './request-pairing';
 
-const TOKEN_KEY = 'awake.deviceToken';
+const TOKEN_KEY = 'macontrol:deviceToken';
+/** TODO(cutover): ключ до перейменування проєкту; прибрати, коли всі браузери вже перечитали токен (після 2026-12). */
+const LEGACY_TOKEN_KEY = 'awake.deviceToken';
 
 /** waiting: код прийнято, чекаємо «Дозволити» на Mac; denied: на Mac відхилили. */
 export type PairingStatus = 'checking' | 'paired' | 'unpaired' | 'failed' | 'waiting' | 'denied';
 
 function readToken(): string | null {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) return token;
+    // Один раз переносимо токен зі старого ключа, щоб браузер не довелося сполучати заново.
+    const legacy = localStorage.getItem(LEGACY_TOKEN_KEY);
+    if (legacy) {
+      localStorage.setItem(TOKEN_KEY, legacy);
+      localStorage.removeItem(LEGACY_TOKEN_KEY);
+    }
+    return legacy;
   } catch {
     return null;
   }
